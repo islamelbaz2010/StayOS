@@ -1,0 +1,79 @@
+# Code Owners - StayOS
+
+# This file defines the code owners for the StayOS repository.
+# Code owners are automatically requested for review when pull requests
+# affect files they own.
+
+# Global owners - will be requested for review on all PRs
+* @islamelbaz2010
+
+# Kernel code
+/src/kernel/ @islamelbaz2010
+/src/kernel/** @islamelbaz2010
+
+# User space code
+/src/userspace/ @islamelbaz2010
+/src/userspace/** @islamelbaz2010
+
+# UI framework
+/src/ui/ @islamelbaz2010
+/src/ui/** @islamelbaz2010
+
+# Network stack
+/src/network/ @islamelbaz2010
+/src/network/** @islamelbaz2010
+
+# Storage and file system
+/src/storage/ @islamelbaz2010
+/src/storage/** @islamelbaz2010
+
+# Security
+/src/security/ @islamelbaz2010
+/src/security/** @islamelbaz2010
+
+# API
+/src/api/ @islamelbaz2010
+/src/api/** @islamelbaz2010
+
+# Tests
+/tests/ @islamelbaz2010
+/tests/** @islamelbaz2010
+
+# Documentation
+/docs/ @islamelbaz2010
+/docs/** @islamelbaz2010
+*.md @islamelbaz2010
+
+# Build system
+/Makefile @islamelbaz2010
+/Cargo.toml @islamelbaz2010
+/build.rs @islamelbaz2010
+
+# CI/CD
+/.github/ @islamelbaz2010
+/.github/** @islamelbaz2010
+
+# Configuration
+/.gitignore @islamelbaz2010
+/CODEOWNERS @islamelbaz2010
+/LICENSE @islamelbaz2010
+
+# Business documentation
+/business/ @islamelbaz2010
+/business/** @islamelbaz2010
+
+# Research documentation
+/research/ @islamelbaz2010
+/research/** @islamelbaz2010
+
+# AI agents
+/ai_agents/ @islamelbaz2010
+/ai_agents/** @islamelbaz2010
+
+# Scripts
+/scripts/ @islamelbaz2010
+/scripts/** @islamelbaz2010
+
+# Tools
+/tools/ @islamelbaz2010
+/tools/** @islamelbaz2010

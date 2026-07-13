@@ -1,0 +1,21 @@
+Feature Identifier & Name,Customer Value,Business Value,Engineering Cost,AI Required,Moat Score,Priority,Dependencies
+F01: Dynamic Contract Switcher,Critical,High,High,No,9.4/10,P0,Database Core Engine
+F02: Automated Escrow Engine,High,Critical,Medium-High,No,8.8/10,P0,Local Payment Gateway
+F03: Verified Hardware Node Link,High,High,Medium,No,9.5/10,P0,API Integrations
+F04: Double-Blind Media Check-in,High,High,Low-Medium,Yes,7.5/10,P0,Media Storage Layer
+F05: True-Price Search Filter,High,Medium,Low,No,6.0/10,P0,UI Layout Architecture
+F06: Zero-Chore Guardrail Policy,High,High,Low,No,8.0/10,P0,Terms of Service Engine
+F07: Dynamic Regional Pricing API,Medium,Critical,Medium,Yes,8.5/10,P0,Historical Price DB
+F08: Multi-Currency Settlement,High,High,High,No,7.9/10,P0,Regional Wallet Escrows
+F09: Automated AI Review Triage,Medium,High,Medium,Yes,7.2/10,P0,NLP Service Layer
+F10: Unified Property Service Sync,High,High,Medium-High,No,8.7/10,P1,Vendor Direct Portal
+F11: Secure Digital Key Ledger,High,High,Medium,No,8.2/10,P1,Smart Hardware APIs
+F12: Acoustic Sound Monitoring Node,Medium,High,Medium,No,9.0/10,P1,IoT Sensor Platform
+F13: Corporate Mobility Panel,Critical,High,High,No,9.1/10,P1,Enterprise IAM Framework
+F14: Fractional Deposit Insurance,High,High,Medium,No,8.4/10,P1,Underwriting Core Engine
+F15: Instant Vendor Factoring Hub,Low,High,Medium,No,8.0/10,P2,Payout Transaction Rails
+F16: Localized AI Concierge Node,High,Medium,Medium,Yes,6.5/10,P2,Specialized Travel LLM
+F17: Automated Property Tax Sync,Low,High,High,No,8.9/10,P2,Government Portal Bridges
+F18: Cross-Platform Reputation Link,High,Medium,Low-Medium,Yes,7.8/10,P2,External Profile Scrapers
+F19: Co-Living Split Billing Portal,High,Medium,Medium,No,7.0/10,P3,Multi-Payer Escrow Tech
+F20: EV Charger Validation Engine,Medium,Medium,Low,No,7.5/10,P3,Smart Grid Device APIs

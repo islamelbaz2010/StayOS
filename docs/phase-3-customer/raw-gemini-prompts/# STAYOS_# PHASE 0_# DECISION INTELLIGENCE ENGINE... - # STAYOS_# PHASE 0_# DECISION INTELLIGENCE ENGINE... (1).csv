@@ -1,0 +1,6 @@
+Risk Identification & Category,Probability,Impact Severity,Systemic Mitigation Protocol
+R01: Local Currency Fluctuation (Financial),High,High,Settle all platform transactions through instant local bank transfer networks (InstaPay) immediately upon checkout clearing.
+R02: Regulatory Framework Shifts (Legal),Medium,High,"Maintain the dynamic multi-tenure switching capability, allowing properties to pivot to long-term leases instantly if short-term rental rules tighten."
+R03: Database Overlap Errors (Technical),Low,Critical,Implement an unalterable single-source inventory calendar plane across the central application database layer.
+R04: Host On-Site Non-Compliance (Operational),Medium,High,"Deploy automated guest feedback checks within 2 hours of arrival, automatically holding host payouts in escrow if verification failures occur."
+R05: Paid Traffic Acquisition Crushing (Competitive),High,Medium,"Build direct supply integrations with institutional developers to generate organic consumer demand, bypassing expensive search ad bidding cycles."

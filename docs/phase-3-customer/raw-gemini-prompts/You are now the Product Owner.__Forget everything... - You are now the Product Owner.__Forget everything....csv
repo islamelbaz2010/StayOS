@@ -1,0 +1,16 @@
+Triggering Event Condition,Channel,Exact Text Copy & System Interface Strings,UI Action Buttons Enclosed
+Successful Account Account Setup,Email,"""Welcome to Omni-Stay! Your account is officially active. Let's find your next perfect escape.""",Explore Spaces Link
+Successful Account Account Setup,SMS,"""Your Omni-Stay verification is complete! Welcome to the seamless stay era.""",None
+Booking Request Received by Host,Email,"""Your request for stay reservation [RefID] has been submitted to the property host. You will receive an update within 24 hours.""",View Booking Progress
+Booking Instantly Confirmed,Email,"""Pack your bags! Your stay at [Property Name] is fully confirmed for [Dates]. Your receipt reference is [TxnID].""","Add to Calendar, Get Directions"
+Booking Instantly Confirmed,Push,"""Confirmed! 🌴 Your reservation at [Property Name] is officially secured.""",Opens App Home
+Booking Instantly Confirmed,WhatsApp,"""Hello [Guest Name]! Your booking for [Property Name] is locked in for [Dates]. Check-in instructions will arrive here 24 hours before your trip begins!""",View Trip Details Link
+Host Rejection of Booking,Email,"""We are sorry, the host was unable to accept your stay request for [Property Name]. No charges have been finalized on your payment method.""",Find Alternative Stays
+Host Rejection of Booking,Push,"""Booking update: Your request for [Property Name] could not be accepted. Tap to see similar options.""",Opens Search View
+Check-in Document Window Opens (T-24 Hours),Push,"""24 Hours until arrival! Tap here to complete your digital check-in and access lock door codes.""",Opens Digital Check-In Portal
+Check-in Document Window Opens (T-24 Hours),WhatsApp,"""Hi [Guest Name], your check-in window is officially open. Click the link to view entry key configurations and house access manuals: [Link]""",Open House Manual
+Smart Lock Key Activation,Push,"""Your digital room key is now active. Stand within 2 feet of the front door lock and hold down the unlock command button.""",Opens Digital Key Interface
+Payment Authorization Failure,Email,"""Urgent Billing Action Required: The payment processing attempt for your upcoming stay reservation [RefID] failed. Update your card profile within 3 hours to prevent booking cancellation.""",Update Payment Method
+Payment Authorization Failure,SMS,"""Omni-Stay Alert: Payment failed for reservation [RefID]. Update your billing card information immediately here: [Link]""",Resolve Payment Link
+Check-out Reminder Alert (T-2 Hours),Push,"""Friendly reminder: Check-out time is at 11:00 AM. Please ensure trash is placed in bins, lights turned off, and lock the door upon departure.""",Mark Check-Out Complete
+Review Window Open,Email,"""How was your stay at [Property Name]? Share your feedback today to help the community and guide future travelers.""",Leave a Review Now

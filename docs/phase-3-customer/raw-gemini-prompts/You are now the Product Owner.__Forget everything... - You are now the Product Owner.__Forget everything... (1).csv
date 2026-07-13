@@ -1,0 +1,8 @@
+Triggering Event Condition,Channel,Exact Text Copy & System Interface Strings,UI Action Buttons Enclosed
+New Booking Request Received,Email,"""You have received a stay booking request from [Guest Name] for [Property Name]. Review their profile to accept or decline.""","Accept Booking, Decline Request"
+New Booking Request Received,Push,"""Action Required: New reservation request pending for [Property Name]! 📥""",Opens Booking Review Panel
+Instant Booking Finalized,Email,"""Great news! [Guest Name] just booked [Property Name] instantly via automated match. Your updated multi-calendar is inside.""",View Calendar Location
+Instant Booking Finalized,SMS,"""Omni-Stay: Unit [UnitNumber] has been booked for [Dates] by [Guest Name].""",None
+Guest Review Submitted,Push,"""[Guest Name] left you a review! Read what they said about their experience.""",Opens Reviews Dashboard
+High Demand Pricing Warning Trigger,Push,"""Market Analytics Alert: Demand in your property's submarket has increased by 34%. Tap to optimize nightly base rates.""",Opens Smart Pricing Controls
+Payout Disbursed Successfully,Email,"""Treasury Update: Payout funds totaling [Amount] for reservation [RefID] have been initiated to your linked bank account routing file.""",View Ledger Statement

@@ -1,525 +1,384 @@
-# Roadmap - StayOS
+# Roadmap — StayOS
 
-**Version**: 1.0.0  
-**Last Updated**: 2026-07-12  
-**Maintainer**: Project Lead  
+**Version**: 2.0.0
+**Last Updated**: 2026-07-13
+**Maintainer**: Islam Elbaz (Founder)
 **Status**: Active
 
-## 📋 Document Purpose
+## Document Purpose
 
-This document outlines the development roadmap for StayOS, including major milestones, phases, and key deliverables. This roadmap is a living document that will evolve as we learn and adapt.
+This roadmap defines the development phases for StayOS — the AI-powered accommodation marketplace for MENA. Each phase has gate conditions that must be met before the next phase begins. No phase is skipped. No technology is built before customers are understood.
 
-## 🎯 Roadmap Overview
+## Roadmap Philosophy
 
-StayOS development is organized into four major phases over 5+ years:
+1. **Customer before code** — Every phase of product development follows customer validation
+2. **Manual before automated** — Operations run manually first, then automated
+3. **Egypt before GCC** — Prove the model locally before regional expansion
+4. **Data before AI** — AI features are unlocked only when sufficient data exists
+5. **Revenue before raise** — Demonstrate unit economics before seeking Series A
 
-- **Phase 1: Foundation** (Years 1-2) - Core OS development
-- **Phase 2: Ecosystem** (Years 2-4) - Platform and ecosystem building
-- **Phase 3: Scale** (Years 4-6) - Mainstream adoption
-- **Phase 4: Innovation** (Years 6+) - Advanced features and expansion
+## Current Status
 
-## 📅 Phase 1: Foundation (Years 1-2)
+| Phase | Status | Gate |
+|-------|--------|------|
+| Phase -1: Founder Discovery | ✅ Complete | Panel verdict: Conditional Go |
+| Phase 0: Customer Validation | 🔴 Locked | 10 transactions + 80 interviews |
+| Phase 1: MVP | ⏳ Pending | Phase 0 gates |
+| Phase 2: Market Expansion | ⏳ Future | Phase 1 gates |
+| Phase 3: GCC Entry | ⏳ Future | Phase 2 gates |
+| Phase 4: AI Platform | ⏳ Future | Phase 3 gates |
+
+---
+
+## Phase -1: Founder Discovery (COMPLETE)
+
+**Duration**: 2 weeks
+**Status**: Complete — 2026-07-13
+
+**What was done:**
+- 21 documents produced by simulated executive leadership panel
+- 600+ risks catalogued across 6 categories
+- 100+ assumptions identified and rated
+- 14 critical flaws documented
+- Panel verdict: Conditional Go
+
+**Key Outputs:**
+- [Executive Summary](docs/phase--1/reports/01_EXECUTIVE_SUMMARY.md)
+- [Risk Register](docs/phase--1/risks/06_RISK_REGISTER.md) (600+ risks)
+- [Required Validations](docs/phase--1/reports/16_REQUIRED_VALIDATIONS.md)
+- [Execution Order](docs/phase--1/reports/19_EXECUTION_ORDER.md)
+- [Next Phase Definition](docs/phase--1/reports/20_NEXT_PHASE.md)
+
+**Verdict**: Buildable. Likely to fail in current form. Proceed to Phase 0 with eyes open.
+
+---
+
+## Phase 0: Customer Validation
+
+**Duration**: 60–90 days
+**Status**: 🔴 LOCKED — Gate conditions not yet met
+**Budget**: $50K–$150K
+**Team**: Founder + 1–2 advisors
 
 ### Objective
-Build the technical foundation and prove core concepts with a functional alpha release.
 
-### Milestones
+Validate or invalidate the core hypotheses before any technology investment. Determine the specific wedge. Demonstrate real willingness to pay from real customers.
 
-#### Milestone 1.1: Kernel Foundation (Q1-Q2 2026)
-**Status**: In Progress  
-**Target**: 2026-06-30
+**The single most important question to answer**: What is the one specific, painful problem for a specific person in the Egypt accommodation market that no one is solving today?
+
+### Gate Conditions (ALL must be met to unlock Phase 1)
+
+| Gate | Target | Kill Threshold | Status |
+|------|--------|---------------|--------|
+| Traveler interviews | 50 completed | < 30 | 🔴 Not started |
+| Host/PM interviews | 30 completed | < 20 | 🔴 Not started |
+| Manual transactions | 10 completed | < 5 | 🔴 Not started |
+| Guest NPS (pilot) | ≥ 7.0/10 | < 5.0 | 🔴 Not started |
+| Host NPS (pilot) | ≥ 7.0/10 | < 5.0 | 🔴 Not started |
+| Wedge identified | Specific, validated | Vague or generic | 🔴 Not started |
+| GCC guest % | > 20% organic | < 5% | 🔴 Not started |
+
+### Milestone 0.1: Legal and Structural Foundation (Week 1–4)
 
 **Deliverables:**
-- [ ] Microkernel core implementation
-- [ ] Basic process scheduler
-- [ ] Memory management system
-- [ ] Interrupt handling
-- [ ] Basic I/O subsystem
-- [ ] Kernel debugging infrastructure
+- [ ] Trademark search: StayOS (Egypt, KSA, UAE)
+- [ ] Tourism lawyer retained
+- [ ] Legal entity structure decided (Egypt LLC vs offshore holdco)
+- [ ] Egypt Tourism Authority meeting scheduled
+- [ ] Payment processor meetings: Paymob, Fawry
+- [ ] WhatsApp Business API application submitted
+- [ ] Booking.com and Airbnb Egypt market research complete
 
 **Success Criteria:**
-- Kernel boots on target hardware
-- Can spawn and manage basic processes
-- Memory allocation/deallocation working
-- No memory leaks in core paths
+- Legal path to operations defined
+- Payment processing partner identified
+- Tourism authority relationship initiated
 
 ---
 
-#### Milestone 1.2: System Services (Q2-Q3 2026)
-**Status**: Planned  
-**Target**: 2026-09-30
+### Milestone 0.2: Co-founder and Team (Week 1–6)
 
 **Deliverables:**
-- [ ] Process manager service
-- [ ] File system service
-- [ ] Device manager
-- [ ] Network stack foundation
-- [ ] Security service foundation
-- [ ] IPC mechanism
+- [ ] Co-founder decision made
+- [ ] Hospitality industry advisor secured
+- [ ] Legal/regulatory advisor secured
+- [ ] Role definition for Phase 1 team
 
 **Success Criteria:**
-- Services can communicate via IPC
-- Basic file operations working
-- Device discovery and initialization
-- Network packet transmission
+- At least one team member with Egyptian hospitality industry relationships
+- Legal and regulatory guidance secured
 
 ---
 
-#### Milestone 1.3: UI Framework (Q3-Q4 2026)
-**Status**: Planned  
-**Target**: 2026-12-31
+### Milestone 0.3: Customer Discovery — Travelers (Week 2–8)
 
 **Deliverables:**
-- [ ] Graphics subsystem (Vulkan/Metal backend)
-- [ ] Window manager
-- [ ] Input handling
-- [ ] Basic UI components
-- [ ] Compositor
-- [ ] Display server
+- [ ] Interview script designed
+- [ ] 50 traveler interviews conducted and recorded
+- [ ] Synthesis report produced
+- [ ] Key pain points ranked and validated
+
+**Interview Target Mix:**
+- Egyptian domestic travelers: 25
+- GCC nationals traveling to Egypt: 15
+- International travelers to Egypt: 10
+
+**Key Hypotheses to Test:**
+- Do GCC travelers distrust Booking.com/Airbnb for Egypt bookings?
+- Is Arabic-first UX a real differentiator or a nice-to-have?
+- Is payment method a blocker to online booking?
+- What is the CAC for digital acquisition vs. WhatsApp/referral?
 
 **Success Criteria:**
-- Can render windows on screen
-- Mouse and keyboard input working
-- Basic UI components functional
-- Smooth 60fps rendering
+- > 60% of traveler interviews identify consistent, specific pain with current accommodation search/booking
+- At least one wedge hypothesis supported by > 40% of interviews
 
 ---
 
-#### Milestone 1.4: Application Framework (Q4 2026-Q1 2027)
-**Status**: Planned  
-**Target**: 2027-03-31
+### Milestone 0.4: Customer Discovery — Hosts and Property Managers (Week 2–8)
 
 **Deliverables:**
-- [ ] Application lifecycle management
-- [ ] API framework
-- [ ] Resource management
-- [ ] Permission system
-- [ ] Sandboxing foundation
-- [ ] Application packaging
+- [ ] Host interview script designed
+- [ ] 30 host/property manager interviews conducted and recorded
+- [ ] Synthesis report produced
+- [ ] Supply onboarding friction identified
+
+**Interview Target Mix:**
+- Individual property owners (apartments, villas): 15
+- Small property managers (2–20 units): 10
+- Hotel/resort operators: 5
+
+**Key Hypotheses to Test:**
+- What is the current booking channel mix (WhatsApp %, OTA %, walk-in %)?
+- What is the primary pain with Booking.com/Airbnb?
+- What commission rate is acceptable?
+- Is a B2B SaaS tool valuable enough to pay for independently?
 
 **Success Criteria:**
-- Can install and run applications
-- Applications are isolated
-- Permission system functional
-- Package format defined
+- > 60% of hosts identify specific frustration with current distribution
+- Commission tolerance identified (acceptable range, not assumed)
 
 ---
 
-#### Milestone 1.5: Alpha Release (Q1-Q2 2027)
-**Status**: Planned  
-**Target**: 2027-06-30
+### Milestone 0.5: Manual Pilot — 10 Real Transactions (Week 4–10)
 
 **Deliverables:**
-- [ ] Complete alpha feature set
-- [ ] Installation media
-- [ ] Basic documentation
-- [ ] Developer SDK
-- [ ] Sample applications
-- [ ] Bug tracking system
+- [ ] 3–5 verified property listings sourced manually
+- [ ] 10 bookings completed (offline, WhatsApp, or basic landing page)
+- [ ] Guest and host NPS collected for each booking
+- [ ] Unit economics recorded for each transaction (CAC, booking value, host payout)
+
+**No platform required.** This can run on WhatsApp + Google Sheets + manual payment transfer.
 
 **Success Criteria:**
-- Alpha release available for download
-- Can boot and run on target hardware
-- Basic applications functional
-- Developer can build and run apps
+- 10 completed transactions
+- Guest NPS ≥ 7.0
+- Host NPS ≥ 7.0
+- CAC < $50 per guest (first transaction)
+- No serious trust or safety incident
 
 ---
 
-## 📅 Phase 2: Ecosystem (Years 2-4)
+### Phase 0 Exit Report
+
+At completion, a Phase 0 Exit Report must be produced covering:
+- Interview findings and validated pain points
+- Wedge definition (specific, testable, defensible)
+- Unit economics from manual pilot
+- Legal entity status
+- Team structure and gaps
+- Phase 1 recommendation: GO / NO GO / PIVOT
+
+---
+
+## Phase 1: MVP Launch
+
+**Duration**: 4–6 months
+**Status**: ⏳ Pending Phase 0 completion
+**Prerequisite**: All Phase 0 gates cleared + Phase 0 Exit Report: GO
 
 ### Objective
-Build the ecosystem around the core OS including applications, developer tools, and enterprise features.
 
-### Milestones
+Build and launch a minimum viable marketplace with 500+ listings, 200+ monthly bookings, and demonstrated product-market fit signal.
 
-#### Milestone 2.1: Application Platform (Q3-Q4 2027)
-**Status**: Planned  
-**Target**: 2027-12-31
+### Milestone 1.1: Product Foundation (Month 1–2)
 
 **Deliverables:**
-- [ ] App store infrastructure
-- [ ] Application signing
-- [ ] Update mechanism
-- [ ] In-app purchases
-- [ ] Developer portal
-- [ ] Application guidelines
+- [ ] Web platform: Search, property pages, booking flow
+- [ ] Arabic and English language support
+- [ ] Paymob and card payment integration
+- [ ] Host onboarding flow
+- [ ] Basic listing creation and management
+- [ ] Booking management dashboard (host)
+- [ ] Guest booking management
 
 **Success Criteria:**
-- App store functional
-- Developers can publish apps
-- Users can install and update apps
-- Payment processing working
+- Full booking flow working end-to-end
+- Payment processing live
+- Arabic UI production-ready
 
 ---
 
-#### Milestone 2.2: Developer Ecosystem (Q1-Q2 2028)
-**Status**: Planned  
-**Target**: 2028-06-30
+### Milestone 1.2: Supply Acquisition (Month 2–4)
 
 **Deliverables:**
-- [ ] Comprehensive SDK
-- [ ] IDE integration
-- [ ] Debugging tools
-- [ ] Performance profiling
-- [ ] Testing framework
-- [ ] Documentation portal
+- [ ] 500 verified listings live
+- [ ] Host concierge onboarding for first 100 hosts
+- [ ] Property verification process defined and executed
+- [ ] Host protection framework v1 published
+
+**Supply Mix Target:**
+- Apartments (Cairo, Alexandria): 200
+- Beach/resort properties (Hurghada, Sharm, North Coast): 200
+- Villas and chalets: 100
 
 **Success Criteria:**
-- SDK available for major platforms
-- IDE plugins for VS Code, IntelliJ
-- Debugging tools functional
-- Documentation comprehensive
+- 500 live, verified listings
+- < 5% listing fraud rate
+- Host onboarding NPS ≥ 7.0
 
 ---
 
-#### Milestone 2.3: Enterprise Features (Q2-Q3 2028)
-**Status**: Planned  
-**Target**: 2028-09-30
+### Milestone 1.3: Demand Acquisition (Month 3–5)
 
 **Deliverables:**
-- [ ] Directory integration (LDAP, AD)
-- [ ] Device management
-- [ ] Policy enforcement
-- [ ] Enterprise app store
-- [ ] Volume licensing
-- [ ] Support portal
+- [ ] WhatsApp marketing channels active
+- [ ] Egyptian travel influencer partnerships
+- [ ] Arabic SEO content strategy live
+- [ ] GCC-targeted social campaign (Arabic)
+- [ ] First 200 monthly bookings
 
 **Success Criteria:**
-- Can join enterprise domains
-- Device management functional
-- Policy system working
-- Enterprise licensing operational
+- 200 bookings/month by end of Phase 1
+- GCC guests ≥ 25% of bookings
+- Guest NPS ≥ 7.0
+- Booking dispute rate < 3%
 
 ---
 
-#### Milestone 2.4: Digital Wellbeing Features (Q3-Q4 2028)
-**Status**: Planned  
-**Target**: 2028-12-31
+### Milestone 1.4: Trust Infrastructure v1 (Month 3–6)
 
 **Deliverables:**
-- [ ] Focus modes
-- [ ] Usage analytics
-- [ ] Notification management
-- [ ] App limits
-- [ ] Digital wellbeing dashboard
-- [ ] Mindful design guidelines
+- [ ] Identity verification (host and guest)
+- [ ] Review and rating system live
+- [ ] Dispute resolution process defined and staffed
+- [ ] WhatsApp customer support operational
+- [ ] Cancellation and refund policy published
 
 **Success Criteria:**
-- Focus modes functional
-- Usage data accurate
-- Notification controls working
-- User can set and enforce limits
+- < 2% dispute rate
+- Dispute resolution SLA met in > 90% of cases
+- No unresolved trust incidents after 30 days
 
 ---
 
-#### Milestone 2.5: Beta Release (Q1-Q2 2029)
-**Status**: Planned  
-**Target**: 2029-06-30
+### Phase 1 Gates (to unlock Phase 2)
 
-**Deliverables:**
-- [ ] Complete beta feature set
-- [ ] Stability improvements
-- [ ] Performance optimizations
-- [ ] Comprehensive documentation
-- [ ] Feedback mechanisms
-- [ ] Beta testing program
-
-**Success Criteria:**
-- Beta release stable for daily use
-- Performance competitive with mainstream OS
-- 1,000+ beta testers
-- Critical bugs resolved
+| Gate | Target |
+|------|--------|
+| Active listings | 500+ |
+| Monthly bookings | 200+ |
+| Monthly GTV | $50K+ |
+| Guest NPS | ≥ 7.0 |
+| Host retention (3-month) | > 65% |
+| Dispute rate | < 3% |
+| Seed funding | Raised or revenue-funded |
 
 ---
 
-## 📅 Phase 3: Scale (Years 4-6)
+## Phase 2: Market Expansion — Egypt at Scale
+
+**Duration**: 6–12 months
+**Status**: ⏳ Future
 
 ### Objective
-Scale to mainstream adoption with mass market features, global localization, and hardware partnerships.
 
-### Milestones
+Scale to 5,000+ listings, 2,000+ monthly bookings, and dominant position in 2–3 Egyptian segments. Launch mobile app. Add B2B SaaS for property managers.
 
-#### Milestone 3.1: Mass Market Features (Q3-Q4 2029)
-**Status**: Planned  
-**Target**: 2029-12-31
+### Key Milestones
 
-**Deliverables:**
-- [ ] Consumer-focused features
-- [ ] Enhanced media support
-- [ ] Gaming optimizations
-- [ ] Social features
-- [ ] Cloud integration
-- [ ] Mobile companion app
-
-**Success Criteria:**
-- Feature parity with mainstream OS for consumer use
-- Media playback smooth
-- Gaming performance competitive
-- Cloud sync functional
+- 5,000 active listings (all Egyptian regions)
+- Mobile app launch (iOS and Android, Arabic-first)
+- B2B SaaS: Property Manager dashboard with channel management
+- AI pricing recommendations v1 (rule-based)
+- Paymob + Fawry + Meeza + Vodafone Cash fully integrated
+- Corporate housing vertical launched
+- Egypt Tourism Authority partnership formalized
+- Series A preparation
 
 ---
 
-#### Milestone 3.2: Global Localization (Q1-Q2 2030)
-**Status**: Planned  
-**Target**: 2030-06-30
+## Phase 3: GCC Entry
 
-**Deliverables:**
-- [ ] Multi-language support
-- [ ] Regional formatting
-- [ ] Local content
-- [ ] Regional compliance
-- [ ] Localized support
-- [ ] Regional partnerships
-
-**Success Criteria:**
-- Support for 20+ languages
-- Proper regional formatting
-- Compliance with regional regulations
-- Local support teams
-
----
-
-#### Milestone 3.3: Hardware Partnerships (Q2-Q3 2030)
-**Status**: Planned  
-**Target**: 2030-09-30
-
-**Deliverables:**
-- [ ] OEM partnerships
-- [ ] Pre-installed deployments
-- [ ] Hardware certification program
-- [ ] Driver development kits
-- [ ] Hardware optimization
-- [ ] Joint marketing
-
-**Success Criteria:**
-- 5+ OEM partnerships
-- StayOS pre-installed on devices
-- Certification program operational
-- Hardware-optimized performance
-
----
-
-#### Milestone 3.4: Enterprise Expansion (Q3-Q4 2030)
-**Status**: Planned  
-**Target**: 2030-12-31
-
-**Deliverables:**
-- [ ] Advanced security features
-- [ ] Compliance certifications
-- [ ] Industry-specific solutions
-- [ ] Enterprise support SLA
-- [ ] Professional services
-- [ ] Partner ecosystem
-
-**Success Criteria:**
-- SOC 2, ISO 27001 certified
-- Industry-specific solutions available
-- 24/7 enterprise support
-- 100+ enterprise customers
-
----
-
-#### Milestone 3.5: Version 1.0 Release (Q1-Q2 2031)
-**Status**: Planned  
-**Target**: 2031-06-30
-
-**Deliverables:**
-- [ ] Complete 1.0 feature set
-- [ ] Production stability
-- [ ] Comprehensive documentation
-- [ ] Support infrastructure
-- [ ] Marketing campaign
-- [ ] Launch events
-
-**Success Criteria:**
-- 1.0 release stable and performant
-- 100,000+ downloads in first month
-- 95%+ stability rating
-- Support infrastructure operational
-
----
-
-## 📅 Phase 4: Innovation (Years 6+)
+**Duration**: 12–18 months
+**Status**: ⏳ Future
 
 ### Objective
-Continue innovation with AI-powered features, advanced security, new form factors, and emerging technologies.
 
-### Milestones
+Establish direct market presence in Saudi Arabia and UAE. Own the Egypt-GCC travel corridor. Localize for GCC supply-side (Saudi and Emirati property owners).
 
-#### Milestone 4.1: AI-Powered Features (Q3-Q4 2031)
-**Status**: Planned  
-**Target**: 2031-12-31
+### Key Milestones
 
-**Deliverables:**
-- [ ] AI assistant
-- [ ] Predictive features
-- [ ] Smart automation
-- [ ] Adaptive UI
-- [ ] ML framework
-- [ ] Privacy-preserving AI
-
-**Success Criteria:**
-- AI assistant functional and helpful
-- Predictive features accurate
-- Automation saves user time
-- AI respects privacy
+- Legal entities in KSA and UAE
+- KSA and UAE listings live (5,000+)
+- GCC-to-Egypt corridor bookings: 10,000+/month
+- SADAD, Apple Pay, and mada payment integration (KSA)
+- UAE payment rails (local cards, digital wallets)
+- Series A raised ($5M–$15M target)
+- Regional brand recognition
 
 ---
 
-#### Milestone 4.2: Advanced Security (Q1-Q2 2032)
-**Status**: Planned  
-**Target**: 2032-06-30
+## Phase 4: AI Platform at Scale
 
-**Deliverables:**
-- [ ] Hardware security modules
-- [ ] Zero-trust architecture
-- [ ] Advanced threat detection
-- [ ] Secure enclaves
-- [ ] Quantum-resistant crypto
-- [ ] Biometric integration
+**Duration**: Ongoing post Phase 3
+**Status**: ⏳ Future
 
-**Success Criteria:**
-- HSM integration working
-- Zero-trust model implemented
-- Threat detection effective
-- Security certifications maintained
+### Objective
 
----
+Activate the full AI intelligence layer. Become the data-driven pricing and distribution OS for MENA accommodation.
 
-#### Milestone 4.3: New Form Factors (Q2-Q3 2032)
-**Status**: Planned  
-**Target**: 2032-09-30
+### Key Milestones
 
-**Deliverables:**
-- [ ] Tablet optimization
-- [ ] 2-in-1 support
-- [ ] AR/VR integration
-- [ ] IoT support
-- [ ] Wearable companion
-- [ ] Foldable support
-
-**Success Criteria:**
-- Optimized for tablets
-- Works on 2-in-1 devices
-- AR/VR integration functional
-- IoT device management
+- Dynamic pricing ML model (20%+ vacancy reduction demonstrated)
+- Demand forecasting (80%+ accuracy)
+- AI-powered personalized discovery
+- Fraud detection ML model (< 0.1% dispute rate)
+- Third-party API platform (third-party OTA and channel integrations)
+- Series B preparation
 
 ---
 
-#### Milestone 4.4: Emerging Technologies (Q3-Q4 2032)
-**Status**: Planned  
-**Target**: 2032-12-31
-
-**Deliverables:**
-- [ ] Distributed computing
-- [ ] Edge computing
-- [ ] Blockchain integration
-- [ ] Web3 support
-- [ ] Metaverse integration
-- [ ] 6G networking
-
-**Success Criteria:**
-- Distributed computing functional
-- Edge computing optimized
-- Blockchain features working
-- Web3 applications supported
-
----
-
-## 📊 Timeline Summary
+## Timeline Summary
 
 ```
-Phase 1: Foundation (2026-2027)
-├── M1.1: Kernel Foundation (Q1-Q2 2026)
-├── M1.2: System Services (Q2-Q3 2026)
-├── M1.3: UI Framework (Q3-Q4 2026)
-├── M1.4: Application Framework (Q4 2026-Q1 2027)
-└── M1.5: Alpha Release (Q1-Q2 2027)
-
-Phase 2: Ecosystem (2027-2029)
-├── M2.1: Application Platform (Q3-Q4 2027)
-├── M2.2: Developer Ecosystem (Q1-Q2 2028)
-├── M2.3: Enterprise Features (Q2-Q3 2028)
-├── M2.4: Digital Wellbeing Features (Q3-Q4 2028)
-└── M2.5: Beta Release (Q1-Q2 2029)
-
-Phase 3: Scale (2029-2031)
-├── M3.1: Mass Market Features (Q3-Q4 2029)
-├── M3.2: Global Localization (Q1-Q2 2030)
-├── M3.3: Hardware Partnerships (Q2-Q3 2030)
-├── M3.4: Enterprise Expansion (Q3-Q4 2030)
-└── M3.5: Version 1.0 Release (Q1-Q2 2031)
-
-Phase 4: Innovation (2031+)
-├── M4.1: AI-Powered Features (Q3-Q4 2031)
-├── M4.2: Advanced Security (Q1-Q2 2032)
-├── M4.3: New Form Factors (Q2-Q3 2032)
-└── M4.4: Emerging Technologies (Q3-Q4 2032)
+2026 Q3: Phase 0 — Customer Validation (60–90 days)
+2026 Q4 / 2027 Q1: Phase 1 — MVP Launch (4–6 months)
+2027 Q2–Q4: Phase 2 — Egypt Scale
+2028 Q1–Q3: Phase 3 — GCC Entry
+2028 Q4+: Phase 4 — AI Platform
 ```
 
-## 🎯 Key Dependencies
+Timelines are conditional on Phase gate clearance. A failure to clear gates delays the timeline — not the gate conditions.
 
-### Technical Dependencies
-- Rust ecosystem maturity
-- Vulkan/Metal driver support
-- Hardware availability
-- Open source library availability
+## Risk Dependencies
 
-### Business Dependencies
-- Funding availability
-- OEM partnership agreements
-- Enterprise customer interest
-- Developer community growth
+- Phase 0 → Phase 1: Blocked if validation fails or wedge is not found
+- Phase 1 → Phase 2: Blocked if unit economics are not healthy
+- Phase 2 → Phase 3: Blocked if Series A is not raised
+- Phase 3 → Phase 4: Blocked if GCC market data is insufficient for AI models
 
-### External Dependencies
-- Regulatory environment
-- Supply chain stability
-- Competitive landscape
-- Technology trends
+See [RISKS.md](RISKS.md) and [Phase -1 Risk Register](docs/phase--1/risks/06_RISK_REGISTER.md).
 
-## 🔄 Roadmap Management
+## Related Documents
 
-### Review Process
-
-- **Quarterly**: Full roadmap review and adjustment
-- **Monthly**: Milestone progress review
-- **Sprint**: Task-level planning and tracking
-
-### Update Process
-
-1. Assess progress against current milestones
-2. Identify blockers and risks
-3. Adjust timelines and priorities as needed
-4. Update roadmap with changes
-5. Communicate changes to stakeholders
-6. Update related documents (TASKS.md, RISKS.md)
-
-### Success Metrics
-
-Each milestone has specific success criteria defined. Overall roadmap success is measured by:
-
-- On-time milestone completion
-- Feature completeness
-- Quality metrics (stability, performance)
-- User and developer adoption
-- Business metrics (revenue, customers)
-
-## 📚 Related Documents
-
-- [PROJECT_VISION.md](PROJECT_VISION.md) - Strategic vision
-- [TASKS.md](TASKS.md) - Detailed task breakdown
-- [RISKS.md](RISKS.md) - Risk assessment
-- [DECISION_LOG.md](DECISION_LOG.md) - Strategic decisions
-- [MASTER_CONTEXT.md](MASTER_CONTEXT.md) - Project context
-
-## 📞 Contact
-
-For questions about the roadmap, contact:
-
-- **Document Owner**: Project Lead
-- **Email**: roadmap@stayos.dev
-- **GitHub**: @islamelbaz2010
+- [MASTER_CONTEXT.md](MASTER_CONTEXT.md) — Full project context
+- [PROJECT_VISION.md](PROJECT_VISION.md) — Strategic vision
+- [TASKS.md](TASKS.md) — Current action items (Phase 0)
+- [Phase -1 Execution Order](docs/phase--1/reports/19_EXECUTION_ORDER.md)
+- [Phase -1 Required Validations](docs/phase--1/reports/16_REQUIRED_VALIDATIONS.md)
+- [Phase -1 Next Phase](docs/phase--1/reports/20_NEXT_PHASE.md)
 
 ---
 
-**This roadmap is a living document that will evolve as we learn and grow. We invite our community to provide feedback and help shape the future of StayOS.**
+**This roadmap is a living document. It is updated at the completion of each phase, when gate conditions change, and when strategic pivots occur. The field, not the plan, determines the timeline.**

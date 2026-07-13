@@ -1,0 +1,5 @@
+Triggering Event Condition,Channel,Exact Text Copy & System Interface Strings,UI Action Buttons Enclosed
+New Task Assignment Dispatched,Push,"""New Assignment: You have been designated for Turnover Duty at Unit [UnitNumber]. Deadline: Today, [Time].""",Opens Task Step-Wizard
+New Task Assignment Dispatched,SMS,"""Omni-Stay Staff: New cleaning job assigned for Unit [UnitNumber]. Details here: [Link]""",Open Job Profile Link
+Task Deadline Approaching (T-30 Mins),Push,"""Warning: Task deadline for Unit [UnitNumber] expires in 30 minutes. Upload mandatory verification imagery immediately.""",Opens Photo Upload Gate
+Urgent Maintenance Report,Push,"""🚨 EMERGENCY TICKET: Guest reports major utility issue at Unit [UnitNumber]. Route to site immediately.""",Opens Navigation Blueprint

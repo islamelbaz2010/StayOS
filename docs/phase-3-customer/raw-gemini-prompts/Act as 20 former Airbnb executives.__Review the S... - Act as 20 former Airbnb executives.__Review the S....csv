@@ -1,0 +1,8 @@
+Triggering Event Condition,Channel,Exact Text Copy & System Interface Strings,UI Action Buttons Enclosed
+Top-of-Funnel ID Verification Request,Push,"""Identity Verification Required: To protect the community, verify your government ID before messaging hosts or booking.""",Verify Identity Now
+High-Risk Risk Review Flag Triggers,Email,"""Reservation Blocked: Your recent booking request could not be processed due to community safety risk constraints. For details, view account health status inside your profile dashboard.""",View Account Health
+Municipal Cap Alert (T-10 Days),Push,"""Regulatory Warning: Your property listing [Property Name] is within 10 days of reaching its annual municipal booking limit.""",Open Regulatory Panel
+Double-Blind Review Match Complete,WhatsApp,"""Good news! Both you and your guest have finalized reviews. Ratings are now officially live on your public profiles: [Link]""",Read My Reviews
+Security Hold Pre-Auth Failure,SMS,"""URGENT: Automated $500 security deposit pre-authorization hold failed on your card. Update payment method within 12 hours to prevent automatic cancellation of your stay: [Link]""",Update Card Details
+Damage Claim Lodged Notification,Email,"""Property Damage Dispute Notice: Host [Host Name] has submitted a claim request totaling [Amount] for damages observed post check-out. Review the evidence documentation within 72 hours.""",Review Damage Claim
+Emergency Relocation Proposal,Push,"""Important Travel Update: An operational issue has occurred at your reserved property. Open the app immediately to review and accept a free upgraded space arrangement.""",View Upgrade Options

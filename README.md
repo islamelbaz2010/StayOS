@@ -2,188 +2,154 @@
 
 <div align="center">
 
-**The Next Generation Operating System for Sustainable Digital Living**
+**The AI-Powered Accommodation Operating System for MENA**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Issues](https://img.shields.io/github/issues/islamelbaz2010/StayOS)](https://github.com/islamelbaz2010/StayOS/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/islamelbaz2010/StayOS)](https://github.com/islamelbaz2010/StayOS/pulls)
-[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](docs/)
+[![Phase](https://img.shields.io/badge/Phase--1-Complete-green.svg)](docs/phase--1/)
+[![Phase 0](https://img.shields.io/badge/Phase_0-Locked-red.svg)](docs/phase--1/reports/20_NEXT_PHASE.md)
 
 </div>
 
-## 🌟 Overview
+## What is StayOS?
 
-StayOS is a revolutionary operating system designed to transform how people interact with technology in their daily lives. Built on principles of sustainability, mindfulness, and human-centric design, StayOS aims to create a digital environment that enhances productivity while promoting digital wellbeing.
+StayOS is the accommodation operating system for MENA — a category-defining AI-powered marketplace that replaces the fragmented, trust-deficient, and friction-heavy accommodation experience across Egypt, the GCC, and beyond.
 
-## 🎯 Vision
+**"OS" does not mean Linux, Windows, or any computer operating system.**
 
-To create an operating system that doesn't just run applications, but actively contributes to users' mental health, productivity, and sustainable digital habits. StayOS is designed for the modern human who seeks balance in an increasingly connected world.
+It means: the platform layer that coordinates and powers the entire accommodation economy. The infrastructure that makes finding, booking, and managing accommodation as intelligent, trustworthy, and seamless as it should be — but isn't today.
 
-## 🚀 Key Features
+## The Problem
 
-- **Mindful Computing**: Built-in digital wellbeing tools and focus modes
-- **Sustainable Design**: Energy-efficient architecture and resource management
-- **Privacy-First**: Local-first approach with minimal data collection
-- **Adaptive Interface**: UI that learns and adapts to user patterns
-- **Seamless Integration**: Cross-platform compatibility and synchronization
-- **Developer-Friendly**: Extensible architecture with comprehensive APIs
+Egypt and the GCC have a broken accommodation market:
 
-## 📋 Table of Contents
+- **Trust gap**: No verified inventory. No guest protection. No Host Guarantee equivalent.
+- **Language gap**: Global OTAs (Booking.com, Airbnb) are English-first. Arabic speakers are second-class users.
+- **Payment gap**: Egypt's fragmented payment landscape (Fawry, Vodafone Cash, Meeza, bank transfer, cash) is ignored by global platforms.
+- **Cultural gap**: Halal compliance, family-only properties, cultural norms — not addressable by Western platforms.
+- **Data gap**: No AI-powered pricing, demand forecasting, or matching built for local inventory and guest behavior.
 
-- [Quick Start](#quick-start)
-- [Documentation](#documentation)
-- [Architecture](#architecture)
-- [Contributing](#contributing)
-- [Roadmap](#roadmap)
-- [Community](#community)
-- [License](#license)
+## The Opportunity
 
-## 🎬 Quick Start
+| Market | TAM Estimate | Notes |
+|--------|-------------|-------|
+| Egypt accommodation | $200M–$400M | Online bookings growing 20%+ YoY |
+| Egypt + GCC corridor | $1B–$2B | Saudi, UAE, Qatar traffic to Egypt |
+| Full GCC + MENA | $5B–$10B | Long-term expansion market |
 
-### Prerequisites
+Egypt alone is insufficient for a venture-scale outcome. The GCC expansion is not optional — it is existential to the business model.
 
-- A compatible development environment (see [Development Guide](docs/development/README.md))
-- Basic understanding of operating system concepts
-- Git for version control
+## Current Status
 
-### Installation
+| Phase | Status | Gate Condition |
+|-------|--------|---------------|
+| Phase -1: Founder Discovery | ✅ Complete | 21 documents, 600+ risks catalogued |
+| Phase 0: Customer Validation | 🔴 Locked | 10 transactions + 80 interviews required |
+| Phase 1: MVP Build | ⏳ Pending | Phase 0 gates must clear first |
+| Phase 2: Market Expansion | ⏳ Future | — |
 
-```bash
-# Clone the repository
-git clone https://github.com/islamelbaz2010/StayOS.git
-cd StayOS
+**The panel's verdict: Conditional Go.** [Read the full Executive Summary](docs/phase--1/reports/01_EXECUTIVE_SUMMARY.md).
 
-# Set up the development environment
-./scripts/setup.sh
+## The Vision
 
-# Build the project
-make build
+StayOS will become the accommodation operating system for 500M+ people in the MENA region by delivering:
 
-# Run StayOS
-make run
-```
+1. **Verified supply** — every listing trusted and reviewed
+2. **Arabic-first UX** — built for local users, not translated for them
+3. **Local payment infrastructure** — Fawry, Meeza, Vodafone Cash, card, BNPL
+4. **AI-powered matching** — prices, availability, and recommendations that actually understand Egyptian and GCC demand patterns
+5. **Trust infrastructure** — dispute resolution, Host Guarantee, guest verification
 
-For detailed installation instructions, see our [Installation Guide](docs/installation/README.md).
-
-## 📚 Documentation
-
-Our comprehensive documentation covers everything you need to know about StayOS:
-
-- **[Master Context](MASTER_CONTEXT.md)** - Complete project overview and context
-- **[Project Vision](PROJECT_VISION.md)** - Our long-term vision and goals
-- **[Architecture Documentation](docs/architecture/README.md)** - System architecture and design
-- **[Development Guide](docs/development/README.md)** - How to contribute and develop
-- **[API Reference](docs/api/README.md)** - Complete API documentation
-- **[User Guide](docs/user/README.md)** - End-user documentation
-
-### Key Documentation Files
-
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
-- [DECISION_LOG.md](DECISION_LOG.md) - Architecture and project decisions
-- [ASSUMPTIONS.md](ASSUMPTIONS.md) - Project assumptions and constraints
-- [ROADMAP.md](ROADMAP.md) - Development roadmap and milestones
-- [RISKS.md](RISKS.md) - Risk assessment and mitigation strategies
-- [TASKS.md](TASKS.md) - Current tasks and work items
-
-## 🏗️ Architecture
-
-StayOS is built with a modular, microkernel-inspired architecture:
+## Repository Structure
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    User Space Layer                      │
-├─────────────────────────────────────────────────────────┤
-│  Applications  │  Services  │  UI Framework  │  APIs     │
-├─────────────────────────────────────────────────────────┤
-│                    System Services Layer                 │
-├─────────────────────────────────────────────────────────┤
-│  Process Manager  │  Resource Manager  │  Security     │
-├─────────────────────────────────────────────────────────┤
-│                    Kernel Layer                          │
-├─────────────────────────────────────────────────────────┤
-│  Scheduler  │  Memory Manager  │  I/O  │  Drivers      │
-├─────────────────────────────────────────────────────────┤
-│                    Hardware Layer                        │
-└─────────────────────────────────────────────────────────┘
+StayOS/
+├── docs/
+│   ├── phase--1/          # Phase -1: Founder Discovery (21 documents)
+│   │   ├── reports/       # Executive summary, pre-mortem, kill report, etc.
+│   │   └── risks/         # 600+ risks across 6 categories
+│   ├── architecture/      # System and product architecture decisions (ADRs)
+│   ├── standards/         # Documentation and repository standards
+│   └── templates/         # Reusable document templates
+├── research/
+│   ├── market/            # Market research and analysis
+│   ├── competitor/        # Competitive intelligence
+│   ├── interviews/        # Customer and host interview records
+│   ├── feature_evaluation/ # Feature analysis and prioritization
+│   └── risk/              # Risk assessment documents
+├── business/
+│   ├── financial/         # Financial models and projections
+│   ├── product/           # Product strategy and requirements
+│   ├── roadmap/           # Roadmap planning documents
+│   └── sprint/            # Sprint planning and tracking
+├── ai_agents/             # AI agent documentation and prompt templates
+├── scripts/               # Utility scripts
+├── tools/                 # Development and research tools
+├── README.md              # This file
+├── PROJECT_VISION.md      # Long-term vision and strategic goals
+├── MASTER_CONTEXT.md      # Single source of truth for all context
+├── ROADMAP.md             # Development phases and milestones
+├── RISKS.md               # Risk register summary (links to Phase -1 risks)
+├── ASSUMPTIONS.md         # Validated and unvalidated assumptions
+├── DECISION_LOG.md        # Strategic and product decisions
+└── TASKS.md               # Current tasks and immediate actions
 ```
 
-For detailed architecture information, see [Architecture Documentation](docs/architecture/README.md).
+## Key Documents
 
-## 🤝 Contributing
+| Document | Purpose |
+|----------|---------|
+| [MASTER_CONTEXT.md](MASTER_CONTEXT.md) | Full project context — read this first |
+| [PROJECT_VISION.md](PROJECT_VISION.md) | Where StayOS is going and why |
+| [ROADMAP.md](ROADMAP.md) | How we get there, phase by phase |
+| [Phase -1 Executive Summary](docs/phase--1/reports/01_EXECUTIVE_SUMMARY.md) | Panel verdict and the 14 critical flaws |
+| [Phase -1 Index](docs/phase--1/INDEX.md) | Full index of 21 discovery documents |
+| [Risk Register](docs/phase--1/risks/06_RISK_REGISTER.md) | 600+ catalogued risks |
+| [Required Validations](docs/phase--1/reports/16_REQUIRED_VALIDATIONS.md) | Gates for Phase 0 |
+| [Execution Order](docs/phase--1/reports/19_EXECUTION_ORDER.md) | Week-by-week action plan |
+| [Next Phase](docs/phase--1/reports/20_NEXT_PHASE.md) | Phase 0 definition and constraints |
 
-We welcome contributions from the community! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
+## Immediate Next Actions (Phase 0 Locked Gates)
 
-### How to Contribute
+These must be completed before any technology is built:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Conduct 50 traveler interviews + 30 property owner interviews
+2. Complete 10 manual transactions (offline if necessary)
+3. Trademark search: StayOS
+4. Tourism lawyer consultation
+5. Meet with Paymob, Fawry — payment processor landscape
+6. Egypt Tourism Authority meeting
+7. Research Booking.com and Airbnb Egypt presence and supply
+8. Co-founder decision
+9. Legal entity structure decision
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+See [Required Validations](docs/phase--1/reports/16_REQUIRED_VALIDATIONS.md) and [Execution Order](docs/phase--1/reports/19_EXECUTION_ORDER.md) for full detail.
 
-## 🗺️ Roadmap
+## Contributing
 
-Our development roadmap is organized into phases:
+See [CONTRIBUTING.md](CONTRIBUTING.md). At this stage, contributions are primarily:
+- Market research and competitive intelligence
+- Customer and host interview design and synthesis
+- Financial modeling
+- Legal and regulatory research (Egypt, GCC)
+- AI and product strategy
 
-### Phase 1: Foundation (Current)
-- Core kernel development
-- Basic system services
-- Initial UI framework
-- [View full roadmap](ROADMAP.md)
+## Security
 
-### Phase 2: Core Features
-- Application framework
-- File system
-- Networking stack
-- Security framework
+Report security concerns to: security@stayos.dev
 
-### Phase 3: Advanced Features
-- AI-powered features
-- Advanced security
-- Cloud integration
-- Developer tools
+## License
 
-## 👥 Community
-
-- **GitHub Discussions**: [Join the conversation](https://github.com/islamelbaz2010/StayOS/discussions)
-- **Issues**: [Report bugs or request features](https://github.com/islamelbaz2010/StayOS/issues)
-- **Twitter**: Follow us for updates
-- **Discord**: Join our community server
-
-## 📊 Project Status
-
-- **Version**: 0.1.0-alpha
-- **Status**: Early Development
-- **Last Updated**: 2026-07-12
-
-## 🛡️ Security
-
-If you discover a security vulnerability, please email security@stayos.dev instead of using the issue tracker.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- All contributors who have helped shape StayOS
-- The open-source community for inspiration and tools
-- Our early adopters and feedback providers
-
-## 📞 Contact
-
-- **Project Lead**: Islam Elbaz
-- **Email**: contact@stayos.dev
-- **Website**: https://stayos.dev
+MIT — see [LICENSE](LICENSE)
 
 ---
 
 <div align="center">
 
-**Built with ❤️ for a better digital future**
+**StayOS — The Operating System of Accommodation**
 
-[⬆ Back to Top](#stayos)
+*Egypt → GCC → Global*
+
+[MASTER_CONTEXT](MASTER_CONTEXT.md) · [VISION](PROJECT_VISION.md) · [ROADMAP](ROADMAP.md) · [RISKS](RISKS.md)
 
 </div>

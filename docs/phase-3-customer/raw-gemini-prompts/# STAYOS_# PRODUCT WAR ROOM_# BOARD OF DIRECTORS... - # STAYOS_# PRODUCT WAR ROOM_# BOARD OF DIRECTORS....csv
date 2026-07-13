@@ -1,0 +1,101 @@
+ID,Feature Name,Priority,Customer,Problem Solved,Revenue,Retention,Moat,Difficulty,AI Needed,Can Airbnb Copy?,MVP Include?
+1,Dynamic Tenure DB Switcher,P0,Host / Guest,Regulatory Caps & High Vacancy,High,High,High,High,No,No,YES
+2,InstaPay Native Router,P0,Host / Guest,14-Day Gateway FX Delays,High,High,High,Medium,No,No,YES
+3,True-Price Pure Search UI,P0,Guest,Post-Search Hidden Fee Shock,Low,High,Medium,Low,No,No,YES
+4,Hardware Wi-Fi Ping Node,P0,Guest,Unverified Speed Drops,Medium,High,High,Medium,No,No,YES
+5,Double-Blind Media Vault,P0,Host / Guest,Extortionate Damage Disputes,Medium,High,Medium,Medium,Yes,No,YES
+6,Zero-Chore Guardrail Filter,P0,Guest,Host-Imposed Checkout Lists,Low,High,Medium,Low,No,No,YES
+7,Dual-Blind Security Escrow,P0,Host / Guest,Security Deposit Withholding,Medium,High,High,Medium,No,No,YES
+8,Mobile Wallet Cashout Gate,P0,Host,Fragmented Local Payouts,Low,High,Medium,Medium,No,No,YES
+9,Egyptian ID/Passport Vault,P0,Host / Legal,Missing State Security Regs,Low,Medium,High,Medium,Yes,No,YES
+10,Compound Access Code Router,P0,Guest,Compound Gate Guard Friction,Low,High,Medium,Low,No,No,YES
+11,Smart Calendar Sync Block,P0,Host,Multi-App Overlap Bookings,Low,Medium,Low,Low,No,Yes,YES
+12,Localized Arabic/Eng Toggle,P0,Host / Guest,Complex Non-Localized UIs,Low,Medium,Low,Low,No,Yes,YES
+13,Dynamic Local Tax Engine,P0,Host,Manual Tourism Tax Auditing,Medium,Medium,High,High,No,No,YES
+14,All-Inclusive Invoice Vault,P0,Guest / Corp,Missing Corporate Tax Papers,Medium,High,Medium,Low,No,Yes,YES
+15,Direct Messaging Lock,P0,Host / Guest,Off-Platform Booking Leakage,High,Medium,Low,Low,Yes,Yes,YES
+16,Smart Price Optimizer,P0,Host,Seasonal Underpricing Losses,High,Medium,Medium,Medium,Yes,Yes,YES
+17,Real-Time Power Status Node,P0,Guest,Rolling Egyptian Power Cuts,Low,High,High,Medium,No,No,YES
+18,Fractional Day Extensions,P0,Guest,Late Flight Check-out Gaps,Medium,High,Medium,Medium,No,No,YES
+19,Host Onboarding Wizard,P0,Host,Friction-Heavy Inventory Upload,Low,Medium,Low,Low,No,Yes,YES
+20,Unified Booking Timeline,P0,Guest,Broken Multi-Property Itinerary,Low,High,Medium,Medium,No,No,YES
+21,Automatic Utility Surcharge,P0,Host,Host Utility Bill Volatility,Medium,Medium,Medium,Medium,No,No,YES
+22,Emergency Support SOS Node,P0,Guest,Unresponsive Support AI Bots,Low,High,Medium,Low,No,No,YES
+23,Instant Booking Bypass,P0,Guest,Slow Host Confirmation Loops,Medium,Medium,Low,Low,No,Yes,YES
+24,Instant Vendor Dispatch,P0,Host,Slow Unvetted Property Repairs,Medium,High,High,High,No,No,YES
+25,Extended Stay Lease Parser,P0,Host / Guest,Rigid Lease Generation Laws,High,High,High,High,Yes,No,YES
+26,Corporate Mobility Panel,P1,Corporate,Fragmented Expat Placements,High,High,High,High,No,No,NO
+27,Custom Security Group IAM,P1,Corporate,Employee Access Discrepancies,Low,High,Medium,Medium,No,Yes,NO
+28,Split-Payment Ledger,P1,Guest,Group Check-out Coordination,Low,High,Medium,Medium,No,Yes,NO
+29,Acoustic Decibel Log,P1,Host,Loud Parties Damaging Property,Low,High,High,Medium,No,No,NO
+30,Verified Water Sensor Link,P1,Guest,Unreported Coastal Water Cuts,Low,High,High,Medium,No,No,NO
+31,Smart Thermostat Auto-Lock,P1,Host,Empty Room AC Wastage,Medium,Medium,High,Medium,No,No,NO
+32,Direct Sub-Merchant Factoring,P1,Vendor,Cash-Strapped Vendor Delays,High,High,High,High,No,No,NO
+33,Auto-Review Extortion Flag,P1,Host,Malicious Guest Blackmail,Low,High,Medium,Medium,Yes,No,NO
+34,EV Charger API Link,P1,Guest,Missing Rural EV Infrastructure,Low,Medium,Medium,Low,No,Yes,NO
+35,Co-Living Rent Allocator,P1,Guest,Shared Apartment Billing Fights,Medium,High,Medium,Medium,No,No,NO
+36,Air Quality Tracking Sensor,P1,Guest,Urban Dust/Pollution Spikes,Low,Medium,High,Medium,No,No,NO
+37,B2B Bulk Inventory Loader,P1,Developer,Low-Speed Single-Asset Uploads,Low,High,Medium,Medium,No,Yes,NO
+38,Premium Linen Supply Module,P1,Host,Unstable Local Linen Standards,Medium,High,High,Medium,No,No,NO
+39,Smart Keyless Entry Gateway,P1,Host / Guest,Key Exchange Coordination Loss,Low,High,Medium,Medium,No,Yes,NO
+40,Direct Invoicing Gateway,P1,Corporate,Rigid Corporate Credit Loops,High,High,Medium,Medium,No,Yes,NO
+41,Advanced Property Analytics,P1,Host,Opaque Yield Tracking Views,Medium,High,Medium,Medium,No,Yes,NO
+42,Auto Guest Background Check,P1,Host,Unvetted Dangerous Criminals,Low,High,Medium,Medium,No,No,NO
+43,Multi-Unit Parent View,P1,Host,Cluttered Multi-Property Hubs,Low,High,Low,Low,No,Yes,NO
+44,Regional Language Localizer,P1,Host / Guest,Non-Standard Accent Translation,Low,Medium,Medium,Medium,Yes,No,NO
+45,Local Experience Link Engine,P1,Guest,Fragmented Tour Operator Guides,High,Medium,Low,Medium,No,Yes,NO
+46,Recurring Monthly Lease Pull,P1,Host / Guest,Manual Long-Term Rent Tasks,High,High,Medium,Medium,No,Yes,NO
+47,Multi-Channel Price Override,P1,Host,Fragmented Yield Adjustments,Medium,Medium,Low,Low,No,Yes,NO
+48,Direct Host Insurance Underwriter,P1,Host,Unbacked Local Asset Scratches,High,High,High,High,No,No,NO
+49,Smart Concierge LLM Routing,P1,Guest,Late-Night Support Wait Times,Low,Medium,Low,Medium,Yes,Yes,NO
+50,Security Deposit Loan Hub,P1,Guest,Limited Upfront Travel Cash,High,Medium,Medium,Medium,No,No,NO
+51,Mid-Stay Cleaning On-Demand,P2,Guest,Long-Term Stay Room Degradation,High,High,Medium,Medium,No,Yes,NO
+52,Cross-App Reputation Port,P2,Host / Guest,Missing Historical Trust Logs,Low,Medium,Medium,Medium,Yes,No,NO
+53,Fractional Investment Ledger,P2,Investor,High Asset Purchase Cost Barriers,High,High,High,High,No,No,NO
+54,Local Currency Hedge Engine,P2,Host,Extreme Local Inflation Traps,High,Medium,High,High,No,No,NO
+55,Automatic Amenity Failure Credit,P2,Guest,Host-Lied Missing Amenity Scams,Low,High,Medium,Medium,No,No,NO
+56,White-Label Developer Portal,P2,Developer,Disconnected Asset Brand Equity,High,High,High,High,No,No,NO
+57,Luggage Storage Network Link,P2,Guest,Early Landings Luggage Burden,Medium,Medium,Low,Low,No,Yes,NO
+58,Curated Grocery Pre-Stocking,P2,Guest,Empty Beach House Check-ins,High,Medium,Low,Medium,No,Yes,NO
+59,Long-Term Sublease Escrow,P2,Guest,Dangerous Subtenant Skip Scams,High,High,Medium,Medium,No,No,NO
+60,Automated Utility Cap Alert,P2,Host,Guest Leaving AC Running 24/7,Low,Medium,Medium,Medium,No,No,NO
+61,Corporate Per-Diem Filter,P2,Guest,Out-of-Budget Expense Flags,Low,High,Medium,Low,No,Yes,NO
+62,Smart Maintenance Scheduler,P2,Host,Neglected Structural Asset Wear,Low,Medium,Medium,Medium,Yes,No,NO
+63,Shared Workspace Booking Pin,P2,Guest,Remote Stays Lacking Work Desks,Medium,Medium,Low,Low,No,Yes,NO
+64,Multi-Platform Ad Manager,P2,Host,Low Organic Occupancy Slumps,High,Medium,Low,Medium,No,Yes,NO
+65,Local Transit Voucher Link,P2,Guest,Isolated Desert Compound Traps,Medium,Medium,Low,Low,No,Yes,NO
+66,Smart Inventory Camera Scan,P2,Host,Stolen Kitchen Equipment Losses,Low,Medium,High,Medium,Yes,No,NO
+67,Regional Holiday Auto-Surger,P2,Host,Missing High-Yield Event Peak,High,Medium,Low,Low,No,Yes,NO
+68,Direct Tax Withholding Export,P2,Host,Messy Local Audit Files,Low,Medium,Medium,Medium,No,No,NO
+69,Guest Custom Request Router,P2,Guest,Missing Baby Crib/Pet Amenities,Low,Medium,Low,Low,No,Yes,NO
+70,Real-Time Pool Temperature Log,P2,Guest,Unheated Off-Season Pool Scams,Low,Medium,High,Medium,No,No,NO
+71,Direct Vendor Factoring Hub,P2,Vendor,Delayed Maintenance Cash Loops,High,Medium,High,Medium,No,No,NO
+72,Dynamic Insurance Waiver Pool,P2,Guest,High Upfront Cash Deposit Blocks,High,Medium,Medium,Medium,No,No,NO
+73,Multi-Property Floorplan View,P2,Guest,Inaccurate Listing Layout Scams,Low,Medium,Low,Low,No,Yes,NO
+74,Automated Local Guide Builder,P2,Host,Repetitive Local Question Loads,Low,Low,Low,Medium,Yes,Yes,NO
+75,Guest Review Rep Score Link,P2,Host,High-Risk Property Destroyer Guests,Low,Medium,Medium,Medium,No,No,NO
+76,Smart Check-out Delay Ledger,P3,Guest,Sudden Late Check-out Denials,Medium,Medium,Low,Low,No,Yes,NO
+77,Multi-Unit Smart Cleaning Assign,P3,Host,Disconnected Cleaning Teams,Low,Medium,Low,Medium,No,Yes,NO
+78,Local Concierge Chat Broker,P3,Guest,Low-Quality Automated Responses,High,Low,Low,Low,No,Yes,NO
+79,Community Event Matching Hub,P3,Guest,Lonely Long-Term Nomad Stays,Low,Medium,Low,Medium,No,Yes,NO
+80,Asset Depreciation Logger,P3,Host,Uncalculated Long-Term Wear,Low,Low,Medium,Medium,No,No,NO
+81,Guest Carbon Offset Widget,P3,Corporate,Corporate Green Mandate Blocks,High,Low,Low,Low,No,Yes,NO
+82,Property Soundproof Rating,P3,Guest,Noisy Street Sleep Disruptions,Low,Medium,Medium,Medium,No,No,NO
+83,Unified Smart App Entry Deck,P3,Guest,Cluttered Multi-App Smart Locks,Low,Medium,Medium,High,No,Yes,NO
+84,Host Supply Procurement Pool,P3,Host,Expensive Single-Unit Appliance,Medium,Medium,High,Medium,No,No,NO
+85,Local Micro-Weather Monitor,P3,Guest,Sudden Mountain/Coastal Fog,Low,Low,Medium,Low,No,Yes,NO
+86,Automated Guest Welcome Video,P3,Host,Repetitive Entry Guide Explanations,Low,Low,Low,Low,Yes,Yes,NO
+87,Neighborhood Safety Telemetry,P3,Guest,Unreliable Local Crime Data,Low,Medium,Medium,Medium,No,Yes,NO
+88,Automated Utility Cost Split,P3,Guest,Messy Co-Living Utility Bills,Low,Medium,Low,Low,No,Yes,NO
+89,Direct Smart Lock Battery Alert,P3,Host,Dead Lock Battery Lockouts,Low,Low,Low,Low,No,Yes,NO
+90,Automated Dynamic Check-in,P3,Guest,Rigid Fixed Arrival Lockouts,Low,Medium,Low,Low,No,Yes,NO
+91,Shared Kitchen Supply Auditor,P3,Guest,Missing Shared Co-Living Cookware,Low,Low,Low,Medium,Yes,No,NO
+92,Local Event Ticket Bundle,P3,Guest,Overpriced Secondary Concert Tickets,High,Low,Low,Medium,No,Yes,NO
+93,Gym Space Availability Tracker,P3,Guest,Overcrowded Condo Gym Rooms,Low,Low,Medium,Medium,No,No,NO
+94,Long-Term Resident Storage Pool,P3,Guest,Excess Inter-Lease Nomad Bags,Medium,Medium,Low,Low,No,Yes,NO
+95,Property Pest Control Log,P3,Host,Seasonal Insect Property Breaks,Low,Low,Medium,Low,No,No,NO
+96,Smart Appliance Direct Sync,P3,Host,Broken Fridge/AC Unit Waste,Low,Low,High,High,No,No,NO
+97,Multi-Host Joint Venture Portal,P3,Host,Fractured Shared Asset Management,Low,Medium,Medium,Medium,No,No,NO
+98,Short-Term Parking Space Sync,P3,Guest,Complex Urban Condo Parking,Medium,Low,Low,Low,No,Yes,NO
+99,Pet Verification Profile Hub,P3,Guest,Hidden Aggressive Host Pet Fees,Low,Medium,Low,Low,No,Yes,NO
+100,Smart Water Filter State Tracker,P3,Guest,Unfiltered Corrosive Local Water,Low,Low,Medium,Medium,No,No,NO

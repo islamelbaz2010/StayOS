@@ -1,0 +1,11 @@
+Feature,Depends On,Blocks,Priority,Critical Path,Can Build In Parallel,Estimated Sprint,Story Points,Risk
+AuthGate,None,"Discovery, Reservation, Onboarding",P0,Yes,None,1,5,Low
+Discovery Engine,AuthGate,ReservationWorkflow,P1,Yes,None,2,8,Medium
+ReservationWorkflow,"AuthGate, Discovery","FinancialEngine, OpsManager",P0,Yes,None,3-4,13,High
+FinancialEngine,ReservationWorkflow,None,P1,No,PropertyCommand,5,8,High
+PropertyCommand,AuthGate,MultiCalendarPMS,P2,No,FinancialEngine,3-4,8,Low
+MultiCalendarPMS,PropertyCommand,None,P2,No,OpsManager,5-6,13,Medium
+OpsManager,ReservationWorkflow,TaskStepWizard,P0,Yes,MultiCalendarPMS,4,8,Medium
+TaskStepWizard,OpsManager,None,P1,Yes,None,5,5,Low
+ResolutionConsole,ReservationWorkflow,None,P2,No,TaskStepWizard,6,8,Medium
+SafetyOverride,AuthGate,None,P0,Yes,All,6,3,High

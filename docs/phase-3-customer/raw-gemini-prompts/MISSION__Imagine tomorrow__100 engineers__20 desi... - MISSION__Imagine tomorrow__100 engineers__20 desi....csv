@@ -1,0 +1,6 @@
+Trigger,Channel,Intent
+New Booking,Push,Notify Host of action requirement.
+Check-in Window,WhatsApp,Provide entry codes & house manuals.
+Task Assignment,SMS,Direct Field Staff to Unit.
+Payment Failure,Email,Trigger urgent payment method update.
+Emergency Ticket,Push,Alert for immediate safety intervention.

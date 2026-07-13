@@ -1,0 +1,11 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search your destination"
+  }
+}

@@ -1,0 +1,64 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  deploy:
+    name: Deploy to ECS Staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          aws-region: me-south-1
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: stayos-staging-api
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f infra/docker/api/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Run Alembic migrations
+        run: |
+          aws ecs run-task \
+            --cluster stayos-staging-cluster \
+            --task-definition stayos-staging-migrations \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[subnet-xxx],securityGroups=[sg-xxx],assignPublicIp=DISABLED}" \
+            --overrides "containerOverrides=[{name=migrations,command=[alembic,upgrade,head]}]"
+
+      - name: Update ECS API service
+        run: |
+          aws ecs update-service \
+            --cluster stayos-staging-cluster \
+            --service stayos-staging-api \
+            --force-new-deployment
+
+      - name: Update ECS worker service
+        run: |
+          aws ecs update-service \
+            --cluster stayos-staging-cluster \
+            --service stayos-staging-worker \
+            --force-new-deployment
+
+      - name: Wait for services stable
+        run: |
+          aws ecs wait services-stable \
+            --cluster stayos-staging-cluster \
+            --services stayos-staging-api stayos-staging-worker
+
+      - name: Smoke test
+        run: |
+          curl -f https://api-staging.stayos.com/health || exit 1

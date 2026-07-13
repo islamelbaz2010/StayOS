@@ -6,28 +6,69 @@ on:
   pull_request:
     branches: [ main, develop ]
   schedule:
-    - cron: 'weekly'
+    - cron: '0 6 * * 1'
 
 jobs:
-  security-audit:
+  python-security:
+    name: Python — Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-    
-    - name: Run cargo audit
-      uses: actions-rs/audit-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Run cargo deny
-      run: |
-        cargo install cargo-deny
-        cargo deny check
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install security tools
+        run: |
+          pip install --upgrade pip
+          pip install bandit safety
+
+      - name: Run bandit (static security analysis)
+        run: |
+          if [ -d "tools/" ] && [ "$(ls -A tools/*.py 2>/dev/null)" ]; then
+            bandit -r tools/ -ll --format txt
+          else
+            echo "No Python files to scan in tools/"
+          fi
+        continue-on-error: true
+
+      - name: Check dependencies for known vulnerabilities
+        run: |
+          if [ -f "requirements.txt" ]; then
+            safety check -r requirements.txt
+          else
+            echo "No requirements.txt — skipping dependency scan (Phase 0)"
+          fi
+        continue-on-error: true
+
+  secrets-scan:
+    name: Secrets — Scan for Exposed Credentials
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Scan for hardcoded secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          extra_args: --only-verified
+        continue-on-error: true
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v3
+        continue-on-error: true

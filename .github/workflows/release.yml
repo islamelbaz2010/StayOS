@@ -6,28 +6,55 @@ on:
       - 'v*'
 
 jobs:
-  release:
+  release-documentation:
+    name: Package Documentation Release
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-    
-    - name: Build release
-      run: cargo build --release
-    
-    - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Validate release prerequisites
+        run: |
+          echo "Validating documentation state for release ${{ github.ref }}"
+          REQUIRED=(
+            "README.md"
+            "MASTER_CONTEXT.md"
+            "PROJECT_VISION.md"
+            "ROADMAP.md"
+            "docs/phase--1/INDEX.md"
+          )
+          for f in "${REQUIRED[@]}"; do
+            [ -f "$f" ] && echo "✅ $f" || (echo "❌ Missing: $f" && exit 1)
+          done
+
+      - name: Generate release notes
+        run: |
+          echo "# StayOS Release ${{ github.ref_name }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "**StayOS — AI-Powered Accommodation Operating System for MENA**" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## Repository State" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "| Section | Documents |" >> release_notes.md
+          echo "|---------|-----------|" >> release_notes.md
+          echo "| Phase -1: Founder Discovery | $(find docs/phase--1 -name '*.md' | wc -l) documents |" >> release_notes.md
+          echo "| Product Specifications | $(find docs/02_product -name '*.md' 2>/dev/null | wc -l) documents |" >> release_notes.md
+          echo "| Customer Experience | $(find docs/03_customer_experience -name '*.md' 2>/dev/null | wc -l) documents |" >> release_notes.md
+          echo "| Research | $(find research -name '*.md' 2>/dev/null | wc -l) templates |" >> release_notes.md
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: StayOS ${{ github.ref_name }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}

@@ -7,45 +7,113 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build:
+  python-lint:
+    name: Python — Lint & Type Check
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-    
-    - name: Cache cargo registry
-      uses: actions/cache@v3
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-    
-    - name: Cache cargo index
-      uses: actions/cache@v3
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-    
-    - name: Cache cargo build
-      uses: actions/cache@v3
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-    
-    - name: Build
-      run: cargo build --verbose
-    
-    - name: Run tests
-      run: cargo test --verbose
-    
-    - name: Run clippy
-      run: cargo clippy -- -D warnings
-    
-    - name: Check formatting
-      run: cargo fmt -- --check
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install lint dependencies
+        run: |
+          pip install --upgrade pip
+          pip install ruff mypy
+
+      - name: Lint with ruff
+        run: ruff check tools/ --ignore E501
+
+      - name: Type check with mypy
+        run: mypy tools/ --ignore-missing-imports --no-strict-optional
+        continue-on-error: true
+
+  python-test:
+    name: Python — Tests
+    runs-on: ubuntu-latest
+    needs: python-lint
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pytest pytest-cov
+
+      - name: Run tests
+        run: |
+          if [ -d "tests/" ] && [ "$(ls -A tests/)" ]; then
+            pytest tests/ --tb=short
+          else
+            echo "No tests found — skipping (Phase 0)"
+          fi
+
+  docs-validate:
+    name: Documentation — Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Verify required documents exist
+        run: |
+          REQUIRED=(
+            "README.md"
+            "MASTER_CONTEXT.md"
+            "PROJECT_VISION.md"
+            "ROADMAP.md"
+            "TASKS.md"
+            "DECISION_LOG.md"
+            "ASSUMPTIONS.md"
+            "RISKS.md"
+            "docs/phase--1/INDEX.md"
+          )
+          FAILED=0
+          for f in "${REQUIRED[@]}"; do
+            if [ -f "$f" ]; then
+              echo "✅ $f"
+            else
+              echo "❌ Missing: $f"
+              FAILED=1
+            fi
+          done
+          [ "$FAILED" -eq 0 ] || exit 1
+
+      - name: Count Phase -1 documents
+        run: |
+          COUNT=$(find docs/phase--1 -name "*.md" | wc -l)
+          echo "Phase -1 documents found: $COUNT"
+          if [ "$COUNT" -lt 21 ]; then
+            echo "❌ Expected at least 21 Phase -1 documents, found $COUNT"
+            exit 1
+          fi
+          echo "✅ Phase -1 documents complete"
+
+      - name: Verify no Rust artifacts present
+        run: |
+          if [ -f "Cargo.toml" ] || [ -f "Cargo.lock" ]; then
+            echo "❌ Rust artifacts found in a Python/documentation repository"
+            exit 1
+          fi
+          echo "✅ No Rust artifacts"
+
+      - name: Check for computer-OS terminology in active docs
+        run: |
+          PATTERNS="microkernel|vulkan|cargo build|Rust.*kernel|Install Rust"
+          EXCLUDE="archive/|REPOSITORY_AUDIT|MIGRATION_PLAN|REPOSITORY_REFACTOR|REPOSITORY_CLASSIFICATION|SPRINT_1_REPORT"
+          HITS=$(grep -rn --include="*.md" -E "$PATTERNS" . | grep -Ev "$EXCLUDE" || true)
+          if [ -n "$HITS" ]; then
+            echo "⚠️  Computer-OS terminology found in active documents:"
+            echo "$HITS"
+          else
+            echo "✅ No computer-OS terminology in active documents"
+          fi

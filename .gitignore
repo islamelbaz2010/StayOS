@@ -145,7 +145,6 @@ boot/
 
 # User space
 userspace/
-apps/
 
 # Drivers
 drivers/*.ko

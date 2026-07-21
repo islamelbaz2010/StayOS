@@ -1,0 +1,363 @@
+{
+  "package_spec": "1.0",
+  "schema_version": "1.0",
+  "name": "StayOS",
+  "root_path": "/Users/ahmed/Documents/Projects/StayOS",
+  "repo_type": "product_service",
+  "repo_type_evidence": "Source files and/or dependency manifests present",
+  "size_profile": "medium",
+  "scanned_at": "2026-07-17T07:02:41.016171+00:00",
+  "scan_duration_seconds": 0.573,
+  "input_checksum": "2d4a12ef052db897622f95dff8f34c12",
+  "token_measurement": "characters / 4 (rounded up)",
+  "statistics": {
+    "file_count": 214,
+    "total_size_bytes": 1759887,
+    "total_size_kb": 1718.64,
+    "total_dependencies": 57,
+    "language_counts": {
+      "csv": 11,
+      "ini": 1,
+      "json": 6,
+      "mako": 1,
+      "md": 133,
+      "none": 4,
+      "py": 29,
+      "tf": 11,
+      "toml": 1,
+      "ts": 3,
+      "tsx": 4,
+      "txt": 2,
+      "yml": 8
+    }
+  },
+  "tech_stack": {
+    "primary_language": "Python",
+    "languages": [
+      "Python",
+      "TypeScript"
+    ],
+    "frameworks": [
+      "FastAPI",
+      "Next.js",
+      "React"
+    ],
+    "package_managers": [
+      "npm",
+      "pip",
+      "uv"
+    ],
+    "testing_frameworks": [
+      "pytest"
+    ],
+    "ci_cd": [
+      "GitHub Actions"
+    ],
+    "containerization": [
+      "Docker",
+      "Docker Compose"
+    ],
+    "cloud_providers": [
+      "AWS",
+      "Firebase",
+      "Terraform"
+    ],
+    "databases": [
+      "Alembic (SQLAlchemy)",
+      "Firebase",
+      "PostgreSQL",
+      "Redis",
+      "SQLAlchemy"
+    ]
+  },
+  "git": {
+    "is_git_repo": true,
+    "current_branch": "tooling/repository-intelligence",
+    "remote_url": "https://github.com/islamelbaz2010/StayOS.git",
+    "last_commit_hash": "6240cb9c",
+    "last_commit_message": "feat(sprint-0): repository bootstrap and infrastructure foundation",
+    "last_commit_date": "2026-07-13T08:25:38+00:00",
+    "total_commits": 13,
+    "contributors": [
+      "islamelbaz2010"
+    ],
+    "tags": [],
+    "is_dirty": true
+  },
+  "dependencies": [
+    {
+      "source_file": "package.json",
+      "package_manager": "npm",
+      "production": [
+        {
+          "name": "next",
+          "version": "14.0.4"
+        },
+        {
+          "name": "react",
+          "version": "^18.2.0"
+        },
+        {
+          "name": "react-dom",
+          "version": "^18.2.0"
+        },
+        {
+          "name": "clsx",
+          "version": "^2.0.0"
+        },
+        {
+          "name": "tailwind-merge",
+          "version": "^2.0.0"
+        }
+      ],
+      "development": [
+        {
+          "name": "@types/node",
+          "version": "^20.10.0"
+        },
+        {
+          "name": "@types/react",
+          "version": "^18.2.39"
+        },
+        {
+          "name": "@types/react-dom",
+          "version": "^18.2.17"
+        },
+        {
+          "name": "autoprefixer",
+          "version": "^10.4.16"
+        },
+        {
+          "name": "eslint",
+          "version": "^8.54.0"
+        },
+        {
+          "name": "eslint-config-next",
+          "version": "14.0.4"
+        },
+        {
+          "name": "postcss",
+          "version": "^8.4.31"
+        },
+        {
+          "name": "tailwindcss",
+          "version": "^3.3.5"
+        },
+        {
+          "name": "typescript",
+          "version": "^5.3.2"
+        }
+      ]
+    },
+    {
+      "source_file": "requirements.txt",
+      "package_manager": "pip",
+      "production": [
+        {
+          "name": "fastapi",
+          "version": ">=0.104.0"
+        },
+        {
+          "name": "uvicorn",
+          "version": "*"
+        },
+        {
+          "name": "sqlalchemy",
+          "version": "*"
+        },
+        {
+          "name": "asyncpg",
+          "version": ">=0.29.0"
+        },
+        {
+          "name": "alembic",
+          "version": ">=1.13.0"
+        },
+        {
+          "name": "pydantic",
+          "version": ">=2.5.0"
+        },
+        {
+          "name": "pydantic-settings",
+          "version": ">=2.1.0"
+        },
+        {
+          "name": "redis",
+          "version": ">=5.0.0"
+        },
+        {
+          "name": "celery",
+          "version": ">=5.3.4"
+        },
+        {
+          "name": "httpx",
+          "version": ">=0.25.0"
+        },
+        {
+          "name": "python-jose",
+          "version": "*"
+        },
+        {
+          "name": "passlib",
+          "version": "*"
+        },
+        {
+          "name": "python-multipart",
+          "version": ">=0.0.6"
+        },
+        {
+          "name": "boto3",
+          "version": ">=1.34.0"
+        },
+        {
+          "name": "firebase-admin",
+          "version": ">=6.3.0"
+        },
+        {
+          "name": "twilio",
+          "version": ">=8.10.0"
+        },
+        {
+          "name": "sentry-sdk",
+          "version": "*"
+        }
+      ]
+    },
+    {
+      "source_file": "pyproject.toml",
+      "package_manager": "Poetry",
+      "production": [
+        {
+          "name": "fastapi",
+          "version": ">=0.104.0"
+        },
+        {
+          "name": "uvicorn",
+          "version": ">=0.24.0"
+        },
+        {
+          "name": "sqlalchemy",
+          "version": ">=2.0.23"
+        },
+        {
+          "name": "asyncpg",
+          "version": ">=0.29.0"
+        },
+        {
+          "name": "alembic",
+          "version": ">=1.13.0"
+        },
+        {
+          "name": "pydantic",
+          "version": ">=2.5.0"
+        },
+        {
+          "name": "pydantic-settings",
+          "version": ">=2.1.0"
+        },
+        {
+          "name": "redis",
+          "version": ">=5.0.0"
+        },
+        {
+          "name": "celery",
+          "version": ">=5.3.4"
+        },
+        {
+          "name": "httpx",
+          "version": ">=0.25.0"
+        },
+        {
+          "name": "python-jose",
+          "version": ">=3.3.0"
+        },
+        {
+          "name": "passlib",
+          "version": ">=1.7.4"
+        },
+        {
+          "name": "python-multipart",
+          "version": ">=0.0.6"
+        },
+        {
+          "name": "boto3",
+          "version": ">=1.34.0"
+        },
+        {
+          "name": "firebase-admin",
+          "version": ">=6.3.0"
+        },
+        {
+          "name": "twilio",
+          "version": ">=8.10.0"
+        },
+        {
+          "name": "sentry-sdk",
+          "version": ">=1.39.0"
+        }
+      ],
+      "development": [
+        {
+          "name": "dev",
+          "version": "*"
+        },
+        {
+          "name": "pytest",
+          "version": ">=7.4.3"
+        },
+        {
+          "name": "pytest-asyncio",
+          "version": ">=0.21.1"
+        },
+        {
+          "name": "pytest-cov",
+          "version": ">=4.1.0"
+        },
+        {
+          "name": "ruff",
+          "version": ">=0.1.8"
+        },
+        {
+          "name": "mypy",
+          "version": ">=1.7.0"
+        },
+        {
+          "name": "bandit",
+          "version": ">=1.7.6"
+        },
+        {
+          "name": "safety",
+          "version": ">=2.3.5"
+        },
+        {
+          "name": "types-redis",
+          "version": ">=4.6.0.11"
+        }
+      ]
+    }
+  ],
+  "per_file_tokens": [
+    {
+      "path": "PROJECT_BRIEF.md",
+      "tokens": 789,
+      "budget": 6000
+    },
+    {
+      "path": "SOURCE_INDEX.md",
+      "tokens": 2484,
+      "budget": 2500
+    },
+    {
+      "path": "SYSTEM_MAP.md",
+      "tokens": 457,
+      "budget": 8000
+    },
+    {
+      "path": "DECISIONS.md",
+      "tokens": 3992,
+      "budget": 5000
+    }
+  ],
+  "errors": [],
+  "trust_domain": "public"
+}

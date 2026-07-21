@@ -1,0 +1,84 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.3-alpine
+    container_name: stayos_postgres
+    environment:
+      POSTGRES_USER: stayos
+      POSTGRES_PASSWORD: stayos
+      POSTGRES_DB: stayos
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - stayos_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stayos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: stayos_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - stayos_dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api/Dockerfile
+    container_name: stayos_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - stayos_dev
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/api/Dockerfile
+    container_name: stayos_worker
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - stayos_dev
+    command: ["celery", "-A", "app.celery_app", "worker", "--loglevel=info", "-Q", "high,default,low", "--concurrency=4"]
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  stayos_dev:
+    driver: bridge

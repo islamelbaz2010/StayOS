@@ -1,15 +1,38 @@
 name: CI
 
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ develop, main ]
 
 jobs:
-  python-lint:
-    name: Python — Lint & Type Check
+  backend:
+    name: Backend — Lint, Type Check, Security, Test
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.3-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: stayos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
@@ -19,101 +42,88 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install lint dependencies
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install ruff mypy
+          pip install -r requirements-dev.txt
 
       - name: Lint with ruff
-        run: ruff check tools/ --ignore E501
+        run: ruff check src/
 
       - name: Type check with mypy
-        run: mypy tools/ --ignore-missing-imports --no-strict-optional
-        continue-on-error: true
+        run: mypy src/
 
-  python-test:
-    name: Python — Tests
-    runs-on: ubuntu-latest
-    needs: python-lint
+      - name: Security check with bandit
+        run: bandit -r src/ -ll
 
-    steps:
-      - uses: actions/checkout@v3
+      - name: Dependency vulnerability scan
+        run: safety check
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+      - name: Run Alembic migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/stayos_test
+        run: alembic upgrade head
+
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/stayos_test
+          REDIS_URL: redis://localhost:6379/1
+        run: pytest src/ --cov=app --cov-report=term-missing --cov-fail-under=80
+
+      - name: Upload coverage to PR
+        uses: actions/github-script@v6
+        if: always()
         with:
-          python-version: '3.11'
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('coverage.xml')) {
+              const coverage = fs.readFileSync('coverage.xml', 'utf8');
+              // Parse and comment coverage summary on PR
+            }
 
-      - name: Install test dependencies
-        run: |
-          pip install --upgrade pip
-          pip install pytest pytest-cov
-
-      - name: Run tests
-        run: |
-          if [ -d "tests/" ] && [ "$(ls -A tests/)" ]; then
-            pytest tests/ --tb=short
-          else
-            echo "No tests found — skipping (Phase 0)"
-          fi
-
-  docs-validate:
-    name: Documentation — Validate
+  frontend:
+    name: Frontend — Lint, Type Check, Build
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Verify required documents exist
-        run: |
-          REQUIRED=(
-            "README.md"
-            "MASTER_CONTEXT.md"
-            "PROJECT_VISION.md"
-            "ROADMAP.md"
-            "TASKS.md"
-            "DECISION_LOG.md"
-            "ASSUMPTIONS.md"
-            "RISKS.md"
-            "docs/phase--1/INDEX.md"
-          )
-          FAILED=0
-          for f in "${REQUIRED[@]}"; do
-            if [ -f "$f" ]; then
-              echo "✅ $f"
-            else
-              echo "❌ Missing: $f"
-              FAILED=1
-            fi
-          done
-          [ "$FAILED" -eq 0 ] || exit 1
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
 
-      - name: Count Phase -1 documents
-        run: |
-          COUNT=$(find docs/phase--1 -name "*.md" | wc -l)
-          echo "Phase -1 documents found: $COUNT"
-          if [ "$COUNT" -lt 21 ]; then
-            echo "❌ Expected at least 21 Phase -1 documents, found $COUNT"
-            exit 1
-          fi
-          echo "✅ Phase -1 documents complete"
+      - name: Install pnpm
+        run: npm install -g pnpm
 
-      - name: Verify no Rust artifacts present
-        run: |
-          if [ -f "Cargo.toml" ] || [ -f "Cargo.lock" ]; then
-            echo "❌ Rust artifacts found in a Python/documentation repository"
-            exit 1
-          fi
-          echo "✅ No Rust artifacts"
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v3
+        with:
+          path: apps/web/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
-      - name: Check for computer-OS terminology in active docs
-        run: |
-          PATTERNS="microkernel|vulkan|cargo build|Rust.*kernel|Install Rust"
-          EXCLUDE="archive/|REPOSITORY_AUDIT|MIGRATION_PLAN|REPOSITORY_REFACTOR|REPOSITORY_CLASSIFICATION|SPRINT_1_REPORT"
-          HITS=$(grep -rn --include="*.md" -E "$PATTERNS" . | grep -Ev "$EXCLUDE" || true)
-          if [ -n "$HITS" ]; then
-            echo "⚠️  Computer-OS terminology found in active documents:"
-            echo "$HITS"
-          else
-            echo "✅ No computer-OS terminology in active documents"
-          fi
+      - name: Install dependencies
+        working-directory: apps/web
+        run: pnpm install
+
+      - name: Lint with ESLint
+        working-directory: apps/web
+        run: pnpm lint
+
+      - name: Type check with TypeScript
+        working-directory: apps/web
+        run: pnpm type-check
+
+      - name: Build Next.js
+        working-directory: apps/web
+        run: pnpm build

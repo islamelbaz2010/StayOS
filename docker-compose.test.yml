@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.3-alpine
+    container_name: stayos_postgres_test
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: stayos_test
+    ports:
+      - "5433:5432"
+    networks:
+      - stayos_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: stayos_redis_test
+    ports:
+      - "6380:6379"
+    networks:
+      - stayos_test
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+networks:
+  stayos_test:
+    driver: bridge

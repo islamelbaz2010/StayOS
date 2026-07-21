@@ -1,31 +1,31 @@
 from fastapi import HTTPException, status
 
 
-class StayOSException(Exception):
+class StayOSError(Exception):
     pass
 
 
-class NotFoundError(StayOSException):
+class NotFoundError(StayOSError):
     pass
 
 
-class ValidationError(StayOSException):
+class ValidationError(StayOSError):
     pass
 
 
-class AuthenticationError(StayOSException):
+class AuthenticationError(StayOSError):
     pass
 
 
-class AuthorizationError(StayOSException):
+class AuthorizationError(StayOSError):
     pass
 
 
-class ConflictError(StayOSException):
+class ConflictError(StayOSError):
     pass
 
 
-def to_http_exception(exc: StayOSException) -> HTTPException:
+def to_http_exception(exc: StayOSError) -> HTTPException:
     if isinstance(exc, NotFoundError):
         return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     if isinstance(exc, ValidationError):
@@ -36,5 +36,5 @@ def to_http_exception(exc: StayOSException) -> HTTPException:
         return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
     if isinstance(exc, ConflictError):
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    
+
     return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))

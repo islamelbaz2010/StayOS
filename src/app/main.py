@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+
+import redis.asyncio as aioredis
+from fastapi import Depends, FastAPI
 from redis import Redis
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import settings
 from app.database import get_session
-import redis.asyncio as aioredis
 
 redis_client: Redis | None = None
 
@@ -30,20 +32,20 @@ app = FastAPI(
 async def health_check(session: AsyncSession = Depends(get_session)):
     db_status = "ok"
     redis_status = "ok"
-    
+
     try:
         await session.execute(text("SELECT 1"))
     except Exception:
         db_status = "error"
-    
+
     try:
         if redis_client:
             await redis_client.ping()
     except Exception:
         redis_status = "error"
-    
+
     overall_status = "ok" if db_status == "ok" and redis_status == "ok" else "error"
-    
+
     return {
         "status": overall_status,
         "database": db_status,

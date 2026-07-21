@@ -1,5 +1,6 @@
 from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.config import settings
 
 
@@ -15,11 +16,11 @@ def setup_cors(app):
 
 async def add_request_id(request: Request, call_next):
     import uuid
-    
+
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
-    
+
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
-    
+
     return response

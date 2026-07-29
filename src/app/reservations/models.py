@@ -46,6 +46,7 @@ class Reservation(UUIDMixin, TimestampMixin, Base):
     host_amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
     platform_fee_egp: Mapped[int] = mapped_column(Integer, nullable=False)
     guest_fee_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
     payment_method: Mapped[str] = mapped_column(String(50), nullable=False)
     checked_in_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -79,6 +80,7 @@ class PaymentIntent(UUIDMixin, TimestampMixin, Base):
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
     provider_ref: Mapped[str] = mapped_column(String(255), nullable=False)
     amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=PaymentStatus.PENDING
     )
@@ -125,6 +127,7 @@ class PromoApplication(UUIDMixin, TimestampMixin, Base):
     )
     discount_pct: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     discount_amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
 
     promo_code: Mapped["PromoCode"] = relationship("PromoCode")
     reservation: Mapped["Reservation"] = relationship(

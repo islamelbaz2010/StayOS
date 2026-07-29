@@ -32,6 +32,9 @@ class User(UUIDMixin, TimestampMixin, Base):
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken", back_populates="user"
     )
+    device_tokens: Mapped[list["DeviceToken"]] = relationship(
+        "DeviceToken", back_populates="user"
+    )
 
 
 class Account(UUIDMixin, TimestampMixin, Base):
@@ -70,3 +73,23 @@ class RefreshToken(UUIDMixin, TimestampMixin, Base):
     )
 
     user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
+
+
+class DeviceToken(UUIDMixin, TimestampMixin, Base):
+    __tablename__ = "device_tokens"
+    __table_args__ = {"schema": "auth"}
+
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("auth.users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    token: Mapped[str] = mapped_column(String(512), unique=True, nullable=False, index=True)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False)
+    app_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="device_tokens")

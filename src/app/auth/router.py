@@ -110,6 +110,25 @@ async def update_account(
     return auth_schemas.AccountResponse.model_validate(account)
 
 
+@router.post("/device-token", response_model=auth_schemas.DeviceTokenResponse)
+async def register_device_token(
+    request: auth_schemas.DeviceTokenRegisterRequest,
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.DeviceTokenResponse:
+    from app.auth import repository as auth_repository
+
+    device_token = await auth_repository.upsert_device_token(
+        session,
+        user_id=user.id,
+        token=request.token,
+        platform=request.platform,
+        app_version=request.app_version,
+    )
+    await session.commit()
+    return auth_schemas.DeviceTokenResponse.model_validate(device_token)
+
+
 @router.get("/.well-known/jwks.json")
 async def public_key() -> dict[str, str]:
     return {"public_key": auth_dependencies.get_public_key()}

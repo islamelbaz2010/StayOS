@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.models import Account, RefreshToken, User
+from app.auth.models import Account, DeviceToken, RefreshToken, User
 
 
 async def get_user_by_id(session: AsyncSession, user_id: str) -> User | None:
@@ -105,3 +105,49 @@ async def revoke_refresh_token(
     await session.flush()
     await session.refresh(token)
     return token
+
+
+async def get_device_token_by_token(
+    session: AsyncSession, token: str
+) -> DeviceToken | None:
+    result = await session.execute(
+        select(DeviceToken).where(DeviceToken.token == token)
+    )
+    return result.scalar_one_or_none()
+
+
+async def upsert_device_token(
+    session: AsyncSession,
+    user_id: str,
+    token: str,
+    platform: str,
+    app_version: str | None,
+) -> DeviceToken:
+    now = datetime.utcnow()
+    existing = await get_device_token_by_token(session, token)
+    if existing:
+        existing.user_id = user_id
+        existing.platform = platform
+        existing.app_version = app_version
+        existing.is_active = True
+        existing.last_used_at = now
+        session.add(existing)
+        await session.flush()
+        await session.refresh(existing)
+        return existing
+
+    import uuid
+
+    device_token = DeviceToken(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        token=token,
+        platform=platform,
+        app_version=app_version,
+        is_active=True,
+        last_used_at=now,
+    )
+    session.add(device_token)
+    await session.flush()
+    await session.refresh(device_token)
+    return device_token

@@ -80,3 +80,20 @@ class OtpVerifyRequest(BaseModel):
 
 class FirebaseAuthRequest(BaseModel):
     id_token: str
+
+
+class DeviceTokenRegisterRequest(BaseModel):
+    token: str = Field(..., min_length=10, max_length=512)
+    platform: str = Field(..., pattern=r"^(ios|android|web)$")
+    app_version: str | None = Field(default=None, max_length=50)
+
+
+class DeviceTokenResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: str
+    platform: str
+    app_version: str | None
+    is_active: bool
+    created_at: datetime

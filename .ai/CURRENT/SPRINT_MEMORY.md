@@ -1,5 +1,221 @@
 # SPRINT_MEMORY.md
 
+---
+
+# SPRINT 0 — Engineering Foundation (Active)
+**Authorized**: 2026-07-30 | **Stage-Gate**: STAGE-GATE-001 | **Decision**: GO WITH CONDITIONS
+**Branch**: tooling/repository-intelligence
+
+## Tasks Completed (2026-07-30)
+
+| # | Task ID | Description | Commit |
+|---|---------|-------------|--------|
+| 1 | A-01 | Sign STAYOS_IMPLEMENTATION_BASELINE.md | ✅ |
+| 2 | A-02/A-05/A-07/A-08 | Write DEC-011, DEC-012, DEC-014, DEC-015 to DECISION_LOG.md | ✅ |
+| 3 | A-04/E-01 partial | Fix Terraform region (me-central-1), HCL syntax, DynamoDB lock table, RDS SSL | ✅ |
+| 4 | A-11 | Update stale documents (TECH_STACK.md, MASTER_PROJECT_MEMORY.md, SPRINT_MEMORY.md) | ✅ |
+| 5 | BCK-05 | Rewrite rate limiter with atomic Lua script; eliminate 13,865 test warnings | ✅ |
+| 6 | BCK-06 | Replace bare `except Exception: pass` with debug logging (audit.py, main.py) | ✅ |
+| 7 | FE-03 | Upgrade Next.js 14.0.4 → 14.2.x (1 critical SSRF CVE + 17 high vulns) | ✅ |
+| 8 | SEC-04 | Lock CORS to explicit method/header allowlists (no more wildcards) | ✅ |
+| 9 | B-01 | Migration 011: pms.unit_photos table + UnitPhoto model | ✅ |
+| 10 | B-03 | Migration 012: auth.device_tokens table + DeviceToken model | ✅ |
+| 11 | B-05 | Migration 013: analytics schema + listing_views, user_searches, booking_funnel_events | ✅ |
+| 12 | B-07 | Surface paymob_iframe_url in ReservationResponse | ✅ |
+| 13 | B-09 | Add spawn_recurring_tasks to Celery beat at 06:00 UTC daily | ✅ |
+| 14 | B-10 | Migration 014: UNIQUE(unit_id, reservation_id) on property_readiness | ✅ |
+| 15 | B-12 | ADR-015 compliance: add currency column to 7 financial/reservation tables (migration 015) | ✅ |
+| 16 | B-04 | POST /api/v1/auth/device-token endpoint (upsert, ios/android/web platforms) | ✅ |
+| 17 | B-08 | Wire AWS Secrets Manager in secrets.py using boto3 | ✅ |
+| 18 | C-01 | Frontend deps: next-intl, TanStack Query, zustand, axios, vitest, Playwright | ✅ |
+| 19 | C-02 | Tailwind config with StayOS design tokens (Cairo/Inter/JetBrains Mono, full palette) | ✅ |
+| 20 | C-03 | i18n + RTL: middleware.ts, i18n.ts, messages/ar.json + en.json, NextIntlClientProvider | ✅ |
+| 21 | C-07 | Layout system: GuestLayout, HostLayout, AuthLayout, Header, Footer | ✅ |
+| 22 | C-06 | TanStack Query Providers component wired into [locale]/layout.tsx | ✅ |
+| 23 | C-08 | ErrorBoundary, Skeleton, error.tsx, not-found.tsx | ✅ |
+| 24 | F-01 | Playwright E2E config: smoke/web/mobile projects + stub specs | ✅ |
+| 25 | F-05 | Staging seeder: admin, host, guest, 3 listings, 1 reservation | ✅ |
+
+## Tasks Remaining
+
+### BLOCKED
+- A-03 + Track D (Mobile) — ADR-016 founder decision required
+- C-04 (Typed API client) — requires staging API running (E-05)
+- C-05 (Auth context) — requires C-04
+- B-02 (Photo upload API) — requires B-01 + S3 buckets (E-03)
+- F-02/F-03/F-04 (smoke test execution) — requires staging running (E-05)
+
+### Infrastructure (not yet executed — Terraform only fixes done)
+- E-01 remaining items
+- E-02 (ECR repositories)
+- E-03 (S3 buckets)
+- E-04 (ElastiCache)
+- E-05 (Terraform apply + ECS deploy to staging)
+
+## Exit Criteria Status
+- EXIT-01: ✅ (baseline signed)
+- EXIT-02: ✅ (DEC-011 through DEC-015 written)
+- EXIT-04: ✅ (region = me-central-1 everywhere)
+- EXIT-03, EXIT-05 through EXIT-23: ⬜ (require staging environment)
+
+---
+
+# Closed Beta Staging Readiness Sprint
+
+## Objective
+Prepare StayOS for deployment into a staging environment that mirrors production as closely as possible, enabling the founder to invite the first real hosts and guests. No new customer-facing features, no architecture redesign, and no module refactoring beyond what is required for production deployment.
+
+## Infrastructure Audit Findings (Phase 1)
+
+- `docker-compose.yml` lacked a Celery `beat` service; local development did not exercise scheduled tasks.
+- `.env.example` was missing `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`, and `STRIPE_WEBHOOK_SECRET`.
+- Notification Celery task names (`notifications.process_*`) did not match the beat schedule references (`app.notifications.tasks.process_*`).
+- `.env.staging` was not ignored, risking secret leakage if created.
+- Terraform `ecs.tf` exposes `DATABASE_URL` and `REDIS_URL` but does not attach all remaining required secrets (Firebase, Twilio, Paymob, Stripe, S3, Sentry, JWT) to the task definitions.
+- Terraform RDS uses `postgres` engine without an explicit PostGIS parameter group; migration `CREATE EXTENSION postgis` must be verified on RDS before production.
+- `app.security.secrets.SecretsManager` AWS backend is a placeholder and cannot retrieve secrets from AWS Secrets Manager at runtime.
+
+## Deployment Artifacts Generated (Phase 2)
+
+- `docker-compose.staging.yml` - staging services with health checks, resource limits, dependency ordering, and a one-off `migrate` service.
+- `.env.staging.example` - complete template for all required environment variables.
+- `scripts/staging_start.sh` - build + migrate + start.
+- `scripts/staging_stop.sh` - graceful stop.
+- `scripts/staging_migrate.sh` - Alembic migrations.
+- `scripts/staging_rollback.sh` - Alembic rollback.
+- `scripts/staging_seed.sh` - create first admin user.
+- `scripts/staging_health.sh` - verify containers and health endpoints.
+
+## Operational Readiness (Phase 3)
+
+- Database migrations, Redis connectivity, Celery worker/beat, notification providers, Paymob, Stripe, AWS, JWT keys, backups, health endpoints, metrics, structured logging, Sentry, rate limiting, and audit logging are documented in the runbook and checklists.
+- Verification commands and expected outputs are captured in `docs/deployment/RUNBOOK.md`.
+
+## Deliverables (Phases 4-7)
+
+- `docs/deployment/STAGING_DEPLOYMENT_GUIDE.md`
+- `docs/deployment/CLOSED_BETA_CHECKLIST.md`
+- `docs/deployment/GO_LIVE_CHECKLIST.md`
+- `docs/deployment/ROLLBACK_PLAN.md`
+- `docs/deployment/RUNBOOK.md`
+- `docs/deployment/RISK_REGISTER.md`
+- `docs/deployment/BETA_READINESS_REPORT.md`
+- `docs/deployment/DEPLOYMENT_CHECKLIST.md`
+
+## Code Changes Made
+
+- `src/app/notifications/tasks.py` - removed explicit Celery task names to align with `app.celery_app` beat schedule.
+- `.env.example` - added `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET`.
+- `.gitignore` - added `.env.staging` and `celerybeat-schedule*`.
+
+## Validation
+
+- `ruff check src tests` — passed (no issues)
+- `mypy src` — passed (Success: no issues found in 81 source files)
+- `pytest tests` — 283 passed, 80.42% coverage (>= 80% gate)
+- `python3 -m build` — successfully built `stayos-0.1.0.tar.gz` and `stayos-0.1.0-py3-none-any.whl`
+
+## Notes
+
+- Staging is self-contained Docker Compose; production remains Terraform/AWS ECS/RDS/ElastiCache/ALB.
+- All third-party provider credentials must be real sandbox/staging values before `./scripts/staging_start.sh` succeeds.
+- The next sprint should focus on production Terraform fixes (PostGIS parameter group, ECS task secrets) and live provider smoke tests.
+
+
+---
+
+# PHASE 2: Institutional Knowledge System — Sprint Delta
+
+**Sprint Date**: 2026-07-27
+**Session**: 004 / 005 (context continuation)
+
+## Sprint Goal
+
+Design and build the complete institutional knowledge base for StayOS — not documentation, but operational knowledge that teaches, explains, and enables autonomous operation by any qualified team member or AI system.
+
+## Deliverables Produced
+
+### 29 Production-Grade Knowledge Articles
+
+**Marketplace Domain (3)**:
+- `knowledge/marketplace/marketplace_lifecycle.md` — Five stages, liquidity threshold, stage transition criteria
+- `knowledge/marketplace/cold_start_playbook.md` — Five cold-start moves, institutional supply scripts, 10-transaction protocol
+- `knowledge/marketplace/marketplace_health_kpis.md` — North Star metric, 7 Tier-2 KPIs, warning thresholds
+
+**Hospitality Domain (3)**:
+- `knowledge/hospitality/property_quality_standards.md` — Three-gate inspection, tier definitions, cultural flags
+- `knowledge/hospitality/turnover_operations.md` — Turnover pipeline, BR-OPS-01/02/03 enforcement
+- `knowledge/hospitality/guest_host_expectations.md` — Guaranteed expectations, Egyptian/GCC cultural context
+
+**Operations Domain (3)**:
+- `knowledge/operations/daily_operations_runbook.md` — Operations clock, morning review, turnover monitoring
+- `knowledge/operations/incident_management.md` — P0–P3 severity, 5 incident type playbooks
+- `knowledge/operations/escalation_matrix.md` — Authority table, on-call roster, escalation format
+
+**Customer Success Domain (3)**:
+- `knowledge/customer_success/host_lifecycle.md` — Six stages, 21-day intervention, referral program
+- `knowledge/customer_success/guest_lifecycle.md` — Seven stages, GCC vs. Egyptian differences
+- `knowledge/customer_success/retention_playbook.md` — Churn signals, intervention levels, loyalty programs
+
+**Trust & Safety Domain (3)**:
+- `knowledge/trust/fraud_detection.md` — Six fraud categories, detection, prevention, response
+- `knowledge/trust/dispute_resolution.md` — Five phases, SLA table, 15 decision scenarios
+- `knowledge/trust/identity_verification_guide.md` — KYC flow, AWS Textract + Rekognition, edge cases
+
+**Finance Domain (3)**:
+- `knowledge/finance/escrow_model.md` — Complete escrow lifecycle, double-entry ledger, BR-FIN-01/02/03
+- `knowledge/finance/payout_operations.md` — Payout flow, BR-FIN-03 verification, payout holds
+- `knowledge/finance/refund_and_chargeback.md` — Refund types, chargeback response, evidence package
+
+**Support Domain (3)**:
+- `knowledge/support/support_workflows.md` — 7-step workflow, SLA table, communication standard
+- `knowledge/support/escalation_playbook.md` — 5 escalation levels, authority per level, triggers
+- `knowledge/support/communication_templates.md` — Full bilingual (Arabic/English) templates, 7 categories
+
+**Product Domain (3)**:
+- `knowledge/product/feature_reasoning.md` — FC-01–FC-07 rationale and deliberate deferrals
+- `knowledge/product/product_decision_framework.md` — Four-Gate Test, Decision Log protocol
+- `knowledge/product/failure_modes_guide.md` — 9 failure modes with early warning signals
+
+**Founder Domain (3)**:
+- `knowledge/founder/vision_and_principles.md` — Six founding principles, MENA vision
+- `knowledge/founder/decision_framework.md` — Type 1 vs. Type 2 decisions, governance structure
+- `knowledge/founder/scaling_playbook.md` — Stage gates, city playbook, GCC corridor entry
+
+**Training Domain (5)**:
+- `knowledge/training/host_success_training.md` — 5-day program
+- `knowledge/training/guest_success_training.md` — 4-day program
+- `knowledge/training/support_training.md` — 4-day program
+- `knowledge/training/operations_training.md` — 5-day program
+- `knowledge/training/finance_training.md` — 5-day program
+
+### 4 Index Files
+
+- `knowledge/KNOWLEDGE_INDEX.md` — Complete document index with audience and key topic columns
+- `knowledge/SOURCE_MAP.md` — Business rules → docs, source code → docs, Decision Log → docs
+- `knowledge/TAG_INDEX.md` — Full tag taxonomy (domain, process, geographic, technical, business rule, audience)
+- `knowledge/LEARNING_PATHS.md` — 8 role-based reading sequences including AI/RAG quick-context load
+
+## Quality Standards Applied
+
+- Every article: Purpose, Background, Core Concept, Detailed Explanation, Real-World Scenarios (MENA-specific), Decision Trees, Best Practices, Common Mistakes, FAQs, Checklist, References, Related Documents
+- All amounts in EGP, all scenarios in Cairo/Egypt/GCC context
+- All communication examples bilingual (Arabic primary, English secondary)
+- Business rules (BR-ID-01/02, BR-INV-01/02, BR-OPS-01/02/03, BR-FIN-01/02/03, BR-SUP-01) consistently cross-referenced
+- FC-01–FC-07 rationale documented in product domain
+- No placeholders. No TODOs. No generic content.
+
+## Constraints Observed
+
+- Source code NOT modified
+- Architecture NOT changed
+- Infrastructure NOT touched
+- No new migrations created
+- No APIs implemented
+- No refactoring performed
+
+---
+
 > **Scope & Limitation**
 >
 > This Sprint Memory is based **only on the messages currently available in this conversation context**.
@@ -1139,3 +1355,183 @@ Harden the StayOS platform for Closed Beta release by improving stability, secur
 - Deploy to staging and run Closed Beta readiness checks.
 - Monitor rate limiting, audit logs, notification delivery, and metrics in production.
 - Prepare operational runbooks for backup/restore and incident response.
+
+---
+
+## Phase 1 — Launch Operations Program — 2026-07-26
+
+### Scope
+Design the complete business operating foundation required before onboarding the first real host or guest. No source code, architecture, API, database, or infrastructure changes. The output is a full set of operational documents in `business/operations/` covering business model, revenue/escrow/trust models, operating model, organization structure, roles, approval and escalation matrices, host and guest operations, marketplace operations, dashboards, KPIs, risk register, and launch readiness.
+
+### Operational Decisions
+- **Commission and escrow:** Host commission and guest service fee are recognized as platform revenue; guest total includes nightly subtotal plus guest service fee and taxes; net host payout is released after check-in or a T+24h hold, with escrow frozen while disputes are open.
+- **Verification trust gate:** No host receives a payout without verified identity and a reviewed listing; no guest can transact without KYC verification.
+- **Cancellation and refunds:** Full refund >7 days, partial 3–7 days, no refund <3 days, with protection for cancellations within 24h and >7 days; refund value reduces both guest payout and platform fee proportionally.
+- **Operational cadence:** Daily monitoring of bookings, cancellations, payouts, support backlog, and incidents; weekly host pipeline, listing quality, and KPI review; monthly financial close and risk/OKR review.
+- **Decision authority:** Operational decisions carry approval thresholds (e.g., refunds outside policy > USD 500 require COO, host suspension requires Operations Director, market launch requires Founder). Escalation follows P1–P4 severity with strict response times and documented post-incident review.
+- **KPI and dashboard ownership:** Founder Dashboard is weekly; Operations Dashboards are daily/weekly/monthly plus incident, support, and finance views; every KPI has a formula, target, frequency, and owner.
+- **Launch readiness:** Readiness is scored across 10 categories before go/no-go; Founder accepts residual risk in writing if any item is waived.
+
+### Artifacts Produced
+- `business/operations/Business_Model.md`
+- `business/operations/Revenue_Model.md`
+- `business/operations/Marketplace_Model.md`
+- `business/operations/Trust_Model.md`
+- `business/operations/Escrow_Model.md`
+- `business/operations/Operations_Model.md`
+- `business/operations/Organization_Structure.md`
+- `business/operations/Roles_and_Responsibilities.md`
+- `business/operations/Approval_Matrix.md`
+- `business/operations/Escalation_Matrix.md`
+- `business/operations/Host_Operations_Playbook.md`
+- `business/operations/Guest_Operations_Playbook.md`
+- `business/operations/Marketplace_Operations_Playbook.md`
+- `business/operations/Founder_Dashboard.md`
+- `business/operations/Operations_Dashboard.md`
+- `business/operations/KPIs.md`
+- `business/operations/Risk_Register.md`
+- `business/operations/Launch_Readiness.md`
+
+### Validation
+- All requested output files created under `business/operations/`.
+- Every document includes Purpose, Scope, Owner, Inputs, Outputs, Workflow, Exceptions, KPIs, Dependencies, Best Practices, and Review Frequency.
+- `SPRINT_MEMORY.md` updated with operational decisions.
+
+### What Remains / Recommended Phase 2
+- Fill Launch_Readiness.md readiness scores during a live go/no-go review.
+- Populate dashboards with real data once staging is live and first bookings occur.
+- Train the operations team on the playbooks and run tabletop incident exercises.
+- Integrate operational documents with the web-based runbook and on-call tooling.
+- Phase 2 likely focus: pilot closed-beta operations with a curated host/guest cohort and iterate on SOPs, then scale to a second MENA city.
+
+---
+
+# SESSION 004 — Product Design Sprints + Implementation Baseline — 2026-07-27
+
+**Session Date**: 2026-07-27
+**Session**: 004 (context continuation from prior run-out)
+
+## Sprint Goal
+
+Transform all StayOS documentation into production visual/mobile design specs, then produce the contractual implementation baseline document that authorizes engineering to begin immediately.
+
+---
+
+## Design Sprints Completed (Prior Context)
+
+### Sprint 1 — Product Experience Design
+- Output: `/docs/PRODUCT_EXPERIENCE_DESIGN.md` (2,082 lines, 11,184 words)
+- Complete sitemap, URL structure, navigation for 9 roles, 12 user flows, 81 screens, wireframes, design system tokens, dashboard layouts, mobile responsive patterns, micro interactions, WCAG 2.1 AA checklist
+- Brand primary: `#2C5FFF`, Inter + Cairo fonts, 4px grid
+
+### Sprint 2 — Visual Design System
+- Output: `/docs/VISUAL_DESIGN_SYSTEM_P1–P4.md` (3,428 lines, 17,191 words across 4 files)
+- P1: Visual identity, color tokens, typography (19 tokens), spacing, shadows, dark mode
+- P2: High-fidelity screen specs (exact px measurements)
+- P3: Full component library (Button 6×6×5, all form inputs, cards, nav, modals, data tables, skeleton states, motion system)
+- P4: WCAG 2.1 AA, ARIA, keyboard navigation, RTL layout rules, component build order
+
+### Sprint 3 — Native Mobile Design System
+- Output: `/docs/MOBILE_NATIVE_DESIGN_P1–P5.md` (5,268 lines across 5 files)
+- P1: 12 mobile design principles, layout system, 8-breakpoint grid (320–768px), Dynamic Type
+- P2: Full mobile component library, 10 user flows
+- P3: Gesture catalog, animations, offline architecture, push notifications, app lifecycle
+- P4: iOS spec (UITabBarController, Dynamic Island, Apple Pay), Android spec (NavGraph, Material 3, Predictive Back), Flutter + React Native mapping tables
+- P5: VoiceOver/TalkBack accessibility, RTL/Arabic, App icon spec, App Store metadata, Engineering Handoff (6 phases, 58 items, ~106 dev days, ~53 QA days)
+
+### Sprint 4 — Architecture Readiness Review
+- Reviewed 30 areas across backend, infrastructure, web, mobile, security
+- Result: GO recommendation with 9 partial areas and known gaps
+- Critical finding: TECH_STACK.md Paymob/Stripe conflict was stale — code correctly implements Paymob primary + Stripe secondary
+
+### Sprint 5 — Engineering Execution Master Plan
+- Output: `/STAYOS_ENGINEERING_EXECUTION_MASTER_PLAN.md` (1,865 lines, 14,003 words)
+- 16 sections: Gap Analysis (38 gaps), 23 Engineering Epics, 9 Sprints, 7 Parallel Tracks, Release Roadmap (Alpha W8, Beta W14, RC W18, Prod W20), Resource Plan (8.5 FTE), Risk Register, Decision Register
+
+---
+
+## Session 004 — Implementation Baseline
+
+### Deliverable Produced
+
+**`STAYOS_IMPLEMENTATION_BASELINE.md`** — 1,354 lines, 15,842 words
+
+The contractual execution baseline for all engineering teams. Contains:
+- Section 1: RTM — 70 requirements traced from design → epic → backend → API → DB → web → mobile → test → sprint → release
+- Section 2: Epic Coverage Matrix — all 23 epics with objective, screens, backend, DB, dependencies, sprint, DoD, status
+- Section 3: Screen Coverage Matrix — all 81 screens across Web + Mobile (9 roles × platforms)
+- Section 4: API Coverage Matrix — 61 existing + 20 missing endpoints documented with auth, validation, error codes, tests, sprint
+- Section 5: Database Coverage Matrix — 26 existing + 5 planned tables documented
+- Section 6: Backend Service Matrix — 8 services (AuthGate, KYC, PMS Core, Reservation, FinancialEngine, OpsManager, Notification, Security)
+- Section 7: Web Coverage Matrix — all pages with components, hooks, state, infrastructure gaps
+- Section 8: Mobile Coverage Matrix — all 40 mobile screens, 0% built, framework OPEN
+- Section 9: Test Coverage Matrix — 30 existing test files documented + missing tests identified
+- Section 10: Security Coverage Matrix — 28-item security review
+- Section 11: DevOps Coverage Matrix — 23-item infra review (all Terraform defined, none provisioned)
+- Section 12: Production Readiness Matrix — 8/32 items complete (25%)
+- Section 13: Release Checklists — Alpha / Beta / RC / Production
+- Section 14: Definition of Done — Story / Epic / Sprint / Release levels
+- Section 15: Completeness Validation — 20 missing APIs, 74 web screens not built, 40 mobile screens not built
+- Section 16: Consistency Validation — 83% overall consistency score
+- Section 17: Production Validation + Executive GO decision
+
+### Key Metrics From Baseline
+
+| Metric | Score |
+|--------|-------|
+| Overall Completeness | 42% |
+| Backend Completeness | 78% |
+| Web Frontend Completeness | 5% |
+| Mobile Completeness | 0% |
+| Infrastructure Completeness | 40% (defined, not provisioned) |
+| Test Coverage (Backend) | ~85% |
+| API Traceability | 76% (61/85 endpoints) |
+| Production Readiness | 25% (8/32 items) |
+| Security Completeness | 72% |
+
+### Executive Decision: GO
+
+Development authorized immediately upon resolution of 3 Day-1 blockers:
+1. Mobile framework decision (Flutter recommended)
+2. Terraform apply (infrastructure provisioning)
+3. GitHub Secrets configured
+
+### 13 Remaining Blockers
+
+| # | Blocker | Sprint |
+|---|---------|--------|
+| B-01 | Mobile framework not chosen — BLOCKS ALL mobile | Day 1 |
+| B-02 | Terraform not provisioned | Day 1 |
+| B-03 | GitHub Secrets not configured | Day 1 |
+| B-04 | Missing migration 011 (unit_photos) | S3 |
+| B-05 | Missing migration 012 (device_tokens) | S4 |
+| B-06 | Missing migration 013 (messaging) | S6 |
+| B-07 | No API client in web frontend | S1 |
+| B-08 | No auth context in web | S1 |
+| B-09 | No i18n/RTL configured in web | S1 |
+| B-10 | Messaging service not implemented | S6 |
+| B-11 | Email provider not wired (stub) | S5 |
+| B-12 | FCM push provider not implemented | S4 |
+| B-13 | Egyptian payment methods not configured (Fawry, Meeza, VodaCash, InstaPay) | S5 |
+
+### 6 Open Decisions (UNRESOLVED)
+
+| Decision | Deadline | Blocker |
+|----------|----------|---------|
+| Mobile Framework (Flutter vs RN) | Day 1 | ALL mobile development |
+| Email Provider | Sprint 4 | Email notifications |
+| Analytics Provider | Sprint 8 | Analytics/funnel |
+| WebSocket vs SSE | Sprint 5 | Messaging |
+| Mobile State Management | Day 1 | Mobile architecture |
+| Stripe Scope (international) | Sprint 3 | International bookings |
+
+---
+
+## Session 004 — Constraints Observed
+
+- No source code was modified
+- No architecture was changed
+- No infrastructure was provisioned
+- No new migrations created
+- No APIs added
+- All work was documentation / planning baseline

@@ -67,10 +67,9 @@ async def test_rate_limit_enforces_limit(monkeypatch) -> None:
 
     monkeypatch.setattr(app_settings, "ENVIRONMENT", "development")
 
-    pipeline_mock = AsyncMock()
-    pipeline_mock.execute = AsyncMock(return_value=[None, 1, None, None])
     redis_client = AsyncMock()
-    redis_client.pipeline = MagicMock(return_value=pipeline_mock)
+    # Lua script returns current count (> 0) when limit is exceeded
+    redis_client.eval = AsyncMock(return_value=5)
     redis_state.redis_client = redis_client
 
     request = MagicMock(spec=Request)

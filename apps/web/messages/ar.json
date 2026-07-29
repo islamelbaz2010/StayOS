@@ -2,10 +2,81 @@
   "common": {
     "loading": "جاري التحميل...",
     "error": "حدث خطأ",
-    "retry": "إعادة المحاولة"
+    "retry": "إعادة المحاولة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "next": "التالي",
+    "close": "إغلاق",
+    "search": "بحث",
+    "filter": "تصفية",
+    "clear": "مسح",
+    "viewAll": "عرض الكل",
+    "required": "مطلوب",
+    "optional": "اختياري"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "search": "بحث",
+    "host": "أضف عقارك",
+    "trips": "رحلاتي",
+    "messages": "الرسائل",
+    "account": "الحساب",
+    "signIn": "تسجيل الدخول",
+    "signOut": "تسجيل الخروج"
+  },
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "phone": "رقم الهاتف",
+    "email": "البريد الإلكتروني",
+    "sendOtp": "إرسال رمز التحقق",
+    "verifyOtp": "التحقق من الرمز",
+    "otpSent": "تم إرسال رمز التحقق إلى {phone}",
+    "invalidOtp": "الرمز غير صحيح",
+    "continueWithGoogle": "المتابعة مع جوجل",
+    "continueWithApple": "المتابعة مع آبل"
   },
   "search": {
     "title": "بحث",
-    "placeholder": "ابحث عن وجهتك"
+    "placeholder": "ابحث عن وجهتك",
+    "where": "أين؟",
+    "checkIn": "تاريخ الوصول",
+    "checkOut": "تاريخ المغادرة",
+    "guests": "الضيوف",
+    "adults": "بالغين",
+    "children": "أطفال",
+    "infants": "رضع",
+    "noResults": "لا توجد نتائج",
+    "showMap": "عرض الخريطة",
+    "hideMap": "إخفاء الخريطة"
+  },
+  "listing": {
+    "perNight": "لليلة",
+    "reviews": "{count} تقييم",
+    "noReviews": "لا توجد تقييمات بعد",
+    "book": "احجز الآن",
+    "checkAvailability": "تحقق من التوفر",
+    "amenities": "المرافق",
+    "houseRules": "قواعد المنزل",
+    "cancellationPolicy": "سياسة الإلغاء"
+  },
+  "reservation": {
+    "upcoming": "القادمة",
+    "past": "السابقة",
+    "cancelled": "الملغاة",
+    "confirmBooking": "تأكيد الحجز",
+    "totalAmount": "المبلغ الإجمالي",
+    "payNow": "ادفع الآن",
+    "cancel": "إلغاء الحجز",
+    "checkIn": "تسجيل الوصول",
+    "checkOut": "تسجيل المغادرة"
+  },
+  "error": {
+    "generic": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+    "notFound": "الصفحة غير موجودة",
+    "unauthorized": "يجب تسجيل الدخول للوصول",
+    "networkError": "خطأ في الاتصال. تحقق من الإنترنت."
   }
 }

@@ -2,10 +2,81 @@
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
-    "retry": "Retry"
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "viewAll": "View all",
+    "required": "Required",
+    "optional": "Optional"
+  },
+  "nav": {
+    "home": "Home",
+    "search": "Search",
+    "host": "List your property",
+    "trips": "My trips",
+    "messages": "Messages",
+    "account": "Account",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "phone": "Phone number",
+    "email": "Email address",
+    "sendOtp": "Send verification code",
+    "verifyOtp": "Verify code",
+    "otpSent": "Verification code sent to {phone}",
+    "invalidOtp": "Invalid code",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple"
   },
   "search": {
     "title": "Search",
-    "placeholder": "Search your destination"
+    "placeholder": "Search your destination",
+    "where": "Where?",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "guests": "Guests",
+    "adults": "Adults",
+    "children": "Children",
+    "infants": "Infants",
+    "noResults": "No results found",
+    "showMap": "Show map",
+    "hideMap": "Hide map"
+  },
+  "listing": {
+    "perNight": "per night",
+    "reviews": "{count} reviews",
+    "noReviews": "No reviews yet",
+    "book": "Book now",
+    "checkAvailability": "Check availability",
+    "amenities": "Amenities",
+    "houseRules": "House rules",
+    "cancellationPolicy": "Cancellation policy"
+  },
+  "reservation": {
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "cancelled": "Cancelled",
+    "confirmBooking": "Confirm booking",
+    "totalAmount": "Total amount",
+    "payNow": "Pay now",
+    "cancel": "Cancel reservation",
+    "checkIn": "Check in",
+    "checkOut": "Check out"
+  },
+  "error": {
+    "generic": "An unexpected error occurred. Please try again.",
+    "notFound": "Page not found",
+    "unauthorized": "Sign in to access this page",
+    "networkError": "Connection error. Check your internet."
   }
 }

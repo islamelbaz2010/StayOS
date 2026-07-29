@@ -144,3 +144,58 @@ Key paths:
 - Backend language: "Node.js or Python" — awaiting first ADR
 
 These are intentionally open and must not be resolved without an ADR.
+
+---
+
+## KB-011: FastAPI Request Generic Typing and Dependency Injection
+
+**Original Source**: Session 002 — `src/app/security/rate_limit.py`, `src/app/auth/router.py`
+**Original Date**: 2026-07-21
+**Imported By**: Session 002
+**Import Date**: 2026-07-21
+
+FastAPI dependency injection does not accept `Request[Any]`. Use plain `Request` and add `# type: ignore[type-arg]` to satisfy strict mypy. Dependencies used only for side effects should return `None`.
+
+---
+
+## KB-012: PII Masking Must Preserve Log Record Argument Types
+
+**Original Source**: Session 002 — `src/app/security/logging.py`
+**Original Date**: 2026-07-21
+**Imported By**: Session 002
+**Import Date**: 2026-07-21
+
+When masking PII in `logging.LogRecord.args`, only mask string arguments. Converting all args to strings breaks `%d` and other numeric format specifiers.
+
+---
+
+## KB-013: Resolve Provider Functions by Name for Testability
+
+**Original Source**: Session 002 — `src/app/notifications/services.py`
+**Original Date**: 2026-07-21
+**Imported By**: Session 002
+**Import Date**: 2026-07-21
+
+Storing provider callables directly in a dispatcher registry captures function references at import time, making monkeypatching in tests unreliable. Store provider function names and resolve with `getattr` at dispatch time.
+
+---
+
+## KB-014: Rate Limit Testing Requires Environment Patch
+
+**Original Source**: Session 002 — `tests/test_security.py`
+**Original Date**: 2026-07-21
+**Imported By**: Session 002
+**Import Date**: 2026-07-21
+
+Rate limiting should be disabled in `test` environment for speed. To test the Redis enforcement branch, patch `settings.ENVIRONMENT` to `development` (or non-test) and provide a mocked Redis client.
+
+---
+
+## KB-015: Calendar Concurrency via Exclusion Constraints
+
+**Original Source**: Session 002 — `alembic/versions/009_add_calendar_exclusion.py`, `src/app/reservations/repository.py`
+**Original Date**: 2026-07-21
+**Imported By**: Session 002
+**Import Date**: 2026-07-21
+
+PostgreSQL exclusion constraints on `tsrange` are the safest way to prevent overlapping HOLD/BOOKED calendar rules. Application code should catch `IntegrityError` and translate it into a domain `ConflictError`.

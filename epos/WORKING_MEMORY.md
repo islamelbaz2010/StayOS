@@ -82,3 +82,76 @@ epos/PROJECT_REVIEW.md     — Created
 epos/SESSION_RECORD.md     — Created
 docs/architecture/adr/ADR-016-epos-governance-adoption.md — Created
 ```
+
+---
+
+## Session 002 — 2026-07-21
+
+### Active Context
+
+**Current Branch**: `main`  
+**Current Phase**: Phase 0 — Customer Validation (ACTIVE) / Implementation sprints FC-01–FC-07 completed  
+**Active Sprint Theme**: FC-07 Platform Hardening for Closed Beta
+
+### This Session — Work Completed
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Complete FC-07 Platform Hardening (calendar concurrency, notifications, security, operations) | ✅ Complete |
+| 2 | Resolve ruff/mypy errors across `src/` and `tests/` | ✅ Complete |
+| 3 | Add/update tests for hardening features; reach ≥80% coverage | ✅ Complete |
+| 4 | Run `pytest tests` (283 passed, 80.42% coverage) | ✅ Complete |
+| 5 | Build wheel/sdist with `python3 -m build` | ✅ Complete |
+| 6 | Execute `END_SESSION.md` and update EPOS memory files | ✅ Complete |
+
+### This Session — Decisions Made
+
+- Technical: PostgreSQL exclusion constraints enforce calendar concurrency at the database level.
+- Technical: Notification providers are resolved by name at dispatch time to support testing and avoid stale references.
+- Technical: `Request[Any]` is not compatible with FastAPI dependency injection; use plain `Request` with `# type: ignore[type-arg]`.
+- Technical: PII log filter preserves non-string `LogRecord.args` to avoid breaking `%d` formatting.
+
+### This Session — Issues Found
+
+| # | Issue | Severity | Action |
+|---|-------|----------|--------|
+| 1 | Phase 0 gates (10 transactions / 80 interviews) status still unknown | High | Founder to report |
+| 2 | Payment processor conflict (Paymob vs Stripe) remains open | High | Await founder decision |
+| 3 | **Governance conflict**: Phase 1 application code (FC-01–FC-07) was implemented while Phase 0 is still ACTIVE per `AUTHORITY.md` | High | Flag for founder/EPOS review |
+| 4 | MASTER_PROJECT_MEMORY.md `Project` field still `UNKNOWN` | Medium | Update with delta; founder to confirm |
+
+### Open Questions Carried Forward
+
+1. Are Phase 0 gate conditions cleared, or should implementation be rolled back/reconciled with `AUTHORITY.md`?
+2. Which payment processor will be primary in production?
+3. Is the next sprint staging/Closed Beta readiness or governance reconciliation?
+
+### Files Modified This Session
+
+Source code and tests:
+- `src/app/reservations/repository.py`
+- `src/app/notifications/*`
+- `src/app/security/*`
+- `src/app/operations/metrics.py`
+- `src/app/main.py`
+- `src/app/auth/router.py`
+- `src/app/celery_app.py`
+- `alembic/versions/009_add_calendar_exclusion.py`
+- `alembic/versions/010_add_notifications_and_security.py`
+- `scripts/backup.py`
+- `scripts/restore_verify.py`
+- `tests/test_*.py`
+- `SPRINT_MEMORY.md` (root)
+- `.ai/CURRENT/SPRINT_MEMORY.md`
+
+AI memory:
+- `epos/WORKING_MEMORY.md`
+- `epos/PROJECT_STATE.md`
+- `epos/NEXT_SPRINT.md`
+- `epos/KNOWLEDGE_BASE.md`
+- `epos/SESSION_RECORD.md`
+- `epos/REGISTRY.md`
+- `.ai/CURRENT/DECISION_LOG.md`
+- `.ai/CURRENT/MASTER_PROJECT_MEMORY.md`
+- `.ai/EXPORT/AI_READY/StayOS/SOURCE_INDEX.md`
+- `.ai/LOGS/session-2026-07-21.md`

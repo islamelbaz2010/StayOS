@@ -25,7 +25,7 @@ COPY src/ ./src/
 COPY alembic.ini .
 COPY alembic/ ./alembic/
 
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 

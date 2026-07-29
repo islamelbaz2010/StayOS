@@ -81,3 +81,4 @@
 | Session | Date | Theme | Record |
 |---------|------|-------|--------|
 | Session 001 | 2026-07-21 | EPOS Onboarding | `epos/SESSION_RECORD.md` |
+| Session 002 | 2026-07-21 | FC-07 Platform Hardening + Shutdown | `epos/SESSION_RECORD.md` |

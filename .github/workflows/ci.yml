@@ -56,7 +56,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Lint with ruff
-        run: ruff check src/
+        run: ruff check src/ tests/
 
       - name: Type check with mypy
         run: mypy src/
@@ -76,7 +76,7 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/stayos_test
           REDIS_URL: redis://localhost:6379/1
-        run: pytest src/ --cov=app --cov-report=term-missing --cov-fail-under=80
+        run: pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
 
       - name: Upload coverage to PR
         uses: actions/github-script@v6

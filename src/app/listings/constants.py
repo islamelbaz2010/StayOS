@@ -1,0 +1,39 @@
+from enum import StrEnum
+
+
+class PropertyType(StrEnum):
+    APARTMENT = "APARTMENT"
+    VILLA = "VILLA"
+    CHALET = "CHALET"
+    HOTEL_ROOM = "HOTEL_ROOM"
+    RESORT_UNIT = "RESORT_UNIT"
+    STUDIO = "STUDIO"
+
+
+class UnitStatus(StrEnum):
+    DRAFT = "DRAFT"
+    PENDING_VERIFICATION = "PENDING_VERIFICATION"
+    UNLISTED = "UNLISTED"
+    LISTED = "LISTED"
+    SUSPENDED = "SUSPENDED"
+    ARCHIVED = "ARCHIVED"
+
+
+class CalendarStatus(StrEnum):
+    AVAILABLE = "AVAILABLE"
+    BLOCKED = "BLOCKED"
+    BOOKED = "BOOKED"
+    HOLD = "HOLD"
+
+
+class CalendarBlockType(StrEnum):
+    MANUAL = "MANUAL"
+    CLEANING = "CLEANING"
+    MAINTENANCE = "MAINTENANCE"
+
+
+class CulturalTag(StrEnum):
+    FAMILY_ONLY = "FAMILY_ONLY"
+    HALAL_CERTIFIED = "HALAL_CERTIFIED"
+    MIXED = "MIXED"
+    COUPLES_WELCOME = "COUPLES_WELCOME"

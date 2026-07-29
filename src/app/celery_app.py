@@ -6,7 +6,12 @@ celery_app = Celery(
     "stayos",
     broker=str(settings.REDIS_URL).replace("/0", "/1"),
     backend=str(settings.REDIS_URL).replace("/0", "/2"),
-    include=["app.auth.tasks", "app.finance.tasks", "app.notify.tasks"],
+    include=[
+        "app.kyc.tasks",
+        "app.operations.tasks",
+        "app.finance.tasks",
+        "app.notifications.tasks",
+    ],
 )
 
 celery_app.conf.update(
@@ -21,6 +26,28 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_acks_late=True,
     worker_max_tasks_per_child=1000,
+    beat_schedule={
+        "poll-outbox-every-30-seconds": {
+            "task": "app.operations.tasks.process_outbox_events",
+            "schedule": 30.0,
+        },
+        "poll-finance-outbox-every-30-seconds": {
+            "task": "app.finance.tasks.process_outbox_events",
+            "schedule": 30.0,
+        },
+        "process-pending-payouts-hourly": {
+            "task": "app.finance.tasks.process_pending_payouts",
+            "schedule": 3600.0,
+        },
+        "poll-notifications-outbox-every-30-seconds": {
+            "task": "app.notifications.tasks.process_outbox_events",
+            "schedule": 30.0,
+        },
+        "process-pending-notifications-every-60-seconds": {
+            "task": "app.notifications.tasks.process_pending_notifications",
+            "schedule": 60.0,
+        },
+    },
 )
 
 celery_app.conf.task_queues = {

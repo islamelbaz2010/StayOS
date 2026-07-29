@@ -7,9 +7,16 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from app.auth import models as auth_models  # noqa: F401
 from app.config import settings
+from app.finance import models as finance_models  # noqa: F401
+from app.kyc import models as kyc_models  # noqa: F401
+from app.listings import models as listings_models  # noqa: F401
+from app.notifications import models as notifications_models  # noqa: F401
+from app.operations import models as operations_models  # noqa: F401
+from app.reservations import models as reservation_models  # noqa: F401
 from app.shared.models import Base
 
 # this is the Alembic Config object

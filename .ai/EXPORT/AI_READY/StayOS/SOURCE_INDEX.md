@@ -105,3 +105,17 @@
 - For architecture / system design: `ARCHITECTURE.md`
 - For roadmap / priorities: `ROADMAP.md`
 - For decisions / ADRs: `DECISION_LOG.md`
+
+## FC-07 Implementation Sources — Session 002 (2026-07-21)
+
+- `SPRINT_MEMORY.md` (root) and `.ai/CURRENT/SPRINT_MEMORY.md` — FC-07 summary and closure.
+- `src/app/reservations/repository.py` — calendar lock and `ConflictError` translation.
+- `alembic/versions/009_add_calendar_exclusion.py` — PostgreSQL exclusion constraint.
+- `src/app/notifications/` — notification module (models, repository, services, providers, templates, consumers, tasks).
+- `src/app/security/` — security hardening (audit, rate limiting, headers, PII, logging, secrets, Sentry).
+- `src/app/operations/metrics.py` — Prometheus metrics collector and middleware.
+- `src/app/main.py` — middleware integration and health/metrics/version endpoints.
+- `src/app/auth/router.py` — rate limit dependencies.
+- `alembic/versions/010_add_notifications_and_security.py` — notifications and security schema migration.
+- `scripts/backup.py` and `scripts/restore_verify.py` — backup/restore scripts.
+- `tests/test_*.py` — test coverage for hardening features.

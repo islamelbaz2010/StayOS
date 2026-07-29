@@ -1,0 +1,494 @@
+from datetime import date, timedelta
+from typing import Any
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth.constants import KycStatus, UserRole
+from app.auth.models import User
+from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
+from app.listings.models import Unit, UnitListing
+from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
+
+from . import pricing
+from . import repository as listings_repository
+from .schemas import (
+    AvailabilityResponse,
+    BulkAvailabilityRequest,
+    BulkPricingRequest,
+    CalendarDay,
+    CalendarRuleCreate,
+    CalendarRuleResponse,
+    CalendarRuleUpdate,
+    HostDashboardStats,
+    HostReservationCalendarItem,
+    HostReservationCalendarResponse,
+    ListingCreate,
+    ListingResponse,
+    ListingSearchFilters,
+    ListingSearchResponse,
+    ListingSearchResult,
+    ListingUpdate,
+    PaginationInfo,
+)
+
+
+def _to_listing_response(
+    unit: Unit, listing: UnitListing, lat: float, lng: float
+) -> ListingResponse:
+    return ListingResponse(
+        id=unit.id,
+        host_id=unit.host_id,
+        property_type=unit.property_type,
+        status=unit.status,
+        lat=lat,
+        lng=lng,
+        governorate=unit.governorate,
+        city=unit.city,
+        district=unit.district,
+        max_guests=unit.max_guests,
+        bedrooms=unit.bedrooms,
+        bathrooms=unit.bathrooms,
+        title_ar=listing.title_ar,
+        title_en=listing.title_en,
+        description_ar=listing.description_ar,
+        description_en=listing.description_en,
+        amenities=listing.amenities,
+        cultural_tags=listing.cultural_tags,
+        house_rules=listing.house_rules,
+        check_in_instructions=listing.check_in_instructions,
+        policies=listing.policies,
+        base_price_egp=listing.base_price_egp,
+        weekend_mult=listing.weekend_mult,
+        peak_mult=listing.peak_mult,
+        min_nights=listing.min_nights,
+        max_nights=listing.max_nights,
+    )
+
+
+async def _fetch_coordinates(
+    session: AsyncSession, unit: Unit
+) -> tuple[float, float]:
+    result = await session.execute(
+        select(
+            func.ST_X(Unit.coordinates).label("lng"),
+            func.ST_Y(Unit.coordinates).label("lat"),
+        ).where(Unit.id == unit.id)
+    )
+    row = result.one()
+    return float(row.lat), float(row.lng)
+
+
+def _to_search_result(
+    unit: Unit, listing: UnitListing, lat: float, lng: float
+) -> dict[str, object]:
+    return {
+        "id": unit.id,
+        "title_ar": listing.title_ar,
+        "title_en": listing.title_en,
+        "property_type": unit.property_type,
+        "city": unit.city,
+        "governorate": unit.governorate,
+        "base_price_egp": listing.base_price_egp,
+        "lat": lat,
+        "lng": lng,
+        "amenities": listing.amenities,
+        "cultural_tags": listing.cultural_tags,
+    }
+
+
+def _assert_host(user: User) -> None:
+    if user.role != UserRole.HOST:
+        raise AuthorizationError("Only hosts can manage listings")
+
+
+async def create_listing(
+    session: AsyncSession, user: User, request: ListingCreate
+) -> ListingResponse:
+    _assert_host(user)
+    if not request.is_draft and user.kyc_status != KycStatus.VERIFIED:
+        raise AuthorizationError("Host KYC must be verified to publish a listing")
+
+    unit = await listings_repository.create_listing(session, user.id, request)
+    if request.is_draft:
+        unit = await listings_repository.set_unit_status(
+            session, unit, UnitStatus.DRAFT
+        )
+
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+
+    lat, lng = request.lat, request.lng
+    return _to_listing_response(unit, listing, lat, lng)
+
+
+async def get_listing_detail(
+    session: AsyncSession, unit_id: str
+) -> ListingResponse:
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.status != UnitStatus.LISTED:
+        raise NotFoundError("Listing not found")
+
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing not found")
+
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, listing, lat, lng)
+
+
+async def update_listing(
+    session: AsyncSession, user: User, unit_id: str, request: ListingUpdate
+) -> ListingResponse:
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    if unit.host_id != user.id:
+        raise AuthorizationError("Only the listing owner can update it")
+
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing not found")
+
+    updated = await listings_repository.update_unit_listing(
+        session, unit, listing, request
+    )
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, updated, lat, lng)
+
+
+async def search_listings(
+    session: AsyncSession, filters: ListingSearchFilters
+) -> ListingSearchResponse:
+    if filters.sw_lat is not None and None in (
+        filters.sw_lat,
+        filters.sw_lng,
+        filters.ne_lat,
+        filters.ne_lng,
+    ):
+        raise ValidationError("Viewport requires all four bounds")
+    if filters.radius_km is not None and None in (filters.lat, filters.lng):
+        raise ValidationError("radius_km requires lat and lng")
+    if filters.check_in is not None and filters.check_out is not None:
+        if filters.check_out <= filters.check_in:
+            raise ValidationError("check_out must be after check_in")
+        if (filters.check_out - filters.check_in).days > 90:
+            raise ValidationError("Date range cannot exceed 90 days")
+    elif (filters.check_in is not None) != (filters.check_out is not None):
+        raise ValidationError("Both check_in and check_out are required")
+    if (
+        filters.min_price is not None
+        and filters.max_price is not None
+        and filters.min_price > filters.max_price
+    ):
+        raise ValidationError("min_price cannot be greater than max_price")
+
+    offset = filters.get_offset()
+    rows, total = await listings_repository.search_listings(
+        session, filters, offset, filters.limit
+    )
+
+    data = [_to_search_result(unit, listing, lat, lng) for unit, listing, lat, lng in rows]
+    has_more = offset + len(data) < total
+    next_cursor = (
+        ListingSearchFilters.encode_cursor(offset + filters.limit)
+        if has_more
+        else None
+    )
+
+    return ListingSearchResponse(
+        data=[ListingSearchResult(**item) for item in data],
+        pagination=PaginationInfo(
+            next_cursor=next_cursor,
+            has_more=has_more,
+            total_count=total,
+        ),
+    )
+
+
+async def get_availability(
+    session: AsyncSession, unit_id: str, check_in: date, check_out: date
+) -> AvailabilityResponse:
+    if check_out <= check_in:
+        raise ValidationError("check_out must be after check_in")
+    if (check_out - check_in).days > 90:
+        raise ValidationError("Date range cannot exceed 90 days")
+
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.status != UnitStatus.LISTED:
+        raise NotFoundError("Listing not found")
+
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing not found")
+
+    rules = await listings_repository.get_calendar_rules_in_range(
+        session, unit_id, check_in, check_out
+    )
+
+    days: list[CalendarDay] = []
+    current = check_in
+    while current < check_out:
+        rule = pricing.find_rule_for_day(rules, current)
+        status = str(rule.status) if rule else str(CalendarStatus.AVAILABLE)
+        block_type = rule.block_type if rule else None
+        price = pricing.get_day_price(listing, rule, current)
+        days.append(
+            CalendarDay(
+                date=current, status=status, block_type=block_type, price_egp=price
+            )
+        )
+        current += timedelta(days=1)
+
+    return AvailabilityResponse(
+        unit_id=unit_id,
+        check_in=check_in,
+        check_out=check_out,
+        days=days,
+    )
+
+
+def _to_calendar_rule_response(rule: Any) -> CalendarRuleResponse:
+    return CalendarRuleResponse(
+        id=rule.id,
+        unit_id=rule.unit_id,
+        date_from=rule.date_from,
+        date_to=rule.date_to,
+        status=rule.status,
+        block_type=rule.block_type,
+        price_override=rule.price_override,
+    )
+
+
+async def publish_listing(
+    session: AsyncSession, user: User, unit_id: str
+) -> ListingResponse:
+    _assert_host(user)
+    if user.kyc_status != KycStatus.VERIFIED:
+        raise AuthorizationError("Host KYC must be verified to publish a listing")
+
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+    if unit.status == UnitStatus.ARCHIVED:
+        raise ValidationError("Archived listings cannot be published")
+
+    unit = await listings_repository.set_unit_status(session, unit, UnitStatus.LISTED)
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, listing, lat, lng)
+
+
+async def unpublish_listing(
+    session: AsyncSession, user: User, unit_id: str
+) -> ListingResponse:
+    _assert_host(user)
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+
+    unit = await listings_repository.set_unit_status(
+        session, unit, UnitStatus.UNLISTED
+    )
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, listing, lat, lng)
+
+
+async def archive_listing(
+    session: AsyncSession, user: User, unit_id: str
+) -> ListingResponse:
+    _assert_host(user)
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+
+    unit = await listings_repository.set_unit_status(
+        session, unit, UnitStatus.ARCHIVED
+    )
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, listing, lat, lng)
+
+
+async def create_host_calendar_rule(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    request: CalendarRuleCreate,
+) -> CalendarRuleResponse:
+    _assert_host(user)
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+
+    if request.status == CalendarStatus.BLOCKED and not request.block_type:
+        request.block_type = CalendarBlockType.MANUAL
+
+    rule = await listings_repository.create_calendar_rule(
+        session,
+        unit_id,
+        request.date_from,
+        request.date_to,
+        request.status,
+        request.block_type,
+        request.price_override,
+    )
+    return _to_calendar_rule_response(rule)
+
+
+async def update_host_calendar_rule(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    rule_id: str,
+    request: CalendarRuleUpdate,
+) -> CalendarRuleResponse:
+    _assert_host(user)
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+
+    rule = await listings_repository.get_calendar_rule_by_id(
+        session, unit_id, rule_id
+    )
+    if rule is None:
+        raise NotFoundError("Calendar rule not found")
+    if rule.reservation_id:
+        raise ValidationError("Cannot modify a booking-related rule")
+
+    if request.status == CalendarStatus.BLOCKED and not request.block_type:
+        request.block_type = CalendarBlockType.MANUAL
+
+    updated = await listings_repository.update_calendar_rule(
+        session,
+        rule,
+        request.date_from,
+        request.date_to,
+        request.status,
+        request.block_type,
+        request.price_override,
+    )
+    return _to_calendar_rule_response(updated)
+
+
+async def delete_host_calendar_rule(
+    session: AsyncSession, user: User, unit_id: str, rule_id: str
+) -> None:
+    _assert_host(user)
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+
+    rule = await listings_repository.get_calendar_rule_by_id(
+        session, unit_id, rule_id
+    )
+    if rule is None:
+        raise NotFoundError("Calendar rule not found")
+    if rule.reservation_id:
+        raise ValidationError("Cannot delete a booking-related rule")
+
+    await listings_repository.delete_calendar_rule(session, rule)
+
+
+async def bulk_update_availability(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    request: BulkAvailabilityRequest,
+) -> list[CalendarRuleResponse]:
+    _assert_host(user)
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+
+    rules: list[tuple[date, date, str, str | None, int | None]] = []
+    for item in request.rules:
+        block_type = item.block_type
+        if item.status == CalendarStatus.BLOCKED and not block_type:
+            block_type = CalendarBlockType.MANUAL
+        rules.append((item.date_from, item.date_to, item.status, block_type, None))
+
+    created = await listings_repository.bulk_replace_calendar_rules(
+        session, unit_id, rules
+    )
+    return [_to_calendar_rule_response(rule) for rule in created]
+
+
+async def bulk_update_pricing(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    request: BulkPricingRequest,
+) -> list[CalendarRuleResponse]:
+    _assert_host(user)
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+
+    rules: list[tuple[date, date, str, str | None, int | None]] = [
+        (
+            item.date_from,
+            item.date_to,
+            CalendarStatus.AVAILABLE,
+            None,
+            item.price_override,
+        )
+        for item in request.rules
+    ]
+
+    created = await listings_repository.bulk_replace_calendar_rules(
+        session, unit_id, rules
+    )
+    return [_to_calendar_rule_response(rule) for rule in created]
+
+
+async def get_host_dashboard(
+    session: AsyncSession, user: User
+) -> HostDashboardStats:
+    _assert_host(user)
+    stats = await listings_repository.get_host_dashboard_stats(session, user.id)
+    return HostDashboardStats(**stats)
+
+
+async def get_host_reservation_calendar(
+    session: AsyncSession,
+    user: User,
+    unit_id: str | None,
+    check_in: date,
+    check_out: date,
+) -> HostReservationCalendarResponse:
+    _assert_host(user)
+    if check_out <= check_in:
+        raise ValidationError("check_out must be after check_in")
+    if (check_out - check_in).days > 365:
+        raise ValidationError("Date range cannot exceed 365 days")
+
+    rows = await listings_repository.get_host_reservation_calendar(
+        session, user.id, unit_id, check_in, check_out
+    )
+    reservations = [
+        HostReservationCalendarItem(
+            reservation_id=row.id,
+            unit_id=row.unit_id,
+            guest_id=row.guest_id,
+            status=row.status,
+            check_in=row.check_in,
+            check_out=row.check_out,
+            total_amount_egp=row.total_amount_egp,
+        )
+        for row in rows
+    ]
+    return HostReservationCalendarResponse(
+        unit_id=unit_id or "",
+        check_in=check_in,
+        check_out=check_out,
+        reservations=reservations,
+    )

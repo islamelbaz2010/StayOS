@@ -1,10 +1,15 @@
-from fastapi import Request
+import uuid
+from collections.abc import Awaitable, Callable
+from typing import Any
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import Response
 
 from app.config import settings
 
 
-def setup_cors(app):
+def setup_cors(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
@@ -14,9 +19,10 @@ def setup_cors(app):
     )
 
 
-async def add_request_id(request: Request, call_next):
-    import uuid
-
+async def add_request_id(
+    request: Request[Any],
+    call_next: Callable[[Request[Any]], Awaitable[Response]],
+) -> Response:
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
 

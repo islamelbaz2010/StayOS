@@ -164,3 +164,6 @@ docs/output/
 # Generated files
 generated/
 auto/
+.next/
+*.tsbuildinfo
+htmlcov/

@@ -67,3 +67,41 @@ Before adding any new task to the sprint:
 4. Confirm it does not resolve an open conflict without founder instruction
 
 If all four checks pass, the task may be added.
+
+---
+
+## Updated Next Sprint — Closed Beta Readiness (Post FC-07)
+
+**Sprint Theme**: Staging deployment and Closed Beta readiness verification.
+
+**Objective**: Deploy the hardened platform to staging and verify operational, security, and performance readiness.
+
+**Scope**:
+- Apply all migrations up to `010_add_notifications_and_security.py` on staging.
+- Validate health, metrics, and version endpoints.
+- Test notification delivery end-to-end (WhatsApp/Email/SMS) in staging.
+- Verify backup and restore scripts against staging data.
+- Conduct security review of rate limiting, audit logs, and secrets management.
+- Prepare operational runbooks for incident response.
+
+**Exclusions**:
+- No new customer-facing features.
+- No production deployment until readiness gates pass.
+
+**Acceptance Criteria**:
+- All migrations apply cleanly.
+- `/health`, `/metrics`, `/version` respond within SLA.
+- At least one notification channel delivers successfully end-to-end.
+- Backup/restore scripts verified.
+- No critical/high security findings.
+
+**Risks**:
+- Staging environment differences.
+- Provider credential availability (Twilio, SES, Meta WhatsApp).
+- Sentry/Redis availability and configuration.
+- Governance conflict around Phase 0/Phase 1 boundary.
+
+**Dependencies**:
+- Staging Postgres 16 + PostGIS, Redis, Celery worker.
+- Provider credentials and Sentry DSN.
+- Founder decision on governance conflict and payment processor.

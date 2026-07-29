@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -7,7 +7,7 @@ T = TypeVar("T")
 
 class BaseResponse(BaseModel):
     success: bool = True
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
@@ -22,3 +22,10 @@ class HealthResponse(BaseModel):
     status: str
     database: str
     redis: str
+
+
+class ErrorResponse(BaseModel):
+    code: str
+    message: str
+    message_ar: str
+    details: dict[str, Any] | None = None

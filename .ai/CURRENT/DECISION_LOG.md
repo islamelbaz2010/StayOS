@@ -478,3 +478,61 @@ The following decisions from [docs/phase--1/reports/18_KEY_DECISIONS.md](docs/ph
 ---
 
 **This log is a living document. Every significant decision made during Phase 0 and beyond must be recorded here within 24 hours of the decision being made.**
+
+---
+
+## Engineering Decisions — Session 002 (2026-07-21)
+
+### DEC-S02-001: PostgreSQL Exclusion Constraints for Calendar Concurrency
+
+**Status**: Accepted (implementation)
+**Date**: 2026-07-21
+**Decision Maker**: Engineering (AI session)
+**Context**: Overlapping HOLD/BOOKED calendar rules for the same unit must be prevented at the database level to avoid double-booking race conditions.
+**Decision**: Add a PostgreSQL exclusion constraint on `pms.calendar_rules` and translate `IntegrityError` in `reservations/repository.py` to a `ConflictError`.
+**Consequences**: Race-safe calendar locking; requires PostgreSQL 16 + btree_gist extension.
+
+### DEC-S02-002: In-Application Notification Retry + Dead-Letter Queue
+
+**Status**: Accepted (implementation)
+**Date**: 2026-07-21
+**Decision Maker**: Engineering (AI session)
+**Context**: Provider failures (WhatsApp/Email/SMS) should not lose notifications.
+**Decision**: The `notifications` service retries up to `MAX_RETRIES` (3) and moves failed notifications to `DEAD_LETTER` status for manual inspection.
+**Consequences**: Improved reliability; requires Celery task to retry pending notifications.
+
+### DEC-S02-003: Redis for Rate Limiting and Session Revocation
+
+**Status**: Accepted (implementation)
+**Date**: 2026-07-21
+**Decision Maker**: Engineering (AI session)
+**Context**: Existing Redis dependency can be reused for shared state across API workers.
+**Decision**: Rate limiting and refresh-token revocation are backed by Redis.
+**Consequences**: Centralized, fast state; Redis unavailability causes rate limit errors rather than allowing unlimited requests.
+
+### DEC-S02-004: Resolve Notification Providers by Name at Dispatch Time
+
+**Status**: Accepted (implementation)
+**Date**: 2026-07-21
+**Decision Maker**: Engineering (AI session)
+**Context**: `_CHANNEL_DISPATCHERS` stored callable references, preventing tests from monkeypatching providers.
+**Decision**: Store provider function names and use `getattr(providers, dispatcher_name)` at dispatch time.
+**Consequences**: More testable code; slightly more indirection.
+
+### DEC-S02-005: Plain `Request` Type for FastAPI Dependencies
+
+**Status**: Accepted (implementation)
+**Date**: 2026-07-21
+**Decision Maker**: Engineering (AI session)
+**Context**: `Request[Any]` caused `FastAPIError: Invalid args for response field` because FastAPI could not recognize the generic as a special request parameter.
+**Decision**: Use `Request` (non-generic) with `# type: ignore[type-arg]` under strict mypy.
+**Consequences**: Dependencies work at runtime and pass type checking.
+
+### DEC-S02-006: Preserve Non-String Log Record Arguments During PII Masking
+
+**Status**: Accepted (implementation)
+**Date**: 2026-07-21
+**Decision Maker**: Engineering (AI session)
+**Context**: Masking all `LogRecord.args` by casting to `str` broke `%d` formatting.
+**Decision**: Only mask string arguments; leave non-string arguments unchanged.
+**Consequences**: PII masking works without breaking numeric format specifiers.

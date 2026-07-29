@@ -86,6 +86,7 @@ class ReservationResponse(BaseModel):
     refund_amount_egp: int | None
     payment_intents: list[PaymentIntentResponse] = []
     promo_applications: list[PromoApplicationResponse] = []
+    paymob_iframe_url: str | None = None
 
 
 class PaginationInfo(BaseModel):

@@ -47,6 +47,12 @@ logger = logging.getLogger(__name__)
 
 
 def _to_response(reservation: Reservation) -> ReservationResponse:
+    paymob_iframe_url: str | None = None
+    for pi in reservation.payment_intents:
+        if pi.provider == "paymob" and isinstance(pi.provider_metadata, dict):
+            paymob_iframe_url = pi.provider_metadata.get("iframe_url")
+            break
+
     return ReservationResponse(
         id=reservation.id,
         unit_id=reservation.unit_id,
@@ -75,6 +81,7 @@ def _to_response(reservation: Reservation) -> ReservationResponse:
             PromoApplicationResponse.model_validate(pa)
             for pa in reservation.promo_applications
         ],
+        paymob_iframe_url=paymob_iframe_url,
     )
 
 

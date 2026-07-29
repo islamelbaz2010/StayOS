@@ -8,14 +8,24 @@ from starlette.responses import Response
 
 from app.config import settings
 
+_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+_ALLOWED_HEADERS = [
+    "Authorization",
+    "Content-Type",
+    "Accept",
+    "Accept-Language",
+    "X-Request-ID",
+    "X-Idempotency-Key",
+]
+
 
 def setup_cors(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=_ALLOWED_METHODS,
+        allow_headers=_ALLOWED_HEADERS,
     )
 
 

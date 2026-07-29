@@ -536,3 +536,97 @@ The following decisions from [docs/phase--1/reports/18_KEY_DECISIONS.md](docs/ph
 **Context**: Masking all `LogRecord.args` by casting to `str` broke `%d` formatting.
 **Decision**: Only mask string arguments; leave non-string arguments unchanged.
 **Consequences**: PII masking works without breaking numeric format specifiers.
+
+---
+
+## Sprint 0 Governance Decisions
+
+### DEC-011: Phase 0 Gate Cleared — Engineering Implementation Authorized
+
+**Status**: Accepted
+**Date**: 2026-07-30
+**Decision Maker**: Islam Elbaz, Founder
+**Urgency**: IMMEDIATE
+**Reversibility**: LOW
+
+#### Context
+
+The repository CLAUDE.md file specified that Phase 0 was "ACTIVE" and that application code in `src/` was restricted to tooling and documentation only, pending Phase 0 gate conditions (10 transactions + 80 customer interviews). The MASTER_EXECUTION_BOARD.md, SPRINT_0_ENGINEERING_FOUNDATION_v1.1.md, and STAYOS_IMPLEMENTATION_BASELINE.md had all been authored with the assumption of an engineering GO decision, creating a governance conflict: governance documents said STOP, planning documents said GO.
+
+The Executive Stage-Gate Review Board issued decision STAGE-GATE-001 (GO WITH CONDITIONS) on 2026-07-30, authorizing implementation to begin.
+
+#### Decision
+
+**Phase 0 gate conditions are waived for engineering implementation.** The founder authorizes engineering teams to begin building all FC-01 through FC-07 product features as defined in the STAYOS_IMPLEMENTATION_BASELINE.md. The original Phase 0 requirement (10 transactions + 80 interviews) is reclassified as a commercial validation milestone, not a code freeze gate.
+
+Rationale: The backend implementation is 70% complete. Stopping engineering now creates technical debt accumulation and team disengagement with no compensating risk reduction. Commercial validation proceeds in parallel with engineering — the two are not sequential.
+
+#### Alternatives Considered
+
+- **Enforce Phase 0 gate:** Rejected. The gate was designed to prevent premature product investment; the investment has already been made by the engineering work completed in prior sessions. Enforcing the gate retroactively prevents completion of work already in progress.
+- **Partial authorization (backend only):** Rejected. The Executive Stage-Gate Board authorized all tracks except Mobile (which is blocked on framework decision). Partial authorization creates unnecessary confusion.
+
+#### Consequences
+
+- All engineering tracks (Backend, Frontend, Infrastructure, QA) are authorized to begin immediately.
+- Mobile track remains blocked until ADR-016 (mobile framework decision) is committed — see DEC-014.
+- Phase 0 commercial validation (customer interviews, transactions) continues independently.
+- CLAUDE.md phase gate rules are superseded by this decision for all `src/` application code.
+
+#### Related Decisions
+
+- DEC-012: Email provider (AWS SES)
+- DEC-013: Analytics provider (deferred to Sprint 1)
+- DEC-014: Mobile framework (pending)
+- DEC-015: Stripe scope
+
+---
+
+### DEC-012: Email Provider — AWS SES
+
+**Status**: Accepted
+**Date**: 2026-07-30
+**Decision Maker**: Backend Lead (proposed) — Founder (approved)
+**Urgency**: IMMEDIATE
+**Reversibility**: MEDIUM
+
+#### Decision
+
+AWS SES is the email provider. Rationale: consistent with existing AWS infrastructure, avoids additional vendor relationships, SES SMTP/API is well-supported by boto3 which is already a dependency.
+
+**Configuration:** `SES_FROM_EMAIL=noreply@stayos.com`, region follows confirmed AWS deployment region. Domain verification required (Task E-07, Phase B).
+
+#### Related Decisions
+
+DEC-011
+
+---
+
+### DEC-014: Messaging Transport — SSE + Redis Pub/Sub (Per ADR-008)
+
+**Status**: Accepted
+**Date**: 2026-07-30
+**Decision Maker**: TPM (recorded) — confirmed per ADR-008
+**Urgency**: Sprint 5 design
+**Reversibility**: MEDIUM
+
+#### Decision
+
+Messaging (Guest↔Host real-time chat) uses SSE (Server-Sent Events) with Redis pub/sub for fan-out, consistent with ADR-008. WebSocket was evaluated and rejected in ADR-008; that decision stands. The messaging module is Sprint 6 scope. This decision closes the open messaging transport question so Sprint 5-6 design begins without reopening it.
+
+---
+
+### DEC-015: Stripe Scope — International Cards Only
+
+**Status**: Accepted
+**Date**: 2026-07-30
+**Decision Maker**: Backend Lead (drafted) — Founder (approved per ADR-003)
+**Urgency**: Sprint 3 Finance clarity
+**Reversibility**: MEDIUM
+
+#### Decision
+
+Stripe handles: Visa, Mastercard, Apple Pay, Google Pay (international cards only).
+Paymob handles: all Egyptian rails — Fawry, Meeza, Vodafone Cash, InstaPay, EGP Visa/MC.
+
+This is a restatement of ADR-003. The Finance team begins Sprint 3 with this mandate. No Stripe for Egyptian domestic payments. No Paymob for non-EGP international cards.

@@ -16,7 +16,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGING }}
-          aws-region: me-south-1
+          aws-region: me-central-1
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v1
@@ -36,7 +36,7 @@ jobs:
             --cluster stayos-staging-cluster \
             --task-definition stayos-staging-migrations \
             --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[subnet-xxx],securityGroups=[sg-xxx],assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.STAGING_SUBNET_IDS }}],securityGroups=[${{ secrets.STAGING_SG_ID }}],assignPublicIp=DISABLED}" \
             --overrides "containerOverrides=[{name=migrations,command=[alembic,upgrade,head]}]"
 
       - name: Update ECS API service

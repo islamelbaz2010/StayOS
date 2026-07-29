@@ -34,6 +34,16 @@ resource "aws_db_parameter_group" "main" {
   name_prefix = "${local.name_prefix}-"
   family      = "postgres16"
 
+  parameter {
+    name  = "rds.force_ssl"
+    value = "1"
+  }
+
+  parameter {
+    name  = "shared_preload_libraries"
+    value = "pg_stat_statements,pg_stat_bgwriter"
+  }
+
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-db-parameter-group"
   })

@@ -18,7 +18,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
-          aws-region: me-south-1
+          aws-region: me-central-1
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v1
@@ -38,7 +38,7 @@ jobs:
             --cluster stayos-prod-cluster \
             --task-definition stayos-prod-migrations \
             --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[subnet-xxx],securityGroups=[sg-xxx],assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.PROD_SUBNET_IDS }}],securityGroups=[${{ secrets.PROD_SG_ID }}],assignPublicIp=DISABLED}" \
             --overrides "containerOverrides=[{name=migrations,command=[alembic,upgrade,head]}]"
 
       - name: Update ECS API service

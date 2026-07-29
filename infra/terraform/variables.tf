@@ -5,9 +5,9 @@ variable "environment" {
 }
 
 variable "region" {
-  description = "AWS region"
+  description = "AWS region (primary: me-central-1 UAE per ADR-007; DR: me-south-1 Bahrain)"
   type        = string
-  default     = "me-south-1"
+  default     = "me-central-1"
 }
 
 variable "project_name" {

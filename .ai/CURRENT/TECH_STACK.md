@@ -1,5 +1,8 @@
 # TECH_STACK.md — Technology Choices
 
+> **CONFLICTS RESOLVED — See FINAL_EXECUTIVE_STAGE_GATE_DECISION.md and DECISION_LOG.md.**
+> All technology conflicts listed in Section 3 of this document have been resolved by ADRs (ADR-001 through ADR-016) and DEC-011 through DEC-015. The Paymob/Stripe conflict is closed: Stripe = international cards, Paymob = Egyptian rails (DEC-015). Frontend framework = Next.js (ADR-001). Backend = FastAPI/Python (ADR-002). This document is a historical record.
+
 **Read [`CONTEXT.md`](CONTEXT.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md) before this file.**
 
 This document records every technology choice mentioned across repository documents — flagged as Confirmed, Proposed (no ADR), or Conflicted (contradictory documents exist).

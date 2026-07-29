@@ -4,7 +4,6 @@
 import os
 import subprocess
 import sys
-import tempfile
 from urllib.parse import urlparse
 
 

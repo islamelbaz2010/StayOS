@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ReactNode } from "react";
 
 import { locales } from "../../i18n";
+import { Providers } from "../../components/providers";
 
 export default async function LocaleLayout({
   children,
@@ -23,7 +24,7 @@ export default async function LocaleLayout({
     <html lang={locale} dir={dir}>
       <body>
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <Providers>{children}</Providers>
         </NextIntlClientProvider>
       </body>
     </html>

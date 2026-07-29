@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any, cast
@@ -26,6 +27,8 @@ from app.shared import redis as redis_state
 from app.shared.exceptions import StayOSError, to_http_exception
 from app.shared.middleware import add_request_id, setup_cors
 from app.shared.schemas import HealthResponse
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -154,8 +157,8 @@ async def user_context_middleware(
         try:
             payload = auth_services.decode_token(auth[7:])
             request.state.user = payload
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Token decode failed, continuing as anonymous: %s", exc)
     return await call_next(request)
 
 

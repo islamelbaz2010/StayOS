@@ -26,8 +26,8 @@ def _safe_payload(payload: str) -> str:
                 if any(s in key.lower() for s in _SENSITIVE_KEYS):
                     data[key] = "***"
             return json.dumps(data, ensure_ascii=False)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Payload is not valid JSON, falling back to PII mask: %s", exc)
     return mask_pii(payload)
 
 
@@ -43,8 +43,8 @@ async def _write_audit_record(request: Request[Any], response: Response, user: A
             body = body_bytes.decode("utf-8", errors="replace")
             # Replace consumed body so downstream can still read it.
             request._body = body_bytes
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Could not read request body for audit log: %s", exc)
 
     user_id = None
     role = None

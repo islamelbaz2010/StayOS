@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 
 from app.config import settings
 
@@ -46,6 +47,10 @@ celery_app.conf.update(
         "process-pending-notifications-every-60-seconds": {
             "task": "app.notifications.tasks.process_pending_notifications",
             "schedule": 60.0,
+        },
+        "spawn-recurring-tasks-daily-0600-utc": {
+            "task": "app.operations.tasks.spawn_recurring_tasks",
+            "schedule": crontab(hour=6, minute=0),
         },
     },
 )

@@ -4,6 +4,7 @@ from typing import Any
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     ARRAY,
+    Boolean,
     CheckConstraint,
     Computed,
     Date,
@@ -57,6 +58,9 @@ class Unit(UUIDMixin, TimestampMixin, Base):
     )
     calendar_rules: Mapped[list["CalendarRule"]] = relationship(
         "CalendarRule", back_populates="unit"
+    )
+    photos: Mapped[list["UnitPhoto"]] = relationship(
+        "UnitPhoto", back_populates="unit", order_by="UnitPhoto.display_order"
     )
 
 
@@ -145,3 +149,26 @@ class CalendarRule(UUIDMixin, TimestampMixin, Base):
     reservation_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
     unit: Mapped["Unit"] = relationship("Unit", back_populates="calendar_rules")
+
+
+class UnitPhoto(UUIDMixin, TimestampMixin, Base):
+    __tablename__ = "unit_photos"
+    __table_args__ = (
+        Index("idx_unit_photos_unit_id", "unit_id"),
+        CheckConstraint("display_order >= 0", name="chk_photo_display_order"),
+        {"schema": "pms"},
+    )
+
+    unit_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("pms.units.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    s3_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    display_order: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+    is_cover: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    caption_ar: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    caption_en: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    unit: Mapped["Unit"] = relationship("Unit", back_populates="photos")

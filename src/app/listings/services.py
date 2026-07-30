@@ -10,6 +10,7 @@ from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 
+from . import configuration as listing_configuration
 from . import pricing
 from . import repository as listings_repository
 from .schemas import (
@@ -32,9 +33,6 @@ from .schemas import (
     PaginationInfo,
 )
 
-DEFAULT_LISTING_COUNTRY = "Egypt"
-DEFAULT_LISTING_CURRENCY = "EGP"
-
 
 def _resolve_title(listing: UnitListing) -> str:
     return listing.title_ar or listing.title_en or ""
@@ -44,14 +42,8 @@ def _resolve_description(listing: UnitListing) -> str:
     return listing.description_ar or listing.description_en or ""
 
 
-def _cover_image_url(unit: Unit) -> str | None:
-    photos = getattr(unit, "photos", None)
-    if not photos:
-        return None
-    for photo in photos:
-        if getattr(photo, "is_cover", False):
-            return photo.url
-    return photos[0].url
+def _cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
+    return listing_configuration.resolve_cover_image_url(unit, listing)
 
 
 def _to_listing_response(
@@ -66,7 +58,7 @@ def _to_listing_response(
         lng=lng,
         governorate=unit.governorate,
         city=unit.city,
-        country=DEFAULT_LISTING_COUNTRY,
+        country=listing.country,
         district=unit.district,
         max_guests=unit.max_guests,
         bedrooms=unit.bedrooms,
@@ -84,12 +76,12 @@ def _to_listing_response(
         policies=listing.policies,
         base_price_egp=listing.base_price_egp,
         price=listing.base_price_egp,
-        currency=DEFAULT_LISTING_CURRENCY,
+        currency=listing.currency,
         weekend_mult=listing.weekend_mult,
         peak_mult=listing.peak_mult,
         min_nights=listing.min_nights,
         max_nights=listing.max_nights,
-        cover_image=_cover_image_url(unit),
+        cover_image=_cover_image_url(unit, listing),
     )
 
 
@@ -118,17 +110,17 @@ def _to_search_result(
         "property_type": unit.property_type,
         "city": unit.city,
         "governorate": unit.governorate,
-        "country": DEFAULT_LISTING_COUNTRY,
+        "country": listing.country,
         "base_price_egp": listing.base_price_egp,
         "price": listing.base_price_egp,
-        "currency": DEFAULT_LISTING_CURRENCY,
+        "currency": listing.currency,
         "lat": lat,
         "lng": lng,
         "max_guests": unit.max_guests,
         "amenities": listing.amenities,
         "cultural_tags": listing.cultural_tags,
         "house_rules": listing.house_rules,
-        "cover_image": _cover_image_url(unit),
+        "cover_image": _cover_image_url(unit, listing),
     }
 
 
@@ -145,6 +137,7 @@ async def create_listing(
         raise AuthorizationError("Host KYC must be verified to publish a listing")
 
     unit = await listings_repository.create_listing(session, user.id, request)
+    await listing_configuration.validate_listing_configuration(session, unit, request)
     if request.is_draft:
         unit = await listings_repository.set_unit_status(
             session, unit, UnitStatus.DRAFT
@@ -186,6 +179,7 @@ async def update_listing(
     if listing is None:
         raise NotFoundError("Listing not found")
 
+    await listing_configuration.validate_listing_configuration(session, unit, request)
     updated = await listings_repository.update_unit_listing(
         session, unit, listing, request
     )

@@ -73,6 +73,8 @@ def _make_listing() -> UnitListing:
         peak_mult=1.0,
         min_nights=1,
         max_nights=30,
+        country="Egypt",
+        currency="EGP",
     )
 
 

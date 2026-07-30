@@ -30,7 +30,24 @@ class ListingCreate(BaseModel):
     house_rules: str | None = None
     check_in_instructions: str | None = None
     policies: str | None = None
+    country: str = Field(default="Egypt", min_length=1, max_length=100)
+    currency: str = Field(default="EGP", min_length=3, max_length=3)
+    cover_photo_id: str | None = None
     is_draft: bool = False
+
+    @field_validator("currency", "country", mode="before")
+    @classmethod
+    def normalize_strings(cls, v: str | None) -> str | None:
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def uppercase_currency(cls, v: str | None) -> str | None:
+        if isinstance(v, str):
+            return v.upper()
+        return v
 
     @field_validator("property_type", "cultural_tags", mode="before")
     @classmethod
@@ -63,6 +80,23 @@ class ListingUpdate(BaseModel):
     house_rules: str | None = None
     check_in_instructions: str | None = None
     policies: str | None = None
+    country: str | None = Field(None, min_length=1, max_length=100)
+    currency: str | None = Field(None, min_length=3, max_length=3)
+    cover_photo_id: str | None = None
+
+    @field_validator("currency", "country", mode="before")
+    @classmethod
+    def normalize_update_strings(cls, v: str | None) -> str | None:
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def uppercase_update_currency(cls, v: str | None) -> str | None:
+        if isinstance(v, str):
+            return v.upper()
+        return v
 
     @field_validator("amenities", "cultural_tags", mode="before")
     @classmethod
@@ -91,7 +125,7 @@ class ListingResponse(BaseModel):
     lng: float
     governorate: str
     city: str
-    country: str = "Egypt"
+    country: str
     district: str | None
     max_guests: int
     bedrooms: int
@@ -106,7 +140,7 @@ class ListingResponse(BaseModel):
     cultural_tags: list[str]
     base_price_egp: int
     price: int
-    currency: str = "EGP"
+    currency: str
     weekend_mult: float
     peak_mult: float
     min_nights: int
@@ -126,10 +160,10 @@ class ListingSearchResult(BaseModel):
     property_type: str
     city: str
     governorate: str
-    country: str = "Egypt"
+    country: str
     base_price_egp: int
     price: int
-    currency: str = "EGP"
+    currency: str
     lat: float
     lng: float
     max_guests: int

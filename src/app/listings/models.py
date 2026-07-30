@@ -108,6 +108,18 @@ class UnitListing(UUIDMixin, Base):
     max_nights: Mapped[int] = mapped_column(
         SmallInteger, nullable=False, default=30
     )
+    country: Mapped[str] = mapped_column(
+        String(100), nullable=False, default="Egypt"
+    )
+    currency: Mapped[str] = mapped_column(
+        String(3), nullable=False, default="EGP"
+    )
+    cover_photo_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("pms.unit_photos.id"), nullable=True
+    )
+    cover_photo: Mapped["UnitPhoto | None"] = relationship(
+        "UnitPhoto", foreign_keys=[cover_photo_id]
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

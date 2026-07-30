@@ -60,7 +60,7 @@ export function ListingCard({ listing, className }: ListingCardProps) {
           </h2>
 
           <p className="mt-1 text-sm text-neutral-600 line-clamp-1">
-            {listing.city}, {listing.governorate}, {listing.country}
+            {listing.city}, {listing.governorate}, {listing.country || "Egypt"}
           </p>
 
           <p className="mt-2 text-sm text-neutral-700">
@@ -71,7 +71,7 @@ export function ListingCard({ listing, className }: ListingCardProps) {
           </p>
 
           <p className="mt-3 text-lg font-bold text-brand-600">
-            {formatMoney(listing.price, listing.currency)}{" "}
+            {formatMoney(listing.price, listing.currency || "EGP")}{" "}
             <span className="text-sm font-normal text-neutral-600">
               {t("perNight")}
             </span>

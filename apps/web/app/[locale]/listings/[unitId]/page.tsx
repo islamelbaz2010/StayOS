@@ -44,7 +44,7 @@ export default function ListingDetailPage() {
                 </h1>
 
                 <p className="mt-2 text-lg text-neutral-700">
-                  {data.city}, {data.governorate}, {data.country}
+                  {data.city}, {data.governorate}, {data.country || "Egypt"}
                 </p>
 
                 <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -67,7 +67,7 @@ export default function ListingDetailPage() {
                       {t("listing.price")}
                     </p>
                     <p className="mt-1 text-brand-600">
-                      {formatMoney(data.price, data.currency)}{" "}
+                      {formatMoney(data.price, data.currency || "EGP")}{" "}
                       <span className="text-sm text-neutral-700">
                         {t("listing.perNight")}
                       </span>

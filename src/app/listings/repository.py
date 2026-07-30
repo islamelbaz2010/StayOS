@@ -51,6 +51,9 @@ async def create_listing(
         peak_mult=request.peak_mult,
         min_nights=request.min_nights,
         max_nights=request.max_nights,
+        country=request.country,
+        currency=request.currency,
+        cover_photo_id=request.cover_photo_id,
     )
     session.add(listing)
     await session.flush()

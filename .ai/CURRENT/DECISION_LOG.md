@@ -630,3 +630,124 @@ Stripe handles: Visa, Mastercard, Apple Pay, Google Pay (international cards onl
 Paymob handles: all Egyptian rails — Fawry, Meeza, Vodafone Cash, InstaPay, EGP Visa/MC.
 
 This is a restatement of ADR-003. The Finance team begins Sprint 3 with this mandate. No Stripe for Egyptian domestic payments. No Paymob for non-EGP international cards.
+
+---
+
+### DEC-016: Sprint 3 Re-scoped to Supply Enablement & Closed Alpha Preparation
+
+**Status**: Accepted
+**Date**: 2026-07-30
+**Decision Maker**: Executive Product & Engineering Review Board
+**Urgency**: IMMEDIATE
+**Reversibility**: MEDIUM
+
+#### Context
+
+Sprint 3 planning was split between "Booking Flow Web + Mobile, Host Listings" and "Payments + Notifications + Launch." Both versions under-weighted the marketplace's most critical precondition: verified rental inventory. The executive review identified that the backend is strong, the frontend is minimal, and the largest business risk is supply. A marketplace cannot launch, accept payments, or retain guests without dense, verified listings.
+
+#### Decision
+
+Sprint 3 is re-scoped to **"Supply Enablement & Closed Alpha Preparation."** The sprint will prioritize host onboarding, listing photo upload, admin listing-claim/import, KYC review UI, map-based search, and payment checkout — in that order. Public launch is deferred until a closed alpha in Cairo/Alexandria reaches 50–100 live listings and 10 manual transactions.
+
+#### Alternatives Considered
+
+- **Keep original Sprint 3 (Payments + Notifications + Launch)** — Rejected. Would deliver polished booking features with insufficient inventory to book.
+- **Stop all engineering until Phase 0 is completed** — Rejected. The existing foundation can be hardened for supply acquisition while Phase 0 runs in parallel.
+- **Build native mobile first** — Rejected. Web is sufficient and faster for the closed alpha.
+
+#### Rationale
+
+Two-sided marketplaces must solve supply before demand. The engineering team has built a strong foundation; the next marginal effort must create inventory. Photo upload, host onboarding, and admin seeding are hard blockers. Payment and notification polish can follow once listings exist.
+
+#### Consequences
+
+- **Positive**: Engineering effort aligns with marketplace cold-start reality; closed alpha becomes achievable.
+- **Negative**: Some payment and notification features slip out of Sprint 3.
+- **Neutral**: Mobile, AI pricing, and field operations remain deferred.
+
+#### Related Decisions
+
+- DEC-001: StayOS is an accommodation marketplace.
+- DEC-002: Egypt as proof-of-concept market.
+- DEC-015: Stripe / Paymob scope.
+
+---
+
+### DEC-017: Public Launch Deferred Until Closed Alpha Succeeds
+
+**Status**: Accepted
+**Date**: 2026-07-30
+**Decision Maker**: Executive Product & Engineering Review Board
+**Urgency**: IMMEDIATE
+**Reversibility**: MEDIUM
+
+#### Context
+
+The product is technically a strong alpha but not ready for public launch. The frontend lacks host onboarding, payment checkout, and maps. Supply cannot be created at scale. Phase 0 customer validation has not been completed.
+
+#### Decision
+
+StayOS will not launch publicly in Sprint 3. It will run a **closed alpha** in one or two Egyptian cities (Cairo and/or Alexandria) with 50–100 hand-onboarded, verified listings and 10 manual transactions. Public launch is gated by alpha success metrics.
+
+#### Alternatives Considered
+
+- **Soft public launch with current feature set** — Rejected. Empty search and broken supply funnel would damage brand and waste marketing spend.
+- **Launch only to founder network** — Partially accepted. This is the definition of the closed alpha.
+
+#### Rationale
+
+Launching a marketplace without supply density and validated transactions is high-risk. A closed alpha allows the team to learn, iterate, and prove the host/guest loop with a small, controlled cohort before marketing spend.
+
+#### Consequences
+
+- **Positive**: Lower burn, higher learning velocity, stronger launch later.
+- **Negative**: Revenue and public traction delayed.
+- **Neutral**: Engineering focus shifts from "launch" to "alpha readiness."
+
+#### Related Decisions
+
+- DEC-016: Sprint 3 re-scope.
+
+---
+
+### DEC-018: Mobile, AI Pricing, Field Operations, and Channel Managers Postponed
+
+**Status**: Accepted
+**Date**: 2026-07-30
+**Decision Maker**: Executive Product & Engineering Review Board
+**Urgency**: PRE-LAUNCH
+**Reversibility**: HIGH
+
+#### Context
+
+The roadmap and backlog contain advanced features (native iOS/Android, AI pricing/matching, field operations/turnover tickets, channel manager sync) that are not required to launch the closed alpha.
+
+#### Decision
+
+The following items are formally postponed beyond Sprint 3:
+
+- Native iOS/Android app — until after product-market fit (100+ bookings).
+- AI-powered pricing and matching — until 1,000+ listings and 50K+ transactions.
+- Field operations / turnover tickets — until 50+ active units.
+- Channel manager sync (Airbnb/Booking.com) — remains "Never" per existing strategy.
+- Real-time messaging — until Sprint 5/6, email/WhatsApp sufficient for alpha.
+
+#### Alternatives Considered
+
+- **Build mobile in parallel with web** — Rejected. Doubles engineering cost and slows alpha.
+- **Build AI pricing now** — Rejected. No transaction data to train models.
+
+#### Rationale
+
+These features are scale problems, not launch problems. Resources should be concentrated on the supply bottleneck and the minimum booking loop.
+
+#### Consequences
+
+- **Positive**: Faster alpha, lower burn, clearer priorities.
+- **Negative**: Longer path to full feature parity with global OTAs.
+- **Neutral**: PWA/mobile-responsive web remains the target for the closed alpha.
+
+#### Related Decisions
+
+- DEC-016: Sprint 3 re-scope.
+- DEC-017: Closed alpha before public launch.

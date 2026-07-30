@@ -1535,3 +1535,65 @@ Development authorized immediately upon resolution of 3 Day-1 blockers:
 - No new migrations created
 - No APIs added
 - All work was documentation / planning baseline
+
+---
+
+## Session 006 — Pre-Sprint 3 Executive Review & Deliverables (2026-07-30)
+
+### Scope
+
+Continuation of the executive review requested at CHECKPOINT 22. Focused on backend architecture, frontend UX, marketplace model, business logic, and launch readiness. Produced four mandated executive-review documents and committed them.
+
+### Completed Work
+
+1. **Repository and documentation review**
+   - Reviewed `TECHNICAL_AUDIT_REPORT.md`, `MVP_SLICE.md`, `LEAN_PRODUCT.md`, `FEATURE_CATALOG.md`, and additional planning documents.
+   - Re-inspected backend routers, models, services, and security hardening.
+   - Re-inspected frontend pages and components (`BookingPanel`, `ListingCard`, listing detail, host placeholder).
+
+2. **Executive review deliverables created and committed**
+   - `PROJECT_EXECUTIVE_REVIEW.md`
+   - `PRODUCT_STRATEGY_REVIEW.md`
+   - `MARKETPLACE_SUPPLY_STRATEGY.md`
+   - `SPRINT3_RECOMMENDATIONS.md`
+
+3. **Git commit**
+   - Commit `b9e6077` on `tooling/repository-intelligence`.
+   - `docs(executive-review): add pre-Sprint 3 executive review deliverables`
+   - 4 files, 1,277 insertions.
+
+### Key Findings
+
+- Backend is strong and well-tested (326 tests passing, modular FastAPI monolith, payments, escrow, ledger).
+- Frontend is minimal and missing host onboarding, photo upload, map, and payment checkout.
+- The largest business risk is **supply**: no end-to-end host listing-creation flow, missing `pms.unit_photos` migration/endpoint, and no admin seeding/claim/import tools.
+- Phase 0 customer validation has not been executed; engineering is ahead of validated demand.
+
+### Confirmed Decisions
+
+- **Sprint 3 is re-scoped** from "Payments/Notifications/Launch" to **"Supply Enablement & Closed Alpha Preparation"**.
+- Public launch is deferred until a closed alpha (50–100 listings, 10 manual transactions) succeeds.
+- Engineering priority order: photo upload, host onboarding, admin claim/import, KYC review UI, map search, payment checkout.
+- Native mobile, AI pricing, field operations, and channel manager sync are postponed.
+
+### New Blockers
+
+- Founder/product lead must confirm the re-scoped Sprint 3 backlog.
+- Paymob integration/iframe IDs and Stripe commercial scope remain unresolved.
+- Phase 0 customer validation is still outstanding.
+
+### Files Added / Modified
+
+- `PROJECT_EXECUTIVE_REVIEW.md`
+- `PRODUCT_STRATEGY_REVIEW.md`
+- `MARKETPLACE_SUPPLY_STRATEGY.md`
+- `SPRINT3_RECOMMENDATIONS.md`
+
+### Constraints Observed
+
+- No source code was modified.
+- No architecture was changed.
+- No infrastructure was provisioned.
+- No new migrations created.
+- No APIs added.
+- All work was documentation and strategic planning.

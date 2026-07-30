@@ -62,7 +62,7 @@ async def upsert_unit(session: AsyncSession, unit_id: str, host_id: str, city: s
     await session.execute(
         text("""
             INSERT INTO pms.units (id, host_id, property_type, status, coordinates, governorate, city, max_guests, bedrooms, bathrooms, created_at, updated_at)
-            VALUES (:id, :host_id, 'apartment', 'active',
+            VALUES (:id, :host_id, 'APARTMENT', 'LISTED',
                     ST_SetSRID(ST_MakePoint(31.2357, 30.0444), 4326),
                     'Cairo', :city, 4, 2, 1, now(), now())
             ON CONFLICT (id) DO UPDATE SET updated_at = now()

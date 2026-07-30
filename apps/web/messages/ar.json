@@ -110,6 +110,43 @@
     "signInButton": "تسجيل الدخول",
     "guestsOnly": "يمكن للضيوف فقط إرسال طلبات الحجز."
   },
+  "hostBookings": {
+    "title": "طلبات الحجز",
+    "loading": "جاري تحميل الحجوزات...",
+    "selectBooking": "اختر حجزاً لمراجعته.",
+    "notFound": "الحجز غير موجود.",
+    "noBookings": "لا توجد طلبات حجز.",
+    "detailTitle": "تفاصيل الحجز",
+    "checkIn": "تاريخ الوصول",
+    "checkOut": "تاريخ المغادرة",
+    "nights": "ليالي",
+    "guests": "الضيوف",
+    "guestsBreakdown": " ({adults} بالغين، {children} أطفال، {infants} رضع)",
+    "accept": "قبول",
+    "reject": "رفض",
+    "cancel": "إلغاء",
+    "processing": "جاري المعالجة...",
+    "confirmReject": "تأكيد الرفض",
+    "confirmCancel": "تأكيد الإلغاء",
+    "back": "رجوع",
+    "rejectReason": "سبب الرفض (اختياري)",
+    "cancelReason": "سبب الإلغاء (اختياري)",
+    "updateError": "فشل تحديث الحجز. يرجى المحاولة مرة أخرى.",
+    "finalStatus": "هذا الحجز بالفعل {status}.",
+    "filter": {
+      "all": "الكل",
+      "requested": "مطلوب",
+      "accepted": "مقبول",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى"
+    },
+    "status": {
+      "requested": "مطلوب",
+      "accepted": "مقبول",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى"
+    }
+  },
   "availability": {
     "title": "التوفر",
     "subtitle": "اختر التواريخ لحظرها أو إلغاء حظرها.",

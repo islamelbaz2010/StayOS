@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
@@ -37,8 +37,58 @@ export async function createBooking(payload: BookingCreate): Promise<BookingResp
   return data;
 }
 
+export async function getHostBookings(
+  status: string | null = null
+): Promise<BookingResponse[]> {
+  const { data } = await api.get<BookingResponse[]>("/bookings", {
+    params: status ? { status } : undefined,
+  });
+  return data;
+}
+
+export async function getBooking(bookingId: string): Promise<BookingResponse> {
+  const { data } = await api.get<BookingResponse>(`/bookings/${bookingId}`);
+  return data;
+}
+
+export interface BookingUpdate {
+  status: "accepted" | "rejected" | "cancelled";
+  reject_reason?: string;
+  cancel_reason?: string;
+}
+
+export async function updateBooking(
+  bookingId: string,
+  payload: BookingUpdate
+): Promise<BookingResponse> {
+  const { data } = await api.patch<BookingResponse>(`/bookings/${bookingId}`, payload);
+  return data;
+}
+
 export function useCreateBooking() {
   return useMutation({
     mutationFn: createBooking,
+  });
+}
+
+export function useHostBookings(status: string | null = null) {
+  return useQuery({
+    queryKey: ["host-bookings", status],
+    queryFn: () => getHostBookings(status),
+  });
+}
+
+export function useBooking(bookingId: string) {
+  return useQuery({
+    queryKey: ["booking", bookingId],
+    queryFn: () => getBooking(bookingId),
+    enabled: Boolean(bookingId),
+  });
+}
+
+export function useUpdateBooking() {
+  return useMutation({
+    mutationFn: ({ bookingId, payload }: { bookingId: string; payload: BookingUpdate }) =>
+      updateBooking(bookingId, payload),
   });
 }

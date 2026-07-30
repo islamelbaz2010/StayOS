@@ -110,6 +110,43 @@
     "signInButton": "Sign in",
     "guestsOnly": "Only guests can request bookings."
   },
+  "hostBookings": {
+    "title": "Booking requests",
+    "loading": "Loading bookings...",
+    "selectBooking": "Select a booking to review it.",
+    "notFound": "Booking not found.",
+    "noBookings": "No booking requests found.",
+    "detailTitle": "Booking details",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights": "nights",
+    "guests": "Guests",
+    "guestsBreakdown": " ({adults} adults, {children} children, {infants} infants)",
+    "accept": "Accept",
+    "reject": "Reject",
+    "cancel": "Cancel",
+    "processing": "Processing...",
+    "confirmReject": "Confirm reject",
+    "confirmCancel": "Confirm cancel",
+    "back": "Back",
+    "rejectReason": "Rejection reason (optional)",
+    "cancelReason": "Cancellation reason (optional)",
+    "updateError": "Failed to update the booking. Please try again.",
+    "finalStatus": "This booking is already {status}.",
+    "filter": {
+      "all": "All",
+      "requested": "Requested",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "status": {
+      "requested": "Requested",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    }
+  },
   "availability": {
     "title": "Availability",
     "subtitle": "Select dates to block or unblock them.",

@@ -188,3 +188,19 @@ async def update_booking(
 
     updated = await bookings_repository.update_booking(session, booking, **update_fields)
     return _to_response(updated)
+
+
+async def list_host_bookings(
+    session: AsyncSession,
+    user: User,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[BookingResponse]:
+    if user.role not in (UserRole.HOST, UserRole.ADMIN):
+        raise AuthorizationError("Only hosts can view their bookings")
+
+    bookings = await bookings_repository.list_host_bookings(
+        session, user.id, status=status, limit=limit, offset=offset
+    )
+    return [_to_response(booking) for booking in bookings]

@@ -1,6 +1,7 @@
 from datetime import date
 from uuid import uuid4
 
+from app.listings.models import Unit
 from app.shared.exceptions import NotFoundError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,3 +84,25 @@ async def update_booking(session: AsyncSession, booking: Booking, **kwargs: obje
     await session.flush()
     await session.refresh(booking)
     return booking
+
+
+async def list_host_bookings(
+    session: AsyncSession,
+    host_id: str,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[Booking]:
+    stmt = (
+        select(Booking)
+        .options(selectinload(Booking.unit))
+        .join(Unit, Booking.unit_id == Unit.id)
+        .where(Unit.host_id == host_id)
+        .order_by(Booking.created_at.desc(), Booking.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    if status is not None:
+        stmt = stmt.where(Booking.status == status)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())

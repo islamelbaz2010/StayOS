@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
+import { BookingPanel } from "@/components/bookings/BookingPanel";
 import { GuestLayout } from "@/components/layouts";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -95,8 +96,10 @@ export default function ListingDetailPage() {
                 )}
               </div>
 
-              {data.amenities.length > 0 && (
-                <aside className="lg:col-span-1">
+              <aside className="space-y-6 lg:col-span-1">
+                <BookingPanel listing={data} />
+
+                {data.amenities.length > 0 && (
                   <section className="rounded-xl bg-white p-6 shadow-card">
                     <h2 className="text-lg font-semibold text-neutral-900">
                       {t("listing.amenities")}
@@ -113,8 +116,8 @@ export default function ListingDetailPage() {
                       ))}
                     </ul>
                   </section>
-                </aside>
-              )}
+                )}
+              </aside>
             </div>
           </article>
         )}

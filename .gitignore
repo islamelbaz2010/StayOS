@@ -140,6 +140,10 @@ parts/
 sdist/
 var/
 wheels/
+
+# Do not ignore the Next.js app library
+!apps/web/lib/
+!apps/web/lib/**
 *.egg-info/
 .installed.cfg
 *.egg

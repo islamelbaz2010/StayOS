@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { GuestLayout } from "@/components/layouts";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useListing } from "@/lib/queries/listings";
 import { formatMoney } from "@/lib/utils";
 
@@ -19,18 +20,9 @@ export default function ListingDetailPage() {
 
   return (
     <GuestLayout>
-      <main className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {isError ? (
-          <div className="mt-8 rounded-xl bg-danger-50 p-6 text-center">
-            <p className="text-danger-700">{t("common.error")}</p>
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-            >
-              {t("common.retry")}
-            </button>
-          </div>
+          <ErrorState onRetry={() => refetch()} />
         ) : isPending ? (
           <ListingDetailSkeleton />
         ) : (
@@ -103,13 +95,13 @@ export default function ListingDetailPage() {
                 )}
               </div>
 
-              <aside className="lg:col-span-1">
-                <section className="rounded-xl bg-white p-6 shadow-card">
-                  <h2 className="text-lg font-semibold text-neutral-900">
-                    {t("listing.amenities")}
-                  </h2>
+              {data.amenities.length > 0 && (
+                <aside className="lg:col-span-1">
+                  <section className="rounded-xl bg-white p-6 shadow-card">
+                    <h2 className="text-lg font-semibold text-neutral-900">
+                      {t("listing.amenities")}
+                    </h2>
 
-                  {data.amenities.length > 0 ? (
                     <ul className="mt-4 flex flex-wrap gap-2">
                       {data.amenities.map((amenity) => (
                         <li
@@ -120,17 +112,13 @@ export default function ListingDetailPage() {
                         </li>
                       ))}
                     </ul>
-                  ) : (
-                    <p className="mt-4 text-sm text-neutral-600">
-                      {t("search.noResults")}
-                    </p>
-                  )}
-                </section>
-              </aside>
+                  </section>
+                </aside>
+              )}
             </div>
           </article>
         )}
-      </main>
+      </section>
     </GuestLayout>
   );
 }

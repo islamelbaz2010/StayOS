@@ -7,6 +7,8 @@ import { useTranslations } from "next-intl";
 import { GuestLayout } from "@/components/layouts";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ListingCardSkeleton } from "@/components/listings/ListingCardSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useListings } from "@/lib/queries/listings";
 
 export default function SearchPage() {
@@ -38,16 +40,7 @@ export default function SearchPage() {
         </h1>
 
         {isError ? (
-          <div className="mt-8 rounded-xl bg-danger-50 p-6 text-center">
-            <p className="text-danger-700">{t("common.error")}</p>
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-            >
-              {t("common.retry")}
-            </button>
-          </div>
+          <ErrorState onRetry={() => refetch()} />
         ) : isPending ? (
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
@@ -55,9 +48,7 @@ export default function SearchPage() {
             ))}
           </div>
         ) : data?.listings.length === 0 ? (
-          <div className="mt-8 rounded-xl bg-neutral-100 p-8 text-center">
-            <p className="text-lg text-neutral-700">{t("search.noResults")}</p>
-          </div>
+          <EmptyState messageKey="search.noResults" />
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {data?.listings.map((listing) => (

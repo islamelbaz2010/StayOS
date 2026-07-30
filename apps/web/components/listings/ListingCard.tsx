@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -46,11 +47,13 @@ export function ListingCard({ listing, className }: ListingCardProps) {
         aria-label={`${listing.title}, ${listing.city}`}
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={imageUrl}
             alt={listing.title}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            loading="lazy"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
 

@@ -1,7 +1,9 @@
+from app.shared.exceptions import RateLimitError
+
 from . import pii
 from .audit import audit_middleware
 from .middleware import security_headers_middleware
-from .rate_limit import RateLimitError, rate_limit
+from .rate_limit import rate_limit
 
 __all__ = [
     "RateLimitError",

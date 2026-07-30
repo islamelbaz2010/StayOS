@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -29,11 +30,13 @@ export default function ListingDetailPage() {
         ) : (
           <article className="mx-auto max-w-4xl">
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-neutral-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={data.coverImage ?? PLACEHOLDER_IMAGE}
                 alt={data.title}
-                className="absolute inset-0 h-full w-full object-cover"
+                fill
+                priority
+                sizes="(max-width: 1200px) 100vw, 80vw"
+                className="object-cover"
               />
             </div>
 

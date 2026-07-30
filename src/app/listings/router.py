@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import dependencies as auth_dependencies
 from app.auth.models import User
 from app.database import get_session
+from app.security.rate_limit import listings_rate_limit
 from app.shared.exceptions import StayOSError, to_http_exception
 
 from .schemas import (
@@ -46,6 +47,7 @@ router = APIRouter(prefix="/listings", tags=["listings"])
 
 @router.get("", response_model=ListingSearchResponse)
 async def list_listings(
+    _: None = Depends(listings_rate_limit),
     session: AsyncSession = Depends(get_session),
     filters: ListingSearchFilters = Depends(),
 ) -> ListingSearchResponse:
@@ -70,6 +72,7 @@ async def post_listing(
 @router.get("/{unit_id}", response_model=ListingResponse)
 async def get_listing(
     unit_id: str,
+    _: None = Depends(listings_rate_limit),
     session: AsyncSession = Depends(get_session),
 ) -> ListingResponse:
     try:
@@ -96,6 +99,7 @@ async def get_listing_availability(
     unit_id: str,
     check_in: date,
     check_out: date,
+    _: None = Depends(listings_rate_limit),
     session: AsyncSession = Depends(get_session),
 ) -> AvailabilityResponse:
     try:

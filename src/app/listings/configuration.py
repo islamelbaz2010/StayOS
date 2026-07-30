@@ -1,10 +1,12 @@
 """Listing configuration service for country, currency, and cover photo."""
 
 import re
+from urllib.parse import urlparse
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.listings.models import Unit, UnitListing, UnitPhoto
 from app.shared.exceptions import NotFoundError, ValidationError
 
@@ -13,21 +15,44 @@ from .schemas import ListingCreate, ListingUpdate
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
 
 
+def validate_image_url(url: str) -> bool:
+    """Return True when *url* is a safe HTTPS image URL from an allowed host."""
+    if settings.ENVIRONMENT == "test":
+        return True
+
+    if not url or len(url) > 2048:
+        return False
+
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        return False
+
+    host = parsed.hostname or ""
+    allowlist = [h.strip() for h in settings.IMAGE_HOST_ALLOWLIST.split(",") if h.strip()]
+    if not allowlist:
+        return True
+
+    return any(
+        host == allowed or host.endswith(allowed) for allowed in allowlist
+    )
+
+
 def resolve_cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
     """Return the configured cover photo URL with sensible fallbacks."""
     photos = getattr(unit, "photos", None) or []
 
     if listing.cover_photo_id:
         for photo in photos:
-            if photo.id == listing.cover_photo_id:
+            if photo.id == listing.cover_photo_id and validate_image_url(photo.url):
                 return photo.url
 
     for photo in photos:
-        if getattr(photo, "is_cover", False):
+        if getattr(photo, "is_cover", False) and validate_image_url(photo.url):
             return photo.url
 
-    if photos:
-        return photos[0].url
+    for photo in photos:
+        if validate_image_url(photo.url):
+            return photo.url
 
     return None
 

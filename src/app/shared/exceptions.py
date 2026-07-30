@@ -13,6 +13,10 @@ class ValidationError(StayOSError):
     pass
 
 
+class RateLimitError(ValidationError):
+    pass
+
+
 class AuthenticationError(StayOSError):
     pass
 
@@ -32,6 +36,8 @@ class PaymentError(StayOSError):
 def to_http_exception(exc: StayOSError) -> HTTPException:
     if isinstance(exc, NotFoundError):
         return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    if isinstance(exc, RateLimitError):
+        return HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc))
     if isinstance(exc, ValidationError):
         return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
     if isinstance(exc, AuthenticationError):

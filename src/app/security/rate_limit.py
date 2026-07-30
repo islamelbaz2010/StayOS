@@ -4,7 +4,7 @@ from fastapi import Request
 
 from app.config import settings
 from app.shared import redis as redis_state
-from app.shared.exceptions import ValidationError
+from app.shared.exceptions import RateLimitError
 
 # Atomic Lua script: removes expired entries, checks count, adds new entry.
 # Returns 0 if allowed, or current count if rate limit exceeded.
@@ -23,10 +23,6 @@ if count < limit then
 end
 return count
 """
-
-
-class RateLimitError(ValidationError):
-    pass
 
 
 async def rate_limit(
@@ -57,6 +53,10 @@ async def rate_limit(
 
     if result > 0:
         raise RateLimitError("Rate limit exceeded. Please try again later.")
+
+
+async def listings_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
+    await rate_limit(request, key_prefix="listings", limit=120, window_seconds=60)
 
 
 async def login_rate_limit(request: Request) -> None:  # type: ignore[type-arg]

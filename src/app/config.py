@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     OTP_MAX_ATTEMPTS: int = 3
     OTP_RATE_LIMIT_WINDOW: int = 900
 
+    IMAGE_HOST_ALLOWLIST: str = Field(
+        default=".amazonaws.com",
+        description="Comma-separated allowed image URL host suffixes (e.g. .amazonaws.com,cdn.example.com)",
+    )
+
     JWT_PRIVATE_KEY: str = Field(..., description="RSA private key PEM for JWT signing")
     JWT_PUBLIC_KEY: str = Field(..., description="RSA public key PEM for JWT verification")
     JWT_ALGORITHM: str = "RS256"

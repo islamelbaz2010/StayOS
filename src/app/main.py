@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import router as auth_router
 from app.auth import services as auth_services
+from app.bookings import router as bookings_router
 from app.config import settings
 from app.database import get_session
 from app.finance import router as finance_router
@@ -173,6 +174,7 @@ app.include_router(kyc_router.router, prefix="/api/v1")
 app.include_router(listings_router.router, prefix="/api/v1")
 app.include_router(operations_router.router, prefix="/api/v1")
 app.include_router(reservations_router.router, prefix="/api/v1")
+app.include_router(bookings_router.router, prefix="/api/v1")
 app.include_router(finance_router.router, prefix="/api/v1")
 
 

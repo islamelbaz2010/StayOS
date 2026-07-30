@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from app.auth import models as auth_models  # noqa: F401
+from app.bookings import models as bookings_models  # noqa: F401
 from app.config import settings
 from app.finance import models as finance_models  # noqa: F401
 from app.kyc import models as kyc_models  # noqa: F401

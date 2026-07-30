@@ -8,7 +8,7 @@ from . import consumers, services
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(name="notifications.process_outbox_events")  # type: ignore[misc]
+@celery_app.task  # type: ignore[misc]
 def process_outbox_events() -> int:
     """Celery task that polls the outbox for notification events."""
     import asyncio
@@ -17,7 +17,6 @@ def process_outbox_events() -> int:
 
 
 @celery_app.task(  # type: ignore[misc]
-    name="notifications.process_pending_notifications",
     bind=True,
     max_retries=3,
     default_retry_delay=60,

@@ -205,3 +205,194 @@ Open Items: 4 (see Issues Found).
 Session Record: epos/SESSION_RECORD.md
 Shutdown: COMPLETE
 ```
+
+---
+
+# SESSION RECORD — Session 003
+
+**EPOS Registry ID**: EPOS-PROJ-001
+**Session Number**: 003
+**Session Date**: 2026-07-26 → 2026-07-27
+**Session Theme**: Bootstrap Cycle Only (START_SESSION + END_SESSION)
+
+---
+
+## Session Objective
+
+Execute `START_SESSION.md` and `END_SESSION.md` bootstrap procedures. No product or implementation work was scheduled or performed.
+
+---
+
+## Phases Executed
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| START_SESSION | Verify EPOS structure, load canonical files, produce startup summary | ✅ Complete |
+| END_SESSION | Review session, update memory, write session log | ✅ Complete |
+
+---
+
+## Work Performed
+
+- Verified all 7 EPOS required paths — no gaps.
+- Loaded `MASTER_PROJECT_MEMORY.md`, `SPRINT_MEMORY.md`, `DECISION_LOG.md`, all `.ai/CURRENT/*.md` files, and `SOURCE_INDEX.md` from AI_READY export.
+- Wrote `.ai/LOGS/startup-2026-07-26.md`.
+- Appended Session 003 record to `epos/SESSION_RECORD.md` (this file).
+- Updated `epos/WORKING_MEMORY.md`.
+- Wrote `.ai/LOGS/session-2026-07-27.md`.
+
+No application source code, migration files, test files, or product documents were created or modified.
+
+---
+
+## Decisions Made This Session
+
+None.
+
+---
+
+## Issues Found
+
+No new issues discovered. All blockers carried forward unchanged from Session 002:
+
+| # | Issue | Severity |
+|---|-------|----------|
+| 1 | Governance conflict: Phase 1 code (FC-01–FC-07) implemented while Phase 0 ACTIVE | High |
+| 2 | Payment processor conflict (Paymob vs Stripe) unresolved | High |
+| 3 | Phase 0 gate progress (10 transactions / 80 interviews) unknown | High |
+| 4 | `MASTER_PROJECT_MEMORY.md` `Project: UNKNOWN` header (template artifact) | Low |
+
+---
+
+## Shutdown Protocol Execution
+
+```
+EPOS SHUTDOWN — StayOS — Session 003 — 2026-07-27
+Work Completed: START_SESSION + END_SESSION bootstrap only. No product work.
+Decisions Made: None.
+Files Modified: epos/SESSION_RECORD.md, epos/WORKING_MEMORY.md, .ai/LOGS/startup-2026-07-26.md, .ai/LOGS/session-2026-07-27.md
+Open Items: 4 (unchanged from Session 002 — see Issues Found).
+Session Record: epos/SESSION_RECORD.md
+Shutdown: COMPLETE
+```
+
+---
+
+# SESSION RECORD — Session 004
+
+**EPOS Registry ID**: EPOS-PROJ-001
+**Session Number**: 004
+**Session Date**: 2026-07-27
+**Session Theme**: Product Design Sprints + Implementation Baseline
+
+---
+
+## Session Objective
+
+Continue from prior context (ran out): create `STAYOS_IMPLEMENTATION_BASELINE.md` — the contractual execution baseline for all engineering teams, with an executive GO/NO GO decision. Then execute END_SESSION.
+
+---
+
+## Phases Executed
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 — Context Recovery | Prior context summarized; all data collection complete | ✅ Complete |
+| Phase 2 — Baseline Document | Created STAYOS_IMPLEMENTATION_BASELINE.md (17 sections, 1,354 lines) | ✅ Complete |
+| Phase 3 — END_SESSION | Updated all EPOS memory files, session log, sprint memory | ✅ Complete |
+
+---
+
+## Startup Protocol Execution
+
+```
+EPOS STARTUP — StayOS — Session 004 — 2026-07-27
+Phase: Phase 0 → Phase 1 boundary (design complete, implementation authorized)
+Active Branch: tooling/repository-intelligence
+Task: Create STAYOS_IMPLEMENTATION_BASELINE.md (continuation)
+Startup: RESUMED FROM PRIOR CONTEXT
+```
+
+---
+
+## Work Performed
+
+### Deliverable Produced
+
+**`STAYOS_IMPLEMENTATION_BASELINE.md`** — 1,354 lines, 15,842 words
+
+The contractual execution baseline document with 17 sections:
+
+| Section | Content |
+|---------|---------|
+| 1. RTM | 70 requirements traced: design → epic → backend → API → DB → web → mobile → test → sprint → release |
+| 2. Epic Coverage | 23 epics with objective, screens, backend, DB, dependencies, sprint, DoD, status |
+| 3. Screen Coverage | 81 screens across Web + Mobile with API, service, sprint, owner |
+| 4. API Coverage | 61 existing + 20 missing endpoints documented |
+| 5. Database Coverage | 26 existing + 5 planned tables documented |
+| 6. Backend Service Matrix | 8 services fully documented |
+| 7. Web Coverage | 24 pages with components, hooks, state, 9 infrastructure gaps |
+| 8. Mobile Coverage | 40 screens (0% built), framework OPEN |
+| 9. Test Coverage | 30 test files + missing tests enumerated |
+| 10. Security Coverage | 28-item security review |
+| 11. DevOps Coverage | 23-item infrastructure review |
+| 12. Production Readiness | 8/32 items complete |
+| 13. Release Checklists | Alpha / Beta / RC / Production |
+| 14. Definition of Done | Story / Epic / Sprint / Release levels |
+| 15. Completeness Validation | Gaps enumerated |
+| 16. Consistency Validation | 83% overall |
+| 17. Executive Decision | **GO** — development authorized |
+
+### Key Metrics
+
+| Metric | Score |
+|--------|-------|
+| Overall Completeness | 42% |
+| Backend Completeness | 78% |
+| Web Frontend | 5% |
+| Mobile | 0% |
+| Infrastructure | 40% (defined, not provisioned) |
+| Production Readiness | 25% |
+
+### Prior Context Design Sprints (Completed Before Context Ran Out)
+
+10 design documents frozen (see SPRINT_MEMORY.md Session 004 delta for full list):
+- PRODUCT_EXPERIENCE_DESIGN.md (81 screens, 12 flows)
+- VISUAL_DESIGN_SYSTEM_P1–P4.md (full component library, tokens, WCAG 2.1 AA)
+- MOBILE_NATIVE_DESIGN_P1–P5.md (iOS + Android + Flutter + RN specs)
+- STAYOS_ENGINEERING_EXECUTION_MASTER_PLAN.md (23 epics, 9 sprints, resource plan)
+
+---
+
+## Decisions Made This Session
+
+No new product or strategic decisions. The Implementation Baseline records the executive GO decision — this requires founder signature to become binding.
+
+---
+
+## Issues Found
+
+| # | Issue | Severity |
+|---|-------|----------|
+| 1 | Governance conflict: Phase 1 code present while Phase 0 gates unresolved | High |
+| 2 | Payment processor conflict — TECH_STACK.md flag is stale (code resolves it correctly) | Medium |
+| 3 | Mobile framework not chosen — Day-1 blocker for all mobile development | CRITICAL |
+| 4 | Infrastructure not provisioned (Terraform defined only) | High |
+| 5 | GitHub Secrets not configured — CI/CD cannot run | High |
+| 6 | 20 API endpoints missing | High |
+| 7 | Web frontend 5% complete | High |
+| 8 | Mobile frontend 0% complete | Critical |
+
+---
+
+## Shutdown Protocol Execution
+
+```
+EPOS SHUTDOWN — StayOS — Session 004 — 2026-07-27
+Work Completed: Created STAYOS_IMPLEMENTATION_BASELINE.md (1,354 lines, 15,842 words). Executive decision: GO.
+Decisions Made: None new (baseline records existing state).
+Files Modified: STAYOS_IMPLEMENTATION_BASELINE.md (NEW), .ai/CURRENT/SPRINT_MEMORY.md, .ai/CURRENT/MASTER_PROJECT_MEMORY.md, .ai/LOGS/session-2026-07-27.md, epos/SESSION_RECORD.md, epos/WORKING_MEMORY.md
+Open Items: 13 blockers (3 Day-1), 6 open decisions, awaiting founder signature on baseline.
+Session Record: epos/SESSION_RECORD.md
+Shutdown: COMPLETE
+```

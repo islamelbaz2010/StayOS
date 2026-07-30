@@ -52,6 +52,11 @@ Thumbs.db
 *.sublime-workspace
 *.sublime-project
 
+# AI assistant scratch workspaces
+.akwb/
+.claude/
+.devin/mcp_config.local.json
+
 # Logs
 *.log
 logs/
@@ -82,7 +87,11 @@ temp/
 .env
 .env.local
 .env.*.local
+.env.staging
 *.env
+
+# Celery beat schedule
+celerybeat-schedule*
 
 # Secrets
 *.key

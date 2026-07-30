@@ -126,6 +126,44 @@ docs/architecture/adr/ADR-016-epos-governance-adoption.md — Created
 2. Which payment processor will be primary in production?
 3. Is the next sprint staging/Closed Beta readiness or governance reconciliation?
 
+---
+
+## Session 003 — 2026-07-26 → 2026-07-27
+
+### Active Context
+
+**Current Branch**: `tooling/repository-intelligence`
+**Current Phase**: Phase 0 — Customer Validation (ACTIVE)
+**Active Sprint Theme**: Bootstrap only — no active sprint work this session
+
+### This Session — Work Completed
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Execute START_SESSION.md (verify structure, load files, write startup log) | ✅ Complete |
+| 2 | Execute END_SESSION.md (write session record, update working memory, write session log) | ✅ Complete |
+
+### This Session — Decisions Made
+
+None.
+
+### This Session — Issues Found
+
+No new issues. Blockers carried forward unchanged from Session 002.
+
+### Open Questions Carried Forward
+
+1. Are Phase 0 gate conditions cleared?
+2. Which payment processor is primary?
+3. Is the next active sprint Closed Beta staging readiness or governance reconciliation?
+
+### Files Modified This Session
+
+- `epos/SESSION_RECORD.md` — Session 003 appended
+- `epos/WORKING_MEMORY.md` — Session 003 appended
+- `.ai/LOGS/startup-2026-07-26.md` — Created
+- `.ai/LOGS/session-2026-07-27.md` — Created
+
 ### Files Modified This Session
 
 Source code and tests:
@@ -155,3 +193,51 @@ AI memory:
 - `.ai/CURRENT/MASTER_PROJECT_MEMORY.md`
 - `.ai/EXPORT/AI_READY/StayOS/SOURCE_INDEX.md`
 - `.ai/LOGS/session-2026-07-21.md`
+
+---
+
+## Session 004 — 2026-07-27
+
+### Work Completed
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Create STAYOS_IMPLEMENTATION_BASELINE.md (17 sections, 1,354 lines) | ✅ Complete |
+| 2 | Append Session 004 to SPRINT_MEMORY.md | ✅ Complete |
+| 3 | Append Section 24 to MASTER_PROJECT_MEMORY.md | ✅ Complete |
+| 4 | Append Session 004 to session-2026-07-27.md | ✅ Complete |
+| 5 | Append Session 004 to epos/SESSION_RECORD.md | ✅ Complete |
+| 6 | Update epos/WORKING_MEMORY.md | ✅ Complete |
+
+### Current Project State
+
+| Layer | Completeness | Notes |
+|-------|-------------|-------|
+| Design Specs | 100% | 10 documents, frozen |
+| Backend | 78% | Core done; messaging/reviews/FCM/photos missing |
+| Web Frontend | 5% | Next.js scaffold only |
+| Mobile | 0% | Framework not chosen (Day-1 blocker) |
+| Infrastructure | 40% | Terraform defined, not provisioned |
+| Implementation Baseline | COMPLETE | Awaiting founder signature |
+
+### Day-1 Actions Required (Development Start Gate)
+
+1. Founder signs `STAYOS_IMPLEMENTATION_BASELINE.md`
+2. Mobile framework chosen (Flutter recommended)
+3. `terraform apply` in me-south-1
+4. GitHub Secrets configured
+
+### Active Blockers
+
+13 total blockers documented in `STAYOS_IMPLEMENTATION_BASELINE.md` Section 17.3.
+
+### Files Modified This Session
+
+| File | Action |
+|------|--------|
+| `STAYOS_IMPLEMENTATION_BASELINE.md` | **CREATED** |
+| `.ai/CURRENT/SPRINT_MEMORY.md` | Session 004 delta appended |
+| `.ai/CURRENT/MASTER_PROJECT_MEMORY.md` | Section 24 appended |
+| `.ai/LOGS/session-2026-07-27.md` | Session 004 appended |
+| `epos/SESSION_RECORD.md` | Session 004 appended |
+| `epos/WORKING_MEMORY.md` | Session 004 appended |

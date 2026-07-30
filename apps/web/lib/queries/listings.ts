@@ -36,6 +36,46 @@ interface ApiSearchResponse {
   };
 }
 
+interface ApiListingResponse {
+  id: string;
+  title: string;
+  description: string;
+  city: string;
+  governorate: string;
+  country: string;
+  property_type: string;
+  price: number;
+  currency: string;
+  max_guests: number;
+  cover_image: string | null;
+  amenities: string[];
+  house_rules: string | null;
+}
+
+export interface ListingDetail extends Listing {
+  description: string;
+  amenities: string[];
+  houseRules: string | null;
+}
+
+function mapListingDetail(item: ApiListingResponse): ListingDetail {
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    city: item.city,
+    governorate: item.governorate,
+    country: item.country,
+    propertyType: item.property_type,
+    price: item.price,
+    currency: item.currency,
+    maxGuests: item.max_guests,
+    coverImage: item.cover_image,
+    amenities: item.amenities,
+    houseRules: item.house_rules,
+  };
+}
+
 function mapSearchResult(item: ApiSearchResponse["data"][0]): Listing {
   return {
     id: item.id,
@@ -77,5 +117,16 @@ export function useListings(filters: SearchFilters) {
         hasMore: data.pagination.has_more,
       };
     },
+  });
+}
+
+export function useListing(unitId: string) {
+  return useQuery({
+    queryKey: ["listing", unitId],
+    queryFn: async () => {
+      const { data } = await api.get<ApiListingResponse>(`/listings/${unitId}`);
+      return mapListingDetail(data);
+    },
+    enabled: Boolean(unitId),
   });
 }

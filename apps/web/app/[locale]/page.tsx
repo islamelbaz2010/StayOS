@@ -1,9 +1,14 @@
-import { redirect } from "next/navigation";
+import { GuestLayout } from "@/components/layouts";
+import { LandingSearchForm } from "@/components/search/LandingSearchForm";
 
 export default function LocalePage({
   params: { locale },
 }: {
   params: { locale: string };
 }) {
-  redirect(`/${locale}/search`);
+  return (
+    <GuestLayout>
+      <LandingSearchForm locale={locale} />
+    </GuestLayout>
+  );
 }

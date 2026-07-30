@@ -33,10 +33,21 @@
     "email": "Email address",
     "sendOtp": "Send verification code",
     "verifyOtp": "Verify code",
+    "loginSubtitle": "Sign in with your phone number",
+    "phonePlaceholder": "+20XXXXXXXXXX",
+    "code": "Verification code",
+    "resend": "Resend",
+    "continue": "Continue",
+    "signingIn": "Signing in...",
+    "otpSendFailed": "Failed to send verification code. Please try again.",
     "otpSent": "Verification code sent to {phone}",
     "invalidOtp": "Invalid code",
     "continueWithGoogle": "Continue with Google",
     "continueWithApple": "Continue with Apple"
+  },
+  "host": {
+    "title": "Host area",
+    "comingSoon": "Host features will be available in Sprint 2-02"
   },
   "search": {
     "title": "Search",

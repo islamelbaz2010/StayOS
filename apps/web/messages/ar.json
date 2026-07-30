@@ -33,10 +33,21 @@
     "email": "البريد الإلكتروني",
     "sendOtp": "إرسال رمز التحقق",
     "verifyOtp": "التحقق من الرمز",
+    "loginSubtitle": "سجّل الدخول باستخدام رقم هاتفك",
+    "phonePlaceholder": "+20XXXXXXXXXX",
+    "code": "رمز التحقق",
+    "resend": "إعادة الإرسال",
+    "continue": "متابعة",
+    "signingIn": "جاري تسجيل الدخول...",
+    "otpSendFailed": "فشل إرسال رمز التحقق. حاول مرة أخرى.",
     "otpSent": "تم إرسال رمز التحقق إلى {phone}",
     "invalidOtp": "الرمز غير صحيح",
     "continueWithGoogle": "المتابعة مع جوجل",
     "continueWithApple": "المتابعة مع آبل"
+  },
+  "host": {
+    "title": "منطقة المضيف",
+    "comingSoon": "ستتوفر ميزات المضيف في Sprint 2-02"
   },
   "search": {
     "title": "بحث",

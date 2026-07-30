@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "generate:api": "python3 ../../scripts/export_openapi.py && npx openapi-typescript lib/openapi.json -o lib/api-types.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

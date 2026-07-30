@@ -179,6 +179,7 @@ docs/output/
 # Generated files
 generated/
 auto/
+apps/web/lib/openapi.json
 .next/
 *.tsbuildinfo
 htmlcov/

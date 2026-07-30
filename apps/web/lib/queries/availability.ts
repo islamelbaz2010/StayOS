@@ -1,29 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
+import type { components } from "@/lib/api-types";
 
-export interface AvailabilityDay {
-  date: string;
-  status: string;
-  block_type: string | null;
-}
-
-export interface AvailabilityResponse {
-  unit_id: string;
-  check_in: string;
-  check_out: string;
-  days: AvailabilityDay[];
-}
-
-export interface AvailabilityRule {
-  date_from: string;
-  date_to: string;
-  status: "available" | "blocked";
-}
-
-export interface AvailabilityUpdateRequest {
-  rules: AvailabilityRule[];
-}
+export type AvailabilityDay = components["schemas"]["AvailabilityDay"];
+export type AvailabilityResponse =
+  components["schemas"]["app__availability__schemas__AvailabilityResponse"];
+export type AvailabilityRule = components["schemas"]["AvailabilityRule"];
+export type AvailabilityUpdateRequest = components["schemas"]["AvailabilityUpdateRequest"];
 
 export async function getAvailability(
   unitId: string,

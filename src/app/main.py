@@ -28,7 +28,7 @@ from app.security.sentry import init_sentry
 from app.shared import redis as redis_state
 from app.shared.exceptions import StayOSError, to_http_exception
 from app.shared.middleware import add_request_id, setup_cors
-from app.shared.schemas import HealthResponse
+from app.shared.schemas import HealthResponse, RootResponse, VersionResponse
 
 logger = logging.getLogger(__name__)
 
@@ -243,11 +243,15 @@ async def metrics() -> str:
     return ops_metrics.collector.render_prometheus()
 
 
-@app.get("/version")
-async def version() -> dict[str, str]:
-    return {"name": "StayOS API", "version": "0.1.0", "environment": settings.ENVIRONMENT}
+@app.get("/version", response_model=VersionResponse)
+async def version() -> VersionResponse:
+    return VersionResponse(
+        name="StayOS API",
+        version="0.1.0",
+        environment=settings.ENVIRONMENT,
+    )
 
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"message": "StayOS API", "version": "0.1.0"}
+@app.get("/", response_model=RootResponse)
+async def root() -> RootResponse:
+    return RootResponse(message="StayOS API", version="0.1.0")

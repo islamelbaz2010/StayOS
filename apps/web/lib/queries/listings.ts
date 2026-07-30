@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
+import type { components } from "@/lib/api-types";
 import type { Listing } from "@/components/listings/ListingCard";
 
 export interface SearchFilters {
@@ -15,42 +16,9 @@ export interface SearchFilters {
   offset?: string;
 }
 
-interface ApiSearchResponse {
-  data: Array<{
-    id: string;
-    title: string;
-    description: string;
-    city: string;
-    governorate: string;
-    country: string;
-    property_type: string;
-    price: number;
-    currency: string;
-    max_guests: number;
-    cover_image: string | null;
-  }>;
-  pagination: {
-    total_count: number;
-    has_more: boolean;
-    next_cursor: string | null;
-  };
-}
-
-interface ApiListingResponse {
-  id: string;
-  title: string;
-  description: string;
-  city: string;
-  governorate: string;
-  country: string;
-  property_type: string;
-  price: number;
-  currency: string;
-  max_guests: number;
-  cover_image: string | null;
-  amenities: string[];
-  house_rules: string | null;
-}
+type ApiSearchResponse = components["schemas"]["ListingSearchResponse"];
+type ApiSearchResult = components["schemas"]["ListingSearchResult"];
+type ApiListingResponse = components["schemas"]["ListingResponse"];
 
 export interface ListingDetail extends Listing {
   description: string;
@@ -70,13 +38,13 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     price: item.price,
     currency: item.currency,
     maxGuests: item.max_guests,
-    coverImage: item.cover_image,
+    coverImage: item.cover_image ?? null,
     amenities: item.amenities,
     houseRules: item.house_rules,
   };
 }
 
-function mapSearchResult(item: ApiSearchResponse["data"][0]): Listing {
+function mapSearchResult(item: ApiSearchResult): Listing {
   return {
     id: item.id,
     title: item.title,
@@ -87,7 +55,7 @@ function mapSearchResult(item: ApiSearchResponse["data"][0]): Listing {
     price: item.price,
     currency: item.currency,
     maxGuests: item.max_guests,
-    coverImage: item.cover_image,
+    coverImage: item.cover_image ?? null,
   };
 }
 

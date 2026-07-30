@@ -29,3 +29,14 @@ class ErrorResponse(BaseModel):
     message: str
     message_ar: str
     details: dict[str, Any] | None = None
+
+
+class VersionResponse(BaseModel):
+    name: str
+    version: str
+    environment: str
+
+
+class RootResponse(BaseModel):
+    message: str
+    version: str

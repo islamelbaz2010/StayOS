@@ -118,7 +118,7 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
     const map: Record<string, { status: string; block_type: string | null }> = {};
     if (availability) {
       for (const day of availability.days) {
-        map[day.date] = { status: day.status, block_type: day.block_type };
+        map[day.date] = { status: day.status, block_type: day.block_type ?? null };
       }
     }
     return map;

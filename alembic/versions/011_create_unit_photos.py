@@ -1,7 +1,7 @@
 """Create pms.unit_photos table
 
 Revision ID: 011_create_unit_photos
-Revises: 010_add_notifications_and_security
+Revises: 010_notifications_and_security
 Create Date: 2026-07-30 00:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "011_create_unit_photos"
-down_revision: str | None = "010_add_notifications_and_security"
+down_revision: str | None = "010_notifications_and_security"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -21,7 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS postgis CASCADE")
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-    op.execute("CREATE EXTENSION IF NOT EXISTS uuid-ossp")
+    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
     
     op.execute("CREATE SCHEMA IF NOT EXISTS auth")
     op.execute("CREATE SCHEMA IF NOT EXISTS pms")
@@ -39,6 +39,6 @@ def downgrade() -> None:
     op.execute("DROP SCHEMA IF EXISTS pms CASCADE")
     op.execute("DROP SCHEMA IF EXISTS auth CASCADE")
     
-    op.execute("DROP EXTENSION IF EXISTS uuid-ossp")
+    op.execute('DROP EXTENSION IF EXISTS "uuid-ossp"')
     op.execute("DROP EXTENSION IF EXISTS pg_trgm")
     op.execute("DROP EXTENSION IF EXISTS postgis")

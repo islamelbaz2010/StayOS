@@ -68,6 +68,8 @@ coverage/
 *.cover
 .hypothesis/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .nyc_output/
 
 # Documentation
@@ -176,3 +178,7 @@ auto/
 .next/
 *.tsbuildinfo
 htmlcov/
+
+# Bootstrap system — generated reports (never commit)
+BOOTSTRAP_REPORT.md
+DOCTOR_REPORT.md

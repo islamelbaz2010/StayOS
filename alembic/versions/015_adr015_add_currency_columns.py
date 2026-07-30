@@ -1,7 +1,7 @@
 """ADR-015: add currency column to financial and reservation tables
 
 Revision ID: 015_adr015_add_currency_columns
-Revises: 014_add_property_readiness_unique
+Revises: 014_property_readiness_unique
 Create Date: 2026-07-30 00:00:00.000000
 
 All monetary amounts are stored as INTEGER (minor units / piasters), which
@@ -22,7 +22,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "015_adr015_add_currency_columns"
-down_revision: str | None = "014_add_property_readiness_unique"
+down_revision: str | None = "014_property_readiness_unique"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

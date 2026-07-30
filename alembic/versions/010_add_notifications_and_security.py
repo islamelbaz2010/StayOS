@@ -1,6 +1,6 @@
 """Add notifications and security audit tables
 
-Revision ID: 010_add_notifications_and_security
+Revision ID: 010_notifications_and_security
 Revises: 009_add_calendar_exclusion
 Create Date: 2026-07-22 14:00:00.000000
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = "010_add_notifications_and_security"
+revision: str = "010_notifications_and_security"
 down_revision: Union[str, None] = "009_add_calendar_exclusion"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

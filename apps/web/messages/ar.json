@@ -42,15 +42,18 @@
     "title": "بحث",
     "placeholder": "ابحث عن وجهتك",
     "where": "أين؟",
-    "checkIn": "تاريخ الوصول",
-    "checkOut": "تاريخ المغادرة",
     "guests": "الضيوف",
     "adults": "بالغين",
     "children": "أطفال",
     "infants": "رضع",
     "noResults": "لا توجد نتائج",
     "showMap": "عرض الخريطة",
-    "hideMap": "إخفاء الخريطة"
+    "hideMap": "إخفاء الخريطة",
+    "subtitle": "اكتشف أفضل أماكن الإقامة في مصر",
+    "destination": "الوجهة",
+    "button": "بحث",
+    "checkin": "تاريخ الوصول",
+    "checkout": "تاريخ المغادرة"
   },
   "listing": {
     "perNight": "لليلة",
@@ -60,7 +63,12 @@
     "checkAvailability": "تحقق من التوفر",
     "amenities": "المرافق",
     "houseRules": "قواعد المنزل",
-    "cancellationPolicy": "سياسة الإلغاء"
+    "cancellationPolicy": "سياسة الإلغاء",
+    "price": "السعر",
+    "location": "الموقع",
+    "propertyType": "نوع العقار",
+    "maxGuests": "عدد الضيوف",
+    "details": "التفاصيل"
   },
   "reservation": {
     "upcoming": "القادمة",

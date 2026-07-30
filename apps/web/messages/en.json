@@ -42,15 +42,18 @@
     "title": "Search",
     "placeholder": "Search your destination",
     "where": "Where?",
-    "checkIn": "Check-in",
-    "checkOut": "Check-out",
     "guests": "Guests",
     "adults": "Adults",
     "children": "Children",
     "infants": "Infants",
     "noResults": "No results found",
     "showMap": "Show map",
-    "hideMap": "Hide map"
+    "hideMap": "Hide map",
+    "subtitle": "Discover the best places to stay in Egypt",
+    "destination": "Destination",
+    "button": "Search",
+    "checkin": "Check-in",
+    "checkout": "Check-out"
   },
   "listing": {
     "perNight": "per night",
@@ -60,7 +63,12 @@
     "checkAvailability": "Check availability",
     "amenities": "Amenities",
     "houseRules": "House rules",
-    "cancellationPolicy": "Cancellation policy"
+    "cancellationPolicy": "Cancellation policy",
+    "price": "Price",
+    "location": "Location",
+    "propertyType": "Property type",
+    "maxGuests": "Max guests",
+    "details": "Details"
   },
   "reservation": {
     "upcoming": "Upcoming",

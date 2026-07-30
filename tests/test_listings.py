@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, date, datetime
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -48,17 +49,22 @@ def _make_listing_response(user_id: str | None = None) -> ListingResponse:
         lng=31.2357,
         governorate="Cairo",
         city="Cairo",
+        country="Egypt",
         district=None,
         max_guests=4,
         bedrooms=2,
         bathrooms=1,
         title_ar="شقة تجريبية",
         title_en="Test Apartment",
+        title="شقة تجريبية",
         description_ar="وصف",
         description_en="Description",
+        description="وصف",
         amenities=["WIFI"],
         cultural_tags=["FAMILY_ONLY"],
         base_price_egp=1500,
+        price=1500,
+        currency="EGP",
         weekend_mult=1.0,
         peak_mult=1.0,
         min_nights=1,
@@ -66,6 +72,7 @@ def _make_listing_response(user_id: str | None = None) -> ListingResponse:
         house_rules=None,
         check_in_instructions=None,
         policies=None,
+        cover_image=None,
     )
 
 
@@ -119,6 +126,45 @@ def test_search_listings(listings_client: TestClient, monkeypatch) -> None:
 def test_search_listings_validation(listings_client: TestClient) -> None:
     response = listings_client.get("/api/v1/listings?min_price=1000&max_price=500")
     assert response.status_code == 422
+
+
+def test_search_listings_supports_offset(listings_client: TestClient, monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["offset"] = filters.get_offset()
+        captured["limit"] = filters.limit
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get("/api/v1/listings?offset=10&limit=5")
+    assert response.status_code == 200
+    assert captured.get("offset") == 10
+    assert captured.get("limit") == 5
+
+
+def test_get_listing_required_fields(listings_client: TestClient, monkeypatch) -> None:
+    listing = _make_listing_response()
+    monkeypatch.setattr(
+        "app.listings.router.get_listing_detail", AsyncMock(return_value=listing)
+    )
+
+    response = listings_client.get(f"/api/v1/listings/{listing.id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == listing.id
+    assert data["title"] == listing.title
+    assert data["description"] == listing.description
+    assert data["country"] == "Egypt"
+    assert data["price"] == listing.price
+    assert data["currency"] == "EGP"
+    assert "cover_image" in data
+    assert data["max_guests"] == listing.max_guests
+    assert data["property_type"] == listing.property_type
 
 
 def test_get_listing(listings_client: TestClient, monkeypatch) -> None:

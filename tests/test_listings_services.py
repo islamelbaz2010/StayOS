@@ -6,7 +6,7 @@ import pytest
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.listings.constants import CalendarStatus
-from app.listings.models import CalendarRule, Unit, UnitListing
+from app.listings.models import CalendarRule, Unit, UnitListing, UnitPhoto
 from app.listings.schemas import (
     ListingCreate,
     ListingSearchFilters,
@@ -80,6 +80,16 @@ def _make_unit(status: str = "LISTED") -> Unit:
         bathrooms=1,
     )
     unit.listing = _make_listing()
+    unit.photos = [
+        UnitPhoto(
+            id="photo-1",
+            unit_id="unit-1",
+            s3_key="covers/test.jpg",
+            url="https://cdn.example.com/covers/test.jpg",
+            display_order=0,
+            is_cover=True,
+        )
+    ]
     return unit
 
 
@@ -161,6 +171,12 @@ async def test_get_listing_detail(fake_session: AsyncMock, monkeypatch) -> None:
     assert result.id == "unit-1"
     assert result.lat == 30.0
     assert result.lng == 31.0
+    assert result.title == "شقة"
+    assert result.description == "وصف"
+    assert result.price == 1500
+    assert result.currency == "EGP"
+    assert result.country == "Egypt"
+    assert result.cover_image == "https://cdn.example.com/covers/test.jpg"
 
 
 @pytest.mark.asyncio
@@ -193,10 +209,14 @@ async def test_search_listings(fake_session: AsyncMock, monkeypatch) -> None:
         listings.repository, "search_listings", AsyncMock(return_value=(rows, 1))
     )
 
-    filters = ListingSearchFilters()
+    filters = ListingSearchFilters(offset=10, limit=5)
     result = await search_listings(fake_session, filters)
     assert len(result.data) == 1
     assert result.pagination.total_count == 1
+    assert result.data[0].title == "شقة"
+    assert result.data[0].price == 1500
+    assert result.data[0].currency == "EGP"
+    assert result.data[0].cover_image == "https://cdn.example.com/covers/test.jpg"
 
 
 @pytest.mark.asyncio

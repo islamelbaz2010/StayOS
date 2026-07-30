@@ -32,6 +32,27 @@ from .schemas import (
     PaginationInfo,
 )
 
+DEFAULT_LISTING_COUNTRY = "Egypt"
+DEFAULT_LISTING_CURRENCY = "EGP"
+
+
+def _resolve_title(listing: UnitListing) -> str:
+    return listing.title_ar or listing.title_en or ""
+
+
+def _resolve_description(listing: UnitListing) -> str:
+    return listing.description_ar or listing.description_en or ""
+
+
+def _cover_image_url(unit: Unit) -> str | None:
+    photos = getattr(unit, "photos", None)
+    if not photos:
+        return None
+    for photo in photos:
+        if getattr(photo, "is_cover", False):
+            return photo.url
+    return photos[0].url
+
 
 def _to_listing_response(
     unit: Unit, listing: UnitListing, lat: float, lng: float
@@ -45,24 +66,30 @@ def _to_listing_response(
         lng=lng,
         governorate=unit.governorate,
         city=unit.city,
+        country=DEFAULT_LISTING_COUNTRY,
         district=unit.district,
         max_guests=unit.max_guests,
         bedrooms=unit.bedrooms,
         bathrooms=unit.bathrooms,
         title_ar=listing.title_ar,
         title_en=listing.title_en,
+        title=_resolve_title(listing),
         description_ar=listing.description_ar,
         description_en=listing.description_en,
+        description=_resolve_description(listing),
         amenities=listing.amenities,
         cultural_tags=listing.cultural_tags,
         house_rules=listing.house_rules,
         check_in_instructions=listing.check_in_instructions,
         policies=listing.policies,
         base_price_egp=listing.base_price_egp,
+        price=listing.base_price_egp,
+        currency=DEFAULT_LISTING_CURRENCY,
         weekend_mult=listing.weekend_mult,
         peak_mult=listing.peak_mult,
         min_nights=listing.min_nights,
         max_nights=listing.max_nights,
+        cover_image=_cover_image_url(unit),
     )
 
 
@@ -86,14 +113,22 @@ def _to_search_result(
         "id": unit.id,
         "title_ar": listing.title_ar,
         "title_en": listing.title_en,
+        "title": _resolve_title(listing),
+        "description": _resolve_description(listing),
         "property_type": unit.property_type,
         "city": unit.city,
         "governorate": unit.governorate,
+        "country": DEFAULT_LISTING_COUNTRY,
         "base_price_egp": listing.base_price_egp,
+        "price": listing.base_price_egp,
+        "currency": DEFAULT_LISTING_CURRENCY,
         "lat": lat,
         "lng": lng,
+        "max_guests": unit.max_guests,
         "amenities": listing.amenities,
         "cultural_tags": listing.cultural_tags,
+        "house_rules": listing.house_rules,
+        "cover_image": _cover_image_url(unit),
     }
 
 

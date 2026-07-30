@@ -64,7 +64,7 @@ async def get_unit_with_listing(
 ) -> Unit | None:
     result = await session.execute(
         select(Unit)
-        .options(selectinload(Unit.listing))
+        .options(selectinload(Unit.listing), selectinload(Unit.photos))
         .where(Unit.id == unit_id)
     )
     return result.scalar_one_or_none()
@@ -97,6 +97,7 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
 
     stmt = (
         select(Unit, UnitListing, lat_col, lng_col)
+        .options(selectinload(Unit.photos))
         .join(UnitListing, Unit.id == UnitListing.unit_id)
         .where(Unit.status == UnitStatus.LISTED)
     )

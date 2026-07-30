@@ -91,17 +91,22 @@ class ListingResponse(BaseModel):
     lng: float
     governorate: str
     city: str
+    country: str = "Egypt"
     district: str | None
     max_guests: int
     bedrooms: int
     bathrooms: int
     title_ar: str
     title_en: str | None
+    title: str
     description_ar: str
     description_en: str | None
+    description: str
     amenities: list[str]
     cultural_tags: list[str]
     base_price_egp: int
+    price: int
+    currency: str = "EGP"
     weekend_mult: float
     peak_mult: float
     min_nights: int
@@ -109,20 +114,29 @@ class ListingResponse(BaseModel):
     house_rules: str | None
     check_in_instructions: str | None
     policies: str | None
+    cover_image: str | None = None
 
 
 class ListingSearchResult(BaseModel):
     id: str
     title_ar: str
     title_en: str | None
+    title: str
+    description: str
     property_type: str
     city: str
     governorate: str
+    country: str = "Egypt"
     base_price_egp: int
+    price: int
+    currency: str = "EGP"
     lat: float
     lng: float
+    max_guests: int
     amenities: list[str]
     cultural_tags: list[str]
+    house_rules: str | None
+    cover_image: str | None = None
 
 
 class PaginationInfo(BaseModel):
@@ -176,6 +190,7 @@ class ListingSearchFilters(BaseModel):
     amenities: list[str] | None = None
     guests: int | None = Field(None, ge=1)
     cursor: str | None = None
+    offset: int | None = Field(default=None, ge=0)
     limit: int = Field(default=20, ge=1, le=100)
 
     @field_validator("property_type", "cultural_tags", "amenities", mode="before")
@@ -190,6 +205,8 @@ class ListingSearchFilters(BaseModel):
         return v
 
     def get_offset(self) -> int:
+        if self.offset is not None:
+            return max(0, self.offset)
         if not self.cursor:
             return 0
         try:

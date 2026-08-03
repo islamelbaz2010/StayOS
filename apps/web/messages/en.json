@@ -187,5 +187,27 @@
     "notFound": "Page not found",
     "unauthorized": "Sign in to access this page",
     "networkError": "Connection error. Check your internet."
+  },
+  "photos": {
+    "pageTitle": "Manage Photos",
+    "title": "Property Photos",
+    "subtitle": "Add photos of your property. Choose a cover photo and delete unwanted ones.",
+    "selectPhotos": "Select photos",
+    "formatsHint": "JPG, PNG, WebP - max 10MB",
+    "uploading": "Uploading",
+    "gallery": "Uploaded photos",
+    "noPhotos": "No photos yet. Start by uploading some.",
+    "loading": "Loading photos...",
+    "cover": "Cover",
+    "setCover": "Set as cover",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete",
+    "confirmDeleteMessage": "Are you sure you want to delete this photo? This cannot be undone.",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "retry": "Retry",
+    "invalidType": "Unsupported file type. Use JPG, PNG, or WebP.",
+    "fileTooLarge": "File too large. Maximum 10MB.",
+    "uploadFailed": "Upload failed. Try again."
   }
 }

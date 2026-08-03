@@ -485,7 +485,7 @@ export interface components {
      * BookingStatus
      * @enum {string}
      */
-    BookingStatus: "requested" | "accepted" | "rejected" | "cancelled";
+    BookingStatus: "requested" | "accepted" | "confirmed" | "rejected" | "cancelled";
     /** BookingUpdate */
     BookingUpdate: {
       status: components["schemas"]["BookingStatus"];

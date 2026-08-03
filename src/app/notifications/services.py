@@ -49,6 +49,10 @@ def channels_for_event(event_type: str) -> list[str]:
     mapping: dict[str, list[str]] = {
         "reservation.created": [NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
         "reservation.confirmed": [NotificationChannel.EMAIL, NotificationChannel.SMS],
+        "payment.required": [NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
+        "payment.proof_uploaded": [NotificationChannel.EMAIL],
+        "payment.verified": [NotificationChannel.EMAIL, NotificationChannel.SMS],
+        "payment.rejected": [NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
         "payment.failed": [NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
         "payment.captured": [NotificationChannel.SMS],
         "booking.checked_in": [NotificationChannel.SMS],

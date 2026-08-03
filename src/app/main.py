@@ -21,6 +21,7 @@ from app.kyc import router as kyc_router
 from app.listings import router as listings_router
 from app.operations import metrics as ops_metrics
 from app.operations import router as operations_router
+from app.payments import router as payments_router
 from app.reservations import router as reservations_router
 from app.security import audit_middleware, security_headers_middleware
 from app.security.logging import setup_logging
@@ -177,6 +178,7 @@ app.include_router(availability_router.router, prefix="/api/v1")
 app.include_router(operations_router.router, prefix="/api/v1")
 app.include_router(reservations_router.router, prefix="/api/v1")
 app.include_router(bookings_router.router, prefix="/api/v1")
+app.include_router(payments_router.router, prefix="/api/v1")
 app.include_router(finance_router.router, prefix="/api/v1")
 
 

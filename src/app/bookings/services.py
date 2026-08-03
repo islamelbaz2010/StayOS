@@ -11,6 +11,7 @@ from app.shared.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import repository as bookings_repository
@@ -97,7 +98,7 @@ def _assert_status_transition(current: BookingStatus, new: BookingStatus) -> Non
             BookingStatus.REJECTED,
             BookingStatus.CANCELLED,
         ],
-        BookingStatus.ACCEPTED: [BookingStatus.CANCELLED],
+        BookingStatus.ACCEPTED: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
         BookingStatus.REJECTED: [],
         BookingStatus.CANCELLED: [],
     }
@@ -187,6 +188,17 @@ async def update_booking(
             update_fields["cancel_reason"] = request.cancel_reason
 
     updated = await bookings_repository.update_booking(session, booking, **update_fields)
+
+    if request.status == BookingStatus.ACCEPTED:
+        from app.payments import services as payment_services
+
+        guest_result = await session.execute(
+            select(User).where(User.id == booking.guest_id)
+        )
+        guest = guest_result.scalar_one_or_none()
+        if guest is not None:
+            await payment_services.create_payment_for_booking(session, updated, guest)
+
     return _to_response(updated)
 
 

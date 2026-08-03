@@ -144,8 +144,8 @@ async def test_create_booking_success(fake_session: AsyncMock, monkeypatch) -> N
 
     request = BookingCreate(
         unit_id=unit.id,
-        check_in=date(2026, 8, 1),
-        check_out=date(2026, 8, 5),
+        check_in=date(2026, 8, 10),
+        check_out=date(2026, 8, 14),
         adults=2,
         children=0,
         infants=0,
@@ -243,8 +243,8 @@ async def test_create_booking_conflict(fake_session: AsyncMock, monkeypatch) -> 
 
     request = BookingCreate(
         unit_id=unit.id,
-        check_in=date(2026, 8, 1),
-        check_out=date(2026, 8, 5),
+        check_in=date(2026, 8, 10),
+        check_out=date(2026, 8, 14),
     )
     with pytest.raises(ConflictError):
         await booking_services.create_booking(fake_session, guest, request)
@@ -301,6 +301,10 @@ async def test_update_booking_accept(fake_session: AsyncMock, monkeypatch) -> No
         bookings_repository,
         "update_booking",
         _apply_booking_update,
+    )
+    monkeypatch.setattr(
+        "app.payments.services.create_payment_for_booking",
+        AsyncMock(return_value=None),
     )
 
     request = BookingUpdate(status=BookingStatus.ACCEPTED)

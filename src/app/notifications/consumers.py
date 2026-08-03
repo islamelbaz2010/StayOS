@@ -15,6 +15,10 @@ logger = logging.getLogger(__name__)
 _RELEVANT_EVENT_TYPES = (
     "reservation.created",
     "reservation.confirmed",
+    "payment.required",
+    "payment.proof_uploaded",
+    "payment.verified",
+    "payment.rejected",
     "payment.failed",
     "payment.captured",
     "booking.checked_in",

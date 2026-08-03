@@ -80,6 +80,80 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
             },
         },
     },
+    "payment.required": {
+        "ar": {
+            "email": {
+                "subject": "تعليمات الدفع لحجزك",
+                "body": "مرحبًا {{guest_name}}، تم قبول حجزك {{reservation_id}}. المبلغ المطلوب: {{amount_egp}} ج.م. رقم المرجع: {{reference_number}}. يرجى تحويل المبلغ ورفع إيصال الدفع لتأكيد الحجز.",
+            },
+            "whatsapp": {
+                "body": "مرحبًا {{guest_name}}، تم قبض حجزك {{reservation_id}}. المبلغ: {{amount_egp}} ج.م. المرجع: {{reference_number}}. يرجى الدفع ورفع الإيصال.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Payment instructions for your booking",
+                "body": "Hi {{guest_name}}, your booking {{reservation_id}} has been accepted. Amount due: {{amount_egp}} EGP. Reference: {{reference_number}}. Please transfer the amount and upload your receipt to confirm your booking.",
+            },
+            "whatsapp": {
+                "body": "Hi {{guest_name}}, booking {{reservation_id}} accepted. Amount: {{amount_egp}} EGP. Ref: {{reference_number}}. Please pay and upload receipt.",
+            },
+        },
+    },
+    "payment.proof_uploaded": {
+        "ar": {
+            "email": {
+                "subject": "تم استلام إيصال الدفع",
+                "body": "مرحبًا {{guest_name}}، تم استلام إيصال الدفع لحجزك. سيتم مراجعته خلال 24 ساعة.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Payment receipt received",
+                "body": "Hi {{guest_name}}, your payment receipt has been received and will be reviewed within 24 hours.",
+            },
+        },
+    },
+    "payment.verified": {
+        "ar": {
+            "email": {
+                "subject": "تم تأكيد الدفع",
+                "body": "مرحبًا {{guest_name}}، تم تأكيد دفعك بنجاح. حجزك {{reservation_id}} أصبح مؤكدًا.",
+            },
+            "sms": {
+                "body": "تم تأكيد الدفع لحجزك {{reservation_id}}. حجزك مؤكد.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Payment confirmed",
+                "body": "Hi {{guest_name}}, your payment has been verified. Your booking {{reservation_id}} is now confirmed.",
+            },
+            "sms": {
+                "body": "Payment confirmed for booking {{reservation_id}}. Your booking is confirmed.",
+            },
+        },
+    },
+    "payment.rejected": {
+        "ar": {
+            "email": {
+                "subject": "تعذّر التحقق من الدفع",
+                "body": "عذرًا {{guest_name}}، تعذّر التحقق من إيصال الدفع لحجزك {{reservation_id}}. السبب: {{reject_reason}}. يرجى رفع إيصال جديد.",
+            },
+            "whatsapp": {
+                "body": "عذرًا {{guest_name}}، تعذّر التحقق من الدفع للحجز {{reservation_id}}. يرجى رفع إيصال جديد.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Payment verification failed",
+                "body": "Sorry {{guest_name}}, your payment receipt for booking {{reservation_id}} could not be verified. Reason: {{reject_reason}}. Please upload a new receipt.",
+            },
+            "whatsapp": {
+                "body": "Sorry {{guest_name}}, payment for booking {{reservation_id}} could not be verified. Please upload a new receipt.",
+            },
+        },
+    },
     "booking.checked_in": {
         "ar": {
             "sms": {

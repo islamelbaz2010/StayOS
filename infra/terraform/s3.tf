@@ -32,6 +32,18 @@ resource "aws_s3_bucket_public_access_block" "listings" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_cors_configuration" "listings" {
+  bucket = aws_s3_bucket.listings.id
+
+  cors_rule {
+    allowed_methods = ["GET", "PUT", "HEAD"]
+    allowed_origins = ["http://localhost:3000", "https://stayos.app", "https://*.stayos.app"]
+    allowed_headers = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3600
+  }
+}
+
 resource "aws_s3_bucket" "kyc" {
   bucket = "${local.name_prefix}-kyc"
 

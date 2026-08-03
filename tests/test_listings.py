@@ -13,6 +13,7 @@ from app.listings.schemas import (
     ListingResponse,
     ListingSearchResponse,
     PaginationInfo,
+    PhotoPresignResponse,
 )
 from app.main import app
 from fastapi.testclient import TestClient
@@ -276,3 +277,67 @@ def test_update_listing_as_host(listings_client: TestClient, monkeypatch) -> Non
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == listing.id
+
+
+def test_presign_photo_upload_as_host(listings_client: TestClient, monkeypatch) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    presign_response = PhotoPresignResponse(
+        upload_url="https://s3.example.com/upload",
+        photo_key="listings/unit-1/photo_abc.jpg",
+    )
+    monkeypatch.setattr(
+        "app.listings.router.generate_photo_presigned_url",
+        AsyncMock(return_value=presign_response),
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.post(
+        "/api/v1/listings/unit-1/photos/presign",
+        json={"filename": "photo.jpg", "content_type": "image/jpeg"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["upload_url"] == "https://s3.example.com/upload"
+    assert data["photo_key"] == "listings/unit-1/photo_abc.jpg"
+
+
+def test_presign_photo_upload_forbidden_for_guest(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, guest)
+
+    token = auth_services.create_access_token(guest)
+    response = listings_client.post(
+        "/api/v1/listings/unit-1/photos/presign",
+        json={"filename": "photo.jpg", "content_type": "image/jpeg"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+def test_presign_photo_upload_not_found(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    from app.shared.exceptions import NotFoundError
+
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    async def _raise_not_found(*args, **kwargs):
+        raise NotFoundError("Listing not found")
+
+    monkeypatch.setattr(
+        "app.listings.router.generate_photo_presigned_url", _raise_not_found
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.post(
+        "/api/v1/listings/missing-unit/photos/presign",
+        json={"filename": "photo.jpg", "content_type": "image/jpeg"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 404

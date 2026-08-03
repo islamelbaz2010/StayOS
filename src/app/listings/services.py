@@ -1,11 +1,14 @@
+import uuid
 from datetime import date, timedelta
 from typing import Any
 
+import boto3
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
+from app.config import settings
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
@@ -31,7 +34,19 @@ from .schemas import (
     ListingSearchResult,
     ListingUpdate,
     PaginationInfo,
+    PhotoPresignResponse,
 )
+
+_PHOTO_UPLOAD_TTL_SECONDS = 900
+
+
+def _s3_client() -> Any:
+    return boto3.client(
+        "s3",
+        region_name=settings.AWS_REGION,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    )
 
 
 def _resolve_title(listing: UnitListing) -> str:
@@ -521,3 +536,33 @@ async def get_host_reservation_calendar(
         check_out=check_out,
         reservations=reservations,
     )
+
+
+async def generate_photo_presigned_url(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    filename: str,
+    content_type: str,
+) -> PhotoPresignResponse:
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    if unit.host_id != user.id and user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only the listing owner or admin can upload photos")
+
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
+    photo_key = f"listings/{unit_id}/photo_{uuid.uuid4().hex}.{ext}"
+
+    client = _s3_client()
+    upload_url = client.generate_presigned_url(
+        "put_object",
+        Params={
+            "Bucket": settings.S3_LISTINGS_BUCKET,
+            "Key": photo_key,
+            "ContentType": content_type,
+        },
+        ExpiresIn=_PHOTO_UPLOAD_TTL_SECONDS,
+    )
+
+    return PhotoPresignResponse(upload_url=upload_url, photo_key=photo_key)

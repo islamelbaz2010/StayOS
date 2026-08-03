@@ -23,6 +23,8 @@ from .schemas import (
     ListingSearchFilters,
     ListingSearchResponse,
     ListingUpdate,
+    PhotoPresignRequest,
+    PhotoPresignResponse,
 )
 from .services import (
     archive_listing,
@@ -31,6 +33,7 @@ from .services import (
     create_host_calendar_rule,
     create_listing,
     delete_host_calendar_rule,
+    generate_photo_presigned_url,
     get_availability,
     get_host_dashboard,
     get_host_reservation_calendar,
@@ -140,6 +143,21 @@ async def post_archive_listing(
 ) -> ListingResponse:
     try:
         return await archive_listing(session, user, unit_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{unit_id}/photos/presign", response_model=PhotoPresignResponse)
+async def presign_photo_upload(
+    unit_id: str,
+    request: PhotoPresignRequest,
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> PhotoPresignResponse:
+    try:
+        return await generate_photo_presigned_url(
+            session, user, unit_id, request.filename, request.content_type
+        )
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

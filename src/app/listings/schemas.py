@@ -350,3 +350,13 @@ class HostReservationCalendarResponse(BaseModel):
     check_in: date
     check_out: date
     reservations: list[HostReservationCalendarItem]
+
+
+class PhotoPresignRequest(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=255)
+    content_type: str = Field(..., min_length=1, max_length=100)
+
+
+class PhotoPresignResponse(BaseModel):
+    upload_url: str
+    photo_key: str

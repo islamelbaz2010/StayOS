@@ -259,3 +259,102 @@ async def test_get_availability(fake_session: AsyncMock, monkeypatch) -> None:
     assert result.unit_id == "unit-1"
     assert len(result.days) == 3
     assert result.days[1].status == "BLOCKED"
+
+
+@pytest.mark.asyncio
+async def test_generate_photo_presigned_url_success(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    mock_s3 = MagicMock()
+    mock_s3.generate_presigned_url.return_value = "https://s3.example.com/upload"
+    monkeypatch.setattr(
+        "app.listings.services._s3_client", MagicMock(return_value=mock_s3)
+    )
+
+    from app.listings.services import generate_photo_presigned_url
+
+    result = await generate_photo_presigned_url(
+        fake_session, _make_user(), "unit-1", "photo.jpg", "image/jpeg"
+    )
+    assert result.upload_url == "https://s3.example.com/upload"
+    assert result.photo_key.startswith("listings/unit-1/photo_")
+    assert result.photo_key.endswith(".jpg")
+    mock_s3.generate_presigned_url.assert_called_once()
+    call_kwargs = mock_s3.generate_presigned_url.call_args
+    assert call_kwargs.kwargs["Params"]["ContentType"] == "image/jpeg"
+    assert call_kwargs.kwargs["ExpiresIn"] == 900
+
+
+@pytest.mark.asyncio
+async def test_generate_photo_presigned_url_non_owner(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app import listings
+    from app.shared.exceptions import AuthorizationError
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    from app.listings.services import generate_photo_presigned_url
+
+    other_user = _make_user(user_id="other-host")
+    with pytest.raises(AuthorizationError):
+        await generate_photo_presigned_url(
+            fake_session, other_user, "unit-1", "photo.jpg", "image/jpeg"
+        )
+
+
+@pytest.mark.asyncio
+async def test_generate_photo_presigned_url_not_found(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app import listings
+    from app.shared.exceptions import NotFoundError
+
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=None)
+    )
+
+    from app.listings.services import generate_photo_presigned_url
+
+    with pytest.raises(NotFoundError):
+        await generate_photo_presigned_url(
+            fake_session, _make_user(), "missing-unit", "photo.jpg", "image/jpeg"
+        )
+
+
+@pytest.mark.asyncio
+async def test_generate_photo_presigned_url_admin(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    mock_s3 = MagicMock()
+    mock_s3.generate_presigned_url.return_value = "https://s3.example.com/upload"
+    monkeypatch.setattr(
+        "app.listings.services._s3_client", MagicMock(return_value=mock_s3)
+    )
+
+    from app.listings.services import generate_photo_presigned_url
+
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    result = await generate_photo_presigned_url(
+        fake_session, admin, "unit-1", "photo.png", "image/png"
+    )
+    assert result.upload_url == "https://s3.example.com/upload"
+    assert result.photo_key.startswith("listings/unit-1/photo_")
+    assert result.photo_key.endswith(".png")

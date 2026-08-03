@@ -13,6 +13,8 @@ import {
   type PhotoResponse,
 } from "@/lib/queries/photos";
 
+import { api } from "@/lib/api";
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -33,12 +35,28 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<PhotoResponse | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [isDragDrop, setIsDragDrop] = useState(false);
 
   const { data: photos = [], isLoading } = usePhotos(unitId);
   const presignMutation = usePresignPhoto();
   const createPhotoMutation = useCreatePhoto();
   const setCoverMutation = useSetCoverPhoto();
   const deleteMutation = useDeletePhoto();
+
+  const handleReorder = async (fromIndex: number, toIndex: number) => {
+    const reordered = [...photos];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    try {
+      await api.patch(`/listings/${unitId}/photos/reorder`, {
+        photo_orders: reordered.map((p, i) => ({ photo_id: p.id, display_order: i })),
+      });
+    } catch {
+      // silently fail reorder — photos still work, order will revert on refresh
+    }
+  };
 
   const updateUpload = (index: number, patch: Partial<UploadItem>) => {
     setUploads((prev) =>
@@ -275,18 +293,38 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
           <h3 className="text-sm font-semibold text-neutral-700">
             {t("gallery")}
           </h3>
+          <p className="text-xs text-neutral-500">{t("dragHint")}</p>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {photos.map((photo) => (
+            {photos.map((photo, index) => (
               <div
                 key={photo.id}
+                draggable={isDragDrop}
+                onDragStart={() => setDragIndex(index)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverIndex(index);
+                }}
+                onDragEnd={() => {
+                  if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+                    void handleReorder(dragIndex, dragOverIndex);
+                  }
+                  setDragIndex(null);
+                  setDragOverIndex(null);
+                }}
+                onDrop={(e) => e.preventDefault()}
                 className={cn(
-                  "relative overflow-hidden rounded-lg border-2 bg-white",
+                  "relative overflow-hidden rounded-lg border-2 bg-white transition-all",
                   photo.is_cover
                     ? "border-brand-500 ring-1 ring-brand-500"
-                    : "border-neutral-200"
+                    : "border-neutral-200",
+                  dragIndex === index && "opacity-50",
+                  dragOverIndex === index && dragIndex !== null && "border-brand-400 ring-2 ring-brand-300"
                 )}
               >
-                <div className="relative aspect-square bg-neutral-100">
+                <div
+                  className="relative aspect-square cursor-grab bg-neutral-100 active:cursor-grabbing"
+                  onMouseDown={() => setIsDragDrop(true)}
+                >
                   <img
                     src={photo.url}
                     alt={photo.caption ?? ""}
@@ -297,6 +335,9 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
                       {t("cover")}
                     </span>
                   )}
+                  <span className="absolute end-2 top-2 rounded-md bg-black/50 px-1.5 py-0.5 text-xs font-medium text-white">
+                    {index + 1}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-1 p-2">
                   {!photo.is_cover && (

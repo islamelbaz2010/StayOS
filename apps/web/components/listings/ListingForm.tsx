@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -120,9 +120,18 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isDirty, setIsDirty] = useState(false);
+  const [autosaveStatus, setAutosave] = useState<"idle" | "saving" | "saved">("idle");
+  const formRef = useRef(form);
+  const isDirtyRef = useRef(false);
+  const createdIdRef = useRef<string | undefined>(undefined);
+
+  formRef.current = form;
 
   const update = (field: keyof ListingCreateInput, value: unknown) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+    isDirtyRef.current = true;
     if (errors[field]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -141,45 +150,58 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     }
   };
 
-  const validate = (): boolean => {
+  const validate = (forSubmit = false): boolean => {
     const errs: Record<string, string> = {};
     if (!form.title_ar.trim()) errs.title_ar = t("errors.titleRequired");
+    else if (form.title_ar.length > 255) errs.title_ar = t("errors.titleTooLong");
     if (!form.description_ar.trim())
       errs.description_ar = t("errors.descriptionRequired");
+    else if (form.description_ar.length < 10)
+      errs.description_ar = t("errors.descriptionTooShort");
     if (!form.governorate) errs.governorate = t("errors.governorateRequired");
     if (!form.city.trim()) errs.city = t("errors.cityRequired");
     if (form.base_price_egp < 100)
       errs.base_price_egp = t("errors.priceMin");
     if (form.max_guests < 1) errs.max_guests = t("errors.guestsMin");
+    if (form.bedrooms < 0) errs.bedrooms = t("errors.bedroomsMin");
+    if (form.bathrooms < 1) errs.bathrooms = t("errors.bathroomsMin");
+    if (forSubmit && (!form.title_ar.trim() || !form.description_ar.trim())) {
+      errs.submit = t("errors.fillRequiredFields");
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
+
+  const buildUpdatePayload = (): ListingUpdateInput => ({
+    title_ar: form.title_ar,
+    title_en: form.title_en || undefined,
+    description_ar: form.description_ar,
+    description_en: form.description_en || undefined,
+    amenities: form.amenities,
+    cultural_tags: form.cultural_tags,
+    base_price_egp: form.base_price_egp,
+    cleaning_fee_egp: form.cleaning_fee_egp,
+    cancellation_policy: form.cancellation_policy,
+    category: form.category,
+    address: form.address || undefined,
+    beds: form.beds,
+    house_rules: form.house_rules || undefined,
+    check_in_instructions: form.check_in_instructions || undefined,
+    policies: form.policies || undefined,
+  });
 
   const handleSaveDraft = async () => {
     if (!validate()) return;
     try {
       if (isEdit && unitId) {
-        const payload: ListingUpdateInput = {
-          title_ar: form.title_ar,
-          title_en: form.title_en || undefined,
-          description_ar: form.description_ar,
-          description_en: form.description_en || undefined,
-          amenities: form.amenities,
-          cultural_tags: form.cultural_tags,
-          base_price_egp: form.base_price_egp,
-          cleaning_fee_egp: form.cleaning_fee_egp,
-          cancellation_policy: form.cancellation_policy,
-          category: form.category,
-          address: form.address || undefined,
-          beds: form.beds,
-          house_rules: form.house_rules || undefined,
-          check_in_instructions: form.check_in_instructions || undefined,
-          policies: form.policies || undefined,
-        };
-        await updateMutation.mutateAsync({ unitId, payload });
+        await updateMutation.mutateAsync({ unitId, payload: buildUpdatePayload() });
       } else {
-        await createMutation.mutateAsync({ ...form, is_draft: true });
+        const created = await createMutation.mutateAsync({ ...form, is_draft: true });
+        createdIdRef.current = created.id;
       }
+      setIsDirty(false);
+      isDirtyRef.current = false;
+      setAutosave("saved");
       router.push("/host/listings");
     } catch {
       setErrors({ submit: t("errors.saveFailed") });
@@ -187,38 +209,24 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   };
 
   const handleSubmitForReview = async () => {
-    if (!validate()) return;
+    if (!validate(true)) return;
     try {
-      let id = unitId;
-      if (!isEdit) {
+      let id = unitId ?? createdIdRef.current;
+      if (!isEdit && !createdIdRef.current) {
         const created = await createMutation.mutateAsync({
           ...form,
           is_draft: true,
         });
         id = created.id;
-      } else if (unitId) {
-        const payload: ListingUpdateInput = {
-          title_ar: form.title_ar,
-          title_en: form.title_en || undefined,
-          description_ar: form.description_ar,
-          description_en: form.description_en || undefined,
-          amenities: form.amenities,
-          cultural_tags: form.cultural_tags,
-          base_price_egp: form.base_price_egp,
-          cleaning_fee_egp: form.cleaning_fee_egp,
-          cancellation_policy: form.cancellation_policy,
-          category: form.category,
-          address: form.address || undefined,
-          beds: form.beds,
-          house_rules: form.house_rules || undefined,
-          check_in_instructions: form.check_in_instructions || undefined,
-          policies: form.policies || undefined,
-        };
-        await updateMutation.mutateAsync({ unitId, payload });
+        createdIdRef.current = created.id;
+      } else if (isEdit && unitId) {
+        await updateMutation.mutateAsync({ unitId, payload: buildUpdatePayload() });
       }
       if (id) {
         await submitMutation.mutateAsync(id);
       }
+      setIsDirty(false);
+      isDirtyRef.current = false;
       router.push("/host/listings");
     } catch {
       setErrors({ submit: t("errors.submitFailed") });
@@ -229,6 +237,52 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     createMutation.isPending ||
     updateMutation.isPending ||
     submitMutation.isPending;
+
+  const doAutosave = useCallback(async () => {
+    if (!isDirtyRef.current) return;
+    const current = formRef.current;
+    if (!current.title_ar.trim() && !current.description_ar.trim()) return;
+    setAutosave("saving");
+    try {
+      if (isEdit && unitId) {
+        await updateMutation.mutateAsync({ unitId, payload: buildUpdatePayload() });
+      } else if (createdIdRef.current) {
+        await updateMutation.mutateAsync({
+          unitId: createdIdRef.current,
+          payload: buildUpdatePayload(),
+        });
+      } else {
+        const created = await createMutation.mutateAsync({
+          ...current,
+          is_draft: true,
+        });
+        createdIdRef.current = created.id;
+      }
+      setIsDirty(false);
+      isDirtyRef.current = false;
+      setAutosave("saved");
+    } catch {
+      setAutosave("idle");
+    }
+  }, [isEdit, unitId, updateMutation, createMutation, t]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const timer = setTimeout(() => {
+      void doAutosave();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [isDirty, doAutosave]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   const inputClass =
     "w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
@@ -612,26 +666,47 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Actions */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        {errors.submit && (
-          <p className="text-sm text-danger-600">{errors.submit}</p>
-        )}
-        <button
-          type="button"
-          onClick={handleSaveDraft}
-          disabled={isLoading}
-          className="rounded-lg border border-neutral-300 px-6 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-        >
-          {isLoading ? tc("loading") : t("saveDraft")}
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmitForReview}
-          disabled={isLoading}
-          className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-        >
-          {isLoading ? tc("loading") : t("submitForReview")}
-        </button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-sm">
+          {autosaveStatus === "saving" && (
+            <span className="flex items-center gap-1.5 text-neutral-500">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-500" />
+              {t("autosaving")}
+            </span>
+          )}
+          {autosaveStatus === "saved" && (
+            <span className="flex items-center gap-1.5 text-success-600">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              {t("autosaved")}
+            </span>
+          )}
+          {isDirty && autosaveStatus === "idle" && (
+            <span className="text-warning-600">{t("unsavedChanges")}</span>
+          )}
+          {errors.submit && (
+            <span className="text-danger-600">{errors.submit}</span>
+          )}
+        </div>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={isLoading}
+            className="rounded-lg border border-neutral-300 px-6 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+          >
+            {isLoading ? tc("loading") : t("saveDraft")}
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmitForReview}
+            disabled={isLoading}
+            className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          >
+            {isLoading ? tc("loading") : t("submitForReview")}
+          </button>
+        </div>
       </div>
     </div>
   );

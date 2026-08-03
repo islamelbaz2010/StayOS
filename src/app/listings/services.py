@@ -64,11 +64,15 @@ def _cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
 
 
 def _to_listing_response(
-    unit: Unit, listing: UnitListing, lat: float, lng: float
+    unit: Unit, listing: UnitListing, lat: float, lng: float,
+    host: User | None = None,
 ) -> ListingResponse:
     return ListingResponse(
         id=unit.id,
         host_id=unit.host_id,
+        host_display_name=host.display_name if host else None,
+        host_kyc_status=host.kyc_status if host else None,
+        host_joined_at=str(host.created_at) if host else None,
         property_type=unit.property_type,
         status=unit.status,
         lat=lat,
@@ -121,7 +125,8 @@ async def _fetch_coordinates(
 
 
 def _to_search_result(
-    unit: Unit, listing: UnitListing, lat: float, lng: float
+    unit: Unit, listing: UnitListing, lat: float, lng: float,
+    host: User | None = None,
 ) -> dict[str, object]:
     return {
         "id": unit.id,
@@ -139,9 +144,12 @@ def _to_search_result(
         "lat": lat,
         "lng": lng,
         "max_guests": unit.max_guests,
+        "bedrooms": unit.bedrooms,
+        "bathrooms": unit.bathrooms,
         "amenities": listing.amenities,
         "cultural_tags": listing.cultural_tags,
         "house_rules": listing.house_rules,
+        "host_kyc_status": host.kyc_status if host else None,
         "cover_image": _cover_image_url(unit, listing),
     }
 
@@ -149,6 +157,11 @@ def _to_search_result(
 def _assert_host(user: User) -> None:
     if user.role != UserRole.HOST:
         raise AuthorizationError("Only hosts can manage listings")
+
+
+async def _fetch_host(session: AsyncSession, host_id: str) -> User | None:
+    result = await session.execute(select(User).where(User.id == host_id))
+    return result.scalar_one_or_none()
 
 
 async def create_listing(
@@ -184,8 +197,9 @@ async def get_listing_detail(
     if listing is None:
         raise NotFoundError("Listing not found")
 
+    host = await _fetch_host(session, unit.host_id)
     lat, lng = await _fetch_coordinates(session, unit)
-    return _to_listing_response(unit, listing, lat, lng)
+    return _to_listing_response(unit, listing, lat, lng, host)
 
 
 async def get_host_listing_detail(
@@ -363,7 +377,18 @@ async def search_listings(
         session, filters, offset, filters.limit
     )
 
-    data = [_to_search_result(unit, listing, lat, lng) for unit, listing, lat, lng in rows]
+    host_ids = {unit.host_id for unit, _, _, _ in rows}
+    hosts_map: dict[str, User] = {}
+    if host_ids:
+        host_result = await session.execute(
+            select(User).where(User.id.in_(host_ids))
+        )
+        hosts_map = {h.id: h for h in host_result.scalars().all()}
+
+    data = [
+        _to_search_result(unit, listing, lat, lng, hosts_map.get(unit.host_id))
+        for unit, listing, lat, lng in rows
+    ]
     has_more = offset + len(data) < total
     next_cursor = (
         ListingSearchFilters.encode_cursor(offset + filters.limit)

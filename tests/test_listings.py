@@ -45,6 +45,9 @@ def _make_listing_response(user_id: str | None = None) -> ListingResponse:
     return ListingResponse(
         id=str(uuid.uuid4()),
         host_id=user_id or str(uuid.uuid4()),
+        host_display_name=None,
+        host_kyc_status=None,
+        host_joined_at=None,
         property_type="APARTMENT",
         status="LISTED",
         lat=30.0444,

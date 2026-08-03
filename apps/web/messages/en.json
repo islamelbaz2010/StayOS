@@ -57,6 +57,7 @@
     "title": "My Properties",
     "createNew": "Create new listing",
     "noListings": "You don't have any listings yet.",
+    "noListingsHint": "Create your first listing to start hosting guests.",
     "loadError": "Failed to load listings. Please try again.",
     "egp": "EGP",
     "night": "night",
@@ -76,6 +77,9 @@
     "loadError": "Failed to load listing. Please try again.",
     "saveDraft": "Save Draft",
     "submitForReview": "Submit for Review",
+    "autosaving": "Saving...",
+    "autosaved": "Saved",
+    "unsavedChanges": "You have unsaved changes",
     "egp": "EGP",
     "sections": {
       "basic": "Basic Information",
@@ -196,6 +200,8 @@
     "children": "Children",
     "infants": "Infants",
     "noResults": "No results found",
+    "noResultsHint": "Try adjusting your search filters or dates.",
+    "resultsCount": "{count} properties",
     "showMap": "Show map",
     "hideMap": "Hide map",
     "subtitle": "Discover the best places to stay in Egypt",
@@ -217,7 +223,38 @@
     "location": "Location",
     "propertyType": "Property type",
     "maxGuests": "Max guests",
-    "details": "Details"
+    "guests": "guests",
+    "bedrooms": "bedrooms",
+    "bathrooms": "bathrooms",
+    "verified": "Verified",
+    "description": "Description",
+    "details": "Details",
+    "amenityGroup": {
+      "ESSENTIALS": "Essentials",
+      "KITCHEN": "Kitchen",
+      "ENTERTAINMENT": "Entertainment",
+      "OUTDOOR": "Outdoor",
+      "SAFETY": "Safety",
+      "OTHER": "Other"
+    },
+    "cancellation": {
+      "flexible": "Full refund up to 24 hours before check-in",
+      "moderate": "Full refund up to 5 days before check-in",
+      "strict": "50% refund up to 1 week before check-in"
+    }
+  },
+  "trust": {
+    "title": "Trust & Safety",
+    "verifiedHost": "Verified Host",
+    "verifiedProperty": "Verified Property",
+    "verifiedHostTitle": "Verified Host",
+    "verifiedHostDesc": "This host has completed identity verification and KYC checks.",
+    "escrowTitle": "Escrow Protection",
+    "escrowDesc": "Your payment is held securely until you check in.",
+    "cancellationTitle": "Cancellation Policy",
+    "cancellationDesc": "Review the cancellation terms before booking.",
+    "hostedBy": "Hosted by {name}",
+    "joinedIn": "Joined in {date}"
   },
   "booking": {
     "title": "Request to book",
@@ -341,6 +378,7 @@
     "delete": "Delete",
     "confirmDelete": "Confirm delete",
     "confirmDeleteMessage": "Are you sure you want to delete this photo? This cannot be undone.",
+    "dragHint": "Drag and drop to reorder photos",
     "cancel": "Cancel",
     "deleting": "Deleting...",
     "retry": "Retry",

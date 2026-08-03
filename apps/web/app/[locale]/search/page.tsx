@@ -35,9 +35,16 @@ export default function SearchPage() {
   return (
     <GuestLayout>
       <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-bold text-neutral-900 md:text-3xl">
-          {t("search.title")}
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-neutral-900 md:text-3xl">
+            {t("search.title")}
+          </h1>
+          {data && data.listings.length > 0 && (
+            <span className="text-sm text-neutral-500">
+              {t("search.resultsCount", { count: data.total })}
+            </span>
+          )}
+        </div>
 
         {isError ? (
           <ErrorState onRetry={() => refetch()} />
@@ -48,7 +55,19 @@ export default function SearchPage() {
             ))}
           </div>
         ) : data?.listings.length === 0 ? (
-          <EmptyState messageKey="search.noResults" />
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
+              <svg className="h-8 w-8 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </div>
+            <p className="text-lg font-medium text-neutral-700">
+              {t("search.noResults")}
+            </p>
+            <p className="mt-1 text-sm text-neutral-500">
+              {t("search.noResultsHint")}
+            </p>
+          </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {data?.listings.map((listing) => (

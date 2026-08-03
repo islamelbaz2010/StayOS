@@ -136,6 +136,9 @@ class ListingUpdate(BaseModel):
 class ListingResponse(BaseModel):
     id: str
     host_id: str
+    host_display_name: str | None = None
+    host_kyc_status: str | None = None
+    host_joined_at: str | None = None
     property_type: str
     status: str
     lat: float
@@ -189,9 +192,12 @@ class ListingSearchResult(BaseModel):
     lat: float
     lng: float
     max_guests: int
+    bedrooms: int
+    bathrooms: int
     amenities: list[str]
     cultural_tags: list[str]
     house_rules: str | None
+    host_kyc_status: str | None = None
     cover_image: str | None = None
 
 

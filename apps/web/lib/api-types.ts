@@ -991,6 +991,12 @@ export interface components {
       id: string;
       /** Host Id */
       host_id: string;
+      /** Host Display Name */
+      host_display_name: string | null;
+      /** Host Kyc Status */
+      host_kyc_status: string | null;
+      /** Host Joined At */
+      host_joined_at: string | null;
       /** Property Type */
       property_type: string;
       /** Status */
@@ -1007,12 +1013,18 @@ export interface components {
       country: string;
       /** District */
       district: string | null;
+      /** Address */
+      address: string | null;
       /** Max Guests */
       max_guests: number;
       /** Bedrooms */
       bedrooms: number;
+      /** Beds */
+      beds: number;
       /** Bathrooms */
       bathrooms: number;
+      /** Category */
+      category: string;
       /** Title Ar */
       title_ar: string;
       /** Title En */
@@ -1031,6 +1043,10 @@ export interface components {
       cultural_tags: string[];
       /** Base Price Egp */
       base_price_egp: number;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp: number;
+      /** Cancellation Policy */
+      cancellation_policy: string;
       /** Price */
       price: number;
       /** Currency */
@@ -1090,12 +1106,18 @@ export interface components {
       lng: number;
       /** Max Guests */
       max_guests: number;
+      /** Bedrooms */
+      bedrooms: number;
+      /** Bathrooms */
+      bathrooms: number;
       /** Amenities */
       amenities: string[];
       /** Cultural Tags */
       cultural_tags: string[];
       /** House Rules */
       house_rules: string | null;
+      /** Host Kyc Status */
+      host_kyc_status: string | null;
       /** Cover Image */
       cover_image?: string | null;
     };

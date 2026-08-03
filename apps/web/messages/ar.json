@@ -57,6 +57,7 @@
     "title": "عقاراتي",
     "createNew": "إضافة عقار جديد",
     "noListings": "لا توجد عقارات بعد.",
+    "noListingsHint": "أنشئ عقارك الأول لبدب استقبال الضيوف.",
     "loadError": "فشل تحميل العقارات. يرجى المحاولة مرة أخرى.",
     "egp": "ج.م",
     "night": "ليلة",
@@ -76,6 +77,9 @@
     "loadError": "فشل تحميل العقار. يرجى المحاولة مرة أخرى.",
     "saveDraft": "حفظ المسودة",
     "submitForReview": "إرسال للمراجعة",
+    "autosaving": "جاري الحفظ...",
+    "autosaved": "تم الحفظ",
+    "unsavedChanges": "لديك تغييرات غير محفوظة",
     "egp": "ج.م",
     "sections": {
       "basic": "المعلومات الأساسية",
@@ -196,6 +200,8 @@
     "children": "أطفال",
     "infants": "رضع",
     "noResults": "لا توجد نتائج",
+    "noResultsHint": "حاول تعديل عوامل التصفية أو التواريخ.",
+    "resultsCount": "{count} عقار",
     "showMap": "عرض الخريطة",
     "hideMap": "إخفاء الخريطة",
     "subtitle": "اكتشف أفضل أماكن الإقامة في مصر",
@@ -217,7 +223,38 @@
     "location": "الموقع",
     "propertyType": "نوع العقار",
     "maxGuests": "عدد الضيوف",
-    "details": "التفاصيل"
+    "guests": "ضيوف",
+    "bedrooms": "غرف نوم",
+    "bathrooms": "حمامات",
+    "verified": "موثّق",
+    "description": "الوصف",
+    "details": "التفاصيل",
+    "amenityGroup": {
+      "ESSENTIALS": "الأساسيات",
+      "KITCHEN": "المطبخ",
+      "ENTERTAINMENT": "الترفيه",
+      "OUTDOOR": "الخارج",
+      "SAFETY": "الأمان",
+      "OTHER": "أخرى"
+    },
+    "cancellation": {
+      "flexible": "استرداد كامل حتى 24 ساعة قبل الوصول",
+      "moderate": "استرداد كامل حتى 5 أيام قبل الوصول",
+      "strict": "استرداد 50% حتى أسبوع قبل الوصول"
+    }
+  },
+  "trust": {
+    "title": "الثقة والأمان",
+    "verifiedHost": "مضيف موثّق",
+    "verifiedProperty": "عقار موثّق",
+    "verifiedHostTitle": "مضيف موثّق",
+    "verifiedHostDesc": "هذا المضيف أكمل التحقق من الهوية وفحوصات KYC.",
+    "escrowTitle": "حماية الضمان",
+    "escrowDesc": "يتم الاحتفاظ بمدفوعاتك بأمان حتى تسجيل الوصول.",
+    "cancellationTitle": "سياسة الإلغاء",
+    "cancellationDesc": "راجع شروط الإلغاء قبل الحجز.",
+    "hostedBy": "مستضاف بواسطة {name}",
+    "joinedIn": "انضم في {date}"
   },
   "booking": {
     "title": "طلب حجز",
@@ -341,6 +378,7 @@
     "delete": "حذف",
     "confirmDelete": "تأكيد الحذف",
     "confirmDeleteMessage": "هل أنت متأكد من حذف هذه الصورة؟ لا يمكن التراجع.",
+    "dragHint": "اسحب وأفلت لإعادة ترتيب الصور",
     "cancel": "إلغاء",
     "deleting": "جاري الحذف...",
     "retry": "إعادة المحاولة",

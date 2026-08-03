@@ -24,6 +24,22 @@ export interface ListingDetail extends Listing {
   description: string;
   amenities: string[];
   houseRules: string | null;
+  checkInInstructions: string | null;
+  policies: string | null;
+  cancellationPolicy: string | null;
+  bedrooms: number;
+  bathrooms: number;
+  beds: number;
+  minNights: number;
+  maxNights: number;
+  cleaningFee: number;
+  hostDisplayName: string | null;
+  hostKycStatus: string | null;
+  hostJoinedAt: string | null;
+  lat: number;
+  lng: number;
+  district: string | null;
+  address: string | null;
 }
 
 function mapListingDetail(item: ApiListingResponse): ListingDetail {
@@ -38,9 +54,25 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     price: item.price,
     currency: item.currency,
     maxGuests: item.max_guests,
+    bedrooms: item.bedrooms,
+    bathrooms: item.bathrooms,
+    beds: item.beds,
     coverImage: item.cover_image ?? null,
     amenities: item.amenities,
     houseRules: item.house_rules,
+    checkInInstructions: item.check_in_instructions,
+    policies: item.policies,
+    cancellationPolicy: item.cancellation_policy,
+    minNights: item.min_nights,
+    maxNights: item.max_nights,
+    cleaningFee: item.cleaning_fee_egp,
+    hostDisplayName: item.host_display_name ?? null,
+    hostKycStatus: item.host_kyc_status ?? null,
+    hostJoinedAt: item.host_joined_at ?? null,
+    lat: item.lat,
+    lng: item.lng,
+    district: item.district,
+    address: item.address,
   };
 }
 
@@ -55,7 +87,11 @@ function mapSearchResult(item: ApiSearchResult): Listing {
     price: item.price,
     currency: item.currency,
     maxGuests: item.max_guests,
+    bedrooms: item.bedrooms,
+    bathrooms: item.bathrooms,
     coverImage: item.cover_image ?? null,
+    hostKycStatus: item.host_kyc_status ?? null,
+    amenities: item.amenities,
   };
 }
 

@@ -360,3 +360,21 @@ class PhotoPresignRequest(BaseModel):
 class PhotoPresignResponse(BaseModel):
     upload_url: str
     photo_key: str
+
+
+class PhotoCreate(BaseModel):
+    s3_key: str = Field(..., min_length=1, max_length=1024)
+    url: str = Field(..., min_length=1, max_length=2048)
+    caption: str | None = Field(None, max_length=500)
+    is_cover: bool = False
+    display_order: int = Field(default=0, ge=0)
+
+
+class PhotoResponse(BaseModel):
+    id: str
+    unit_id: str
+    s3_key: str
+    url: str
+    display_order: int
+    is_cover: bool
+    caption: str | None

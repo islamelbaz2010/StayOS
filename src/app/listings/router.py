@@ -23,8 +23,10 @@ from .schemas import (
     ListingSearchFilters,
     ListingSearchResponse,
     ListingUpdate,
+    PhotoCreate,
     PhotoPresignRequest,
     PhotoPresignResponse,
+    PhotoResponse,
 )
 from .services import (
     archive_listing,
@@ -32,14 +34,18 @@ from .services import (
     bulk_update_pricing,
     create_host_calendar_rule,
     create_listing,
+    create_photo,
     delete_host_calendar_rule,
+    delete_photo,
     generate_photo_presigned_url,
     get_availability,
     get_host_dashboard,
     get_host_reservation_calendar,
     get_listing_detail,
+    list_photos,
     publish_listing,
     search_listings,
+    set_cover_photo,
     unpublish_listing,
     update_host_calendar_rule,
     update_listing,
@@ -158,6 +164,57 @@ async def presign_photo_upload(
         return await generate_photo_presigned_url(
             session, user, unit_id, request.filename, request.content_type
         )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{unit_id}/photos", response_model=PhotoResponse)
+async def post_photo(
+    unit_id: str,
+    request: PhotoCreate,
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> PhotoResponse:
+    try:
+        return await create_photo(session, user, unit_id, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/{unit_id}/photos", response_model=list[PhotoResponse])
+async def get_photos(
+    unit_id: str,
+    _: None = Depends(listings_rate_limit),
+    session: AsyncSession = Depends(get_session),
+) -> list[PhotoResponse]:
+    try:
+        return await list_photos(session, unit_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.patch("/{unit_id}/photos/{photo_id}/cover", response_model=PhotoResponse)
+async def patch_cover_photo(
+    unit_id: str,
+    photo_id: str,
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> PhotoResponse:
+    try:
+        return await set_cover_photo(session, user, unit_id, photo_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.delete("/{unit_id}/photos/{photo_id}")
+async def delete_photo_endpoint(
+    unit_id: str,
+    photo_id: str,
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    try:
+        await delete_photo(session, user, unit_id, photo_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

@@ -3,11 +3,11 @@ from typing import Any
 from uuid import uuid4
 
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import Select, delete, exists, func, select
+from sqlalchemy import Select, delete, exists, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.listings.models import CalendarRule, Unit, UnitListing
+from app.listings.models import CalendarRule, Unit, UnitListing, UnitPhoto
 
 from .constants import CalendarStatus, UnitStatus
 from .schemas import ListingCreate, ListingSearchFilters, ListingUpdate
@@ -426,3 +426,88 @@ async def get_host_reservation_calendar(
         )
     )
     return list(result.all())
+
+
+async def create_photo(
+    session: AsyncSession,
+    unit_id: str,
+    s3_key: str,
+    url: str,
+    caption_ar: str | None,
+    is_cover: bool,
+    display_order: int,
+) -> UnitPhoto:
+    photo = UnitPhoto(
+        id=str(uuid4()),
+        unit_id=unit_id,
+        s3_key=s3_key,
+        url=url,
+        caption_ar=caption_ar,
+        is_cover=is_cover,
+        display_order=display_order,
+    )
+    session.add(photo)
+    await session.flush()
+    await session.refresh(photo)
+    return photo
+
+
+async def get_photos_by_unit(
+    session: AsyncSession, unit_id: str
+) -> list[UnitPhoto]:
+    result = await session.execute(
+        select(UnitPhoto)
+        .where(UnitPhoto.unit_id == unit_id)
+        .order_by(UnitPhoto.display_order)
+    )
+    return list(result.scalars().all())
+
+
+async def get_photo_by_id(
+    session: AsyncSession, unit_id: str, photo_id: str
+) -> UnitPhoto | None:
+    result = await session.execute(
+        select(UnitPhoto).where(
+            UnitPhoto.id == photo_id, UnitPhoto.unit_id == unit_id
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def clear_cover_flags(session: AsyncSession, unit_id: str) -> None:
+    await session.execute(
+        update(UnitPhoto)
+        .where(UnitPhoto.unit_id == unit_id, UnitPhoto.is_cover.is_(True))
+        .values(is_cover=False)
+    )
+    await session.flush()
+
+
+async def set_listing_cover_photo(
+    session: AsyncSession, unit_id: str, photo_id: str
+) -> None:
+    await session.execute(
+        update(UnitListing)
+        .where(UnitListing.unit_id == unit_id)
+        .values(cover_photo_id=photo_id)
+    )
+    await session.flush()
+
+
+async def clear_listing_cover_photo(
+    session: AsyncSession, unit_id: str, photo_id: str
+) -> None:
+    await session.execute(
+        update(UnitListing)
+        .where(
+            UnitListing.unit_id == unit_id,
+            UnitListing.cover_photo_id == photo_id,
+        )
+        .values(cover_photo_id=None)
+    )
+    await session.flush()
+
+
+async def delete_photo(session: AsyncSession, photo: UnitPhoto) -> None:
+    await session.delete(photo)
+    await session.flush()

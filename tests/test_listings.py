@@ -14,6 +14,7 @@ from app.listings.schemas import (
     ListingSearchResponse,
     PaginationInfo,
     PhotoPresignResponse,
+    PhotoResponse,
 )
 from app.main import app
 from fastapi.testclient import TestClient
@@ -338,6 +339,137 @@ def test_presign_photo_upload_not_found(
     response = listings_client.post(
         "/api/v1/listings/missing-unit/photos/presign",
         json={"filename": "photo.jpg", "content_type": "image/jpeg"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 404
+
+
+def _make_photo_response(photo_id: str = "photo-1", is_cover: bool = False) -> PhotoResponse:
+    return PhotoResponse(
+        id=photo_id,
+        unit_id="unit-1",
+        s3_key="listings/unit-1/photo_abc.jpg",
+        url="https://s3.example.com/listings/unit-1/photo_abc.jpg",
+        display_order=0,
+        is_cover=is_cover,
+        caption=None,
+    )
+
+
+def test_post_photo_as_host(listings_client: TestClient, monkeypatch) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    photo = _make_photo_response()
+    monkeypatch.setattr(
+        "app.listings.router.create_photo", AsyncMock(return_value=photo)
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.post(
+        "/api/v1/listings/unit-1/photos",
+        json={
+            "s3_key": "listings/unit-1/photo_abc.jpg",
+            "url": "https://s3.example.com/listings/unit-1/photo_abc.jpg",
+            "is_cover": False,
+            "display_order": 0,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "photo-1"
+    assert data["s3_key"] == "listings/unit-1/photo_abc.jpg"
+
+
+def test_post_photo_forbidden_for_guest(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, guest)
+
+    token = auth_services.create_access_token(guest)
+    response = listings_client.post(
+        "/api/v1/listings/unit-1/photos",
+        json={
+            "s3_key": "listings/unit-1/photo_abc.jpg",
+            "url": "https://s3.example.com/listings/unit-1/photo_abc.jpg",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+def test_get_photos(listings_client: TestClient, monkeypatch) -> None:
+    photos = [_make_photo_response("photo-1"), _make_photo_response("photo-2")]
+    monkeypatch.setattr(
+        "app.listings.router.list_photos", AsyncMock(return_value=photos)
+    )
+
+    response = listings_client.get("/api/v1/listings/unit-1/photos")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert data[0]["id"] == "photo-1"
+    assert data[1]["id"] == "photo-2"
+
+
+def test_patch_cover_photo_as_host(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    photo = _make_photo_response("photo-2", is_cover=True)
+    monkeypatch.setattr(
+        "app.listings.router.set_cover_photo", AsyncMock(return_value=photo)
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.patch(
+        "/api/v1/listings/unit-1/photos/photo-2/cover",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "photo-2"
+    assert data["is_cover"] is True
+
+
+def test_delete_photo_as_host(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    monkeypatch.setattr(
+        "app.listings.router.delete_photo", AsyncMock(return_value=None)
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.delete(
+        "/api/v1/listings/unit-1/photos/photo-1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+
+
+def test_delete_photo_not_found(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    from app.shared.exceptions import NotFoundError
+
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    async def _raise_not_found(*args, **kwargs):
+        raise NotFoundError("Photo not found")
+
+    monkeypatch.setattr("app.listings.router.delete_photo", _raise_not_found)
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.delete(
+        "/api/v1/listings/unit-1/photos/missing-photo",
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 404

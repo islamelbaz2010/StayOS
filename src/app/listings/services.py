@@ -34,7 +34,9 @@ from .schemas import (
     ListingSearchResult,
     ListingUpdate,
     PaginationInfo,
+    PhotoCreate,
     PhotoPresignResponse,
+    PhotoResponse,
 )
 
 _PHOTO_UPLOAD_TTL_SECONDS = 900
@@ -566,3 +568,101 @@ async def generate_photo_presigned_url(
     )
 
     return PhotoPresignResponse(upload_url=upload_url, photo_key=photo_key)
+
+
+def _to_photo_response(photo: Any) -> PhotoResponse:
+    return PhotoResponse(
+        id=photo.id,
+        unit_id=photo.unit_id,
+        s3_key=photo.s3_key,
+        url=photo.url,
+        display_order=photo.display_order,
+        is_cover=photo.is_cover,
+        caption=photo.caption_ar,
+    )
+
+
+async def create_photo(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    request: PhotoCreate,
+) -> PhotoResponse:
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    if unit.host_id != user.id and user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only the listing owner or admin can upload photos")
+
+    if request.is_cover:
+        await listings_repository.clear_cover_flags(session, unit_id)
+
+    photo = await listings_repository.create_photo(
+        session,
+        unit_id=unit_id,
+        s3_key=request.s3_key,
+        url=request.url,
+        caption_ar=request.caption,
+        is_cover=request.is_cover,
+        display_order=request.display_order,
+    )
+
+    if request.is_cover:
+        await listings_repository.set_listing_cover_photo(session, unit_id, photo.id)
+
+    return _to_photo_response(photo)
+
+
+async def list_photos(
+    session: AsyncSession,
+    unit_id: str,
+) -> list[PhotoResponse]:
+    photos = await listings_repository.get_photos_by_unit(session, unit_id)
+    return [_to_photo_response(p) for p in photos]
+
+
+async def set_cover_photo(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    photo_id: str,
+) -> PhotoResponse:
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    if unit.host_id != user.id and user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only the listing owner or admin can manage photos")
+
+    photo = await listings_repository.get_photo_by_id(session, unit_id, photo_id)
+    if photo is None:
+        raise NotFoundError("Photo not found")
+
+    await listings_repository.clear_cover_flags(session, unit_id)
+    photo.is_cover = True
+    session.add(photo)
+    await session.flush()
+    await listings_repository.set_listing_cover_photo(session, unit_id, photo_id)
+    await session.refresh(photo)
+    return _to_photo_response(photo)
+
+
+async def delete_photo(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    photo_id: str,
+) -> None:
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    if unit.host_id != user.id and user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only the listing owner or admin can manage photos")
+
+    photo = await listings_repository.get_photo_by_id(session, unit_id, photo_id)
+    if photo is None:
+        raise NotFoundError("Photo not found")
+
+    if photo.is_cover:
+        await listings_repository.clear_listing_cover_photo(session, unit_id, photo_id)
+
+    await listings_repository.delete_photo(session, photo)

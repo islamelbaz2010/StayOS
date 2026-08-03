@@ -11,6 +11,7 @@ from app.listings.schemas import (
     ListingCreate,
     ListingSearchFilters,
     ListingUpdate,
+    PhotoCreate,
 )
 from app.listings.services import (
     create_listing,
@@ -358,3 +359,221 @@ async def test_generate_photo_presigned_url_admin(
     assert result.upload_url == "https://s3.example.com/upload"
     assert result.photo_key.startswith("listings/unit-1/photo_")
     assert result.photo_key.endswith(".png")
+
+
+def _make_photo(
+    photo_id: str = "photo-1",
+    unit_id: str = "unit-1",
+    is_cover: bool = False,
+    display_order: int = 0,
+) -> UnitPhoto:
+    return UnitPhoto(
+        id=photo_id,
+        unit_id=unit_id,
+        s3_key="listings/unit-1/photo_abc.jpg",
+        url="https://s3.example.com/listings/unit-1/photo_abc.jpg",
+        display_order=display_order,
+        is_cover=is_cover,
+        caption_ar=None,
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_photo_success(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    photo = _make_photo()
+    monkeypatch.setattr(
+        listings.repository, "create_photo", AsyncMock(return_value=photo)
+    )
+
+    from app.listings.services import create_photo
+
+    request = PhotoCreate(
+        s3_key="listings/unit-1/photo_abc.jpg",
+        url="https://s3.example.com/listings/unit-1/photo_abc.jpg",
+        is_cover=False,
+        display_order=0,
+    )
+    result = await create_photo(fake_session, _make_user(), "unit-1", request)
+    assert result.id == "photo-1"
+    assert result.s3_key == "listings/unit-1/photo_abc.jpg"
+    assert result.is_cover is False
+
+
+@pytest.mark.asyncio
+async def test_create_photo_with_cover(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    monkeypatch.setattr(
+        listings.repository, "clear_cover_flags", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        listings.repository, "set_listing_cover_photo", AsyncMock(return_value=None)
+    )
+
+    photo = _make_photo(is_cover=True)
+    monkeypatch.setattr(
+        listings.repository, "create_photo", AsyncMock(return_value=photo)
+    )
+
+    from app.listings.services import create_photo
+
+    request = PhotoCreate(
+        s3_key="listings/unit-1/photo_abc.jpg",
+        url="https://s3.example.com/listings/unit-1/photo_abc.jpg",
+        is_cover=True,
+        display_order=0,
+    )
+    result = await create_photo(fake_session, _make_user(), "unit-1", request)
+    assert result.is_cover is True
+    listings.repository.clear_cover_flags.assert_called_once_with(fake_session, "unit-1")
+    listings.repository.set_listing_cover_photo.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_photo_non_owner(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+    from app.shared.exceptions import AuthorizationError
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    from app.listings.services import create_photo
+
+    request = PhotoCreate(
+        s3_key="listings/unit-1/photo_abc.jpg",
+        url="https://s3.example.com/listings/unit-1/photo_abc.jpg",
+    )
+    other_user = _make_user(user_id="other-host")
+    with pytest.raises(AuthorizationError):
+        await create_photo(fake_session, other_user, "unit-1", request)
+
+
+@pytest.mark.asyncio
+async def test_list_photos(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    photos = [_make_photo("photo-1"), _make_photo("photo-2", display_order=1)]
+    monkeypatch.setattr(
+        listings.repository, "get_photos_by_unit", AsyncMock(return_value=photos)
+    )
+
+    from app.listings.services import list_photos
+
+    result = await list_photos(fake_session, "unit-1")
+    assert len(result) == 2
+    assert result[0].id == "photo-1"
+    assert result[1].id == "photo-2"
+
+
+@pytest.mark.asyncio
+async def test_set_cover_photo(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    photo = _make_photo("photo-2", is_cover=False)
+    monkeypatch.setattr(
+        listings.repository, "get_photo_by_id", AsyncMock(return_value=photo)
+    )
+    monkeypatch.setattr(
+        listings.repository, "clear_cover_flags", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        listings.repository, "set_listing_cover_photo", AsyncMock(return_value=None)
+    )
+
+    from app.listings.services import set_cover_photo
+
+    result = await set_cover_photo(fake_session, _make_user(), "unit-1", "photo-2")
+    assert result.is_cover is True
+    assert photo.is_cover is True
+
+
+@pytest.mark.asyncio
+async def test_set_cover_photo_not_found(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app import listings
+    from app.shared.exceptions import NotFoundError
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    monkeypatch.setattr(
+        listings.repository, "get_photo_by_id", AsyncMock(return_value=None)
+    )
+
+    from app.listings.services import set_cover_photo
+
+    with pytest.raises(NotFoundError):
+        await set_cover_photo(fake_session, _make_user(), "unit-1", "missing-photo")
+
+
+@pytest.mark.asyncio
+async def test_delete_photo(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    photo = _make_photo("photo-1", is_cover=False)
+    monkeypatch.setattr(
+        listings.repository, "get_photo_by_id", AsyncMock(return_value=photo)
+    )
+    monkeypatch.setattr(
+        listings.repository, "delete_photo", AsyncMock(return_value=None)
+    )
+
+    from app.listings.services import delete_photo
+
+    await delete_photo(fake_session, _make_user(), "unit-1", "photo-1")
+    listings.repository.delete_photo.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_delete_cover_photo_clears_listing(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    photo = _make_photo("photo-1", is_cover=True)
+    monkeypatch.setattr(
+        listings.repository, "get_photo_by_id", AsyncMock(return_value=photo)
+    )
+    monkeypatch.setattr(
+        listings.repository, "clear_listing_cover_photo", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        listings.repository, "delete_photo", AsyncMock(return_value=None)
+    )
+
+    from app.listings.services import delete_photo
+
+    await delete_photo(fake_session, _make_user(), "unit-1", "photo-1")
+    listings.repository.clear_listing_cover_photo.assert_called_once_with(
+        fake_session, "unit-1", "photo-1"
+    )

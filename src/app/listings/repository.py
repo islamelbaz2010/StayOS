@@ -27,8 +27,10 @@ async def create_listing(
         city=request.city,
         district=request.district,
         google_place_id=request.google_place_id,
+        address=request.address,
         max_guests=request.max_guests,
         bedrooms=request.bedrooms,
+        beds=request.beds,
         bathrooms=request.bathrooms,
     )
     session.add(unit)
@@ -47,6 +49,9 @@ async def create_listing(
         check_in_instructions=request.check_in_instructions,
         policies=request.policies,
         base_price_egp=request.base_price_egp,
+        cleaning_fee_egp=request.cleaning_fee_egp,
+        cancellation_policy=request.cancellation_policy,
+        category=request.category,
         weekend_mult=request.weekend_mult,
         peak_mult=request.peak_mult,
         min_nights=request.min_nights,
@@ -78,6 +83,30 @@ async def get_host_unit_ids(session: AsyncSession, host_id: str) -> list[str]:
         select(Unit.id).where(Unit.host_id == host_id)
     )
     return [row[0] for row in result.all()]
+
+
+async def get_host_units_with_listings(
+    session: AsyncSession, host_id: str
+) -> list[Unit]:
+    result = await session.execute(
+        select(Unit)
+        .options(selectinload(Unit.listing), selectinload(Unit.photos))
+        .where(Unit.host_id == host_id)
+        .order_by(Unit.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+async def get_units_by_status(
+    session: AsyncSession, status: str
+) -> list[Unit]:
+    result = await session.execute(
+        select(Unit)
+        .options(selectinload(Unit.listing), selectinload(Unit.photos))
+        .where(Unit.status == status)
+        .order_by(Unit.created_at.desc())
+    )
+    return list(result.scalars().all())
 
 
 async def update_unit_listing(

@@ -17,6 +17,19 @@ class UnitStatus(StrEnum):
     LISTED = "LISTED"
     SUSPENDED = "SUSPENDED"
     ARCHIVED = "ARCHIVED"
+    REJECTED = "REJECTED"
+
+
+class ListingCategory(StrEnum):
+    ENTIRE_PLACE = "ENTIRE_PLACE"
+    PRIVATE_ROOM = "PRIVATE_ROOM"
+    SHARED_ROOM = "SHARED_ROOM"
+
+
+class CancellationPolicy(StrEnum):
+    FLEXIBLE = "FLEXIBLE"
+    MODERATE = "MODERATE"
+    STRICT = "STRICT"
 
 
 class CalendarStatus(StrEnum):

@@ -53,9 +53,12 @@ def _make_listing_response(user_id: str | None = None) -> ListingResponse:
         city="Cairo",
         country="Egypt",
         district=None,
+        address=None,
         max_guests=4,
         bedrooms=2,
+        beds=2,
         bathrooms=1,
+        category="ENTIRE_PLACE",
         title_ar="شقة تجريبية",
         title_en="Test Apartment",
         title="شقة تجريبية",
@@ -65,6 +68,8 @@ def _make_listing_response(user_id: str | None = None) -> ListingResponse:
         amenities=["WIFI"],
         cultural_tags=["FAMILY_ONLY"],
         base_price_egp=1500,
+        cleaning_fee_egp=0,
+        cancellation_policy="FLEXIBLE",
         price=1500,
         currency="EGP",
         weekend_mult=1.0,
@@ -473,3 +478,185 @@ def test_delete_photo_not_found(
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 404
+
+
+def _make_admin_user(user_id: str | None = None) -> User:
+    return _make_user(
+        user_id=user_id, role=UserRole.ADMIN, kyc_status=KycStatus.VERIFIED
+    )
+
+
+def test_get_host_listings(listings_client: TestClient, monkeypatch) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    listings = [_make_listing_response(user_id=host.id)]
+    monkeypatch.setattr(
+        "app.listings.router.get_host_listings", AsyncMock(return_value=listings)
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.get(
+        "/api/v1/listings/host/listings",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+
+
+def test_get_host_listings_forbidden_for_guest(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, guest)
+
+    token = auth_services.create_access_token(guest)
+    response = listings_client.get(
+        "/api/v1/listings/host/listings",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+def test_get_host_listing_detail(listings_client: TestClient, monkeypatch) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    listing = _make_listing_response(user_id=host.id)
+    monkeypatch.setattr(
+        "app.listings.router.get_host_listing_detail", AsyncMock(return_value=listing)
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.get(
+        "/api/v1/listings/host/unit-1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == listing.id
+
+
+def test_submit_for_review_as_host(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    listing = _make_listing_response(user_id=host.id)
+    listing = listing.model_copy(update={"status": "PENDING_VERIFICATION"})
+    monkeypatch.setattr(
+        "app.listings.router.submit_for_review", AsyncMock(return_value=listing)
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.post(
+        "/api/v1/listings/unit-1/submit",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "PENDING_VERIFICATION"
+
+
+def test_submit_for_review_forbidden_for_guest(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, guest)
+
+    token = auth_services.create_access_token(guest)
+    response = listings_client.post(
+        "/api/v1/listings/unit-1/submit",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+def test_get_admin_pending_listings(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    admin = _make_admin_user()
+    _patch_auth_user(monkeypatch, admin)
+
+    listings = [_make_listing_response()]
+    monkeypatch.setattr(
+        "app.listings.router.get_pending_listings", AsyncMock(return_value=listings)
+    )
+
+    token = auth_services.create_access_token(admin)
+    response = listings_client.get(
+        "/api/v1/listings/admin/pending",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_get_admin_pending_forbidden_for_host(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.get(
+        "/api/v1/listings/admin/pending",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+def test_approve_listing_as_admin(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    admin = _make_admin_user()
+    _patch_auth_user(monkeypatch, admin)
+
+    listing = _make_listing_response()
+    listing = listing.model_copy(update={"status": "LISTED"})
+    monkeypatch.setattr(
+        "app.listings.router.approve_listing", AsyncMock(return_value=listing)
+    )
+
+    token = auth_services.create_access_token(admin)
+    response = listings_client.post(
+        "/api/v1/listings/admin/unit-1/approve",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "LISTED"
+
+
+def test_reject_listing_as_admin(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    admin = _make_admin_user()
+    _patch_auth_user(monkeypatch, admin)
+
+    listing = _make_listing_response()
+    listing = listing.model_copy(update={"status": "REJECTED"})
+    monkeypatch.setattr(
+        "app.listings.router.reject_listing", AsyncMock(return_value=listing)
+    )
+
+    token = auth_services.create_access_token(admin)
+    response = listings_client.post(
+        "/api/v1/listings/admin/unit-1/reject",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "REJECTED"
+
+
+def test_approve_listing_forbidden_for_host(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.post(
+        "/api/v1/listings/admin/unit-1/approve",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403

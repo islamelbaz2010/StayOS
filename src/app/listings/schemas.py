@@ -13,9 +13,12 @@ class ListingCreate(BaseModel):
     city: str = Field(..., min_length=1, max_length=100)
     district: str | None = Field(None, max_length=100)
     google_place_id: str | None = Field(None, max_length=255)
+    address: str | None = Field(None, max_length=500)
     max_guests: int = Field(..., ge=1, le=50)
     bedrooms: int = Field(..., ge=0)
+    beds: int = Field(default=1, ge=0)
     bathrooms: int = Field(..., ge=1)
+    category: str = Field(default="ENTIRE_PLACE", min_length=1, max_length=50)
     title_ar: str = Field(..., min_length=1, max_length=255)
     title_en: str | None = Field(None, max_length=255)
     description_ar: str = Field(..., min_length=1)
@@ -23,6 +26,8 @@ class ListingCreate(BaseModel):
     amenities: list[str] = Field(default_factory=list)
     cultural_tags: list[str] = Field(default_factory=list)
     base_price_egp: int = Field(..., ge=100)
+    cleaning_fee_egp: int = Field(default=0, ge=0)
+    cancellation_policy: str = Field(default="FLEXIBLE", min_length=1, max_length=50)
     weekend_mult: float = Field(default=1.0, ge=0.0)
     peak_mult: float = Field(default=1.0, ge=0.0)
     min_nights: int = Field(default=1, ge=1)
@@ -49,7 +54,7 @@ class ListingCreate(BaseModel):
             return v.upper()
         return v
 
-    @field_validator("property_type", "cultural_tags", mode="before")
+    @field_validator("property_type", "cultural_tags", "category", "cancellation_policy", mode="before")
     @classmethod
     def uppercase_strings(cls, v: str | list[str]) -> str | list[str]:
         if isinstance(v, str):
@@ -73,6 +78,11 @@ class ListingUpdate(BaseModel):
     amenities: list[str] | None = None
     cultural_tags: list[str] | None = None
     base_price_egp: int | None = Field(None, ge=100)
+    cleaning_fee_egp: int | None = Field(None, ge=0)
+    cancellation_policy: str | None = Field(None, min_length=1, max_length=50)
+    category: str | None = Field(None, min_length=1, max_length=50)
+    address: str | None = Field(None, max_length=500)
+    beds: int | None = Field(None, ge=0)
     weekend_mult: float | None = Field(None, ge=0.0)
     peak_mult: float | None = Field(None, ge=0.0)
     min_nights: int | None = Field(None, ge=1)
@@ -105,6 +115,13 @@ class ListingUpdate(BaseModel):
             return [item.upper() for item in v]
         return v
 
+    @field_validator("category", "cancellation_policy", mode="before")
+    @classmethod
+    def uppercase_update_strings(cls, v: str | None) -> str | None:
+        if isinstance(v, str):
+            return v.upper()
+        return v
+
     @model_validator(mode="after")
     def validate_nights(self) -> "ListingUpdate":
         if (
@@ -127,9 +144,12 @@ class ListingResponse(BaseModel):
     city: str
     country: str
     district: str | None
+    address: str | None
     max_guests: int
     bedrooms: int
+    beds: int
     bathrooms: int
+    category: str
     title_ar: str
     title_en: str | None
     title: str
@@ -139,6 +159,8 @@ class ListingResponse(BaseModel):
     amenities: list[str]
     cultural_tags: list[str]
     base_price_egp: int
+    cleaning_fee_egp: int
+    cancellation_policy: str
     price: int
     currency: str
     weekend_mult: float

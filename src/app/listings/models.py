@@ -52,6 +52,8 @@ class Unit(UUIDMixin, TimestampMixin, Base):
     max_guests: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     bedrooms: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     bathrooms: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    beds: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     listing: Mapped["UnitListing"] = relationship(
         "UnitListing", back_populates="unit", uselist=False
@@ -113,6 +115,15 @@ class UnitListing(UUIDMixin, Base):
     )
     currency: Mapped[str] = mapped_column(
         String(3), nullable=False, default="EGP"
+    )
+    category: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="ENTIRE_PLACE"
+    )
+    cleaning_fee_egp: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    cancellation_policy: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="FLEXIBLE"
     )
     cover_photo_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("pms.unit_photos.id"), nullable=True

@@ -77,9 +77,12 @@ def _to_listing_response(
         city=unit.city,
         country=listing.country,
         district=unit.district,
+        address=unit.address,
         max_guests=unit.max_guests,
         bedrooms=unit.bedrooms,
+        beds=unit.beds,
         bathrooms=unit.bathrooms,
+        category=listing.category,
         title_ar=listing.title_ar,
         title_en=listing.title_en,
         title=_resolve_title(listing),
@@ -92,6 +95,8 @@ def _to_listing_response(
         check_in_instructions=listing.check_in_instructions,
         policies=listing.policies,
         base_price_egp=listing.base_price_egp,
+        cleaning_fee_egp=listing.cleaning_fee_egp,
+        cancellation_policy=listing.cancellation_policy,
         price=listing.base_price_egp,
         currency=listing.currency,
         weekend_mult=listing.weekend_mult,
@@ -183,6 +188,123 @@ async def get_listing_detail(
     return _to_listing_response(unit, listing, lat, lng)
 
 
+async def get_host_listing_detail(
+    session: AsyncSession, user: User, unit_id: str
+) -> ListingResponse:
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    if unit.host_id != user.id and user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only the listing owner can view it")
+
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing not found")
+
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, listing, lat, lng)
+
+
+async def get_host_listings(
+    session: AsyncSession, user: User
+) -> list[ListingResponse]:
+    _assert_host(user)
+    units = await listings_repository.get_host_units_with_listings(session, user.id)
+    results: list[ListingResponse] = []
+    for unit in units:
+        listing = unit.listing
+        if listing is None:
+            continue
+        lat, lng = await _fetch_coordinates(session, unit)
+        results.append(_to_listing_response(unit, listing, lat, lng))
+    return results
+
+
+async def submit_for_review(
+    session: AsyncSession, user: User, unit_id: str
+) -> ListingResponse:
+    _assert_host(user)
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.host_id != user.id:
+        raise NotFoundError("Listing not found")
+    if unit.status not in (UnitStatus.DRAFT, UnitStatus.REJECTED, UnitStatus.UNLISTED):
+        raise ValidationError("Only draft or rejected listings can be submitted for review")
+
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+
+    if not listing.title_ar or not listing.description_ar:
+        raise ValidationError("Title and description are required before submitting")
+    if listing.base_price_egp < 100:
+        raise ValidationError("Price must be at least 100 EGP")
+
+    unit = await listings_repository.set_unit_status(
+        session, unit, UnitStatus.PENDING_VERIFICATION
+    )
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, listing, lat, lng)
+
+
+async def get_pending_listings(
+    session: AsyncSession, user: User
+) -> list[ListingResponse]:
+    if user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only admins can view pending listings")
+    units = await listings_repository.get_units_by_status(
+        session, UnitStatus.PENDING_VERIFICATION
+    )
+    results: list[ListingResponse] = []
+    for unit in units:
+        listing = unit.listing
+        if listing is None:
+            continue
+        lat, lng = await _fetch_coordinates(session, unit)
+        results.append(_to_listing_response(unit, listing, lat, lng))
+    return results
+
+
+async def approve_listing(
+    session: AsyncSession, user: User, unit_id: str
+) -> ListingResponse:
+    if user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only admins can approve listings")
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    if unit.status != UnitStatus.PENDING_VERIFICATION:
+        raise ValidationError("Only pending listings can be approved")
+
+    unit = await listings_repository.set_unit_status(session, unit, UnitStatus.LISTED)
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, listing, lat, lng)
+
+
+async def reject_listing(
+    session: AsyncSession, user: User, unit_id: str
+) -> ListingResponse:
+    if user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only admins can reject listings")
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    if unit.status != UnitStatus.PENDING_VERIFICATION:
+        raise ValidationError("Only pending listings can be rejected")
+
+    unit = await listings_repository.set_unit_status(session, unit, UnitStatus.REJECTED)
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+    lat, lng = await _fetch_coordinates(session, unit)
+    return _to_listing_response(unit, listing, lat, lng)
+
+
 async def update_listing(
     session: AsyncSession, user: User, unit_id: str, request: ListingUpdate
 ) -> ListingResponse:
@@ -195,6 +317,12 @@ async def update_listing(
     listing = unit.listing
     if listing is None:
         raise NotFoundError("Listing not found")
+
+    if request.beds is not None:
+        unit.beds = request.beds
+    if request.address is not None:
+        unit.address = request.address
+    session.add(unit)
 
     await listing_configuration.validate_listing_configuration(session, unit, request)
     updated = await listings_repository.update_unit_listing(

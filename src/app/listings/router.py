@@ -29,6 +29,7 @@ from .schemas import (
     PhotoResponse,
 )
 from .services import (
+    approve_listing,
     archive_listing,
     bulk_update_availability,
     bulk_update_pricing,
@@ -40,12 +41,17 @@ from .services import (
     generate_photo_presigned_url,
     get_availability,
     get_host_dashboard,
+    get_host_listing_detail,
+    get_host_listings,
     get_host_reservation_calendar,
     get_listing_detail,
+    get_pending_listings,
     list_photos,
     publish_listing,
+    reject_listing,
     search_listings,
     set_cover_photo,
+    submit_for_review,
     unpublish_listing,
     update_host_calendar_rule,
     update_listing,
@@ -99,6 +105,76 @@ async def patch_listing(
 ) -> ListingResponse:
     try:
         return await update_listing(session, user, unit_id, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/host/listings", response_model=list[ListingResponse])
+async def get_host_listings_endpoint(
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> list[ListingResponse]:
+    try:
+        return await get_host_listings(session, user)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/host/{unit_id}", response_model=ListingResponse)
+async def get_host_listing_endpoint(
+    unit_id: str,
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> ListingResponse:
+    try:
+        return await get_host_listing_detail(session, user, unit_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{unit_id}/submit", response_model=ListingResponse)
+async def post_submit_for_review(
+    unit_id: str,
+    user: User = Depends(auth_dependencies.require_role("host")),
+    session: AsyncSession = Depends(get_session),
+) -> ListingResponse:
+    try:
+        return await submit_for_review(session, user, unit_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/admin/pending", response_model=list[ListingResponse])
+async def get_admin_pending_endpoint(
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> list[ListingResponse]:
+    try:
+        return await get_pending_listings(session, user)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/admin/{unit_id}/approve", response_model=ListingResponse)
+async def post_approve_listing(
+    unit_id: str,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> ListingResponse:
+    try:
+        return await approve_listing(session, user, unit_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/admin/{unit_id}/reject", response_model=ListingResponse)
+async def post_reject_listing(
+    unit_id: str,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> ListingResponse:
+    try:
+        return await reject_listing(session, user, unit_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

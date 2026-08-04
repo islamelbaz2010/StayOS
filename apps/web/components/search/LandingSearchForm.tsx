@@ -42,10 +42,10 @@ export function LandingSearchForm({ locale }: { locale: string }) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-3xl font-bold text-white md:text-5xl">
-            {t("title")}
+            {t("heroTitle")}
           </h1>
           <p className="mt-4 text-lg text-white/90 md:text-xl">
-            {t("subtitle")}
+            {t("heroSubtitle")}
           </p>
         </div>
 

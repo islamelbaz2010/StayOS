@@ -10,6 +10,7 @@ const imageHosts = process.env.NEXT_PUBLIC_IMAGE_HOSTS
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   reactStrictMode: true,
   images: {
     formats: ["image/webp", "image/avif"],

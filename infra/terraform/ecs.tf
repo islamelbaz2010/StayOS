@@ -231,3 +231,77 @@ resource "aws_ecs_service" "worker" {
     Name = "${local.name_prefix}-worker-service"
   })
 }
+
+resource "aws_cloudwatch_log_group" "beat" {
+  name              = "/ecs/${local.name_prefix}/beat"
+  retention_in_days = 7
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-beat-logs"
+  })
+}
+
+resource "aws_ecs_task_definition" "beat" {
+  family                   = "${local.name_prefix}-beat"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.ecs_worker_task_cpu
+  memory                   = var.ecs_worker_task_memory
+  execution_role_arn        = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "beat"
+      image     = "${aws_ecr_repository.main.repository_url}:latest"
+      essential = true
+      command   = ["celery", "-A", "app.celery_app", "beat", "--loglevel=info", "--scheduler", "celery.beat.PersistentScheduler", "-s", "/tmp/celerybeat-schedule"]
+      environment = [
+        {
+          name  = "ENVIRONMENT"
+          value = var.environment
+        }
+      ]
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = aws_secretsmanager_secret.database_url.arn
+        },
+        {
+          name      = "REDIS_URL"
+          valueFrom = aws_secretsmanager_secret.redis_url.arn
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.beat.name
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = "beat"
+        }
+      }
+    }
+  ])
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-beat-task"
+  })
+}
+
+resource "aws_ecs_service" "beat" {
+  name            = "${local.name_prefix}-beat"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.beat.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+    security_groups  = [aws_security_group.worker.id]
+    assign_public_ip = false
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-beat-service"
+  })
+}

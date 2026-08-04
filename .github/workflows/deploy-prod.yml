@@ -21,6 +21,7 @@ jobs:
           aws-region: me-central-1
 
       - name: Login to ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build and push Docker image
@@ -55,11 +56,18 @@ jobs:
             --service stayos-prod-worker \
             --force-new-deployment
 
+      - name: Update ECS beat service
+        run: |
+          aws ecs update-service \
+            --cluster stayos-prod-cluster \
+            --service stayos-prod-beat \
+            --force-new-deployment
+
       - name: Wait for services stable
         run: |
           aws ecs wait services-stable \
             --cluster stayos-prod-cluster \
-            --services stayos-prod-api stayos-prod-worker
+            --services stayos-prod-api stayos-prod-worker stayos-prod-beat
 
       - name: Smoke test
         run: |

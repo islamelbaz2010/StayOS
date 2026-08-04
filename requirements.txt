@@ -16,3 +16,4 @@ firebase-admin>=6.3.0
 twilio>=8.10.0
 sentry-sdk[fastapi]>=1.39.0
 geoalchemy2>=0.20.0
+openpyxl>=3.1.0

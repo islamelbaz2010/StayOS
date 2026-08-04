@@ -101,29 +101,26 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Cache pnpm dependencies
+      - name: Cache npm dependencies
         uses: actions/cache@v3
         with:
           path: apps/web/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('apps/web/package.json') }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('apps/web/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-
+            ${{ runner.os }}-npm-
 
       - name: Install dependencies
         working-directory: apps/web
-        run: pnpm install
+        run: npm ci
 
       - name: Lint with ESLint
         working-directory: apps/web
-        run: pnpm lint
+        run: npm run lint
 
       - name: Type check with TypeScript
         working-directory: apps/web
-        run: pnpm type-check
+        run: npm run type-check
 
       - name: Build Next.js
         working-directory: apps/web
-        run: pnpm build
+        run: npm run build

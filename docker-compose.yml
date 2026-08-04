@@ -56,6 +56,12 @@ services:
     networks:
       - stayos_dev
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   worker:
     build:
@@ -74,6 +80,22 @@ services:
     networks:
       - stayos_dev
     command: ["celery", "-A", "app.celery_app", "worker", "--loglevel=info", "-Q", "high,default,low", "--concurrency=4"]
+
+  beat:
+    build:
+      context: .
+      dockerfile: infra/docker/api/Dockerfile
+    container_name: stayos_beat
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - stayos_dev
+    command: ["celery", "-A", "app.celery_app", "beat", "--loglevel=info", "-s", "/tmp/celerybeat-schedule"]
 
 volumes:
   postgres_data:

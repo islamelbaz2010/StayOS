@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { HostLayout } from "@/components/layouts";
 import {
   usePaymentQueue,
   useVerifyPayment,
@@ -177,9 +178,9 @@ export default function AdminPaymentQueuePage() {
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <div className="min-h-screen bg-neutral-50">
-        <div className="mx-auto max-w-4xl p-4 sm:p-6">
-          <h1 className="mb-6 text-2xl font-bold text-neutral-900">
+      <HostLayout>
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold text-neutral-900">
             {t("queueTitle")}
           </h1>
 
@@ -219,7 +220,7 @@ export default function AdminPaymentQueuePage() {
             </div>
           )}
         </div>
-      </div>
+      </HostLayout>
     </ProtectedRoute>
   );
 }

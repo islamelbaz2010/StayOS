@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { HostLayout } from "@/components/layouts";
 import {
   usePendingListings,
   useApproveListing,
@@ -23,8 +24,8 @@ export default function AdminPendingListingsPage() {
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <div className="min-h-screen bg-neutral-50">
-        <div className="mx-auto max-w-6xl p-6">
+      <HostLayout>
+        <div className="space-y-6">
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-2xl font-bold text-neutral-900">
               {t("pendingTitle")}
@@ -388,7 +389,7 @@ export default function AdminPendingListingsPage() {
             </div>
           )}
         </div>
-      </div>
+      </HostLayout>
     </ProtectedRoute>
   );
 }

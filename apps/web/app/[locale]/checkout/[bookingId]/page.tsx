@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { GuestLayout } from "@/components/layouts";
 import { ProofUpload } from "@/components/payments/ProofUpload";
 import { useBooking } from "@/lib/queries/bookings";
 import { usePaymentByBooking } from "@/lib/queries/payments";
@@ -119,7 +120,7 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
             <dt className="text-lg font-bold text-neutral-900">
               {t("totalAmount")}
             </dt>
-            <dd className="text-lg font-bold text-primary-600">
+            <dd className="text-lg font-bold text-brand-600">
               {payment.amount_egp.toLocaleString()} {t("egp")}
             </dd>
           </div>
@@ -153,7 +154,7 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
                 href={payment.proof_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-medium text-primary-600 hover:underline"
+                className="text-sm font-medium text-brand-600 hover:underline"
               >
                 {t("viewPdf")}
               </a>
@@ -185,18 +186,18 @@ export default function CheckoutPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-neutral-50">
-        <div className="mx-auto max-w-2xl p-4 sm:p-6">
+      <GuestLayout>
+        <section className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center gap-4">
             <Link
               href={`/${locale}`}
-              className="text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+              className="text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             >
               {t("backHome")}
             </Link>
             <Link
               href={`/${locale}/bookings`}
-              className="text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+              className="text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             >
               {t("backToTrips")}
             </Link>
@@ -205,8 +206,8 @@ export default function CheckoutPage() {
             {t("checkoutTitle")}
           </h1>
           <CheckoutContent bookingId={bookingId} />
-        </div>
-      </div>
+        </section>
+      </GuestLayout>
     </ProtectedRoute>
   );
 }

@@ -74,6 +74,9 @@ export function BookingPanel({ listing }: BookingPanelProps) {
   }, [checkIn, checkOut]);
 
   const totalPrice = listing.price * nights;
+  const cleaningFee = listing.cleaningFee || 0;
+  const serviceFee = Math.round(totalPrice * 0.05);
+  const grandTotal = totalPrice + cleaningFee + serviceFee;
 
   function validate(): boolean {
     const nextErrors: Record<string, string> = {};
@@ -382,6 +385,18 @@ export function BookingPanel({ listing }: BookingPanelProps) {
                 <span>{formatMoney(totalPrice, listing.currency)}</span>
               </div>
 
+              {cleaningFee > 0 && (
+                <div className="flex justify-between">
+                  <span>{t("cleaningFee")}</span>
+                  <span>{formatMoney(cleaningFee, listing.currency)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between">
+                <span>{t("serviceFee")}</span>
+                <span>{formatMoney(serviceFee, listing.currency)}</span>
+              </div>
+
               <div className="flex justify-between">
                 <span>{t("guests")}</span>
                 <span>{totalGuests}</span>
@@ -390,7 +405,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
               <div className="border-t border-neutral-200 pt-2">
                 <div className="flex justify-between font-semibold text-neutral-900">
                   <span>{t("total")}</span>
-                  <span>{formatMoney(totalPrice, listing.currency)}</span>
+                  <span>{formatMoney(grandTotal, listing.currency)}</span>
                 </div>
               </div>
             </div>

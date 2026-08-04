@@ -221,7 +221,9 @@
     "destination": "الوجهة",
     "button": "بحث",
     "checkin": "تاريخ الوصول",
-    "checkout": "تاريخ المغادرة"
+    "checkout": "تاريخ المغادرة",
+    "featuredTitle": "إقامات مميزة",
+    "viewAll": "عرض الكل"
   },
   "listing": {
     "perNight": "لليلة",
@@ -297,6 +299,8 @@
     "infants": "رضع",
     "summary": "ملخص الحجز",
     "nights": "ليالي",
+    "cleaningFee": "رسوم التنظيف",
+    "serviceFee": "رسوم الخدمة",
     "total": "الإجمالي",
     "selectDates": "اختر التواريخ لرؤية الملخص.",
     "requestBooking": "إرسال طلب الحجز",
@@ -578,5 +582,13 @@
     "properties": "العقارات",
     "reservations": "الحجوزات",
     "kyc": "التحقق من الهوية"
+  },
+  "landing": {
+    "trustVerified": "مضيفون موثقون",
+    "trustVerifiedDesc": "كل مضيف موثق الهوية لسلامتك وراحة بالك.",
+    "trustPayment": "مدفوعات آمنة",
+    "trustPaymentDesc": "تحويلات بنكية يتم التحقق منها من قبل فريقنا قبل التأكيد.",
+    "trustSupport": "دعم محلي",
+    "trustSupportDesc": "دعم بالعربية والإنجليزية طوال فترة إقامتك."
   }
 }

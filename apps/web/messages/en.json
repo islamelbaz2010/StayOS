@@ -221,7 +221,9 @@
     "destination": "Destination",
     "button": "Search",
     "checkin": "Check-in",
-    "checkout": "Check-out"
+    "checkout": "Check-out",
+    "featuredTitle": "Featured stays",
+    "viewAll": "View all"
   },
   "listing": {
     "perNight": "per night",
@@ -297,6 +299,8 @@
     "infants": "Infants",
     "summary": "Booking summary",
     "nights": "nights",
+    "cleaningFee": "Cleaning fee",
+    "serviceFee": "Service fee",
     "total": "Total",
     "selectDates": "Select dates to see the summary.",
     "requestBooking": "Request booking",
@@ -578,5 +582,13 @@
     "properties": "Properties",
     "reservations": "Reservations",
     "kyc": "Identity Verification"
+  },
+  "landing": {
+    "trustVerified": "Verified Hosts",
+    "trustVerifiedDesc": "Every host is identity-verified for your safety and peace of mind.",
+    "trustPayment": "Secure Payments",
+    "trustPaymentDesc": "Bank transfer payments verified by our team before confirmation.",
+    "trustSupport": "Local Support",
+    "trustSupportDesc": "Arabic and English support available throughout your stay."
   }
 }

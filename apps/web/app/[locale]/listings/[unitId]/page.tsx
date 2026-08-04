@@ -15,38 +15,39 @@ import { useListing, useListingPhotos } from "@/lib/queries/listings";
 import { formatMoney } from "@/lib/utils";
 
 const AMENITY_GROUPS: Record<string, string[]> = {
-  ESSENTIALS: ["WIFI", "AC", "HEATING", "TOWELS", "BED_LINENS", "TOILETRIES"],
-  KITCHEN: ["KITCHEN", "FRIDGE", "MICROWAVE", "STOVE", "OVEN", "COFFEE_MACHINE"],
-  ENTERTAINMENT: ["TV", "POOL", "GYM", "WORKSPACE"],
-  OUTDOOR: ["BALCONY", "GARDEN", "PARKING", "BBQ"],
-  SAFETY: ["FIRE_EXTINGUISHER", "SMOKE_DETECTOR", "FIRST_AID_KIT", "SAFE"],
+  ESSENTIALS: ["wifi", "ac", "air_conditioning", "heating", "towels", "bed_linens", "toiletries"],
+  KITCHEN: ["kitchen", "fridge", "microwave", "stove", "oven", "coffee_machine"],
+  ENTERTAINMENT: ["tv", "pool", "gym", "workspace"],
+  OUTDOOR: ["balcony", "garden", "parking", "bbq"],
+  SAFETY: ["fire_extinguisher", "smoke_detector", "first_aid_kit", "safe"],
 };
 
 const AMENITY_ICONS: Record<string, string> = {
-  WIFI: "📶",
-  AC: "❄️",
-  HEATING: "🔥",
-  TOWELS: "🧺",
-  BED_LINENS: "🛏️",
-  TOILETRIES: "🧴",
-  KITCHEN: "🍳",
-  FRIDGE: "🧊",
-  MICROWAVE: "⚡",
-  STOVE: "🔥",
-  OVEN: "🍞",
-  COFFEE_MACHINE: "☕",
-  TV: "📺",
-  POOL: "🏊",
-  GYM: "💪",
-  WORKSPACE: "💻",
-  BALCONY: "🌅",
-  GARDEN: "🌿",
-  PARKING: "🚗",
-  BBQ: "🍖",
-  FIRE_EXTINGUISHER: "🧯",
-  SMOKE_DETECTOR: "🚨",
-  FIRST_AID_KIT: "⚕️",
-  SAFE: "🔒",
+  wifi: "📶",
+  ac: "❄️",
+  air_conditioning: "❄️",
+  heating: "🔥",
+  towels: "🧺",
+  bed_linens: "🛏️",
+  toiletries: "🧴",
+  kitchen: "🍳",
+  fridge: "🧊",
+  microwave: "⚡",
+  stove: "🔥",
+  oven: "🍞",
+  coffee_machine: "☕",
+  tv: "📺",
+  pool: "🏊",
+  gym: "💪",
+  workspace: "💻",
+  balcony: "🌅",
+  garden: "🌿",
+  parking: "🚗",
+  bbq: "🍖",
+  fire_extinguisher: "🧯",
+  smoke_detector: "🚨",
+  first_aid_kit: "⚕️",
+  safe: "🔒",
 };
 
 function getAmenityGroup(amenity: string): string {
@@ -198,7 +199,7 @@ export default function ListingDetailPage() {
                                     <span className="text-lg">
                                       {AMENITY_ICONS[amenity] ?? "✓"}
                                     </span>
-                                    <span>{amenity}</span>
+                                    <span>{t(`amenityLabel.${amenity}`, { default: amenity.replace(/_/g, " ") })}</span>
                                   </div>
                                 ))}
                               </div>

@@ -16,6 +16,7 @@ import {
 export default function AdminPendingListingsPage() {
   const t = useTranslations("adminListings");
   const tc = useTranslations("common");
+  const tl = useTranslations("listing");
   const { data: listings, isLoading, error } = usePendingListings();
   const approveMutation = useApproveListing();
   const rejectMutation = useRejectListing();
@@ -299,11 +300,11 @@ export default function AdminPendingListingsPage() {
                     </span>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {selected.amenities.map((a) => (
-                        <span
+                          <span
                           key={a}
                           className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600"
                         >
-                          {a}
+                          {tl(`amenityLabel.${a}`, { default: a.replace(/_/g, " ") })}
                         </span>
                       ))}
                     </div>

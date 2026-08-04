@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Header } from "./Header";
@@ -8,12 +8,14 @@ import { Header } from "./Header";
 export function HostLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("hostNav");
   const pathname = usePathname();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
 
   const navItems = [
-    { label: t("dashboard"), href: "/host" },
-    { label: t("properties"), href: "/host/listings" },
-    { label: t("reservations"), href: "/host/bookings" },
-    { label: t("kyc"), href: "/host/kyc" },
+    { label: t("dashboard"), href: `/${locale}/host` },
+    { label: t("properties"), href: `/${locale}/host/listings` },
+    { label: t("reservations"), href: `/${locale}/host/bookings` },
+    { label: t("kyc"), href: `/${locale}/host/kyc` },
   ];
 
   return (

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { useAuth } from "@/lib/auth/useAuth";
 
@@ -11,12 +11,14 @@ export function Header() {
   const t = useTranslations("nav");
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const router = useRouter();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = (
     <>
       <Link
-        href="/search"
+        href={`/${locale}/search`}
         className="text-sm font-medium text-neutral-700 hover:text-brand-600"
         onClick={() => setMobileOpen(false)}
       >
@@ -25,14 +27,14 @@ export function Header() {
       {isAuthenticated && user?.role === "guest" && (
         <>
           <Link
-            href="/bookings"
+            href={`/${locale}/bookings`}
             className="text-sm font-medium text-neutral-700 hover:text-brand-600"
             onClick={() => setMobileOpen(false)}
           >
             {t("trips")}
           </Link>
           <Link
-            href="/host/kyc"
+            href={`/${locale}/host/kyc`}
             className="text-sm font-medium text-brand-600 hover:text-brand-700"
             onClick={() => setMobileOpen(false)}
           >
@@ -42,7 +44,7 @@ export function Header() {
       )}
       {!isAuthenticated && (
         <Link
-          href="/host/kyc"
+          href={`/${locale}/host/kyc`}
           className="text-sm font-medium text-brand-600 hover:text-brand-700"
           onClick={() => setMobileOpen(false)}
         >
@@ -51,7 +53,7 @@ export function Header() {
       )}
       {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
         <Link
-          href="/host"
+          href={`/${locale}/host`}
           className="text-sm font-medium text-neutral-700 hover:text-brand-600"
           onClick={() => setMobileOpen(false)}
         >
@@ -61,21 +63,21 @@ export function Header() {
       {isAuthenticated && user?.role === "admin" && (
         <>
           <Link
-            href="/admin/pending"
+            href={`/${locale}/admin/pending`}
             className="text-sm font-medium text-neutral-700 hover:text-brand-600"
             onClick={() => setMobileOpen(false)}
           >
             {t("admin")}
           </Link>
           <Link
-            href="/admin/kyc"
+            href={`/${locale}/admin/kyc`}
             className="text-sm font-medium text-neutral-700 hover:text-brand-600"
             onClick={() => setMobileOpen(false)}
           >
             {t("kycReview")}
           </Link>
           <Link
-            href="/admin/import"
+            href={`/${locale}/admin/import`}
             className="text-sm font-medium text-neutral-700 hover:text-brand-600"
             onClick={() => setMobileOpen(false)}
           >
@@ -85,7 +87,7 @@ export function Header() {
       )}
       {isAuthenticated && (
         <Link
-          href="/profile"
+          href={`/${locale}/profile`}
           className="text-sm font-medium text-neutral-700 hover:text-brand-600"
           onClick={() => setMobileOpen(false)}
         >
@@ -98,7 +100,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200 bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={`/${locale}`} className="flex items-center gap-2">
           <span className="text-lg font-bold tracking-tight text-neutral-900">
             Stay<span className="text-brand-600">OS</span>
           </span>
@@ -118,7 +120,7 @@ export function Header() {
                 type="button"
                 onClick={async () => {
                   await logout();
-                  router.push("/");
+                  router.push(`/${locale}`);
                 }}
                 className="hidden rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 sm:inline-block"
               >
@@ -127,7 +129,7 @@ export function Header() {
             </>
           ) : (
             <Link
-              href="/auth/login"
+              href={`/${locale}/auth/login`}
               className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
             >
               {t("signIn")}
@@ -160,7 +162,7 @@ export function Header() {
         <nav className="border-t border-neutral-200 bg-white px-4 pb-4 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
             <Link
-              href="/search"
+              href={`/${locale}/search`}
               className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
               onClick={() => setMobileOpen(false)}
             >
@@ -169,14 +171,14 @@ export function Header() {
             {isAuthenticated && user?.role === "guest" && (
               <>
                 <Link
-                  href="/bookings"
+                  href={`/${locale}/bookings`}
                   className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                   onClick={() => setMobileOpen(false)}
                 >
                   {t("trips")}
                 </Link>
                 <Link
-                  href="/host/kyc"
+                  href={`/${locale}/host/kyc`}
                   className="rounded-md px-3 py-2.5 text-sm font-medium text-brand-600 hover:bg-neutral-100"
                   onClick={() => setMobileOpen(false)}
                 >
@@ -186,7 +188,7 @@ export function Header() {
             )}
             {!isAuthenticated && (
               <Link
-                href="/host/kyc"
+                href={`/${locale}/host/kyc`}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-brand-600 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >
@@ -195,7 +197,7 @@ export function Header() {
             )}
             {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
               <Link
-                href="/host"
+                href={`/${locale}/host`}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >
@@ -205,21 +207,21 @@ export function Header() {
             {isAuthenticated && user?.role === "admin" && (
               <>
                 <Link
-                  href="/admin/pending"
+                  href={`/${locale}/admin/pending`}
                   className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                   onClick={() => setMobileOpen(false)}
                 >
                   {t("admin")}
                 </Link>
                 <Link
-                  href="/admin/kyc"
+                  href={`/${locale}/admin/kyc`}
                   className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                   onClick={() => setMobileOpen(false)}
                 >
                   {t("kycReview")}
                 </Link>
                 <Link
-                  href="/admin/import"
+                  href={`/${locale}/admin/import`}
                   className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                   onClick={() => setMobileOpen(false)}
                 >
@@ -229,7 +231,7 @@ export function Header() {
             )}
             {isAuthenticated && (
               <Link
-                href="/profile"
+                href={`/${locale}/profile`}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >
@@ -242,7 +244,7 @@ export function Header() {
                 onClick={async () => {
                   setMobileOpen(false);
                   await logout();
-                  router.push("/");
+                  router.push(`/${locale}`);
                 }}
                 className="mt-2 rounded-md px-3 py-2.5 text-start text-sm font-medium text-neutral-700 hover:bg-neutral-100"
               >

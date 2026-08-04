@@ -500,6 +500,7 @@
     "title": "استيراد عقارات بالجملة",
     "selectFile": "اختر ملف",
     "formatsHint": "CSV أو Excel (.xlsx) - بحد أقصى 10 ميجابايت",
+    "downloadTemplate": "تحميل قالب CSV",
     "parsing": "جاري تحليل الملف...",
     "previewFailed": "فشل تحليل الملف. تحقق من التنسيق وحاول مرة أخرى.",
     "importFailed": "فشل الاستيراد. حاول مرة أخرى.",

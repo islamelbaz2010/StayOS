@@ -1,0 +1,3 @@
+title,description,city,governorate,latitude,longitude,property_type,price,address,district,bedrooms,beds,bathrooms,max_guests,amenities,image_urls,host_name,host_phone,host_email,status
+شقة فاخرة بالتجمع,شقة بثلاث غرف نوم ومطبخ مجهز بالكامل,New Cairo,Cairo,30.0250,31.4913,APARTMENT,2500,شارع التسعين,التجمع الخامس,3,3,2,6,"wifi,parking,air_conditioning","https://example.com/photo1.jpg",أحمد محمد,+201001234567,ahmed@example.com,PENDING_VERIFICATION
+Villa in Maadi,فيلا بحديقة وحمام سباحة,Maadi,Cairo,29.9602,31.2569,VILLA,5000,النصر,المعادي,4,5,3,8,"wifi,pool,garden","https://example.com/villa1.jpg",Sara Ahmed,+201112223344,sara@example.com,PENDING_VERIFICATION

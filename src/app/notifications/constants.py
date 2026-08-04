@@ -24,3 +24,4 @@ class NotificationEvent:
     BOOKING_CHECKED_IN = "booking.checked_in"
     BOOKING_CHECKED_OUT = "booking.checked_out"
     BOOKING_CANCELLED = "booking.cancelled"
+    OWNER_OUTREACH = "owner.outreach"

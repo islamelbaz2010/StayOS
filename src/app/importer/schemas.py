@@ -26,7 +26,7 @@ class ImportRowData(BaseModel):
     host_name: str | None = None
     host_phone: str | None = None
     host_email: str | None = None
-    status: str = "LISTED"
+    status: str = "PENDING_VERIFICATION"
 
 
 class ImportRowError(BaseModel):
@@ -35,16 +35,7 @@ class ImportRowError(BaseModel):
     message: str
 
 
-class ImportPreviewRow(BaseModel):
-    row_number: int
-    title: str
-    city: str
-    governorate: str
-    price: int
-    property_type: str
-    host_name: str | None
-    host_phone: str | None
-    host_email: str | None
+class ImportPreviewRow(ImportRowData):
     is_valid: bool
     is_duplicate: bool = False
     errors: list[ImportRowError] = Field(default_factory=list)

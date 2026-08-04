@@ -500,6 +500,7 @@
     "title": "Bulk Import Listings",
     "selectFile": "Select file",
     "formatsHint": "CSV or Excel (.xlsx) - max 10MB",
+    "downloadTemplate": "Download CSV template",
     "parsing": "Parsing file...",
     "previewFailed": "Failed to parse file. Check format and try again.",
     "importFailed": "Import failed. Try again.",

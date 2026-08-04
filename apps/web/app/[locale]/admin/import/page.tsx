@@ -70,16 +70,27 @@ export default function AdminImportPage() {
       .map((r) => ({
         row_number: r.row_number,
         title: r.title,
-        description: "",
+        description: r.description,
+        address: r.address,
+        district: r.district,
         city: r.city,
         governorate: r.governorate,
-        latitude: 0,
-        longitude: 0,
+        country: r.country,
+        latitude: r.latitude,
+        longitude: r.longitude,
         property_type: r.property_type,
+        bedrooms: r.bedrooms,
+        beds: r.beds,
+        bathrooms: r.bathrooms,
+        max_guests: r.max_guests,
         price: r.price,
+        currency: r.currency,
+        amenities: r.amenities,
+        image_urls: r.image_urls,
         host_name: r.host_name,
         host_phone: r.host_phone,
         host_email: r.host_email,
+        status: r.status,
       }));
 
     if (validRows.length === 0) {
@@ -141,6 +152,13 @@ export default function AdminImportPage() {
                 {previewMutation.isPending ? t("parsing") : t("selectFile")}
               </button>
               <p className="mt-3 text-sm text-neutral-500">{t("formatsHint")}</p>
+              <a
+                href="/import-template.csv"
+                download
+                className="mt-2 inline-block text-sm font-medium text-brand-600 hover:text-brand-700"
+              >
+                {t("downloadTemplate")}
+              </a>
             </div>
           )}
 

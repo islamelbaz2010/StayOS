@@ -204,6 +204,24 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
             },
         },
     },
+    "owner.outreach": {
+        "ar": {
+            "whatsapp": {
+                "body": "مرحبًا، وجدنا عقارك وأضفناه إلى StayOS مجانًا. لن يتم نشره حتى توافق. للمراجعة والتواصل: {{link}}",
+            },
+            "sms": {
+                "body": "تمت إضافة عقارك إلى StayOS. للمراجعة: {{link}}",
+            },
+        },
+        "en": {
+            "whatsapp": {
+                "body": "Hello, we found your property and added it to StayOS for free. Nothing will be published until you approve. Review and contact us: {{link}}",
+            },
+            "sms": {
+                "body": "Your property was added to StayOS. Review: {{link}}",
+            },
+        },
+    },
 }
 
 

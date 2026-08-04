@@ -77,15 +77,7 @@ async def generate_preview(
 
         preview_rows.append(
             ImportPreviewRow(
-                row_number=row.row_number,
-                title=row.title,
-                city=row.city,
-                governorate=row.governorate,
-                price=row.price,
-                property_type=row.property_type,
-                host_name=row.host_name,
-                host_phone=row.host_phone,
-                host_email=row.host_email,
+                **row.model_dump(),
                 is_valid=is_valid,
                 is_duplicate=is_duplicate,
                 errors=errors,

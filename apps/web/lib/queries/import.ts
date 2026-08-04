@@ -8,16 +8,7 @@ export interface ImportRowError {
   message: string;
 }
 
-export interface ImportPreviewRow {
-  row_number: number;
-  title: string;
-  city: string;
-  governorate: string;
-  price: number;
-  property_type: string;
-  host_name: string | null;
-  host_phone: string | null;
-  host_email: string | null;
+export interface ImportPreviewRow extends ImportRowData {
   is_valid: boolean;
   is_duplicate: boolean;
   errors: ImportRowError[];

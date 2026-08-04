@@ -33,7 +33,7 @@ def _make_valid_row(row_number: int = 1, **overrides) -> ImportRowData:
         host_name="Test Host",
         host_phone="+201234567890",
         host_email="host@test.com",
-        status="LISTED",
+        status="PENDING_VERIFICATION",
     )
     defaults.update(overrides)
     return ImportRowData(**defaults)
@@ -225,6 +225,9 @@ class TestPreviewGeneration:
         assert result.valid_rows == 1
         assert result.invalid_rows == 0
         assert result.rows[0].is_valid is True
+        assert result.rows[0].description == "Desc"
+        assert result.rows[0].latitude == 30.0
+        assert result.rows[0].longitude == 31.0
 
     @pytest.mark.asyncio
     async def test_preview_with_invalid_rows(self):
@@ -238,6 +241,18 @@ class TestPreviewGeneration:
         assert result.total_rows == 3
         assert result.valid_rows == 1
         assert result.invalid_rows == 2
+        assert result.rows[0].is_valid is True
+        assert result.rows[0].description == "Desc"
+        assert result.rows[0].latitude == 30.0
+        assert result.rows[0].longitude == 31.0
+        assert result.rows[1].is_valid is False
+        assert result.rows[1].description == "Desc"
+        assert result.rows[1].latitude == 999.0
+        assert result.rows[1].longitude == 31.0
+        assert result.rows[2].is_valid is False
+        assert result.rows[2].description == "Desc"
+        assert result.rows[2].latitude == 30.0
+        assert result.rows[2].longitude == 31.0
 
     @pytest.mark.asyncio
     async def test_preview_with_duplicates(self):
@@ -250,6 +265,8 @@ class TestPreviewGeneration:
         assert result.total_rows == 2
         assert result.duplicate_rows == 1
         assert result.valid_rows == 1
+        assert result.rows[0].description == "Desc"
+        assert result.rows[0].latitude == 30.0
 
     @pytest.mark.asyncio
     async def test_preview_unsupported_format(self):

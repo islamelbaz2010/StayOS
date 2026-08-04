@@ -143,7 +143,7 @@ def _row_to_import_data(
         host_name=str(raw.get("host_name", "")).strip() or None,
         host_phone=str(raw.get("host_phone", "")).strip() or None,
         host_email=str(raw.get("host_email", "")).strip() or None,
-        status=str(raw.get("status", "LISTED")).strip().upper() or "LISTED",
+        status=str(raw.get("status", "PENDING_VERIFICATION")).strip().upper() or "PENDING_VERIFICATION",
     )
 
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 
 import type { BookingResponse } from "@/lib/queries/bookings";
 import { formatDate } from "@/lib/utils";
@@ -20,6 +21,8 @@ function nights(checkIn: string, checkOut: string): number {
 
 export function HostBookingDetail({ booking, onActionSuccess }: HostBookingDetailProps) {
   const t = useTranslations("hostBookings");
+  const params = useParams<{ locale: string }>();
+  const dateLocale = params?.locale === "ar" ? "ar-EG" : "en-EG";
 
   return (
     <section
@@ -39,13 +42,13 @@ export function HostBookingDetail({ booking, onActionSuccess }: HostBookingDetai
         <div>
           <dt className="text-sm text-neutral-500">{t("checkIn")}</dt>
           <dd className="text-sm font-medium text-neutral-900">
-            {formatDate(new Date(booking.check_in), "en-EG")}
+            {formatDate(new Date(booking.check_in), dateLocale)}
           </dd>
         </div>
         <div>
           <dt className="text-sm text-neutral-500">{t("checkOut")}</dt>
           <dd className="text-sm font-medium text-neutral-900">
-            {formatDate(new Date(booking.check_out), "en-EG")}
+            {formatDate(new Date(booking.check_out), dateLocale)}
           </dd>
         </div>
         <div>

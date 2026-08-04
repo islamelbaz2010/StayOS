@@ -75,7 +75,7 @@ export default function MyTripsPage() {
                           {t(`status.${booking.status}`)}
                         </span>
                         <span className="text-xs text-neutral-500">
-                          {formatDate(new Date(booking.requested_at), "en-EG")}
+                          {formatDate(new Date(booking.requested_at), locale === "ar" ? "ar-EG" : "en-EG")}
                         </span>
                       </div>
                       <div className="flex gap-4 text-sm text-neutral-600">
@@ -84,7 +84,7 @@ export default function MyTripsPage() {
                             {t("checkIn")}:{" "}
                           </span>
                           <span className="font-medium text-neutral-900">
-                            {formatDate(new Date(booking.check_in), "en-EG")}
+                            {formatDate(new Date(booking.check_in), locale === "ar" ? "ar-EG" : "en-EG")}
                           </span>
                         </div>
                         <div>
@@ -92,7 +92,7 @@ export default function MyTripsPage() {
                             {t("checkOut")}:{" "}
                           </span>
                           <span className="font-medium text-neutral-900">
-                            {formatDate(new Date(booking.check_out), "en-EG")}
+                            {formatDate(new Date(booking.check_out), locale === "ar" ? "ar-EG" : "en-EG")}
                           </span>
                         </div>
                       </div>

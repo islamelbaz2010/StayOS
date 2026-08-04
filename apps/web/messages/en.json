@@ -227,6 +227,15 @@
   },
   "listing": {
     "perNight": "per night",
+    "propertyTypeLabel": {
+      "apartment": "Apartment",
+      "villa": "Villa",
+      "studio": "Studio",
+      "chalet": "Chalet",
+      "duplex": "Duplex",
+      "penthouse": "Penthouse",
+      "townhouse": "Townhouse"
+    },
     "reviews": "{count} reviews",
     "noReviews": "No reviews yet",
     "book": "Book now",

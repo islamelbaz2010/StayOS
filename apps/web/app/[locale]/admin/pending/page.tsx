@@ -108,7 +108,7 @@ export default function AdminPendingListingsPage() {
                       </p>
                       <div className="flex flex-wrap gap-2 text-xs text-neutral-500">
                         <span className="rounded bg-neutral-100 px-2 py-0.5">
-                          {t("propertyType")}: {listing.property_type}
+                          {t("propertyType")}: {tl(`propertyTypeLabel.${listing.property_type.toLowerCase()}`, { default: listing.property_type })}
                         </span>
                         <span className="rounded bg-neutral-100 px-2 py-0.5">
                           {t("guests")}: {listing.max_guests}
@@ -209,7 +209,7 @@ export default function AdminPendingListingsPage() {
                       {t("propertyType")}:
                     </span>{" "}
                     <span className="text-neutral-600">
-                      {selected.property_type}
+                      {tl(`propertyTypeLabel.${selected.property_type.toLowerCase()}`, { default: selected.property_type })}
                     </span>
                   </div>
                   <div>
@@ -271,7 +271,7 @@ export default function AdminPendingListingsPage() {
                       {t("cancellationPolicy")}:
                     </span>{" "}
                     <span className="text-neutral-600">
-                      {selected.cancellation_policy}
+                      {tl(`cancellation.${selected.cancellation_policy.toLowerCase()}`, { default: selected.cancellation_policy })}
                     </span>
                   </div>
                   <div>

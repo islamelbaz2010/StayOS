@@ -90,7 +90,7 @@ export default function ListingDetailPage() {
                   {listing.city}, {listing.governorate}, {listing.country || "Egypt"}
                 </span>
                 <span className="text-neutral-300">•</span>
-                <span>{listing.propertyType}</span>
+                <span>{t(`propertyTypeLabel.${listing.propertyType.toLowerCase()}`, { default: listing.propertyType })}</span>
                 <span className="text-neutral-300">•</span>
                 <span className="inline-flex items-center gap-1">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

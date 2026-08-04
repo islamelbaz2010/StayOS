@@ -1,10 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 
 export function Footer() {
   const t = useTranslations("nav");
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
 
   return (
     <footer className="border-t border-neutral-200 bg-white">
@@ -15,7 +18,7 @@ export function Footer() {
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
-                  href="/search"
+                  href={`/${locale}/search`}
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
                   {t("search")}
@@ -30,7 +33,7 @@ export function Footer() {
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
-                  href="/host/kyc"
+                  href={`/${locale}/host/kyc`}
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
                   {t("becomeHost")}
@@ -45,7 +48,7 @@ export function Footer() {
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
-                  href="/profile"
+                  href={`/${locale}/profile`}
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
                   {t("account")}

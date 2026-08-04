@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { useInitiateKyc, useKycStatus, useSubmitKyc, useUpgradeRole } from "@/lib/queries/kyc";
@@ -15,6 +15,8 @@ type Step = "select" | "uploading" | "submitted" | "verified" | "rejected";
 export function KycUpload() {
   const t = useTranslations("kyc");
   const router = useRouter();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
   const { user } = useAuth();
   const { data: kycStatus, isLoading: statusLoading } = useKycStatus();
   const initiateMutation = useInitiateKyc();
@@ -121,7 +123,7 @@ export function KycUpload() {
   const handleBecomeHost = async () => {
     try {
       await upgradeMutation.mutateAsync();
-      router.push("/host");
+      router.push(`/${locale}/host`);
     } catch {
       setError(t("upgradeFailed"));
     }

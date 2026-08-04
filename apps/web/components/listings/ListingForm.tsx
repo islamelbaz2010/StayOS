@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import {
@@ -77,6 +77,8 @@ interface ListingFormProps {
 
 export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   const router = useRouter();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
   const t = useTranslations("listingForm");
   const tc = useTranslations("common");
   const createMutation = useCreateListing();
@@ -202,7 +204,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       setIsDirty(false);
       isDirtyRef.current = false;
       setAutosave("saved");
-      router.push("/host/listings");
+      router.push(`/${locale}/host/listings`);
     } catch {
       setErrors({ submit: t("errors.saveFailed") });
     }
@@ -227,7 +229,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       }
       setIsDirty(false);
       isDirtyRef.current = false;
-      router.push("/host/listings");
+      router.push(`/${locale}/host/listings`);
     } catch {
       setErrors({ submit: t("errors.submitFailed") });
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { GuestLayout } from "@/components/layouts";
@@ -13,6 +13,8 @@ export default function ProfilePage() {
   const tc = useTranslations("common");
   const { user } = useAuth();
   const router = useRouter();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
   const { data: kycStatus } = useKycStatus();
 
   const kycStatusValue = kycStatus?.kyc_status ?? user?.kyc_status ?? "unverified";
@@ -87,7 +89,7 @@ export default function ProfilePage() {
                 <p className="mt-2 text-sm text-neutral-600">{t("becomeHostDesc")}</p>
                 <button
                   type="button"
-                  onClick={() => router.push("/host/kyc")}
+                  onClick={() => router.push(`/${locale}/host/kyc`)}
                   className="mt-4 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700"
                 >
                   {t("startKyc")}
@@ -101,7 +103,7 @@ export default function ProfilePage() {
                 <p className="mt-2 text-sm text-neutral-600">{t("kycVerifiedDesc")}</p>
                 <button
                   type="button"
-                  onClick={() => router.push("/host")}
+                  onClick={() => router.push(`/${locale}/host`)}
                   className="mt-4 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700"
                 >
                   {t("goToHostDashboard")}

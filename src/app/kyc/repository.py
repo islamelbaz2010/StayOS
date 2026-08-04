@@ -19,6 +19,19 @@ async def get_kyc_documents_by_user_id(
     return list(result.scalars().all())
 
 
+async def get_pending_kyc_documents(
+    session: AsyncSession, limit: int = 50, offset: int = 0
+) -> list[KycDocument]:
+    result = await session.execute(
+        select(KycDocument)
+        .where(KycDocument.status == "pending")
+        .order_by(KycDocument.updated_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(result.scalars().all())
+
+
 async def create_kyc_document(
     session: AsyncSession, **kwargs: object
 ) -> KycDocument:

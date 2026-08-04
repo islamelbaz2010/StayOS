@@ -23,15 +23,6 @@ const ACCEPTED_TYPES = [
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-function buildProofUrl(s3Key: string): string {
-  const hosts = process.env.NEXT_PUBLIC_IMAGE_HOSTS || "";
-  const firstHost = hosts.split(",")[0]?.trim() || "";
-  if (firstHost) {
-    return `${firstHost}/${s3Key}`;
-  }
-  return `https://${s3Key}`;
-}
-
 export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
   const t = useTranslations("payment");
   const tc = useTranslations("common");
@@ -74,7 +65,7 @@ export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
           throw new Error(`S3 upload failed: ${putResponse.status}`);
         }
 
-        const proofUrl = buildProofUrl(presignRes.proof_key);
+        const proofUrl = presignRes.upload_url.split("?")[0];
 
         await uploadMutation.mutateAsync({
           paymentId,

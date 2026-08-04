@@ -17,6 +17,7 @@ from app.bookings import router as bookings_router
 from app.config import settings
 from app.database import get_session
 from app.finance import router as finance_router
+from app.importer import router as import_router
 from app.kyc import router as kyc_router
 from app.listings import router as listings_router
 from app.operations import metrics as ops_metrics
@@ -179,6 +180,7 @@ app.include_router(operations_router.router, prefix="/api/v1")
 app.include_router(reservations_router.router, prefix="/api/v1")
 app.include_router(bookings_router.router, prefix="/api/v1")
 app.include_router(payments_router.router, prefix="/api/v1")
+app.include_router(import_router.router, prefix="/api/v1")
 app.include_router(finance_router.router, prefix="/api/v1")
 
 

@@ -57,6 +57,24 @@ async def kyc_status(
     )
 
 
+@router.get("/pending", response_model=kyc_schemas.KycPendingListResponse)
+async def list_pending_kyc(
+    limit: int = 50,
+    offset: int = 0,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> kyc_schemas.KycPendingListResponse:
+    from app.kyc import repository as kyc_repository
+
+    documents = await kyc_repository.get_pending_kyc_documents(
+        session, limit=limit, offset=offset
+    )
+    return kyc_schemas.KycPendingListResponse(
+        data=[kyc_schemas.KycDocumentResponse.model_validate(d) for d in documents],
+        total=len(documents),
+    )
+
+
 @router.post("/documents/{document_id}/process", response_model=kyc_schemas.KycDocumentResponse)
 async def process_kyc(
     document_id: str,
@@ -65,6 +83,38 @@ async def process_kyc(
 ) -> kyc_schemas.KycDocumentResponse:
     try:
         document = await kyc_services.process_kyc_document(session, document_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    return kyc_schemas.KycDocumentResponse.model_validate(document)
+
+
+@router.post("/documents/{document_id}/approve", response_model=kyc_schemas.KycDocumentResponse)
+async def approve_kyc(
+    document_id: str,
+    request: kyc_schemas.KycApproveRequest,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> kyc_schemas.KycDocumentResponse:
+    try:
+        document = await kyc_services.manual_approve_kyc(
+            session, document_id, legal_name=request.legal_name
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    return kyc_schemas.KycDocumentResponse.model_validate(document)
+
+
+@router.post("/documents/{document_id}/reject", response_model=kyc_schemas.KycDocumentResponse)
+async def reject_kyc(
+    document_id: str,
+    request: kyc_schemas.KycRejectRequest,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> kyc_schemas.KycDocumentResponse:
+    try:
+        document = await kyc_services.manual_reject_kyc(
+            session, document_id, reason=request.reason
+        )
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
     return kyc_schemas.KycDocumentResponse.model_validate(document)

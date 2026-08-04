@@ -27,12 +27,60 @@ export function Header() {
           >
             {t("search")}
           </Link>
-          <Link
-            href="/host"
-            className="text-sm font-medium text-neutral-700 hover:text-brand-600"
-          >
-            {t("host")}
-          </Link>
+          {isAuthenticated && user?.role === "guest" && (
+            <>
+              <Link
+                href="/bookings"
+                className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+              >
+                {t("trips")}
+              </Link>
+              <Link
+                href="/host/kyc"
+                className="text-sm font-medium text-brand-600 hover:text-brand-700"
+              >
+                {t("becomeHost")}
+              </Link>
+            </>
+          )}
+          {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
+            <Link
+              href="/host"
+              className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+            >
+              {t("host")}
+            </Link>
+          )}
+          {isAuthenticated && user?.role === "admin" && (
+            <>
+              <Link
+                href="/admin/pending"
+                className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+              >
+                {t("admin")}
+              </Link>
+              <Link
+                href="/admin/kyc"
+                className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+              >
+                {t("kycReview")}
+              </Link>
+              <Link
+                href="/admin/import"
+                className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+              >
+                {t("bulkImport")}
+              </Link>
+            </>
+          )}
+          {isAuthenticated && (
+            <Link
+              href="/profile"
+              className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+            >
+              {t("account")}
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">

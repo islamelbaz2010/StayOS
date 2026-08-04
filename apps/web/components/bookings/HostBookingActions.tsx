@@ -54,6 +54,12 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
     );
   }
 
+  if (booking.status === "confirmed") {
+    return (
+      <p className="text-sm font-medium text-green-700">{t("confirmedMessage")}</p>
+    );
+  }
+
   return (
     <div className="mt-6 space-y-4">
       {error && (

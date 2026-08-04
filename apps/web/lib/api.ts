@@ -51,7 +51,9 @@ api.interceptors.response.use(
     if (!session?.refreshToken) {
       clearSession();
       if (typeof window !== "undefined") {
-        window.location.href = "/ar/auth/login";
+        const path = window.location.pathname;
+        const locale = path.split("/")[1] || "ar";
+        window.location.href = `/${locale}/auth/login`;
       }
       return Promise.reject(error);
     }
@@ -92,7 +94,9 @@ api.interceptors.response.use(
       refreshSubscribers.length = 0;
       clearSession();
       if (typeof window !== "undefined") {
-        window.location.href = "/ar/auth/login";
+        const path = window.location.pathname;
+        const locale = path.split("/")[1] || "ar";
+        window.location.href = `/${locale}/auth/login`;
       }
       return Promise.reject(refreshError);
     }

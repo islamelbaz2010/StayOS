@@ -88,6 +88,25 @@ class DeviceTokenRegisterRequest(BaseModel):
     app_version: str | None = Field(default=None, max_length=50)
 
 
+class RoleUpgradeRequest(BaseModel):
+    role: UserRole = UserRole.HOST
+
+
+class RoleUpgradeResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    phone_number: str | None
+    email: str | None
+    display_name: str | None
+    locale: str
+    role: UserRole
+    kyc_status: KycStatus
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
 class DeviceTokenResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

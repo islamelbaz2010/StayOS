@@ -51,3 +51,16 @@ class KycStatusResponse(BaseModel):
 class KycSubmitResponse(BaseModel):
     document_id: str
     status: KycStatus
+
+
+class KycRejectRequest(BaseModel):
+    reason: str
+
+
+class KycApproveRequest(BaseModel):
+    legal_name: str | None = None
+
+
+class KycPendingListResponse(BaseModel):
+    data: list[KycDocumentResponse]
+    total: int

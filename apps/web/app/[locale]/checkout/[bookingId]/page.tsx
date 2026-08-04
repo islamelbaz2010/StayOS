@@ -79,7 +79,7 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
           <p className="text-sm text-neutral-500">{t("paymentStatus")}</p>
           <StatusBadge status={payment.status} />
         </div>
-        {payment.status === "rejected" && payment.reject_reason && (
+        {payment.reject_reason && (
           <div className="max-w-xs text-end">
             <p className="text-sm font-medium text-danger-600">
               {t("rejectReason")}
@@ -187,12 +187,18 @@ export default function CheckoutPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-neutral-50">
         <div className="mx-auto max-w-2xl p-4 sm:p-6">
-          <div className="mb-6 flex items-center gap-3">
+          <div className="mb-6 flex items-center gap-4">
             <Link
               href={`/${locale}`}
               className="text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
             >
               {t("backHome")}
+            </Link>
+            <Link
+              href={`/${locale}/bookings`}
+              className="text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            >
+              {t("backToTrips")}
             </Link>
           </div>
           <h1 className="mb-6 text-2xl font-bold text-neutral-900">

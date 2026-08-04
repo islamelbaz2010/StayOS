@@ -6,10 +6,21 @@ import { useTranslations } from "next-intl";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
+import { useKycStatus } from "@/lib/queries/kyc";
 
 export default function HostPage() {
   const t = useTranslations("host");
   const { user } = useAuth();
+  const { data: kycStatus } = useKycStatus();
+
+  const kycStatusValue = kycStatus?.kyc_status ?? user?.kyc_status ?? "unverified";
+
+  const kycBadgeColor: Record<string, string> = {
+    unverified: "bg-neutral-100 text-neutral-600",
+    pending: "bg-warning-100 text-warning-700",
+    verified: "bg-success-100 text-success-700",
+    rejected: "bg-danger-100 text-danger-700",
+  };
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
@@ -88,6 +99,39 @@ export default function HostPage() {
                 </div>
               </Link>
             )}
+
+            <Link
+              href="/host/kyc"
+              className="group rounded-xl bg-white p-6 shadow-card transition-shadow hover:shadow-lg"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A9.716 9.716 0 0112 2.25c2.26 0 4.358.807 6 2.146v18.126A9.716 9.716 0 0112 20.25c-2.26 0-4.358-.807-6-2.146V4.396z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-neutral-900 group-hover:text-brand-600">
+                    {t("kycVerification")}
+                  </h3>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${kycBadgeColor[kycStatusValue] ?? kycBadgeColor.unverified}`}>
+                      {t(`kycStatus.${kycStatusValue}`)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
       </HostLayout>

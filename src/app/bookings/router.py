@@ -6,7 +6,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .schemas import BookingCreate, BookingResponse, BookingUpdate
-from .services import create_booking, get_booking, list_host_bookings, update_booking
+from .services import (
+    create_booking,
+    get_booking,
+    list_guest_bookings,
+    list_host_bookings,
+    update_booking,
+)
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -33,6 +39,20 @@ async def get_host_bookings(
 ) -> list[BookingResponse]:
     try:
         return await list_host_bookings(session, user, status, limit, offset)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/guest", response_model=list[BookingResponse])
+async def get_guest_bookings(
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    user: User = Depends(auth_dependencies.require_role("guest")),
+    session: AsyncSession = Depends(get_session),
+) -> list[BookingResponse]:
+    try:
+        return await list_guest_bookings(session, user, status, limit, offset)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

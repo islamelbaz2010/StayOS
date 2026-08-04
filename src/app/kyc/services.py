@@ -219,3 +219,74 @@ async def process_kyc_document(
                 )
 
     return updated
+
+
+async def manual_approve_kyc(
+    session: AsyncSession, document_id: str, legal_name: str | None = None
+) -> KycDocument:
+    document = await kyc_repository.get_kyc_document_by_id(session, document_id)
+    if document is None:
+        raise ValidationError("KYC document not found")
+    if document.status == "verified":
+        raise ValidationError("KYC document is already verified")
+
+    now = datetime.now(UTC)
+    updated = await kyc_repository.update_kyc_document(
+        session,
+        document,
+        status="verified",
+        legal_name=legal_name or document.legal_name,
+        verified_at=now,
+        rejected_at=None,
+        rejection_reason=None,
+        verification_payload={
+            **(document.verification_payload or {}),
+            "manual_review": True,
+            "reviewed_at": now.isoformat(),
+        },
+    )
+
+    user = await auth_repository.get_user_by_id(session, document.user_id)
+    if user is not None:
+        await auth_repository.update_user(session, user, kyc_status="verified")
+        if legal_name:
+            account = await auth_repository.get_account_by_user_id(
+                session, user.id
+            )
+            if account is not None:
+                await auth_repository.update_account(
+                    session, account, legal_name=legal_name
+                )
+
+    return updated
+
+
+async def manual_reject_kyc(
+    session: AsyncSession, document_id: str, reason: str
+) -> KycDocument:
+    document = await kyc_repository.get_kyc_document_by_id(session, document_id)
+    if document is None:
+        raise ValidationError("KYC document not found")
+    if document.status == "verified":
+        raise ValidationError("Cannot reject a verified KYC document")
+
+    now = datetime.now(UTC)
+    updated = await kyc_repository.update_kyc_document(
+        session,
+        document,
+        status="rejected",
+        rejected_at=now,
+        rejection_reason=reason,
+        verification_payload={
+            **(document.verification_payload or {}),
+            "manual_review": True,
+            "reviewed_at": now.isoformat(),
+            "rejection_reason": reason,
+        },
+    )
+
+    user = await auth_repository.get_user_by_id(session, document.user_id)
+    if user is not None:
+        await auth_repository.update_user(session, user, kyc_status="rejected")
+
+    return updated

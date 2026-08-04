@@ -134,3 +134,24 @@ export function useListing(unitId: string) {
     enabled: Boolean(unitId),
   });
 }
+
+export interface ListingPhoto {
+  id: string;
+  unit_id: string;
+  s3_key: string;
+  url: string;
+  display_order: number;
+  is_cover: boolean;
+  caption: string | null;
+}
+
+export function useListingPhotos(unitId: string) {
+  return useQuery({
+    queryKey: ["listing-photos", unitId],
+    queryFn: async () => {
+      const { data } = await api.get<ListingPhoto[]>(`/listings/${unitId}/photos`);
+      return data;
+    },
+    enabled: Boolean(unitId),
+  });
+}

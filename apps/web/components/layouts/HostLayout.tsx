@@ -1,14 +1,16 @@
 import { ReactNode } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Header } from "./Header";
 
 export function HostLayout({ children }: { children: ReactNode }) {
+  const t = useTranslations("hostNav");
   const navItems = [
-    { label: "Dashboard", href: "/host" },
-    { label: "Properties", href: "/host/listings" },
-    { label: "Reservations", href: "/host/bookings" },
-    { label: "Availability", href: "/host/availability" },
+    { label: t("dashboard"), href: "/host" },
+    { label: t("properties"), href: "/host/listings" },
+    { label: t("reservations"), href: "/host/bookings" },
+    { label: t("kyc"), href: "/host/kyc" },
   ];
 
   return (

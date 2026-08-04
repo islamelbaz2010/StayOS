@@ -21,6 +21,15 @@ export async function getHostBookings(
   return data;
 }
 
+export async function getGuestBookings(
+  status: string | null = null
+): Promise<BookingResponse[]> {
+  const { data } = await api.get<BookingResponse[]>("/bookings/guest", {
+    params: status ? { status } : undefined,
+  });
+  return data;
+}
+
 export async function getBooking(bookingId: string): Promise<BookingResponse> {
   const { data } = await api.get<BookingResponse>(`/bookings/${bookingId}`);
   return data;
@@ -44,6 +53,13 @@ export function useHostBookings(status: string | null = null) {
   return useQuery({
     queryKey: ["host-bookings", status],
     queryFn: () => getHostBookings(status),
+  });
+}
+
+export function useGuestBookings(status: string | null = null) {
+  return useQuery({
+    queryKey: ["guest-bookings", status],
+    queryFn: () => getGuestBookings(status),
   });
 }
 

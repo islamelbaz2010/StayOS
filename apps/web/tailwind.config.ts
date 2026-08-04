@@ -122,7 +122,6 @@ const config: Config = {
   },
   plugins: [
     // tailwindcss-rtl provides logical property utilities for RTL/LTR
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("tailwindcss-rtl"),
   ],
 };

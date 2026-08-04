@@ -9,24 +9,16 @@ export function Footer() {
   return (
     <footer className="border-t border-neutral-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-3">
           <div>
             <p className="text-sm font-semibold text-neutral-900">StayOS</p>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
-                  href="/about"
+                  href="/search"
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/careers"
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
-                >
-                  Careers
+                  {t("search")}
                 </Link>
               </li>
             </ul>
@@ -38,44 +30,25 @@ export function Footer() {
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
-                  href="/host/start"
+                  href="/host/kyc"
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
-                  Get started
+                  {t("becomeHost")}
                 </Link>
               </li>
             </ul>
           </div>
           <div>
-            <p className="text-sm font-semibold text-neutral-900">Support</p>
+            <p className="text-sm font-semibold text-neutral-900">
+              {t("account")}
+            </p>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
-                  href="/help"
+                  href="/profile"
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
-                  Help Center
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-neutral-900">Legal</p>
-            <ul className="mt-4 space-y-2">
-              <li>
-                <Link
-                  href="/privacy"
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
-                >
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terms"
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
-                >
-                  Terms
+                  {t("account")}
                 </Link>
               </li>
             </ul>

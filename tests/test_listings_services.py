@@ -64,6 +64,9 @@ def _make_listing() -> UnitListing:
         max_nights=30,
         country="Egypt",
         currency="EGP",
+        category="ENTIRE_PLACE",
+        cleaning_fee_egp=0,
+        cancellation_policy="FLEXIBLE",
     )
 
 
@@ -81,6 +84,7 @@ def _make_unit(status: str = "LISTED") -> Unit:
         max_guests=4,
         bedrooms=2,
         bathrooms=1,
+        beds=1,
     )
     unit.listing = _make_listing()
     unit.photos = [
@@ -168,6 +172,9 @@ async def test_get_listing_detail(fake_session: AsyncMock, monkeypatch) -> None:
     unit = _make_unit()
     monkeypatch.setattr(
         listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    monkeypatch.setattr(
+        listings.services, "_fetch_host", AsyncMock(return_value=None)
     )
 
     result = await get_listing_detail(fake_session, "unit-1")

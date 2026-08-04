@@ -110,6 +110,26 @@ async def update_account(
     return auth_schemas.AccountResponse.model_validate(account)
 
 
+@router.patch("/me/role", response_model=auth_schemas.RoleUpgradeResponse)
+async def upgrade_role(
+    data: auth_schemas.RoleUpgradeRequest,
+    user: User = Depends(auth_dependencies.require_kyc_verified),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.RoleUpgradeResponse:
+    from app.auth import repository as auth_repository
+    from app.auth.constants import UserRole
+    from app.shared.exceptions import ValidationError
+
+    if data.role != UserRole.HOST:
+        raise ValidationError("Only upgrade to host role is supported")
+    if user.role == UserRole.HOST:
+        raise ValidationError("User is already a host")
+
+    updated = await auth_repository.update_user(session, user, role=UserRole.HOST)
+    await session.commit()
+    return auth_schemas.RoleUpgradeResponse.model_validate(updated)
+
+
 @router.post("/device-token", response_model=auth_schemas.DeviceTokenResponse)
 async def register_device_token(
     request: auth_schemas.DeviceTokenRegisterRequest,

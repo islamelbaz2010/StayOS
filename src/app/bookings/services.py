@@ -216,3 +216,19 @@ async def list_host_bookings(
         session, user.id, status=status, limit=limit, offset=offset
     )
     return [_to_response(booking) for booking in bookings]
+
+
+async def list_guest_bookings(
+    session: AsyncSession,
+    user: User,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[BookingResponse]:
+    if user.role != UserRole.GUEST:
+        raise AuthorizationError("Only guests can view their bookings")
+
+    bookings = await bookings_repository.list_guest_bookings(
+        session, user.id, status=status, limit=limit, offset=offset
+    )
+    return [_to_response(booking) for booking in bookings]

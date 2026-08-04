@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
@@ -24,9 +25,17 @@ export default function AdminPendingListingsPage() {
     <ProtectedRoute allowedRoles={["admin"]}>
       <div className="min-h-screen bg-neutral-50">
         <div className="mx-auto max-w-6xl p-6">
-          <h1 className="mb-6 text-2xl font-bold text-neutral-900">
-            {t("pendingTitle")}
-          </h1>
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-neutral-900">
+              {t("pendingTitle")}
+            </h1>
+            <Link
+              href="/admin/payments"
+              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+            >
+              {t("paymentQueue")}
+            </Link>
+          </div>
 
           {isLoading && (
             <div className="rounded-xl bg-white p-8 text-center text-neutral-500 shadow-card">

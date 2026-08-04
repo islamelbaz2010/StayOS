@@ -14,6 +14,7 @@ interface HostBookingListProps {
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-yellow-100 text-yellow-800",
   accepted: "bg-green-100 text-green-800",
+  confirmed: "bg-emerald-100 text-emerald-800",
   rejected: "bg-red-100 text-red-800",
   cancelled: "bg-neutral-200 text-neutral-700",
 };

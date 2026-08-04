@@ -24,7 +24,12 @@
     "messages": "الرسائل",
     "account": "الحساب",
     "signIn": "تسجيل الدخول",
-    "signOut": "تسجيل الخروج"
+    "signOut": "تسجيل الخروج",
+    "admin": "الإدارة",
+    "becomeHost": "أصبح مضيفاً",
+    "kycReview": "مراجعة الهويات",
+    "profile": "الملف الشخصي",
+    "bulkImport": "استيراد بالجملة"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -51,7 +56,14 @@
     "manageListings": "عقاراتي",
     "manageListingsDesc": "عرض وإدارة عقاراتك",
     "pendingReview": "مراجعة المعلقة",
-    "pendingReviewDesc": "مراجعة العقارات المعلقة للنشر"
+    "pendingReviewDesc": "مراجعة العقارات المعلقة للنشر",
+    "kycVerification": "التحقق من الهوية",
+    "kycStatus": {
+      "unverified": "غير موثّق",
+      "pending": "قيد المراجعة",
+      "verified": "موثّق",
+      "rejected": "مرفوض"
+    }
   },
   "hostListings": {
     "title": "عقاراتي",
@@ -168,6 +180,7 @@
   },
   "adminListings": {
     "pendingTitle": "مراجعة العقارات المعلقة",
+    "paymentQueue": "قائمة الدفعات",
     "loadError": "فشل تحميل العقارات المعلقة.",
     "noPending": "لا توجد عقارات معلقة للمراجعة.",
     "pending": "معلق",
@@ -256,6 +269,24 @@
     "hostedBy": "مستضاف بواسطة {name}",
     "joinedIn": "انضم في {date}"
   },
+  "trips": {
+    "title": "رحلاتي",
+    "noBookings": "ليس لديك حجوزات بعد.",
+    "searchCta": "ابحث عن عقارات",
+    "loadError": "تعذّر تحميل حجوزاتك.",
+    "checkIn": "تاريخ الوصول",
+    "checkOut": "تاريخ المغادرة",
+    "checkout": "أكمل الدفع",
+    "confirmed": "مؤكد",
+    "waitingHost": "بانتظار رد المضيف",
+    "status": {
+      "requested": "مطلوب",
+      "accepted": "مقبول",
+      "confirmed": "مؤكد",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى"
+    }
+  },
   "booking": {
     "title": "طلب حجز",
     "checkIn": "تاريخ الوصول",
@@ -273,6 +304,7 @@
     "successTitle": "تم إرسال طلب الحجز",
     "successMessage": "تم إرسال طلب الحجز. سيقوم المضيف بمراجعته قريبًا.",
     "successClose": "إغلاق",
+    "viewTrips": "عرض رحلاتي",
     "checkInRequired": "تاريخ الوصول مطلوب.",
     "checkOutRequired": "تاريخ المغادرة مطلوب.",
     "checkOutAfterCheckIn": "تاريخ المغادرة يجب أن يكون بعد تاريخ الوصول.",
@@ -312,15 +344,18 @@
       "all": "الكل",
       "requested": "مطلوب",
       "accepted": "مقبول",
+      "confirmed": "مؤكد",
       "rejected": "مرفوض",
       "cancelled": "ملغى"
     },
     "status": {
       "requested": "مطلوب",
       "accepted": "مقبول",
+      "confirmed": "مؤكد",
       "rejected": "مرفوض",
       "cancelled": "ملغى"
-    }
+    },
+    "confirmedMessage": "تم التحقق من الدفع — تم تأكيد الحجز."
   },
   "availability": {
     "title": "التوفر",
@@ -419,6 +454,7 @@
     "noPaymentYet": "الدفع غير متاح بعد",
     "noPaymentHint": "ستظهر تعليمات الدفع هنا بعد قبول المضيف لحجزك.",
     "backHome": "العودة للرئيسية",
+    "backToTrips": "رحلاتي",
     "queueTitle": "قائمة مراجعة الدفعات",
     "amount": "المبلغ",
     "bookingId": "رقم الحجز",
@@ -431,5 +467,115 @@
     "cancel": "إلغاء",
     "noPendingPayments": "لا توجد دفعات بانتظار المراجعة",
     "loadError": "تعذّر تحميل الدفعات"
+  },
+  "kyc": {
+    "pageTitle": "التحقق من الهوية",
+    "pageSubtitle": "ارفع صورة بطاقتك الشخصية وصورة شخصية للتحقق من هويتك.",
+    "loading": "جاري التحميل...",
+    "instructions": "التعليمات",
+    "step1": "ارفع صورة واضحة للوجه الأمامي لبطاقتك الشخصية",
+    "step2": "ارفع صورة شخصية واضحة لوجهك",
+    "step3": "اضغط إرسال للمراجعة",
+    "frontId": "صورة البطاقة (الوجه الأمامي)",
+    "frontIdHint": "JPG، PNG، أو WebP - بحد أقصى 10 ميجابايت",
+    "selfie": "صورة شخصية",
+    "selfieHint": "صورة واضحة لوجهك بدون نظارات",
+    "bothRequired": "يرجى رفع صورتي البطاقة والصورة الشخصية",
+    "submit": "إرسال للمراجعة",
+    "submitting": "جاري الإرسال...",
+    "submitFailed": "فشل الإرسال. حاول مرة أخرى.",
+    "invalidType": "نوع الملف غير مدعوم. استخدم JPG أو PNG أو WebP.",
+    "fileTooLarge": "حجم الملف كبير جداً. الحد الأقصى 10 ميجابايت.",
+    "verifiedTitle": "تم التحقق من هويتك",
+    "verifiedMessage": "هويتك مؤكدة. يمكنك الآن استقبال الضيوف.",
+    "becomeHost": "أصبح مضيفاً",
+    "upgrading": "جاري الترقية...",
+    "upgradeFailed": "فشل الترقية. حاول مرة أخرى.",
+    "pendingTitle": "هويتك قيد المراجعة",
+    "pendingMessage": "سيتم مراجعة مستنداتك قريباً. ستتصلك بنتيجة المراجعة.",
+    "rejectedTitle": "تم رفض المستندات",
+    "rejectedMessage": "تعذّر التحقق من هويتك. يرجى إعادة رفع المستندات."
+  },
+  "adminImport": {
+    "title": "استيراد عقارات بالجملة",
+    "selectFile": "اختر ملف",
+    "formatsHint": "CSV أو Excel (.xlsx) - بحد أقصى 10 ميجابايت",
+    "parsing": "جاري تحليل الملف...",
+    "previewFailed": "فشل تحليل الملف. تحقق من التنسيق وحاول مرة أخرى.",
+    "importFailed": "فشل الاستيراد. حاول مرة أخرى.",
+    "noValidRows": "لا توجد صفوف صالحة للاستيراد.",
+    "totalRows": "إجمالي الصفوف",
+    "validRows": "صفوف صالحة",
+    "invalidRows": "صفوف غير صالحة / مكررة",
+    "colTitle": "العنوان",
+    "colCity": "المدينة",
+    "colType": "النوع",
+    "colPrice": "السعر",
+    "colHost": "المضيف",
+    "colStatus": "الحالة",
+    "colError": "خطأ",
+    "valid": "صالح",
+    "invalid": "غير صالح",
+    "duplicate": "مكرر",
+    "cancel": "إلغاء",
+    "importValid": "استيراد الصفوف الصالحة",
+    "importing": "جاري استيراد العقارات...",
+    "importComplete": "اكتمل الاستيراد",
+    "totalRequested": "مطلوب",
+    "created": "تم إنشاؤه",
+    "failed": "فشل",
+    "importAnother": "استيراد ملف آخر",
+    "resultStatus": {
+      "created": "تم إنشاؤه",
+      "skipped": "تم تخطيه",
+      "failed": "فشل"
+    }
+  },
+  "adminKyc": {
+    "title": "مراجعة هويات المضيفين",
+    "loadError": "فشل تحميل طلبات التحقق.",
+    "retry": "إعادة المحاولة",
+    "noPending": "لا توجد طلبات تحقق معلقة.",
+    "documentId": "المستند",
+    "documentType": "النوع",
+    "legalName": "الاسم القانوني",
+    "documentNumber": "رقم المستند",
+    "submittedAt": "تاريخ الإرسال",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "confirmReject": "تأكيد الرفض",
+    "rejectReasonLabel": "سبب الرفض",
+    "rejectReasonPlaceholder": "اشرح سبب رفض المستندات...",
+    "cancel": "إلغاء"
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "phone": "رقم الهاتف",
+    "email": "البريد الإلكتروني",
+    "memberSince": "عضو منذ",
+    "becomeHostTitle": "أصبح مضيفاً",
+    "becomeHostDesc": "تحقق من هويتك وابدأ في استقبال الضيوف وعقارك على StayOS.",
+    "startKyc": "ابدأ التحقق من الهوية",
+    "kycVerifiedTitle": "هويتك مؤكدة!",
+    "kycVerifiedDesc": "يمكنك الآن الترقية إلى حساب مضيف وبدء إضافة عقاراتك.",
+    "goToHostDashboard": "اذهب إلى لوحة المضيف",
+    "role": {
+      "guest": "ضيف",
+      "host": "مضيف",
+      "admin": "مدير",
+      "field_staff": "موظف ميداني"
+    },
+    "kyc": {
+      "unverified": "غير موثّق",
+      "pending": "قيد المراجعة",
+      "verified": "موثّق",
+      "rejected": "مرفوض"
+    }
+  },
+  "hostNav": {
+    "dashboard": "لوحة التحكم",
+    "properties": "العقارات",
+    "reservations": "الحجوزات",
+    "kyc": "التحقق من الهوية"
   }
 }

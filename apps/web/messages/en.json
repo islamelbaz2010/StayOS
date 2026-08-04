@@ -24,7 +24,12 @@
     "messages": "Messages",
     "account": "Account",
     "signIn": "Sign in",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "admin": "Admin",
+    "becomeHost": "Become a host",
+    "kycReview": "KYC Review",
+    "profile": "Profile",
+    "bulkImport": "Bulk Import"
   },
   "auth": {
     "signIn": "Sign in",
@@ -51,7 +56,14 @@
     "manageListings": "My Properties",
     "manageListingsDesc": "View and manage your property listings",
     "pendingReview": "Pending Review",
-    "pendingReviewDesc": "Review pending property submissions"
+    "pendingReviewDesc": "Review pending property submissions",
+    "kycVerification": "Identity Verification",
+    "kycStatus": {
+      "unverified": "Unverified",
+      "pending": "Under Review",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    }
   },
   "hostListings": {
     "title": "My Properties",
@@ -168,6 +180,7 @@
   },
   "adminListings": {
     "pendingTitle": "Pending Listings Review",
+    "paymentQueue": "Payment Queue",
     "loadError": "Failed to load pending listings.",
     "noPending": "No pending listings to review.",
     "pending": "Pending",
@@ -256,6 +269,24 @@
     "hostedBy": "Hosted by {name}",
     "joinedIn": "Joined in {date}"
   },
+  "trips": {
+    "title": "My trips",
+    "noBookings": "You have no bookings yet.",
+    "searchCta": "Search properties",
+    "loadError": "Failed to load your bookings.",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "checkout": "Complete payment",
+    "confirmed": "Confirmed",
+    "waitingHost": "Waiting for host response",
+    "status": {
+      "requested": "Requested",
+      "accepted": "Accepted",
+      "confirmed": "Confirmed",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    }
+  },
   "booking": {
     "title": "Request to book",
     "checkIn": "Check-in",
@@ -273,6 +304,7 @@
     "successTitle": "Booking requested",
     "successMessage": "Your booking request has been sent. The host will review it shortly.",
     "successClose": "Close",
+    "viewTrips": "View my trips",
     "checkInRequired": "Check-in date is required.",
     "checkOutRequired": "Check-out date is required.",
     "checkOutAfterCheckIn": "Check-out must be after check-in.",
@@ -312,15 +344,18 @@
       "all": "All",
       "requested": "Requested",
       "accepted": "Accepted",
+      "confirmed": "Confirmed",
       "rejected": "Rejected",
       "cancelled": "Cancelled"
     },
     "status": {
       "requested": "Requested",
       "accepted": "Accepted",
+      "confirmed": "Confirmed",
       "rejected": "Rejected",
       "cancelled": "Cancelled"
-    }
+    },
+    "confirmedMessage": "Payment verified — booking confirmed."
   },
   "availability": {
     "title": "Availability",
@@ -419,6 +454,7 @@
     "noPaymentYet": "Payment not available yet",
     "noPaymentHint": "Payment instructions will appear here after the host accepts your booking.",
     "backHome": "Back to home",
+    "backToTrips": "My trips",
     "queueTitle": "Payment verification queue",
     "amount": "Amount",
     "bookingId": "Booking ID",
@@ -431,5 +467,115 @@
     "cancel": "Cancel",
     "noPendingPayments": "No payments awaiting verification",
     "loadError": "Failed to load payments"
+  },
+  "kyc": {
+    "pageTitle": "Identity Verification",
+    "pageSubtitle": "Upload a photo of your national ID and a selfie to verify your identity.",
+    "loading": "Loading...",
+    "instructions": "Instructions",
+    "step1": "Upload a clear photo of the front of your national ID",
+    "step2": "Upload a clear selfie of your face",
+    "step3": "Click submit for review",
+    "frontId": "ID card photo (front)",
+    "frontIdHint": "JPG, PNG, or WebP - max 10MB",
+    "selfie": "Selfie",
+    "selfieHint": "A clear photo of your face without glasses",
+    "bothRequired": "Please upload both your ID photo and selfie",
+    "submit": "Submit for review",
+    "submitting": "Submitting...",
+    "submitFailed": "Submission failed. Try again.",
+    "invalidType": "Unsupported file type. Use JPG, PNG, or WebP.",
+    "fileTooLarge": "File too large. Maximum 10MB.",
+    "verifiedTitle": "Your identity is verified",
+    "verifiedMessage": "Your identity has been confirmed. You can now start hosting guests.",
+    "becomeHost": "Become a host",
+    "upgrading": "Upgrading...",
+    "upgradeFailed": "Upgrade failed. Try again.",
+    "pendingTitle": "Your identity is under review",
+    "pendingMessage": "Your documents will be reviewed shortly. You will be notified of the result.",
+    "rejectedTitle": "Documents rejected",
+    "rejectedMessage": "We could not verify your identity. Please re-upload your documents."
+  },
+  "adminImport": {
+    "title": "Bulk Import Listings",
+    "selectFile": "Select file",
+    "formatsHint": "CSV or Excel (.xlsx) - max 10MB",
+    "parsing": "Parsing file...",
+    "previewFailed": "Failed to parse file. Check format and try again.",
+    "importFailed": "Import failed. Try again.",
+    "noValidRows": "No valid rows to import.",
+    "totalRows": "Total rows",
+    "validRows": "Valid rows",
+    "invalidRows": "Invalid / duplicates",
+    "colTitle": "Title",
+    "colCity": "City",
+    "colType": "Type",
+    "colPrice": "Price",
+    "colHost": "Host",
+    "colStatus": "Status",
+    "colError": "Error",
+    "valid": "Valid",
+    "invalid": "Invalid",
+    "duplicate": "Duplicate",
+    "cancel": "Cancel",
+    "importValid": "Import valid rows",
+    "importing": "Importing listings...",
+    "importComplete": "Import complete",
+    "totalRequested": "Requested",
+    "created": "Created",
+    "failed": "Failed",
+    "importAnother": "Import another file",
+    "resultStatus": {
+      "created": "Created",
+      "skipped": "Skipped",
+      "failed": "Failed"
+    }
+  },
+  "adminKyc": {
+    "title": "Host Identity Review",
+    "loadError": "Failed to load KYC verification requests.",
+    "retry": "Retry",
+    "noPending": "No pending KYC verifications.",
+    "documentId": "Document",
+    "documentType": "Type",
+    "legalName": "Legal name",
+    "documentNumber": "Document number",
+    "submittedAt": "Submitted at",
+    "approve": "Approve",
+    "reject": "Reject",
+    "confirmReject": "Confirm rejection",
+    "rejectReasonLabel": "Reason for rejection",
+    "rejectReasonPlaceholder": "Explain why the documents were rejected...",
+    "cancel": "Cancel"
+  },
+  "profile": {
+    "title": "Profile",
+    "phone": "Phone number",
+    "email": "Email address",
+    "memberSince": "Member since",
+    "becomeHostTitle": "Become a host",
+    "becomeHostDesc": "Verify your identity and start hosting guests and your property on StayOS.",
+    "startKyc": "Start identity verification",
+    "kycVerifiedTitle": "Your identity is verified!",
+    "kycVerifiedDesc": "You can now upgrade to a host account and start adding your properties.",
+    "goToHostDashboard": "Go to host dashboard",
+    "role": {
+      "guest": "Guest",
+      "host": "Host",
+      "admin": "Admin",
+      "field_staff": "Field Staff"
+    },
+    "kyc": {
+      "unverified": "Unverified",
+      "pending": "Under review",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    }
+  },
+  "hostNav": {
+    "dashboard": "Dashboard",
+    "properties": "Properties",
+    "reservations": "Reservations",
+    "kyc": "Identity Verification"
   }
 }

@@ -86,6 +86,27 @@ async def update_booking(session: AsyncSession, booking: Booking, **kwargs: obje
     return booking
 
 
+async def list_guest_bookings(
+    session: AsyncSession,
+    guest_id: str,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[Booking]:
+    stmt = (
+        select(Booking)
+        .options(selectinload(Booking.unit))
+        .where(Booking.guest_id == guest_id)
+        .order_by(Booking.created_at.desc(), Booking.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    if status is not None:
+        stmt = stmt.where(Booking.status == status)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
 async def list_host_bookings(
     session: AsyncSession,
     host_id: str,

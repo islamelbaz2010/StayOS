@@ -11,7 +11,7 @@ import { ListingMap } from "@/components/listings/ListingMap";
 import { TrustSection } from "@/components/listings/TrustSection";
 import { VerifiedBadge } from "@/components/listings/VerifiedBadge";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { useListing } from "@/lib/queries/listings";
+import { useListing, useListingPhotos } from "@/lib/queries/listings";
 import { formatMoney } from "@/lib/utils";
 
 const AMENITY_GROUPS: Record<string, string[]> = {
@@ -62,6 +62,13 @@ export default function ListingDetailPage() {
   const unitId = params?.unitId ?? "";
 
   const { data: listing, isPending, isError, refetch } = useListing(unitId);
+  const { data: photos } = useListingPhotos(unitId);
+
+  const galleryImages = photos && photos.length > 0
+    ? photos.sort((a, b) => a.display_order - b.display_order).map((p) => p.url)
+    : listing?.coverImage
+      ? [listing.coverImage]
+      : [];
 
   return (
     <GuestLayout>
@@ -98,7 +105,7 @@ export default function ListingDetailPage() {
 
             {/* Gallery */}
             <Gallery
-              images={listing.coverImage ? [listing.coverImage] : []}
+              images={galleryImages}
               alt={listing.title}
             />
 

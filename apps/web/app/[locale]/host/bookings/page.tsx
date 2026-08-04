@@ -11,7 +11,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { HostLayout } from "@/components/layouts";
 import { useBooking, useHostBookings } from "@/lib/queries/bookings";
 
-const FILTERS = ["all", "requested", "accepted", "rejected", "cancelled"];
+const FILTERS = ["all", "requested", "accepted", "confirmed", "rejected", "cancelled"];
 
 export default function HostBookingsPage() {
   const t = useTranslations("hostBookings");

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 interface BookingSuccessProps {
@@ -8,6 +10,8 @@ interface BookingSuccessProps {
 
 export function BookingSuccess({ onClose }: BookingSuccessProps) {
   const t = useTranslations("booking");
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
 
   return (
     <section
@@ -21,13 +25,21 @@ export function BookingSuccess({ onClose }: BookingSuccessProps) {
 
       <p className="mt-2 text-brand-700">{t("successMessage")}</p>
 
-      <button
-        type="button"
-        onClick={onClose}
-        className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-      >
-        {t("successClose")}
-      </button>
+      <div className="mt-4 flex gap-2">
+        <Link
+          href={`/${locale}/bookings`}
+          className="flex-1 rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+        >
+          {t("viewTrips")}
+        </Link>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg border border-brand-300 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+        >
+          {t("successClose")}
+        </button>
+      </div>
     </section>
   );
 }

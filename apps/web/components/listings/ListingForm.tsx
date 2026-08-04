@@ -35,16 +35,16 @@ const CANCELLATION_POLICIES = [
 ];
 
 const COMMON_AMENITIES = [
-  "WIFI",
-  "AIR_CONDITIONING",
-  "HEATING",
-  "KITCHEN",
-  "PARKING",
-  "POOL",
-  "GYM",
-  "WASHER",
-  "TV",
-  "ELEVATOR",
+  "wifi",
+  "air_conditioning",
+  "heating",
+  "kitchen",
+  "parking",
+  "pool",
+  "gym",
+  "washer",
+  "tv",
+  "elevator",
 ];
 
 const EGYPT_GOVERNORATES = [

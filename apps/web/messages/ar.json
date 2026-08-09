@@ -236,7 +236,9 @@
       "chalet": "شاليه",
       "duplex": "دوبلكس",
       "penthouse": "بنتهاوس",
-      "townhouse": "تاون هاوس"
+      "townhouse": "تاون هاوس",
+      "hotel_room": "غرفة فندقية",
+      "resort_unit": "وحدة منتجع"
     },
     "reviews": "{count} تقييم",
     "noReviews": "لا توجد تقييمات بعد",

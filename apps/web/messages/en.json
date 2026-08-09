@@ -236,7 +236,9 @@
       "chalet": "Chalet",
       "duplex": "Duplex",
       "penthouse": "Penthouse",
-      "townhouse": "Townhouse"
+      "townhouse": "Townhouse",
+      "hotel_room": "Hotel Room",
+      "resort_unit": "Resort Unit"
     },
     "reviews": "{count} reviews",
     "noReviews": "No reviews yet",

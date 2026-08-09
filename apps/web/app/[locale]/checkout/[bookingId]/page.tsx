@@ -9,6 +9,7 @@ import { GuestLayout } from "@/components/layouts";
 import { ProofUpload } from "@/components/payments/ProofUpload";
 import { useBooking } from "@/lib/queries/bookings";
 import { usePaymentByBooking } from "@/lib/queries/payments";
+import { formatDate } from "@/lib/utils";
 
 function StatusBadge({ status }: { status: string }) {
   const t = useTranslations("payment");
@@ -37,9 +38,10 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function CheckoutContent({ bookingId }: { bookingId: string }) {
+function CheckoutContent({ bookingId, locale }: { bookingId: string; locale: string }) {
   const t = useTranslations("payment");
   const tc = useTranslations("common");
+  const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { data: booking, isLoading: bookingLoading } = useBooking(bookingId);
   const { data: payment, isLoading: paymentLoading } =
     usePaymentByBooking(bookingId);
@@ -104,12 +106,12 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
           </div>
           <div className="flex justify-between">
             <dt className="text-neutral-600">{t("checkIn")}</dt>
-            <dd className="font-medium text-neutral-900">{booking.check_in}</dd>
+            <dd className="font-medium text-neutral-900">{formatDate(new Date(booking.check_in), dateLocale)}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-neutral-600">{t("checkOut")}</dt>
             <dd className="font-medium text-neutral-900">
-              {booking.check_out}
+              {formatDate(new Date(booking.check_out), dateLocale)}
             </dd>
           </div>
           <div className="flex justify-between">
@@ -205,7 +207,7 @@ export default function CheckoutPage() {
           <h1 className="mb-6 text-2xl font-bold text-neutral-900">
             {t("checkoutTitle")}
           </h1>
-          <CheckoutContent bookingId={bookingId} />
+          <CheckoutContent bookingId={bookingId} locale={locale} />
         </section>
       </GuestLayout>
     </ProtectedRoute>

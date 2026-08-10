@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
-from app.listings.constants import CalendarStatus
+from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import CalendarRule, Unit, UnitListing, UnitPhoto
 from app.listings.schemas import (
     ListingCreate,
@@ -14,6 +14,7 @@ from app.listings.schemas import (
     PhotoCreate,
 )
 from app.listings.services import (
+    approve_listing,
     create_listing,
     get_availability,
     get_listing_detail,
@@ -584,3 +585,29 @@ async def test_delete_cover_photo_clears_listing(
     listings.repository.clear_listing_cover_photo.assert_called_once_with(
         fake_session, "unit-1", "photo-1"
     )
+
+
+@pytest.mark.asyncio
+async def test_approve_listing_pending_to_listed(fake_session: AsyncMock, monkeypatch) -> None:
+    """Regression: approve_listing must work without greenlet/lazy-load errors.
+
+    Bug: set_unit_status called session.refresh() which expired eagerly-loaded
+    relationships, causing greenlet_spawn errors when accessing unit.listing.
+    Fix: removed session.refresh() from set_unit_status.
+    """
+    from app import listings
+
+    unit = _make_unit(status=UnitStatus.PENDING_VERIFICATION)
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+
+    async def set_listed(session, u, status):
+        u.status = status
+        return u
+
+    monkeypatch.setattr(listings.repository, "set_unit_status", set_listed)
+
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    result = await approve_listing(fake_session, admin, "unit-1")
+    assert result.status == UnitStatus.LISTED

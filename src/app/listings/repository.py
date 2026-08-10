@@ -224,7 +224,6 @@ async def set_unit_status(
     unit.status = status
     session.add(unit)
     await session.flush()
-    await session.refresh(unit)
     return unit
 
 

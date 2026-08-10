@@ -46,6 +46,8 @@ class Settings(BaseSettings):
 
     SENTRY_DSN: str = Field(default="", description="Sentry DSN")
 
+    GOOGLE_MAPS_API_KEY: str = Field(default="", description="Google Maps Platform API key for Places API (discovery)")
+
     OTP_TTL_SECONDS: int = 300
     OTP_MAX_ATTEMPTS: int = 3
     OTP_RATE_LIMIT_WINDOW: int = 900

@@ -177,6 +177,12 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
     if filters.cultural_tags:
         stmt = stmt.where(UnitListing.cultural_tags.op("&&")(filters.cultural_tags))
 
+    if filters.city:
+        stmt = stmt.where(func.lower(Unit.city) == filters.city.lower())
+
+    if filters.governorate:
+        stmt = stmt.where(func.lower(Unit.governorate) == filters.governorate.lower())
+
     if filters.q:
         tsquery = func.plainto_tsquery("simple", filters.q)
         stmt = stmt.where(UnitListing.search_vector.bool_op("@@")(tsquery))
@@ -389,7 +395,7 @@ async def get_host_dashboard_stats(
         select(
             func.coalesce(
                 func.sum(
-                    func.date_part("day", Reservation.check_out - Reservation.check_in)
+                    Reservation.check_out - Reservation.check_in
                 ),
                 0,
             )

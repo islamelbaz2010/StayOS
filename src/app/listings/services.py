@@ -5,6 +5,7 @@ from typing import Any
 import boto3
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
@@ -404,6 +405,75 @@ async def search_listings(
             total_count=total,
         ),
     )
+
+
+async def get_similar_listings(
+    session: AsyncSession, unit_id: str, limit: int = 6
+) -> list[dict[str, object]]:
+    """Deterministic recommendations: same city, similar price band, same property type."""
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None or unit.status != UnitStatus.LISTED:
+        raise NotFoundError("Listing not found")
+
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing not found")
+
+    price = listing.base_price_egp
+    price_min = max(100, int(price * 0.5))
+    price_max = int(price * 2.0)
+
+    lat_col = func.ST_Y(Unit.coordinates).label("lat")
+    lng_col = func.ST_X(Unit.coordinates).label("lng")
+
+    stmt = (
+        select(Unit, UnitListing, lat_col, lng_col)
+        .options(selectinload(Unit.photos))
+        .join(UnitListing, Unit.id == UnitListing.unit_id)
+        .where(
+            Unit.status == UnitStatus.LISTED,
+            Unit.id != unit_id,
+            Unit.city == unit.city,
+            UnitListing.base_price_egp.between(price_min, price_max),
+        )
+        .order_by(
+            func.abs(UnitListing.base_price_egp - price).asc(),
+            Unit.created_at.desc(),
+        )
+        .limit(limit)
+    )
+
+    result = await session.execute(stmt)
+    rows = result.all()
+
+    if len(rows) < limit:
+        existing_ids = {unit_id} | {u.id for u, _, _, _ in rows}
+        fallback_stmt = (
+            select(Unit, UnitListing, lat_col, lng_col)
+            .options(selectinload(Unit.photos))
+            .join(UnitListing, Unit.id == UnitListing.unit_id)
+            .where(
+                Unit.status == UnitStatus.LISTED,
+                ~Unit.id.in_(existing_ids),
+            )
+            .order_by(Unit.created_at.desc())
+            .limit(limit - len(rows))
+        )
+        fallback_result = await session.execute(fallback_stmt)
+        rows = list(rows) + list(fallback_result.all())
+
+    host_ids = {u.host_id for u, _, _, _ in rows}
+    hosts_map: dict[str, User] = {}
+    if host_ids:
+        host_result = await session.execute(
+            select(User).where(User.id.in_(host_ids))
+        )
+        hosts_map = {h.id: h for h in host_result.scalars().all()}
+
+    return [
+        _to_search_result(u, l, float(lat), float(lng), hosts_map.get(u.host_id))
+        for u, l, lat, lng in rows
+    ]
 
 
 async def get_availability(

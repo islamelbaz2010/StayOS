@@ -116,3 +116,7 @@ class DeviceTokenResponse(BaseModel):
     app_version: str | None
     is_active: bool
     created_at: datetime
+
+
+class DevTokenRequest(BaseModel):
+    user_id: str = Field(..., description="ID of the user to issue tokens for (dev only)")

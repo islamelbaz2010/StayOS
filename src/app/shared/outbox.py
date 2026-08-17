@@ -1,7 +1,7 @@
 import json
 from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,14 +16,15 @@ async def write_event(
 ) -> None:
     query = text(
         """
-        INSERT INTO outbox.outbox_events (aggregate_type, aggregate_id, event_type, payload, created_at)
-        VALUES (:aggregate_type, :aggregate_id, :event_type, :payload, :created_at)
+        INSERT INTO outbox.outbox_events (id, aggregate_type, aggregate_id, event_type, payload, created_at)
+        VALUES (:id, :aggregate_type, :aggregate_id, :event_type, :payload, :created_at)
         """
     )
 
     await session.execute(
         query,
         {
+            "id": str(uuid4()),
             "aggregate_type": aggregate_type,
             "aggregate_id": str(aggregate_id),
             "event_type": event_type,

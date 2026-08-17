@@ -12,6 +12,7 @@ celery_app = Celery(
         "app.operations.tasks",
         "app.finance.tasks",
         "app.notifications.tasks",
+        "app.discovery.tasks",
     ],
 )
 
@@ -51,6 +52,10 @@ celery_app.conf.update(
         "spawn-recurring-tasks-daily-0600-utc": {
             "task": "app.operations.tasks.spawn_recurring_tasks",
             "schedule": crontab(hour=6, minute=0),
+        },
+        "run-discovery-scheduled-every-6-hours": {
+            "task": "app.discovery.tasks.run_scheduled_discovery",
+            "schedule": crontab(hour="*/6", minute=30),
         },
     },
 )

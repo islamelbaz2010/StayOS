@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
+from app.auth import repository as auth_repository
 from app.auth import schemas as auth_schemas
 from app.auth import services as auth_services
 from app.auth.models import User
@@ -152,3 +153,29 @@ async def register_device_token(
 @router.get("/.well-known/jwks.json")
 async def public_key() -> dict[str, str]:
     return {"public_key": auth_dependencies.get_public_key()}
+
+
+@router.post("/dev-token", response_model=auth_schemas.TokenPair)
+async def dev_token(
+    request: auth_schemas.DevTokenRequest,
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.TokenPair:
+    """Issue a JWT token pair for a given user ID — development only.
+
+    This endpoint bypasses Firebase/Twilio so the founder can validate UI
+    and user journeys locally without external credentials. It is guarded
+    by an ENVIRONMENT check and will 404 in any non-development deployment.
+    """
+    from app.config import settings
+    from app.shared.exceptions import AuthenticationError, NotFoundError
+
+    if settings.ENVIRONMENT not in ("development", "staging"):
+        raise NotFoundError("Not available in this environment")
+
+    user = await auth_repository.get_user_by_id(session, request.user_id)
+    if user is None or not user.is_active:
+        raise AuthenticationError("User not found or inactive")
+
+    tokens = await auth_services.create_token_pair(session, user)
+    await session.commit()
+    return tokens

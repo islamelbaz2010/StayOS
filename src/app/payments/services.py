@@ -173,9 +173,18 @@ async def create_payment_for_booking(
     unit, listing = await _fetch_unit_and_listing(session, booking.unit_id)
 
     nights = (booking.check_out - booking.check_in).days
-    amount = listing.base_price_egp * nights
+    subtotal = listing.base_price_egp * nights
     if listing.cleaning_fee_egp:
-        amount += listing.cleaning_fee_egp
+        subtotal += listing.cleaning_fee_egp
+
+    from app.bookings import repository as bookings_repository
+
+    global_completed = await bookings_repository.count_global_completed_bookings(session)
+    if global_completed < settings.ALPHA_GUEST_FREE_BOOKINGS:
+        guest_fee = 0
+    else:
+        guest_fee = int(round(subtotal * settings.GUEST_SERVICE_FEE_PCT))
+    amount = subtotal + guest_fee
 
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()

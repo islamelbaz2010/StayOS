@@ -194,7 +194,20 @@ async def _reset_otp_rate_limits(phone_number: str) -> None:
     )
 
 
+def _otp_provider_configured() -> bool:
+    return all(
+        [
+            settings.TWILIO_ACCOUNT_SID,
+            settings.TWILIO_AUTH_TOKEN,
+            settings.TWILIO_VERIFY_SERVICE_SID,
+        ]
+    )
+
+
 async def send_otp(request: OtpSendRequest) -> str:
+    if not _otp_provider_configured():
+        raise ValidationError("OTP provider is not configured")
+
     await _check_rate_limit(f"otp:send:{request.phone_number}")
 
     client = _twilio_client()
@@ -211,6 +224,9 @@ async def send_otp(request: OtpSendRequest) -> str:
 
 
 async def verify_otp(request: OtpVerifyRequest) -> bool:
+    if not _otp_provider_configured():
+        raise ValidationError("OTP provider is not configured")
+
     await _check_rate_limit(f"otp:verify:{request.phone_number}")
 
     client = _twilio_client()

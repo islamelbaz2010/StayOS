@@ -1,7 +1,7 @@
 from datetime import date
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -128,3 +128,37 @@ async def list_host_bookings(
         stmt = stmt.where(Booking.status == status)
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def count_host_completed_bookings(
+    session: AsyncSession,
+    host_id: str,
+    exclude_booking_id: str | None = None,
+) -> int:
+    """Count completed bookings for a host, optionally excluding one booking."""
+    stmt = (
+        select(func.count(Booking.id))
+        .join(Unit, Booking.unit_id == Unit.id)
+        .where(
+            Unit.host_id == host_id,
+            Booking.status == BookingStatus.COMPLETED,
+        )
+    )
+    if exclude_booking_id is not None:
+        stmt = stmt.where(Booking.id != exclude_booking_id)
+    result = await session.execute(stmt)
+    return result.scalar_one()
+
+
+async def count_global_completed_bookings(
+    session: AsyncSession,
+    exclude_booking_id: str | None = None,
+) -> int:
+    """Count all completed bookings globally, optionally excluding one booking."""
+    stmt = select(func.count(Booking.id)).where(
+        Booking.status == BookingStatus.COMPLETED
+    )
+    if exclude_booking_id is not None:
+        stmt = stmt.where(Booking.id != exclude_booking_id)
+    result = await session.execute(stmt)
+    return result.scalar_one()

@@ -8,6 +8,7 @@ from app.shared.exceptions import StayOSError, to_http_exception
 
 from .schemas import BookingCreate, BookingResponse, BookingUpdate
 from .services import (
+    complete_booking,
     create_booking,
     get_booking,
     list_guest_bookings,
@@ -79,5 +80,17 @@ async def patch_booking(
 ) -> BookingResponse:
     try:
         return await update_booking(session, user, booking_id, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{booking_id}/complete", response_model=BookingResponse)
+async def complete_booking_endpoint(
+    booking_id: str,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> BookingResponse:
+    try:
+        return await complete_booking(session, user, booking_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc

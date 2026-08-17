@@ -41,6 +41,7 @@ from .services import (
     generate_photo_presigned_url,
     get_availability,
     get_host_dashboard,
+    get_similar_listings,
     get_host_listing_detail,
     get_host_listings,
     get_host_reservation_calendar,
@@ -116,6 +117,33 @@ async def get_host_listings_endpoint(
 ) -> list[ListingResponse]:
     try:
         return await get_host_listings(session, user)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/host/dashboard", response_model=HostDashboardStats)
+async def get_host_dashboard_endpoint(
+    user: User = Depends(auth_dependencies.require_role("host")),
+    session: AsyncSession = Depends(get_session),
+) -> HostDashboardStats:
+    try:
+        return await get_host_dashboard(session, user)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/host/reservations", response_model=HostReservationCalendarResponse)
+async def get_host_reservations_endpoint(
+    check_in: date,
+    check_out: date,
+    unit_id: str | None = None,
+    user: User = Depends(auth_dependencies.require_role("host")),
+    session: AsyncSession = Depends(get_session),
+) -> HostReservationCalendarResponse:
+    try:
+        return await get_host_reservation_calendar(
+            session, user, unit_id, check_in, check_out
+        )
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 
@@ -361,28 +389,14 @@ async def post_bulk_pricing(
         raise to_http_exception(exc) from exc
 
 
-@router.get("/host/dashboard", response_model=HostDashboardStats)
-async def get_host_dashboard_endpoint(
-    user: User = Depends(auth_dependencies.require_role("host")),
+@router.get("/{unit_id}/similar", response_model=list[dict])
+async def get_similar_listings_endpoint(
+    unit_id: str,
+    limit: int = 6,
+    _: None = Depends(listings_rate_limit),
     session: AsyncSession = Depends(get_session),
-) -> HostDashboardStats:
+) -> list[dict]:
     try:
-        return await get_host_dashboard(session, user)
-    except StayOSError as exc:
-        raise to_http_exception(exc) from exc
-
-
-@router.get("/host/reservations", response_model=HostReservationCalendarResponse)
-async def get_host_reservations_endpoint(
-    check_in: date,
-    check_out: date,
-    unit_id: str | None = None,
-    user: User = Depends(auth_dependencies.require_role("host")),
-    session: AsyncSession = Depends(get_session),
-) -> HostReservationCalendarResponse:
-    try:
-        return await get_host_reservation_calendar(
-            session, user, unit_id, check_in, check_out
-        )
+        return await get_similar_listings(session, unit_id, limit)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc

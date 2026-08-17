@@ -100,7 +100,9 @@ def _assert_status_transition(current: BookingStatus, new: BookingStatus) -> Non
             BookingStatus.CANCELLED,
         ],
         BookingStatus.ACCEPTED: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
+        BookingStatus.CONFIRMED: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
         BookingStatus.REJECTED: [],
+        BookingStatus.COMPLETED: [],
         BookingStatus.CANCELLED: [],
     }
     if new not in allowed.get(current, []):
@@ -233,3 +235,37 @@ async def list_guest_bookings(
         session, user.id, status=status, limit=limit, offset=offset
     )
     return [_to_response(booking) for booking in bookings]
+
+
+async def complete_booking(
+    session: AsyncSession, user: User, booking_id: str
+) -> BookingResponse:
+    """Mark a confirmed booking as completed (admin-only).
+
+    This triggers the finance ledger entry and host wallet crediting,
+    applying the Alpha commercial rule based on completed booking counts.
+    """
+    if user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only admins can complete bookings")
+
+    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
+    _assert_status_transition(BookingStatus(booking.status), BookingStatus.COMPLETED)
+
+    updated = await bookings_repository.update_booking(
+        session, booking, status=str(BookingStatus.COMPLETED)
+    )
+
+    from app.finance import services as finance_services
+    from app.payments import repository as payments_repository
+
+    payment = await payments_repository.get_payment_by_booking(session, booking_id)
+    if payment is not None:
+        await finance_services.handle_manual_payment_verified(
+            session,
+            payment_id=payment.id,
+            booking_id=booking_id,
+            host_id=payment.host_id,
+            amount_egp=payment.amount_egp,
+        )
+
+    return _to_response(updated)

@@ -29,7 +29,10 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Set SQLAlchemy URL from settings
-config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
+_alembic_db_url = str(settings.DATABASE_URL)
+if _alembic_db_url.startswith("postgresql://"):
+    _alembic_db_url = _alembic_db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+config.set_main_option("sqlalchemy.url", _alembic_db_url)
 
 # add your model's MetaData object here
 target_metadata = Base.metadata

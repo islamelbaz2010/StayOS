@@ -604,6 +604,7 @@ async def process_payout(
     await finance_repository.update_payout_status(
         session, payout, PayoutStatus.COMPLETED, provider_ref=provider_ref
     )
+    await session.refresh(payout)
 
     await write_event(
         session,
@@ -619,6 +620,119 @@ async def process_payout(
     )
 
     return payout
+
+
+async def handle_manual_payment_verified(
+    session: AsyncSession,
+    payment_id: str,
+    booking_id: str,
+    host_id: str,
+    amount_egp: int,
+) -> None:
+    """Credit host wallet when a manual payment is verified by admin.
+
+    This bridges the manual booking/payment flow to the finance system so
+    that hosts can request payouts after a confirmed booking.
+
+    Applies the Closed Alpha commercial rule:
+    - Host: 0% commission for first ALPHA_HOST_FREE_BOOKINGS completed bookings, then standard rate.
+    - Guest: 0% service fee for first ALPHA_GUEST_FREE_BOOKINGS completed bookings globally, then standard rate.
+    """
+    from app.bookings import repository as bookings_repository
+    from app.config import settings
+
+    key = f"finance-manual-payment-{payment_id}"
+    existing = await finance_repository.get_transaction_by_idempotency_key(
+        session, key
+    )
+    if existing is not None:
+        return
+
+    host_completed = await bookings_repository.count_host_completed_bookings(
+        session, host_id, exclude_booking_id=booking_id
+    )
+    global_completed = await bookings_repository.count_global_completed_bookings(
+        session, exclude_booking_id=booking_id
+    )
+
+    if host_completed < settings.ALPHA_HOST_FREE_BOOKINGS:
+        host_commission_rate = 0.0
+    else:
+        host_commission_rate = settings.HOST_COMMISSION_PCT
+
+    if global_completed < settings.ALPHA_GUEST_FREE_BOOKINGS:
+        guest_fee_rate = 0.0
+    else:
+        guest_fee_rate = settings.GUEST_SERVICE_FEE_PCT
+
+    platform_fee = int(round(amount_egp * settings.PLATFORM_TAKE_RATE_PCT))
+    host_commission = int(round(amount_egp * host_commission_rate))
+    guest_fee = int(round(amount_egp * guest_fee_rate))
+    host_amount = amount_egp - host_commission - platform_fee
+    platform_revenue = host_commission + platform_fee
+
+    platform_wallet, host_wallet = await _get_or_create_wallets(session, host_id)
+
+    tx = await finance_repository.create_financial_transaction(
+        session,
+        transaction_type=TransactionType.PAYMENT_CAPTURE,
+        amount_egp=amount_egp,
+        idempotency_key=key,
+        status=TransactionStatus.COMPLETED,
+    )
+
+    await finance_repository.create_ledger_entry(
+        session,
+        transaction_id=tx.id,
+        ledger_account=LedgerAccount.PLATFORM_CASH,
+        account_type=AccountType.ASSET,
+        entry_type=LedgerEntryType.DEBIT,
+        amount_egp=amount_egp,
+        wallet=platform_wallet,
+        description=f"Manual payment received (booking {booking_id})",
+    )
+
+    await finance_repository.create_ledger_entry(
+        session,
+        transaction_id=tx.id,
+        ledger_account=LedgerAccount.HOST_PAYABLE,
+        account_type=AccountType.LIABILITY,
+        entry_type=LedgerEntryType.CREDIT,
+        amount_egp=host_amount,
+        wallet=host_wallet,
+        description=f"Host payout owed (booking {booking_id})",
+    )
+
+    if platform_revenue > 0:
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.PLATFORM_REVENUE,
+            account_type=AccountType.REVENUE,
+            entry_type=LedgerEntryType.CREDIT,
+            amount_egp=platform_revenue,
+            description=f"Platform revenue (booking {booking_id})",
+        )
+
+    await write_event(
+        session,
+        aggregate_type="FinancialTransaction",
+        aggregate_id=UUID(tx.id),
+        event_type="finance.manual_payment_captured",
+        payload={
+            "payment_id": payment_id,
+            "booking_id": booking_id,
+            "host_id": host_id,
+            "amount_egp": amount_egp,
+            "host_amount_egp": host_amount,
+            "platform_revenue_egp": platform_revenue,
+            "host_commission_rate": host_commission_rate,
+            "guest_fee_rate": guest_fee_rate,
+            "guest_fee_egp": guest_fee,
+            "host_completed_bookings": host_completed,
+            "global_completed_bookings": global_completed,
+        },
+    )
 
 
 def _bank_last4(bank_info: dict[str, Any] | None) -> str | None:

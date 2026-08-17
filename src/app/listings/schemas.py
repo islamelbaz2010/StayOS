@@ -236,6 +236,8 @@ class AvailabilityResponse(BaseModel):
 
 class ListingSearchFilters(BaseModel):
     q: str | None = None
+    city: str | None = None
+    governorate: str | None = None
     sw_lat: float | None = Field(None, ge=-90, le=90)
     sw_lng: float | None = Field(None, ge=-180, le=180)
     ne_lat: float | None = Field(None, ge=-90, le=90)

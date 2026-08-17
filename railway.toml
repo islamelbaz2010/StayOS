@@ -5,5 +5,6 @@ dockerfilePath = "infra/docker/api/Dockerfile"
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 300
+preDeployCommand = "cd /app && PYTHONPATH=/app/src alembic upgrade head"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10

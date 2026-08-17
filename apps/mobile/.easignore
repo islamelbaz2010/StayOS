@@ -1,0 +1,115 @@
+# EAS Build upload exclusions
+# Root .gitignore is preserved as the base; these rules add EAS-specific exclusions.
+
+# === Casing conflict fix ===
+**/.ai/LOGS/
+**/.ai/LOGS/**
+**/[Ll]ogs/
+**/[Ll]ogs/**
+
+# === Other AI / project scratch directories not needed in the APK ===
+**/.ai/BOOTSTRAP/
+**/.ai/CURRENT/
+**/.ai/AUDIT/
+**/.ai/DECISIONS/
+**/epos/
+**/archive/
+
+# === Generated / temporary / non-mobile files ===
+dump.rdb
+*.docx
+*.xlsx
+*.pptx
+**/test-results/
+**/e2e/transaction/
+
+# === Standard build/runtime ignores (safety net if .easignore is used standalone) ===
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+ios/
+android/
+.env
+.env.local
+.env.*.local
+.env.staging
+*.env
+*.log
+
+# === Python / Node artifacts ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.nyc_output/
+
+# === Coverage / test ===
+.coverage
+coverage/
+*.cover
+.hypothesis/
+htmlcov/
+
+# === Temporary files ===
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# === OS / IDE ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# === Backup / secrets ===
+*.orig
+*.rej
+*.key
+*.pem
+*.crt
+secrets/
+*.secret
+*.db
+*.sqlite
+*.sqlite3
+
+# === Archives ===
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# === Package artifacts ===
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+*.i86
+*.x86_64
+*.hex

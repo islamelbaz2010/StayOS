@@ -101,7 +101,8 @@ export function SearchScreen() {
           )}
           <Pressable
             style={styles.viewToggle}
-            onPress={() => setViewMode(viewMode === "list" ? "map" : "list")}
+            onPress={() => setViewMode((prev) => (prev === "list" ? "map" : "list"))}
+            hitSlop={16}
           >
             <Text style={styles.viewToggleText}>
               {viewMode === "list" ? t("mapView") : t("listView")}
@@ -239,6 +240,7 @@ const styles = StyleSheet.create({
   },
   viewToggle: {
     paddingHorizontal: spacing.md,
+    minWidth: 80,
     height: 48,
     backgroundColor: colors.primary50,
     borderRadius: radius.md,

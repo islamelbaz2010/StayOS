@@ -1,8 +1,18 @@
-import { ScrollView, StyleSheet, Text, View, Image, Pressable, Dimensions } from "react-native";
+import { useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  Pressable,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MapView, { Marker } from "react-native-maps";
-import { useListingDetail, useListingPhotos, useSimilarListings, useToggleFavorite, useFavorites, useCreateBooking } from "../lib/hooks";
+import { useListingDetail, useListingPhotos, useSimilarListings, useToggleFavorite, useFavorites } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, ErrorView, EmptyView } from "../components/States";
@@ -11,6 +21,40 @@ import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type DetailRoute = RouteProp<RootStackParamList, "ListingDetail">;
+
+function GalleryImage({ uri, width }: { uri: string; width: number }) {
+  const { t } = useLocale();
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <View style={[styles.galleryImage, { width }, styles.placeholder]}>
+        <Text style={styles.placeholderText}>{t("appName")}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.galleryImage, { width }]}>
+      <Image
+        source={{ uri }}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          setLoading(false);
+          setFailed(true);
+        }}
+      />
+      {loading && (
+        <View style={styles.imageLoading}>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      )}
+    </View>
+  );
+}
 
 export function ListingDetailScreen() {
   const { locale, t } = useLocale();
@@ -24,7 +68,6 @@ export function ListingDetailScreen() {
   const { data: similar } = useSimilarListings(unitId);
   const { data: favorites } = useFavorites();
   const toggleFav = useToggleFavorite();
-  const createBooking = useCreateBooking();
 
   const isFavorite = favorites?.data?.some((f: { id: string }) => f.id === unitId);
 
@@ -53,17 +96,11 @@ export function ListingDetailScreen() {
           {galleryImages.length > 0 ? (
             <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
               {galleryImages.map((uri: string, i: number) => (
-                <Image
-                  key={i}
-                  source={{ uri }}
-                  style={[styles.galleryImage, { width: windowWidth }]}
-                  resizeMode="cover"
-                  onError={() => {}}
-                />
+                <GalleryImage key={i} uri={uri} width={windowWidth} />
               ))}
             </ScrollView>
           ) : (
-            <View style={[styles.galleryImage, styles.placeholder]}>
+            <View style={[styles.galleryImage, { width: windowWidth }, styles.placeholder]}>
               <Text style={styles.placeholderText}>{t("appName")}</Text>
             </View>
           )}
@@ -157,20 +194,24 @@ export function ListingDetailScreen() {
               ))}
             </Section>
           )}
+
+          <View style={styles.bookingSection}>
+            <View>
+              <Text style={styles.bookingPrice}>
+                {listing.price} {listing.currency}
+              </Text>
+              <Text style={styles.bookingPerNight}>{t("perNight")}</Text>
+            </View>
+            <Pressable
+              style={styles.bookButton}
+              onPress={handleBook}
+              hitSlop={16}
+            >
+              <Text style={styles.bookButtonText}>{t("bookNow")}</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
-
-      <View style={styles.bookingBar}>
-        <View>
-          <Text style={styles.bookingPrice}>
-            {listing.price} {listing.currency}
-          </Text>
-          <Text style={styles.bookingPerNight}>{t("perNight")}</Text>
-        </View>
-        <Pressable style={styles.bookButton} onPress={handleBook}>
-          <Text style={styles.bookButtonText}>{t("bookNow")}</Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -204,14 +245,19 @@ const styles = StyleSheet.create({
     height: 280,
   },
   galleryImage: {
-    width: 400,
     height: 280,
+    overflow: "hidden",
+  },
+  imageLoading: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surface,
   },
   placeholder: {
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.surface,
-    width: "100%",
   },
   placeholderText: {
     color: colors.textTertiary,
@@ -234,7 +280,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: 100,
+    paddingBottom: spacing.xl,
   },
   title: {
     fontSize: fontSize.xxl,
@@ -329,20 +375,16 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: radius.md,
   },
-  bookingBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
+  bookingSection: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    padding: spacing.lg,
     backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: spacing.md,
   },
   bookingPrice: {
     fontSize: fontSize.xl,

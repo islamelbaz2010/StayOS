@@ -183,18 +183,6 @@ export function ListingDetailScreen() {
             </Section>
           )}
 
-          {similar && similar.length > 0 && (
-            <Section title={t("similarProperties")}>
-              {similar.map((s: any) => (
-                <ListingCard
-                  key={s.id}
-                  listing={s}
-                  onPress={(id: string) => navigation.navigate("ListingDetail", { unitId: id })}
-                />
-              ))}
-            </Section>
-          )}
-
           <View style={styles.bookingSection}>
             <View>
               <Text style={styles.bookingPrice}>
@@ -210,6 +198,18 @@ export function ListingDetailScreen() {
               <Text style={styles.bookButtonText}>{t("bookNow")}</Text>
             </Pressable>
           </View>
+
+          {similar && similar.length > 0 && (
+            <Section title={t("similarProperties")}>
+              {similar.map((s: any) => (
+                <ListingCard
+                  key={s.id}
+                  listing={s}
+                  onPress={(id: string) => navigation.navigate("ListingDetail", { unitId: id })}
+                />
+              ))}
+            </Section>
+          )}
         </View>
       </ScrollView>
     </View>

@@ -1597,3 +1597,41 @@ Continuation of the executive review requested at CHECKPOINT 22. Focused on back
 - No new migrations created.
 - No APIs added.
 - All work was documentation and strategic planning.
+
+---
+
+# V1 Mobile Physical Device Validation — 2026-08-17/18
+
+## Objective
+
+Validate the latest StayOS mobile build on the physical OPPO CPH2481 (Android 15) and fix the highest-impact device failures.
+
+## Devices / Environment
+
+- OPPO CPH2481
+- Android 15
+- ADB serial TKINR8IJ5D9DSKQK
+- Railway API healthy
+
+## Builds
+
+- `84050149-e0d1-447e-a9ee-9a7a56865bc8` — initial Phase 2 validation
+- `8c8352e9-c01c-467d-a6b3-fa2ed68692f8` — zIndex CTA fix
+- `9d4c1255-1cea-4275-98db-e91ac4547839` — CTA in content + image fallback
+
+## Completed
+
+- Phase 2 device validation report: `.ai/AUDIT/STAYOS_V1_PHASE_2_OPPO_VALIDATION_2026-08-17.md`
+- Phase 3 targeted fix report: `.ai/AUDIT/STAYOS_V1_PHASE_3_TARGETED_FIX_REPORT_2026-08-18.md`
+- Session log: `.ai/LOGS/session-2026-08-18.md`
+- Image fallback with loading and error states in `ListingDetailScreen`
+- Map fallback rendering when API key is missing
+
+## P0 Still Open
+
+- Booking CTA `احجز الآن` does not navigate on physical device.
+- Search map/list toggle does not switch view.
+
+## Next Action
+
+Test `TouchableOpacity` (or `Button`) and `Alert.alert` diagnostics for the CTA and toggle, then rebuild and retest on OPPO.

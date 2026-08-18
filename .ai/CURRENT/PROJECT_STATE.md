@@ -36,3 +36,14 @@ Founder and product lead must confirm the Sprint 3 re-scope (Supply Enablement &
 - Sprint 3 scope redefined to supply acquisition and host enablement.
 - Public launch deferred until closed alpha (50–100 listings, 10 manual transactions) succeeds.
 - Native mobile, AI pricing, field operations, and channel manager sync postponed.
+
+---
+
+## 2026-08-18 Update — Mobile Validation Sprint
+
+- Mobile source fixes committed on `tooling/repository-intelligence`.
+- Physical OPPO testing completed for Phase 2 and Phase 3.
+- Latest EAS build: `9d4c1255-1cea-4275-98db-e91ac4547839`.
+- Booking CTA remains non-tappable on device; further `Pressable` investigation required.
+- Image fallback and map fallback are functional.
+- Next action: test `TouchableOpacity` diagnostic and rebuild for OPPO.

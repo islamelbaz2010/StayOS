@@ -26,6 +26,7 @@ from .schemas import (
     CalendarRuleResponse,
     CalendarRuleUpdate,
     HostDashboardStats,
+    HostProfileResponse,
     HostReservationCalendarItem,
     HostReservationCalendarResponse,
     ListingCreate,
@@ -407,6 +408,42 @@ async def search_listings(
     )
 
 
+async def get_host_profile(
+    session: AsyncSession, host_id: str
+) -> HostProfileResponse:
+    host = await _fetch_host(session, host_id)
+    if host is None:
+        raise NotFoundError("Host not found")
+
+    lat_col = func.ST_Y(Unit.coordinates).label("lat")
+    lng_col = func.ST_X(Unit.coordinates).label("lng")
+
+    result = await session.execute(
+        select(Unit, UnitListing, lat_col, lng_col)
+        .options(selectinload(Unit.photos))
+        .join(UnitListing, Unit.id == UnitListing.unit_id)
+        .where(
+            Unit.host_id == host_id,
+            Unit.status == UnitStatus.LISTED,
+        )
+        .order_by(Unit.created_at.desc())
+    )
+    rows = result.all()
+
+    listings = [
+        ListingSearchResult(**_to_search_result(unit, listing, float(lat), float(lng), host))
+        for unit, listing, lat, lng in rows
+    ]
+
+    return HostProfileResponse(
+        id=host.id,
+        display_name=host.display_name,
+        kyc_status=host.kyc_status,
+        joined_at=str(host.created_at) if host.created_at else None,
+        listings=listings,
+    )
+
+
 async def get_similar_listings(
     session: AsyncSession, unit_id: str, limit: int = 6
 ) -> list[dict[str, object]]:
@@ -471,8 +508,8 @@ async def get_similar_listings(
         hosts_map = {h.id: h for h in host_result.scalars().all()}
 
     return [
-        _to_search_result(u, l, float(lat), float(lng), hosts_map.get(u.host_id))
-        for u, l, lat, lng in rows
+        _to_search_result(u, li, float(lat), float(lng), hosts_map.get(u.host_id))
+        for u, li, lat, lng in rows
     ]
 
 

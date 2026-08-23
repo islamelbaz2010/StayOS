@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import type {
   Booking,
+  HostProfile,
   Listing,
   ListingDetail,
   LocationSuggestion,
@@ -90,6 +91,30 @@ export function useLocationAutocomplete(query: string) {
       return data.suggestions;
     },
     enabled: query.length >= 2,
+  });
+}
+
+export function usePopularLocations() {
+  return useQuery({
+    queryKey: ["locations", "popular"],
+    queryFn: async () => {
+      const { data } = await api.get<{ suggestions: LocationSuggestion[] }>(
+        "/locations/popular",
+        { params: { limit: 20 } }
+      );
+      return data.suggestions;
+    },
+  });
+}
+
+export function useHostProfile(hostId: string) {
+  return useQuery({
+    queryKey: ["host", hostId],
+    queryFn: async () => {
+      const { data } = await api.get<HostProfile>(`/listings/profiles/host/${hostId}`);
+      return data;
+    },
+    enabled: Boolean(hostId),
   });
 }
 

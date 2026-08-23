@@ -157,3 +157,38 @@ async def location_autocomplete(
             break
 
     return LocationAutocompleteResponse(suggestions=suggestions)
+
+
+async def location_popular(
+    session: AsyncSession, limit: int = 20
+) -> LocationAutocompleteResponse:
+    """Return a curated set of distinct canonical locations for discovery."""
+    result = await session.execute(
+        select(LocationAlias)
+        .where(LocationAlias.alias_type == "exact")
+        .order_by(LocationAlias.canonical_name_en)
+        .limit(limit * 3)
+    )
+    rows = result.scalars().all()
+
+    seen: set[str] = set()
+    suggestions: list[LocationSuggestion] = []
+    for row in rows:
+        key = f"{row.canonical_name_en}:{row.city}"
+        if key in seen:
+            continue
+        seen.add(key)
+        suggestions.append(
+            LocationSuggestion(
+                canonical_name_en=row.canonical_name_en,
+                canonical_name_ar=row.canonical_name_ar,
+                city=row.city,
+                governorate=row.governorate,
+                lat=row.lat,
+                lng=row.lng,
+            )
+        )
+        if len(suggestions) >= limit:
+            break
+
+    return LocationAutocompleteResponse(suggestions=suggestions)

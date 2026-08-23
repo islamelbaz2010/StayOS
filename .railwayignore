@@ -1,0 +1,18 @@
+# Exclude large binary files and non-backend artifacts from Railway uploads
+*.apk
+*.png
+*.xml
+*.xlsx
+*.docx
+*.pptx
+screen_*.png
+window_dump*.xml
+node_modules/
+apps/mobile/node_modules/
+apps/web/node_modules/
+apps/mobile/.expo/
+apps/web/test-results/
+apps/web/.next/
+apps/
+.ai/
+epos/

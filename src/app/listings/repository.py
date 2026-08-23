@@ -183,6 +183,9 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
     if filters.governorate:
         stmt = stmt.where(func.lower(Unit.governorate) == filters.governorate.lower())
 
+    if filters.host_id:
+        stmt = stmt.where(Unit.host_id == filters.host_id)
+
     if filters.q:
         tsquery = func.plainto_tsquery("simple", filters.q)
         stmt = stmt.where(UnitListing.search_vector.bool_op("@@")(tsquery))

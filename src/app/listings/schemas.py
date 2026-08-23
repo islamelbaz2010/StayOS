@@ -212,6 +212,14 @@ class ListingSearchResponse(BaseModel):
     pagination: PaginationInfo
 
 
+class HostProfileResponse(BaseModel):
+    id: str
+    display_name: str | None
+    kyc_status: str | None
+    joined_at: str | None
+    listings: list[ListingSearchResult]
+
+
 class CalendarDay(BaseModel):
     date: date
     status: str
@@ -238,6 +246,7 @@ class ListingSearchFilters(BaseModel):
     q: str | None = None
     city: str | None = None
     governorate: str | None = None
+    host_id: str | None = None
     sw_lat: float | None = Field(None, ge=-90, le=90)
     sw_lng: float | None = Field(None, ge=-180, le=180)
     ne_lat: float | None = Field(None, ge=-90, le=90)

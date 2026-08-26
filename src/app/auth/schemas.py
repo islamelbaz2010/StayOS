@@ -64,13 +64,45 @@ class TokenRefreshRequest(BaseModel):
     refresh_token: str
 
 
+class PowSolution(BaseModel):
+    """Client-solved Akedly PoW proof, from @akedly/shield's solvePow() against a
+    challenge fetched via GET /auth/otp/challenge."""
+
+    challenge_token: str
+    nonce: int
+
+
 class OtpSendRequest(BaseModel):
     phone_number: str = Field(..., pattern=r"^\+[1-9]\d{1,14}$")
+    # Both fields are optional and backward-compatible: a caller that omits them
+    # gets the server-side PoW fallback (see auth/services.py:send_otp). The
+    # mobile app supplies pow_solution after calling GET /auth/otp/challenge and
+    # solving it client-side with @akedly/shield.
+    pow_solution: PowSolution | None = Field(
+        default=None,
+        description="Client-solved PoW proof from @akedly/shield's solvePow(); omit to let the backend solve it server-side",
+    )
+    turnstile_token: str | None = Field(
+        default=None,
+        description="Cloudflare Turnstile token, required only if Akedly's pipeline challenge demands one",
+    )
 
 
 class OtpSendResponse(BaseModel):
     phone_number: str
     status: str
+
+
+class OtpChallengeResponse(BaseModel):
+    """Proxies Akedly's V1.2 /transactions/challenge response to the client.
+    Never includes APIKey/pipelineID — those stay backend-only."""
+
+    challenge: str
+    difficulty: int
+    challenge_token: str
+    challenge_required: bool
+    turnstile_required: bool
+    turnstile_site_key: str | None = None
 
 
 class OtpVerifyRequest(BaseModel):

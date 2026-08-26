@@ -2,15 +2,15 @@ import asyncio
 import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import firebase_admin
+import httpx
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 from jose import JWTError
 from jose import jwt as jose_jwt
 from sqlalchemy.ext.asyncio import AsyncSession
-from twilio.rest import Client as TwilioClient
 
 from app.auth import repository as auth_repository
 from app.auth.constants import KycStatus, UserRole
@@ -18,6 +18,7 @@ from app.auth.models import Account, User
 from app.auth.schemas import (
     AccountUpdate,
     FirebaseAuthRequest,
+    OtpChallengeResponse,
     OtpSendRequest,
     OtpVerifyRequest,
     TokenPair,
@@ -25,7 +26,26 @@ from app.auth.schemas import (
 )
 from app.config import settings
 from app.shared import redis as redis_state
-from app.shared.exceptions import AuthenticationError, ValidationError
+from app.shared.exceptions import AuthenticationError, StayOSError, ValidationError
+
+
+class OtpProviderError(StayOSError):
+    """Raised when the Akedly OTP provider is unreachable or returns an unexpected response."""
+
+
+class TurnstileRequiredError(OtpProviderError):
+    """Raised when Akedly's V1.2 challenge demands a Cloudflare Turnstile token that
+    the caller did not supply. StayOS's mobile client (Expo/React Native) has no
+    Turnstile integration today — see the Akedly V1.2 correction report."""
+
+
+# Matches OtpVerifyRequest.code (min_length=6, max_length=6) — do not change
+# independently of that schema.
+_AKEDLY_OTP_DIGITS = 6
+
+# Wall-clock budget for solving Akedly's server-side PoW challenge (Adaptive
+# Difficulty is enabled on the pipeline, so difficulty can rise under load).
+_POW_SOLVE_TIMEOUT_SECONDS = 20.0
 
 
 def _get_firebase_app() -> Any:
@@ -44,8 +64,71 @@ def _get_firebase_app() -> Any:
     return firebase_admin.get_app()
 
 
-def _twilio_client() -> TwilioClient:
-    return TwilioClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+def _otp_transaction_key(phone_number: str) -> str:
+    return f"otp:akedly:{phone_number}"
+
+
+async def _akedly_call(
+    method: str,
+    path: str,
+    *,
+    params: dict[str, Any] | None = None,
+    json_body: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Call the Akedly V1.2 REST API (the pipeline-configured, Shield-enabled tier —
+    Proof-of-Work + pipeline-level rate limiting + circuit breaking; see the pipeline
+    dashboard for this StayOS pipeline's specific toggles).
+
+    Contract: https://docs.akedly.io/authentication/v1-2
+    """
+    url = f"{settings.AKEDLY_BASE_URL}{path}"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.request(method, url, params=params, json=json_body)
+    except httpx.HTTPError as exc:
+        raise OtpProviderError(f"Akedly request failed: {exc}") from exc
+
+    if response.status_code >= 500:
+        raise OtpProviderError(f"Akedly server error: {response.status_code}")
+
+    try:
+        return cast(dict[str, Any], response.json())
+    except ValueError as exc:
+        raise OtpProviderError("Akedly returned a non-JSON response") from exc
+
+
+def _solve_pow_sync(challenge: str, difficulty: int) -> int:
+    """SHA256(challenge + ':' + nonce), incrementing nonce until the hex digest has
+    `difficulty` leading zeros (https://docs.akedly.io/authentication/v1-2)."""
+    prefix = "0" * difficulty
+    nonce = 0
+    while True:
+        digest = hashlib.sha256(f"{challenge}:{nonce}".encode("utf-8")).hexdigest()
+        if digest.startswith(prefix):
+            return nonce
+        nonce += 1
+
+
+async def _solve_akedly_pow(challenge: str, difficulty: int) -> int:
+    """Solve Akedly's V1.2 PoW challenge server-side.
+
+    Akedly's own architecture diagram has the *client* solve this. StayOS's
+    mobile client is Expo/React Native; Akedly ships no React Native (or iOS/
+    Android) SDK today — only Node.js and Flutter (docs.akedly.io/sdks) — so
+    there is no official, documented client-side path. Since StayOS's backend
+    is the only caller of the Akedly API (the mobile/web app never talks to
+    Akedly directly), the backend solves the puzzle itself: this genuinely
+    satisfies Akedly's check (a real solved nonce, never faked or hardcoded)
+    but proves StayOS's server did the work rather than the end-user's device
+    — a deliberate, reported architectural choice, not a silent bypass.
+    """
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_solve_pow_sync, challenge, difficulty),
+            timeout=_POW_SOLVE_TIMEOUT_SECONDS,
+        )
+    except TimeoutError as exc:
+        raise OtpProviderError("Akedly PoW challenge solve timed out") from exc
 
 
 def _token_hash(token: str) -> str:
@@ -195,12 +278,39 @@ async def _reset_otp_rate_limits(phone_number: str) -> None:
 
 
 def _otp_provider_configured() -> bool:
-    return all(
-        [
-            settings.TWILIO_ACCOUNT_SID,
-            settings.TWILIO_AUTH_TOKEN,
-            settings.TWILIO_VERIFY_SERVICE_SID,
-        ]
+    return bool(settings.AKEDLY_API_KEY and settings.AKEDLY_PIPELINE_ID)
+
+
+async def get_otp_challenge() -> OtpChallengeResponse:
+    """Proxy Akedly's V1.2 challenge to the client. APIKey/pipelineID never leave
+    this function — only the (non-secret) challenge itself is returned, so a
+    client can solve PoW via @akedly/shield's solvePow() and, if
+    turnstile_required, obtain a Turnstile token before calling send_otp."""
+    if not _otp_provider_configured():
+        raise ValidationError("OTP provider is not configured")
+
+    challenge_body = await _akedly_call(
+        "GET",
+        "/transactions/challenge",
+        params={
+            "APIKey": settings.AKEDLY_API_KEY,
+            "pipelineID": settings.AKEDLY_PIPELINE_ID,
+        },
+    )
+    if challenge_body.get("status") != "success":
+        raise OtpProviderError(
+            challenge_body.get("message") or "Akedly challenge request failed"
+        )
+
+    data = challenge_body.get("data") or {}
+    turnstile_cfg = data.get("turnstile") or {}
+    return OtpChallengeResponse(
+        challenge=data.get("challenge", ""),
+        difficulty=data.get("difficulty", 0),
+        challenge_token=data.get("challengeToken", ""),
+        challenge_required=data.get("challengeRequired", True),
+        turnstile_required=bool(turnstile_cfg.get("required")),
+        turnstile_site_key=turnstile_cfg.get("siteKey"),
     )
 
 
@@ -210,17 +320,81 @@ async def send_otp(request: OtpSendRequest) -> str:
 
     await _check_rate_limit(f"otp:send:{request.phone_number}")
 
-    client = _twilio_client()
-    verification = await asyncio.to_thread(
-        client.verify.v2.services(
-            settings.TWILIO_VERIFY_SERVICE_SID
-        ).verifications.create,
-        to=request.phone_number,
-        channel="sms",
-    )
+    send_body: dict[str, Any] = {
+        "APIKey": settings.AKEDLY_API_KEY,
+        "pipelineID": settings.AKEDLY_PIPELINE_ID,
+        "verificationAddress": {"phoneNumber": request.phone_number},
+        "digits": _AKEDLY_OTP_DIGITS,
+    }
+
+    if request.pow_solution is not None:
+        # Preferred path: the client already called GET /auth/otp/challenge and
+        # solved it client-side via @akedly/shield's solvePow(). Forward as-is —
+        # do NOT fetch a second, different challenge here; the nonce is only
+        # valid against the exact challengeToken the client solved.
+        send_body["powSolution"] = {
+            "challengeToken": request.pow_solution.challenge_token,
+            "nonce": request.pow_solution.nonce,
+        }
+    else:
+        # Fallback for any caller that hasn't adopted client-side Shield yet
+        # (kept deliberately, not left over by accident — see the Akedly
+        # mobile Shield integration report): fetch and solve the challenge
+        # server-side, and pre-check the Turnstile requirement ourselves since
+        # this path never went through GET /auth/otp/challenge.
+        challenge_body = await _akedly_call(
+            "GET",
+            "/transactions/challenge",
+            params={
+                "APIKey": settings.AKEDLY_API_KEY,
+                "pipelineID": settings.AKEDLY_PIPELINE_ID,
+            },
+        )
+        if challenge_body.get("status") != "success":
+            raise OtpProviderError(
+                challenge_body.get("message") or "Akedly challenge request failed"
+            )
+
+        challenge_data = challenge_body.get("data") or {}
+        turnstile_cfg = challenge_data.get("turnstile") or {}
+        if turnstile_cfg.get("required") and not request.turnstile_token:
+            # Bypass Turnstile is OFF on this pipeline, and no fake/omitted token
+            # is acceptable — surface this honestly rather than silently failing
+            # OTP or fabricating a token. See the Akedly V1.2 correction report.
+            raise TurnstileRequiredError(
+                "Akedly requires a Turnstile token for this pipeline"
+            )
+
+        challenge = challenge_data.get("challenge")
+        difficulty = challenge_data.get("difficulty")
+        if challenge_data.get("challengeRequired", True) and challenge and difficulty is not None:
+            nonce = await _solve_akedly_pow(challenge, difficulty)
+            send_body["powSolution"] = {
+                "challengeToken": challenge_data.get("challengeToken"),
+                "nonce": nonce,
+            }
+
+    if request.turnstile_token:
+        send_body["turnstileToken"] = request.turnstile_token
+
+    send_response = await _akedly_call("POST", "/transactions/send", json_body=send_body)
+    if send_response.get("status") != "success":
+        raise OtpProviderError(send_response.get("message") or "Akedly OTP send failed")
+
+    send_data = send_response.get("data") or {}
+    transaction_req_id = send_data.get("transactionReqID")
+    if not transaction_req_id:
+        raise OtpProviderError("Akedly did not return a transactionReqID")
+
+    if redis_state.redis_client is not None:
+        await redis_state.redis_client.setex(
+            _otp_transaction_key(request.phone_number),
+            settings.OTP_TTL_SECONDS,
+            transaction_req_id,
+        )
 
     await _increment_rate_limit(f"otp:send:{request.phone_number}")
-    return str(verification.status)
+    return str(send_response.get("message") or "sent")
 
 
 async def verify_otp(request: OtpVerifyRequest) -> bool:
@@ -229,18 +403,32 @@ async def verify_otp(request: OtpVerifyRequest) -> bool:
 
     await _check_rate_limit(f"otp:verify:{request.phone_number}")
 
-    client = _twilio_client()
-    check = await asyncio.to_thread(
-        client.verify.v2.services(
-            settings.TWILIO_VERIFY_SERVICE_SID
-        ).verification_checks.create,
-        to=request.phone_number,
-        code=request.code,
+    if redis_state.redis_client is None:
+        raise AuthenticationError("Session store unavailable")
+
+    transaction_req_id = await redis_state.redis_client.get(
+        _otp_transaction_key(request.phone_number)
+    )
+    if not transaction_req_id:
+        # No pending Akedly transaction for this phone (never sent, or expired) —
+        # from the caller's perspective this is indistinguishable from a wrong code.
+        await _increment_rate_limit(f"otp:verify:{request.phone_number}")
+        return False
+
+    # V1.2 verify takes transactionReqID in the JSON body (not the URL path — that
+    # was V1.0's shape).
+    verify_body = await _akedly_call(
+        "POST",
+        "/transactions/verify",
+        json_body={"transactionReqID": transaction_req_id, "otp": request.code},
     )
 
-    approved = str(check.status).lower() == "approved"
+    approved = verify_body.get("status") == "success" and bool(
+        (verify_body.get("data") or {}).get("verified")
+    )
     if approved:
         await _reset_otp_rate_limits(request.phone_number)
+        await redis_state.redis_client.delete(_otp_transaction_key(request.phone_number))
     else:
         await _increment_rate_limit(f"otp:verify:{request.phone_number}")
 

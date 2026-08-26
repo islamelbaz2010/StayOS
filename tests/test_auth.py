@@ -1,6 +1,6 @@
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from app.auth import services as auth_services
@@ -64,24 +64,68 @@ def auth_client(client: TestClient, fake_session: AsyncMock) -> TestClient:
     app.dependency_overrides.pop(get_session, None)
 
 
-async def _fake_to_thread(func, *args, **kwargs):  # noqa: RUF029
-    return func(*args, **kwargs)
+def test_get_otp_challenge(auth_client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(auth_services.settings, "AKEDLY_API_KEY", "test_key")
+    monkeypatch.setattr(auth_services.settings, "AKEDLY_PIPELINE_ID", "test_pipeline")
+
+    async def fake_akedly_call(method, path, *, params=None, json_body=None):
+        return {
+            "status": "success",
+            "data": {
+                "challenge": "deadbeef",
+                "difficulty": 4,
+                "challengeToken": "tok-1",
+                "challengeRequired": True,
+                "turnstile": {"required": True, "siteKey": "site-key-1"},
+            },
+        }
+
+    monkeypatch.setattr(auth_services, "_akedly_call", fake_akedly_call)
+
+    response = auth_client.get("/api/v1/auth/otp/challenge")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["challenge"] == "deadbeef"
+    assert data["difficulty"] == 4
+    assert data["challenge_token"] == "tok-1"
+    assert data["turnstile_required"] is True
+    assert data["turnstile_site_key"] == "site-key-1"
+    # The response body must never leak the API key/pipeline ID.
+    assert "test_key" not in response.text
+    assert "test_pipeline" not in response.text
 
 
 def test_send_otp(auth_client: TestClient, monkeypatch) -> None:
-    mock_client = MagicMock()
-    mock_client.verify.v2.services.return_value.verifications.create.return_value.status = (
-        "pending"
-    )
-    monkeypatch.setattr("app.auth.services._twilio_client", lambda: mock_client)
-    monkeypatch.setattr("app.auth.services.asyncio.to_thread", _fake_to_thread)
+    monkeypatch.setattr(auth_services.settings, "AKEDLY_API_KEY", "test_key")
+    monkeypatch.setattr(auth_services.settings, "AKEDLY_PIPELINE_ID", "test_pipeline")
+
+    async def fake_akedly_call(method, path, *, params=None, json_body=None):
+        if path == "/transactions/challenge":
+            return {
+                "status": "success",
+                "data": {
+                    "challenge": "aa",
+                    "difficulty": 0,
+                    "challengeToken": "tok-1",
+                    "challengeRequired": True,
+                    "turnstile": {"required": False},
+                },
+            }
+        return {
+            "status": "success",
+            "message": "OTP sent successfully",
+            "data": {"transactionID": "txn-1", "transactionReqID": "req-1"},
+        }
+
+    monkeypatch.setattr(auth_services, "_akedly_call", fake_akedly_call)
 
     response = auth_client.post("/api/v1/auth/otp/send", json={"phone_number": "+1234567890"})
 
     assert response.status_code == 200
     data = response.json()
     assert data["phone_number"] == "+1234567890"
-    assert data["status"] == "pending"
+    assert data["status"] == "OTP sent successfully"
 
 
 def test_verify_otp(auth_client: TestClient, monkeypatch) -> None:

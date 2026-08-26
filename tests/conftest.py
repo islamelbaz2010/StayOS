@@ -37,6 +37,8 @@ _env_vars = {
     "TWILIO_ACCOUNT_SID": "test_sid",
     "TWILIO_AUTH_TOKEN": "test_token",
     "TWILIO_VERIFY_SERVICE_SID": "test_service_sid",
+    "AKEDLY_API_KEY": "test_akedly_key",
+    "AKEDLY_PIPELINE_ID": "test_akedly_pipeline",
     "PAYMOB_API_KEY": "test_api_key",
     "PAYMOB_HMAC_SECRET": "test_hmac_secret",
     "META_WHATSAPP_TOKEN": "test_token",

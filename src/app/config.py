@@ -17,9 +17,24 @@ class Settings(BaseSettings):
     FIREBASE_CLIENT_EMAIL: str = Field(default="", description="Firebase service account email")
     FIREBASE_PRIVATE_KEY: str = Field(default="", description="Firebase service account private key")
 
+    # Twilio: still used for general SMS notifications (app/notifications/providers.py).
+    # No longer used for OTP auth — see AKEDLY_* below.
     TWILIO_ACCOUNT_SID: str = Field(default="", description="Twilio account SID")
     TWILIO_AUTH_TOKEN: str = Field(default="", description="Twilio auth token")
-    TWILIO_VERIFY_SERVICE_SID: str = Field(default="", description="Twilio Verify service SID")
+    TWILIO_VERIFY_SERVICE_SID: str = Field(
+        default="", description="Unused (legacy Twilio Verify service SID; OTP auth now uses Akedly)"
+    )
+
+    # Akedly: OTP send/verify provider for phone auth (app/auth/services.py).
+    # V1.2 (Shield tier) — this pipeline has PoW and Turnstile enabled; V1.0 does
+    # not apply here. Pipeline ID is not secret; API key must come from a secure
+    # secret store, never committed.
+    AKEDLY_API_KEY: str = Field(default="", description="Akedly API key")
+    AKEDLY_PIPELINE_ID: str = Field(default="", description="Akedly pipeline ID")
+    AKEDLY_BASE_URL: str = Field(
+        default="https://api.akedly.io/api/v1.2",
+        description="Akedly REST API base URL (V1.2 — Shield: PoW + Turnstile + pipeline rate limiting)",
+    )
 
     PAYMOB_API_KEY: str = Field(default="", description="Paymob API key")
     PAYMOB_HMAC_SECRET: str = Field(default="", description="Paymob HMAC secret")

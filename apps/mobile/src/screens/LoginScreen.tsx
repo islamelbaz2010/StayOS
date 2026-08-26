@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AkedlyTurnstileUnsupportedError, resolveOtpProof } from "../lib/akedlyShield";
 import { api, setTokens } from "../lib/api";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
@@ -24,11 +25,18 @@ export function LoginScreen() {
     }
     setLoading(true);
     try {
-      await api.post("/auth/otp/send", { phone_number });
+      // Solves Akedly's V1.2 Proof-of-Work challenge on-device via the official
+      // @akedly/shield package before sending — the user never sees this step.
+      const proof = await resolveOtpProof();
+      await api.post("/auth/otp/send", { phone_number, ...proof });
       setStep("otp");
     } catch (err: any) {
-      const message = err?.response?.data?.error?.message_ar || err?.response?.data?.error?.message || t("error");
-      Alert.alert(t("error"), message);
+      if (err instanceof AkedlyTurnstileUnsupportedError) {
+        Alert.alert(t("error"), err.message);
+      } else {
+        const message = err?.response?.data?.error?.message_ar || err?.response?.data?.error?.message || t("error");
+        Alert.alert(t("error"), message);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "./api";
+import { api, hasTokens } from "./api";
 import type {
   Booking,
   Listing,
@@ -153,6 +153,7 @@ export function useMe() {
       const { data } = await api.get<User>("/auth/me");
       return data;
     },
+    enabled: hasTokens(),
     retry: false,
   });
 }

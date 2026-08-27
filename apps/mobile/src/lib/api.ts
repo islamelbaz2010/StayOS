@@ -6,12 +6,23 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000/api/v1
 const TOKEN_KEY = "stayos_access_token";
 const REFRESH_KEY = "stayos_refresh_token";
 
+let _hasTokens = false;
+
+export function hasTokens(): boolean {
+  return _hasTokens;
+}
+
 export async function getTokens() {
   const [access, refresh] = await Promise.all([
     AsyncStorage.getItem(TOKEN_KEY),
     AsyncStorage.getItem(REFRESH_KEY),
   ]);
+  _hasTokens = Boolean(access);
   return { access, refresh };
+}
+
+export async function getRefreshToken(): Promise<string | null> {
+  return AsyncStorage.getItem(REFRESH_KEY);
 }
 
 export async function setTokens(access: string, refresh: string) {
@@ -19,6 +30,7 @@ export async function setTokens(access: string, refresh: string) {
     AsyncStorage.setItem(TOKEN_KEY, access),
     AsyncStorage.setItem(REFRESH_KEY, refresh),
   ]);
+  _hasTokens = true;
 }
 
 export async function clearTokens() {
@@ -26,6 +38,7 @@ export async function clearTokens() {
     AsyncStorage.removeItem(TOKEN_KEY),
     AsyncStorage.removeItem(REFRESH_KEY),
   ]);
+  _hasTokens = false;
 }
 
 export const api = axios.create({
@@ -35,6 +48,7 @@ export const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const { access } = await getTokens();
+  _hasTokens = Boolean(access);
   if (access) {
     config.headers.Authorization = `Bearer ${access}`;
   }

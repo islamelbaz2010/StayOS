@@ -54,6 +54,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements-dev.txt
+          pip install "setuptools>=83.0.0" "wheel>=0.46.1"
 
       - name: Lint with ruff
         run: ruff check src/ tests/

@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import (
     ARRAY,
+    JSON,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -12,7 +13,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
     func,

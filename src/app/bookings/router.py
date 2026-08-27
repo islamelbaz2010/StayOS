@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.auth import dependencies as auth_dependencies
 from app.auth.models import User
 from app.database import get_session
 from app.shared.exceptions import StayOSError, to_http_exception
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .schemas import BookingCreate, BookingResponse, BookingUpdate
 from .services import (

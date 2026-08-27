@@ -167,8 +167,9 @@ async def trigger_run(
     config_id = request.config_id
 
     if config_id:
-        from app.discovery.models import DiscoveryConfig
         from sqlalchemy import select as sa_select
+
+        from app.discovery.models import DiscoveryConfig
         result = await session.execute(
             sa_select(DiscoveryConfig).where(DiscoveryConfig.id == config_id)
         )
@@ -204,8 +205,9 @@ async def list_runs(
     session: AsyncSession = Depends(get_session),
     limit: int = Query(20, ge=1, le=100),
 ) -> list[DiscoveryRunResponse]:
-    from app.discovery.models import DiscoveryRun
     from sqlalchemy import select as sa_select
+
+    from app.discovery.models import DiscoveryRun
     result = await session.execute(
         sa_select(DiscoveryRun).order_by(DiscoveryRun.created_at.desc()).limit(limit)
     )

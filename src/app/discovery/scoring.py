@@ -115,20 +115,20 @@ def classify_candidate_type(
     source: str,
 ) -> str:
     """Classify a candidate as PLACE or SUPPLY_LEAD.
-    
+
     SUPPLY_LEAD = has contact info (phone, whatsapp, email, or website)
     or has a rental signal (price, or rental-specific source).
     PLACE = building/business exists but no actionable contact or rental signal.
     """
     from app.discovery.constants import CandidateType
-    
+
     if contact_status == "AVAILABLE":
         return CandidateType.SUPPLY_LEAD
-    
+
     # If source provides rental signals (price, availability), it's a supply lead
     if normalized.get("nightly_price") is not None:
         return CandidateType.SUPPLY_LEAD
-    
+
     return CandidateType.PLACE
 
 
@@ -143,7 +143,7 @@ def compute_qualification_score(
     candidate_type: str | None = None,
 ) -> float:
     """Compute overall qualification score (0-100).
-    
+
     For PLACE candidates, uses PLACE_WEIGHTS which zero out price
     (not expected from place-discovery sources like OSM).
     """

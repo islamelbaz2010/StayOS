@@ -1,8 +1,5 @@
 from datetime import UTC, date, datetime
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.listings import repository as listings_repository
@@ -14,6 +11,8 @@ from app.shared.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import repository as bookings_repository
 from .constants import BookingStatus

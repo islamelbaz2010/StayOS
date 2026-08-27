@@ -10,7 +10,6 @@ calls, no real credentials, no Twilio.
 from unittest.mock import AsyncMock
 
 import pytest
-
 from app.auth import services as auth_services
 from app.auth.schemas import OtpSendRequest, OtpVerifyRequest, PowSolution
 from app.shared import redis as redis_state

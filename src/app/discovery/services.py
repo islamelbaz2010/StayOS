@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func, select
@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.discovery.adapters.base import DiscoverySearchConfig, RawCandidate
 from app.discovery.constants import (
     CandidateStatus,
-    ContactStatus,
     DuplicateStatus,
     RunStatus,
 )
@@ -262,7 +261,7 @@ async def run_discovery(
         errors.append(str(exc))
         run.status = RunStatus.FAILED
 
-    run.completed_at = datetime.now(timezone.utc)
+    run.completed_at = datetime.now(UTC)
     run.pages_scanned = pages
     run.candidates_found = new_count + dup_count
     run.new_candidates = new_count

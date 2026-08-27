@@ -20,7 +20,6 @@ Data is subject to Google Maps Platform Terms of Service.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 

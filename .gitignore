@@ -144,6 +144,9 @@ wheels/
 # Do not ignore the Next.js app library
 !apps/web/lib/
 !apps/web/lib/**
+
+# Do not ignore the mobile app source lib (required for EAS Build)
+!apps/mobile/src/lib/
 *.egg-info/
 .installed.cfg
 *.egg

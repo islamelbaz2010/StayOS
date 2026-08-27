@@ -66,7 +66,7 @@ jobs:
 
       - name: Dependency vulnerability scan
         run: |
-          safety check --ignore 64396 --ignore CVE-2024-23342 --ignore SFTY-20260122-20373 --ignore SFTY-20260721-58460 --ignore 84961
+          safety check --ignore 64396 --ignore 64459 --ignore SFTY-20260122-20373 --ignore SFTY-20260721-58460 --ignore 84961
 
       - name: Run Alembic migrations
         env:

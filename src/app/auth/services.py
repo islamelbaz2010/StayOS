@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
@@ -27,6 +28,8 @@ from app.auth.schemas import (
 from app.config import settings
 from app.shared import redis as redis_state
 from app.shared.exceptions import AuthenticationError, StayOSError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 class OtpProviderError(StayOSError):
@@ -409,9 +412,20 @@ async def verify_otp(request: OtpVerifyRequest) -> bool:
     transaction_req_id = await redis_state.redis_client.get(
         _otp_transaction_key(request.phone_number)
     )
+
+    logger.warning(
+        "otp_verify_redis_lookup event=otp_verify_redis_lookup"
+        " transaction_req_id_present=%s",
+        transaction_req_id is not None,
+    )
+
     if not transaction_req_id:
         # No pending Akedly transaction for this phone (never sent, or expired) —
         # from the caller's perspective this is indistinguishable from a wrong code.
+        logger.warning(
+            "otp_verify_failed event=otp_verify_failed"
+            " stage=redis_lookup reason=transaction_req_id_missing"
+        )
         await _increment_rate_limit(f"otp:verify:{request.phone_number}")
         return False
 
@@ -423,14 +437,28 @@ async def verify_otp(request: OtpVerifyRequest) -> bool:
         json_body={"transactionReqID": transaction_req_id, "otp": request.code},
     )
 
-    approved = verify_body.get("status") == "success" and bool(
-        (verify_body.get("data") or {}).get("verified")
+    akedly_status = verify_body.get("status")
+    akedly_verified = bool((verify_body.get("data") or {}).get("verified"))
+    approved = akedly_status == "success" and akedly_verified
+
+    logger.warning(
+        "otp_verify_akedly_result event=otp_verify_akedly_result"
+        " transaction_req_id_present=true"
+        " akedly_status=%s akedly_verified=%s approved=%s",
+        akedly_status, akedly_verified, approved,
     )
-    if approved:
+
+    if not approved:
+        logger.warning(
+            "otp_verify_failed event=otp_verify_failed"
+            " stage=akedly_verify reason=akedly_rejected"
+            " akedly_status=%s akedly_verified=%s",
+            akedly_status, akedly_verified,
+        )
+        await _increment_rate_limit(f"otp:verify:{request.phone_number}")
+    else:
         await _reset_otp_rate_limits(request.phone_number)
         await redis_state.redis_client.delete(_otp_transaction_key(request.phone_number))
-    else:
-        await _increment_rate_limit(f"otp:verify:{request.phone_number}")
 
     return approved
 

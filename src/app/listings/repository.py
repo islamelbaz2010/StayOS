@@ -391,7 +391,7 @@ async def get_host_dashboard_stats(
     )
     revenue = revenue or 0
 
-    total_nights = await session.scalar(
+    total_nights_raw = await session.scalar(
         select(
             func.coalesce(
                 func.sum(
@@ -404,7 +404,7 @@ async def get_host_dashboard_stats(
             Reservation.status == ReservationStatus.CONFIRMED,
         )
     )
-    total_nights = total_nights or 0
+    total_nights: int = total_nights_raw if total_nights_raw is not None else 0  # type: ignore[assignment]
 
     # Approximate available nights over a 365-day horizon for all host units.
     listed_units_count = await session.scalar(

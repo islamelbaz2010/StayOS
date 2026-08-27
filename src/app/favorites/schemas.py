@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -7,7 +9,7 @@ class FavoriteToggleResponse(BaseModel):
 
 
 class FavoriteListResponse(BaseModel):
-    data: list[dict]
+    data: list[dict[str, Any]]
     total: int
 
 

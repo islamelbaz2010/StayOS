@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -389,13 +390,13 @@ async def post_bulk_pricing(
         raise to_http_exception(exc) from exc
 
 
-@router.get("/{unit_id}/similar", response_model=list[dict])
+@router.get("/{unit_id}/similar", response_model=list[dict[str, object]])
 async def get_similar_listings_endpoint(
     unit_id: str,
     limit: int = 6,
     _: None = Depends(listings_rate_limit),
     session: AsyncSession = Depends(get_session),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     try:
         return await get_similar_listings(session, unit_id, limit)
     except StayOSError as exc:

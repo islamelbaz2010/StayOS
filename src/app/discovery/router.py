@@ -1,5 +1,7 @@
 """API router for the supply discovery pipeline."""
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -135,7 +137,7 @@ async def import_candidate(
     request: CandidateImportRequest,
     _: User = Depends(auth_dependencies.require_role("admin")),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> dict[str, Any]:
     unit_id = await discovery_services.import_candidate(
         session,
         candidate_id,
@@ -163,7 +165,7 @@ async def trigger_run(
     if not adapter.is_available():
         raise to_http_exception(StayOSError(f"Source '{source}' is not available (status: {adapter.source_status})"))
 
-    config_dict: dict = {}
+    config_dict: dict[str, Any] = {}
     config_id = request.config_id
 
     if config_id:

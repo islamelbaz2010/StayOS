@@ -16,7 +16,7 @@ from app.discovery.constants import (
 )
 
 # Weights for PLACE candidates (e.g. OSM POIs) — price/bedrooms not expected
-PLACE_WEIGHTS = {
+PLACE_WEIGHTS: dict[str, float] = {
     "geography": 25,
     "property_type": 20,
     "price": 0,       # PLACE sources rarely have price

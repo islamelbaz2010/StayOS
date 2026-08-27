@@ -84,14 +84,14 @@ async def list_candidates(
     count_result = await session.execute(count_stmt)
     total = count_result.scalar_one()
 
-    sort_map = {
+    sort_map: dict[str, Any] = {
         "newest": DiscoveryCandidate.discovered_at.desc(),
         "highest_score": DiscoveryCandidate.qualification_score.desc(),
         "best_completeness": DiscoveryCandidate.data_completeness_score.desc(),
         "source": DiscoveryCandidate.source.asc(),
         "city": DiscoveryCandidate.city.asc(),
     }
-    stmt = stmt.order_by(sort_map.get(sort_by, DiscoveryCandidate.discovered_at.desc()))
+    stmt = stmt.order_by(sort_map.get(sort_by) or DiscoveryCandidate.discovered_at.desc())
     stmt = stmt.limit(limit).offset(offset)
 
     result = await session.execute(stmt)

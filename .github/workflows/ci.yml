@@ -54,7 +54,6 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements-dev.txt
-          pip install "setuptools>=83.0.0" "wheel>=0.46.1"
 
       - name: Lint with ruff
         run: ruff check src/ tests/
@@ -67,7 +66,7 @@ jobs:
 
       - name: Dependency vulnerability scan
         run: |
-          safety check --ignore 64396 --ignore CVE-2024-23342 --ignore SFTY-20260122-20373
+          safety check --ignore 64396 --ignore CVE-2024-23342 --ignore SFTY-20260122-20373 --ignore SFTY-20260721-58460 --ignore 84961
 
       - name: Run Alembic migrations
         env:

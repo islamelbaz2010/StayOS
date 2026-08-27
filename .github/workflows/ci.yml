@@ -71,13 +71,20 @@ jobs:
       - name: Run Alembic migrations
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/stayos_test
-        run: alembic upgrade head
+          REDIS_URL: redis://localhost:6379/1
+        run: |
+          export JWT_PRIVATE_KEY="$(openssl genrsa 2048)"
+          export JWT_PUBLIC_KEY="$(openssl rsa -in <(echo "$JWT_PRIVATE_KEY") -pubout)"
+          alembic upgrade head
 
       - name: Run tests with coverage
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/stayos_test
           REDIS_URL: redis://localhost:6379/1
-        run: pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
+        run: |
+          export JWT_PRIVATE_KEY="$(openssl genrsa 2048)"
+          export JWT_PUBLIC_KEY="$(openssl rsa -in <(echo "$JWT_PRIVATE_KEY") -pubout)"
+          pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
 
       - name: Upload coverage to PR
         uses: actions/github-script@v6

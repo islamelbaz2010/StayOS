@@ -182,8 +182,6 @@ def normalize_candidate(raw: RawCandidate) -> dict[str, Any]:
         city_raw = raw.raw_location
     city = normalize_city(city_raw) if city_raw else None
 
-    governorate = infer_governorate(city)
-
     # Property type: check OSM tourism tag, then payload fields
     tourism = tags.get("tourism") or raw.raw_payload.get("tourism")
     if tourism:

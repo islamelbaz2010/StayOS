@@ -59,7 +59,7 @@ REVIEW_MIN = 60
 LOW_PRIORITY_MIN = 40
 
 # Default scoring weights (sum to 100)
-DEFAULT_WEIGHTS = {
+DEFAULT_WEIGHTS: dict[str, float] = {
     "geography": 20,
     "property_type": 15,
     "price": 15,

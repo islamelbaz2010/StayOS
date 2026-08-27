@@ -16,9 +16,9 @@ from app.availability import router as availability_router
 from app.bookings import router as bookings_router
 from app.config import settings
 from app.database import get_session
-from app.finance import router as finance_router
 from app.discovery import router as discovery_router
 from app.favorites import router as favorites_router
+from app.finance import router as finance_router
 from app.importer import router as import_router
 from app.kyc import router as kyc_router
 from app.listings import router as listings_router

@@ -46,6 +46,7 @@ def coordinate_similarity(
 ) -> float:
     if None in (lat_a, lng_a, lat_b, lng_b):
         return 0.0
+    assert lat_a is not None and lng_a is not None and lat_b is not None and lng_b is not None
     # Rough distance in km using equirectangular approximation
     import math
     x = (lng_b - lng_a) * math.cos(math.radians((lat_a + lat_b) / 2)) * 111

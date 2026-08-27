@@ -1,5 +1,7 @@
 """API router for the supply discovery pipeline."""
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -135,7 +137,7 @@ async def import_candidate(
     request: CandidateImportRequest,
     _: User = Depends(auth_dependencies.require_role("admin")),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> dict[str, Any]:
     unit_id = await discovery_services.import_candidate(
         session,
         candidate_id,
@@ -163,12 +165,13 @@ async def trigger_run(
     if not adapter.is_available():
         raise to_http_exception(StayOSError(f"Source '{source}' is not available (status: {adapter.source_status})"))
 
-    config_dict: dict = {}
+    config_dict: dict[str, Any] = {}
     config_id = request.config_id
 
     if config_id:
-        from app.discovery.models import DiscoveryConfig
         from sqlalchemy import select as sa_select
+
+        from app.discovery.models import DiscoveryConfig
         result = await session.execute(
             sa_select(DiscoveryConfig).where(DiscoveryConfig.id == config_id)
         )
@@ -204,8 +207,9 @@ async def list_runs(
     session: AsyncSession = Depends(get_session),
     limit: int = Query(20, ge=1, le=100),
 ) -> list[DiscoveryRunResponse]:
-    from app.discovery.models import DiscoveryRun
     from sqlalchemy import select as sa_select
+
+    from app.discovery.models import DiscoveryRun
     result = await session.execute(
         sa_select(DiscoveryRun).order_by(DiscoveryRun.created_at.desc()).limit(limit)
     )

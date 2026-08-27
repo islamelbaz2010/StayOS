@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func, select
@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.discovery.adapters.base import DiscoverySearchConfig, RawCandidate
 from app.discovery.constants import (
     CandidateStatus,
-    ContactStatus,
     DuplicateStatus,
     RunStatus,
 )
@@ -85,14 +84,14 @@ async def list_candidates(
     count_result = await session.execute(count_stmt)
     total = count_result.scalar_one()
 
-    sort_map = {
+    sort_map: dict[str, Any] = {
         "newest": DiscoveryCandidate.discovered_at.desc(),
         "highest_score": DiscoveryCandidate.qualification_score.desc(),
         "best_completeness": DiscoveryCandidate.data_completeness_score.desc(),
         "source": DiscoveryCandidate.source.asc(),
         "city": DiscoveryCandidate.city.asc(),
     }
-    stmt = stmt.order_by(sort_map.get(sort_by, DiscoveryCandidate.discovered_at.desc()))
+    stmt = stmt.order_by(sort_map.get(sort_by) or DiscoveryCandidate.discovered_at.desc())
     stmt = stmt.limit(limit).offset(offset)
 
     result = await session.execute(stmt)
@@ -262,7 +261,7 @@ async def run_discovery(
         errors.append(str(exc))
         run.status = RunStatus.FAILED
 
-    run.completed_at = datetime.now(timezone.utc)
+    run.completed_at = datetime.now(UTC)
     run.pages_scanned = pages
     run.candidates_found = new_count + dup_count
     run.new_candidates = new_count

@@ -1,6 +1,7 @@
 """Celery tasks for the supply discovery pipeline."""
 
 import logging
+from typing import Any
 
 from sqlalchemy import select
 
@@ -13,12 +14,12 @@ from app.discovery.services import run_discovery
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(name="app.discovery.tasks.run_scheduled_discovery")
-def run_scheduled_discovery() -> dict:
+@celery_app.task(name="app.discovery.tasks.run_scheduled_discovery")  # type: ignore[misc]
+def run_scheduled_discovery() -> dict[str, Any]:
     """Run discovery for all enabled configs."""
     import asyncio
 
-    async def _run() -> dict:
+    async def _run() -> dict[str, Any]:
         results = []
         async with AsyncSessionLocal() as session:
             stmt = select(DiscoveryConfig).where(DiscoveryConfig.enabled.is_(True))
@@ -79,12 +80,12 @@ def run_scheduled_discovery() -> dict:
     return asyncio.run(_run())
 
 
-@celery_app.task(name="app.discovery.tasks.run_discovery_manual")
-def run_discovery_manual(source: str, config_id: str | None = None) -> dict:
+@celery_app.task(name="app.discovery.tasks.run_discovery_manual")  # type: ignore[misc]
+def run_discovery_manual(source: str, config_id: str | None = None) -> dict[str, Any]:
     """Manually trigger a discovery run for a specific source."""
     import asyncio
 
-    async def _run() -> dict:
+    async def _run() -> dict[str, Any]:
         adapter = registry.get(source)
         if not adapter:
             return {"error": f"Source '{source}' not registered"}
@@ -92,7 +93,7 @@ def run_discovery_manual(source: str, config_id: str | None = None) -> dict:
             return {"error": f"Source '{source}' not available"}
 
         async with AsyncSessionLocal() as session:
-            config_dict: dict = {}
+            config_dict: dict[str, Any] = {}
             if config_id:
                 stmt = select(DiscoveryConfig).where(DiscoveryConfig.id == config_id)
                 result = await session.execute(stmt)

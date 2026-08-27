@@ -63,6 +63,10 @@ async def login_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
     await rate_limit(request, key_prefix="login", limit=10, window_seconds=300)
 
 
+async def otp_challenge_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
+    await rate_limit(request, key_prefix="otp_challenge", limit=20, window_seconds=300)
+
+
 async def otp_send_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
     await rate_limit(request, key_prefix="otp_send", limit=5, window_seconds=300)
 

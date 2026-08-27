@@ -9,6 +9,7 @@ from app.auth.models import User
 from app.database import get_session
 from app.security.rate_limit import (
     login_rate_limit,
+    otp_challenge_rate_limit,
     otp_send_rate_limit,
     otp_verify_rate_limit,
     refresh_rate_limit,
@@ -16,6 +17,19 @@ from app.security.rate_limit import (
 from app.shared.exceptions import StayOSError, to_http_exception
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.get("/otp/challenge", response_model=auth_schemas.OtpChallengeResponse)
+async def get_otp_challenge(
+    _rate_limit: None = Depends(otp_challenge_rate_limit),
+) -> auth_schemas.OtpChallengeResponse:
+    """Proxies Akedly's V1.2 challenge so the mobile client can solve PoW (and
+    obtain a Turnstile token, when required) before calling /otp/send. Keeps
+    AKEDLY_API_KEY and AKEDLY_PIPELINE_ID backend-only."""
+    try:
+        return await auth_services.get_otp_challenge()
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
 
 
 @router.post("/otp/send", response_model=auth_schemas.OtpSendResponse)

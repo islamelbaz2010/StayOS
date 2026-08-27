@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "StayOS",
+    "slug": "stayos-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "stayos",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0F766E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.stayos.mobile"
+    },
+    "android": {
+      "package": "com.stayos.mobile"
+    },
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "04b13a13-9ae5-4bdb-8211-a2b862116bbc"
+      }
+    },
+    "owner": "islamelbaz"
+  }
+}

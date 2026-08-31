@@ -80,7 +80,7 @@ export function BookingScreen() {
     }
 
     try {
-      await createBooking.mutateAsync({
+      const created = await createBooking.mutateAsync({
         unit_id: unitId,
         check_in: toISODate(checkIn),
         check_out: toISODate(checkOut),
@@ -88,7 +88,7 @@ export function BookingScreen() {
         children,
         infants,
       });
-      Alert.alert(t("bookingConfirmed"), "", [
+      Alert.alert(t("bookingConfirmed"), created.status, [
         { text: "OK", onPress: () => navigation.navigate("Trips") },
       ]);
     } catch {

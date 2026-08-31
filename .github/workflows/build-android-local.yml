@@ -13,6 +13,7 @@ jobs:
     timeout-minutes: 60
     env:
       EXPO_PUBLIC_API_URL: https://stayos-demo-production.up.railway.app/api/v1
+      EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
     defaults:
       run:
         working-directory: apps/mobile

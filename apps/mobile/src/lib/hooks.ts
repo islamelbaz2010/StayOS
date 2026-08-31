@@ -31,14 +31,17 @@ export interface SearchParams {
   offset?: number;
 }
 
-export function useSearchListings(params: SearchParams) {
+export function useSearchListings(params: SearchParams, { enabled: externalEnabled = true }: { enabled?: boolean } = {}) {
+  const hasSearchableParam = Object.entries(params).some(
+    ([key, v]) => v !== undefined && v !== "" && key !== "limit"
+  );
   return useQuery({
     queryKey: ["search", params],
     queryFn: async () => {
       const { data } = await api.get<SearchResponse>("/listings", { params });
       return data;
     },
-    enabled: Object.values(params).some((v) => v !== undefined && v !== ""),
+    enabled: externalEnabled && hasSearchableParam,
   });
 }
 
@@ -136,6 +139,7 @@ export function useGuestBookings(status?: string) {
 }
 
 export function useCreateBooking() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: {
       unit_id: string;
@@ -147,6 +151,9 @@ export function useCreateBooking() {
     }) => {
       const { data } = await api.post<Booking>("/bookings", payload);
       return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
     },
   });
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   FlatList,
   Pressable,
@@ -16,7 +16,7 @@ import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { ListingCard } from "../components/ListingCard";
 import { LoadingSpinner, EmptyView, ErrorView } from "../components/States";
-import type { LocationSuggestion } from "../lib/types";
+import type { Listing, LocationSuggestion } from "../lib/types";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -53,8 +53,14 @@ export function SearchScreen() {
     limit: 20,
   };
 
-  const { data: searchResult, isLoading, isError, refetch } = useSearchListings(params);
-  const listings = searchResult?.data || [];
+  const searchEnabled = Boolean(selectedCity) || (debouncedQuery.length > 0 && !showAutocomplete);
+  const { data: searchResult, isLoading, isError, refetch } = useSearchListings(params, { enabled: searchEnabled });
+  const listings: Listing[] = searchResult?.data || [];
+  const currency = listings[0]?.currency;
+  const averagePrice = useMemo(() => {
+    if (listings.length === 0) return null;
+    return Math.round(listings.reduce((sum, l) => sum + l.price, 0) / listings.length);
+  }, [listings]);
 
   const selectSuggestion = (suggestion: LocationSuggestion) => {
     const name = locale === "ar" ? suggestion.canonical_name_ar : suggestion.canonical_name_en;
@@ -146,10 +152,11 @@ export function SearchScreen() {
           </View>
         )}
 
-        {selectedCity && (
+        {(selectedCity || (listings.length > 0 && !showAutocomplete)) && (
           <View style={styles.activeFilter}>
             <Text style={styles.activeFilterText}>
-              {locale === "ar" ? t("search") : ""} {selectedCity}
+              {locale === "ar" ? t("search") : ""} {selectedCity || debouncedQuery}
+              {averagePrice !== null && currency ? ` — ${t("averagePrice")}: ${averagePrice} ${currency} / ${t("perNight")}` : ""}
             </Text>
           </View>
         )}

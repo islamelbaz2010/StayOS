@@ -92,14 +92,15 @@ export function BookingScreen() {
         infants,
       });
       Alert.alert(t("bookingConfirmed"), created.status, [
-        { text: "OK", onPress: () => navigation.navigate("Trips") },
+        { text: "OK", onPress: () => navigation.navigate("Home", { screen: "TripsTab" }) },
       ]);
     } catch (err: any) {
       const data = err?.response?.data;
+      const messageAr = data?.error?.message_ar;
       const message =
-        data?.error?.message_ar ||
-        data?.detail ||
+        (messageAr && messageAr !== t("error") ? messageAr : undefined) ||
         data?.error?.message ||
+        data?.detail ||
         t("error");
       Alert.alert(t("bookingFailed"), message);
     }

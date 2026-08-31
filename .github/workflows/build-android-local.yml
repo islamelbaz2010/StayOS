@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build-android:
-    name: Build Android Debug APK (local Gradle)
+    name: Build Android Release APK (standalone)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
@@ -57,35 +57,39 @@ jobs:
       - name: Expo prebuild for Android
         run: npx expo prebuild --platform android --no-install
 
-      - name: Build debug APK with Gradle
+      - name: Build release APK with Gradle
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
-      - name: Verify APK exists
+      - name: Verify release APK exists and contains JS bundle
         run: |
-          APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+          set -euo pipefail
+          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
           ls -lh "$APK_PATH"
           test -s "$APK_PATH"
+          echo "=== APK contents (JS bundle + assets) ==="
+          unzip -l "$APK_PATH" | grep -E "index.android.bundle|assets/" || true
+          unzip -l "$APK_PATH" | grep -q "index.android.bundle"
 
-      - name: Upload debug APK artifact
+      - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: stayos-debug-apk
-          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: stayos-standalone-release-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Write build summary
         run: |
           {
-            echo "### StayOS Android Debug APK"
+            echo "### StayOS Android Standalone Release APK"
             echo ""
             echo "| Field | Value |"
             echo "|---|---|"
             echo "| Version | 1.0.0 |"
             echo "| Run number | ${{ github.run_number }} |"
             echo "| Commit | ${{ github.sha }} |"
-            echo "| Build | non-EAS / local Gradle |"
+            echo "| Build | non-EAS / local Gradle / release |"
           } >> "$GITHUB_STEP_SUMMARY"

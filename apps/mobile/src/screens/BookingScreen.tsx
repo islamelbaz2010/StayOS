@@ -30,7 +30,10 @@ function formatDate(date: Date | null, locale: string): string {
 
 function toISODate(date: Date | null): string {
   if (!date) return "";
-  return date.toISOString().split("T")[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function addDays(date: Date, days: number): Date {
@@ -91,8 +94,12 @@ export function BookingScreen() {
       Alert.alert(t("bookingConfirmed"), created.status, [
         { text: "OK", onPress: () => navigation.navigate("Trips") },
       ]);
-    } catch {
-      Alert.alert(t("bookingFailed"));
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.error?.message_ar ||
+        err?.response?.data?.error?.message ||
+        t("error");
+      Alert.alert(t("bookingFailed"), message);
     }
   };
 

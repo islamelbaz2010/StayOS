@@ -2,8 +2,9 @@ from datetime import UTC, date, datetime
 
 from app.auth.constants import UserRole
 from app.auth.models import User
+from app.availability import repository as availability_repository
 from app.listings import repository as listings_repository
-from app.listings.constants import UnitStatus
+from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import Unit
 from app.shared.exceptions import (
     AuthorizationError,
@@ -67,17 +68,40 @@ def _assert_guest_capacity(unit: Unit, request: BookingCreate) -> None:
         )
 
 
-async def _assert_no_conflicts(
+async def _assert_availability(
     session: AsyncSession,
-    unit_id: str,
-    check_in: date,
-    check_out: date,
-    exclude_booking_id: str | None = None,
+    unit: Unit,
+    request: BookingCreate,
 ) -> None:
-    overlaps = await bookings_repository.list_overlapping_bookings(
-        session, unit_id, check_in, check_out, exclude_booking_id
+    listing = unit.listing
+    if listing is not None:
+        nights = (request.check_out - request.check_in).days
+        if nights < listing.min_nights:
+            raise ValidationError(
+                f"Stay must be at least {listing.min_nights} nights"
+            )
+        if nights > listing.max_nights:
+            raise ValidationError(
+                f"Stay cannot exceed {listing.max_nights} nights"
+            )
+
+    calendar_rules = await availability_repository.get_calendar_rules_for_unit(
+        session, unit.id, request.check_in, request.check_out
     )
-    if overlaps:
+    for rule in calendar_rules:
+        if rule.status in (CalendarStatus.BLOCKED, CalendarStatus.BOOKED, CalendarStatus.HOLD):
+            raise ConflictError("Requested dates are not available")
+
+    accepted_bookings = await availability_repository.get_accepted_bookings_for_unit(
+        session, unit.id, request.check_in, request.check_out
+    )
+    if accepted_bookings:
+        raise ConflictError("Requested dates are not available")
+
+    confirmed_reservations = await availability_repository.get_confirmed_reservations_for_unit(
+        session, unit.id, request.check_in, request.check_out
+    )
+    if confirmed_reservations:
         raise ConflictError("Requested dates are not available")
 
 
@@ -143,7 +167,7 @@ async def create_booking(
         raise ValidationError("Unit is not available for booking")
 
     _assert_guest_capacity(unit, request)
-    await _assert_no_conflicts(session, request.unit_id, request.check_in, request.check_out)
+    await _assert_availability(session, unit, request)
 
     booking = await bookings_repository.create_booking(
         session,

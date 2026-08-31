@@ -32,7 +32,9 @@ async def get_accepted_bookings_for_unit(
         select(Booking)
         .where(
             Booking.unit_id == unit_id,
-            Booking.status == BookingStatus.ACCEPTED,
+            Booking.status.in_(
+                (BookingStatus.ACCEPTED, BookingStatus.CONFIRMED, BookingStatus.COMPLETED)
+            ),
             Booking.check_in < check_out,
             Booking.check_out > check_in,
         )
@@ -51,7 +53,14 @@ async def get_confirmed_reservations_for_unit(
         select(Reservation)
         .where(
             Reservation.unit_id == unit_id,
-            Reservation.status == ReservationStatus.CONFIRMED,
+            Reservation.status.in_(
+                (
+                    ReservationStatus.CONFIRMED,
+                    ReservationStatus.CHECKED_IN,
+                    ReservationStatus.CHECKED_OUT,
+                    ReservationStatus.COMPLETED,
+                )
+            ),
             Reservation.check_in < check_out,
             Reservation.check_out > check_in,
         )

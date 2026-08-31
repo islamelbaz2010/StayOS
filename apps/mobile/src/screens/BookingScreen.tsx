@@ -95,9 +95,11 @@ export function BookingScreen() {
         { text: "OK", onPress: () => navigation.navigate("Trips") },
       ]);
     } catch (err: any) {
+      const data = err?.response?.data;
       const message =
-        err?.response?.data?.error?.message_ar ||
-        err?.response?.data?.error?.message ||
+        data?.error?.message_ar ||
+        data?.detail ||
+        data?.error?.message ||
         t("error");
       Alert.alert(t("bookingFailed"), message);
     }

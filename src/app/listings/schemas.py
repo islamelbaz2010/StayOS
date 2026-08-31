@@ -212,6 +212,14 @@ class ListingSearchResponse(BaseModel):
     pagination: PaginationInfo
 
 
+class HostProfileResponse(BaseModel):
+    id: str
+    display_name: str | None = None
+    kyc_status: str | None = None
+    joined_at: str | None = None
+    listings: list[ListingSearchResult]
+
+
 class CalendarDay(BaseModel):
     date: date
     status: str

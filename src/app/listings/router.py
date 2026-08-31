@@ -18,6 +18,7 @@ from .schemas import (
     CalendarRuleResponse,
     CalendarRuleUpdate,
     HostDashboardStats,
+    HostProfileResponse,
     HostReservationCalendarResponse,
     ListingCreate,
     ListingResponse,
@@ -44,6 +45,7 @@ from .services import (
     get_host_dashboard,
     get_host_listing_detail,
     get_host_listings,
+    get_host_profile,
     get_host_reservation_calendar,
     get_listing_detail,
     get_pending_listings,
@@ -82,6 +84,18 @@ async def post_listing(
 ) -> ListingResponse:
     try:
         return await create_listing(session, user, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/profiles/host/{host_id}", response_model=HostProfileResponse)
+async def get_host_profile_endpoint(
+    host_id: str,
+    _: None = Depends(listings_rate_limit),
+    session: AsyncSession = Depends(get_session),
+) -> HostProfileResponse:
+    try:
+        return await get_host_profile(session, host_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

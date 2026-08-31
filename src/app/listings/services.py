@@ -26,6 +26,7 @@ from .schemas import (
     CalendarRuleResponse,
     CalendarRuleUpdate,
     HostDashboardStats,
+    HostProfileResponse,
     HostReservationCalendarItem,
     HostReservationCalendarResponse,
     ListingCreate,
@@ -889,3 +890,39 @@ async def delete_photo(
         await listings_repository.clear_listing_cover_photo(session, unit_id, photo_id)
 
     await listings_repository.delete_photo(session, photo)
+
+
+async def get_host_profile(
+    session: AsyncSession, host_id: str
+) -> HostProfileResponse:
+    host = await _fetch_host(session, host_id)
+    if host is None:
+        raise NotFoundError("Host not found")
+
+    lat_col = func.ST_Y(Unit.coordinates).label("lat")
+    lng_col = func.ST_X(Unit.coordinates).label("lng")
+
+    result = await session.execute(
+        select(Unit, UnitListing, lat_col, lng_col)
+        .options(selectinload(Unit.photos))
+        .join(UnitListing, Unit.id == UnitListing.unit_id)
+        .where(
+            Unit.host_id == host_id,
+            Unit.status == UnitStatus.LISTED,
+        )
+        .order_by(Unit.created_at.desc())
+    )
+    rows = result.all()
+
+    listings = [
+        ListingSearchResult(**_to_search_result(unit, listing, float(lat), float(lng), host))
+        for unit, listing, lat, lng in rows
+    ]
+
+    return HostProfileResponse(
+        id=host.id,
+        display_name=host.display_name,
+        kyc_status=host.kyc_status,
+        joined_at=str(host.created_at) if host.created_at else None,
+        listings=listings,
+    )

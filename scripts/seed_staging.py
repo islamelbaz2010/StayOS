@@ -116,6 +116,24 @@ async def upsert_reservation(session: AsyncSession) -> None:
         },
     )
 
+    await session.execute(
+        text("""
+            INSERT INTO pms.calendar_rules (
+                id, unit_id, date_from, date_to, status, reservation_id, block_type, created_at, updated_at
+            ) VALUES (
+                :id, :unit_id, :check_in, :check_out, 'BOOKED', :reservation_id, NULL, now(), now()
+            )
+            ON CONFLICT (id) DO UPDATE SET updated_at = now()
+        """),
+        {
+            "id": new_id(),
+            "unit_id": UNIT_IDS[0],
+            "check_in": check_in,
+            "check_out": check_out,
+            "reservation_id": RESERVATION_ID,
+        },
+    )
+
 
 async def seed() -> None:
     async with AsyncSessionLocal() as session:

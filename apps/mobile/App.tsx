@@ -20,11 +20,13 @@ import { TripsScreen } from "./src/screens/TripsScreen";
 import { AccountScreen } from "./src/screens/AccountScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { BookingScreen } from "./src/screens/BookingScreen";
+import { HostProfileScreen } from "./src/screens/HostProfileScreen";
 
 export type RootStackParamList = {
   Home: undefined;
   Search: { city?: string } | undefined;
   ListingDetail: { unitId: string };
+  HostProfile: { hostId: string };
   Booking: { unitId: string; title: string; price: number; currency: string; maxGuests: number };
   Login: { nextScreen?: keyof RootStackParamList; nextParams?: any } | undefined;
   Favorites: undefined;
@@ -128,6 +130,11 @@ function AppContent() {
           name="Booking"
           component={BookingScreen}
           options={{ title: "Booking" }}
+        />
+        <Stack.Screen
+          name="HostProfile"
+          component={HostProfileScreen}
+          options={{ title: "Host Profile" }}
         />
         <Stack.Screen
           name="Login"

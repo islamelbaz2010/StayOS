@@ -88,3 +88,11 @@ export interface User {
   role: string;
   kyc_status: string;
 }
+
+export interface HostProfile {
+  id: string;
+  display_name: string;
+  kyc_status?: string | null;
+  joined_at?: string | null;
+  listings: Listing[];
+}

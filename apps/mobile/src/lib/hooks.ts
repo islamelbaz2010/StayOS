@@ -3,6 +3,7 @@ import { api } from "./api";
 import { useAuth } from "./AuthContext";
 import type {
   Booking,
+  HostProfile,
   Listing,
   ListingDetail,
   LocationSuggestion,
@@ -94,6 +95,17 @@ export function useLocationAutocomplete(query: string) {
       return data.suggestions;
     },
     enabled: query.length >= 2,
+  });
+}
+
+export function useHostProfile(hostId: string) {
+  return useQuery({
+    queryKey: ["host", hostId],
+    queryFn: async () => {
+      const { data } = await api.get<HostProfile>(`/listings/profiles/host/${hostId}`);
+      return data;
+    },
+    enabled: Boolean(hostId),
   });
 }
 

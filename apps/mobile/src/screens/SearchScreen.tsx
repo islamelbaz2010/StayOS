@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   FlatList,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -9,7 +10,7 @@ import {
 } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useSearchListings, useLocationAutocomplete, useToggleFavorite, useFavorites } from "../lib/hooks";
 import { useAuth } from "../lib/AuthContext";
 import { useLocale } from "../lib/LocaleContext";
@@ -21,6 +22,33 @@ import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SearchRoute = RouteProp<RootStackParamList, "Search">;
+
+function getMapRegion(listings: Listing[]) {
+  const fallback = { latitude: 30.0444, longitude: 31.2357, latitudeDelta: 0.5, longitudeDelta: 0.5 };
+  if (listings.length === 0) return fallback;
+
+  const lats = listings.map((l) => l.lat);
+  const lngs = listings.map((l) => l.lng);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const latDelta = Math.max(0.02, (maxLat - minLat) * 1.4);
+  const lngDelta = Math.max(0.02, (maxLng - minLng) * 1.4);
+
+  return {
+    latitude: (minLat + maxLat) / 2,
+    longitude: (minLng + maxLng) / 2,
+    latitudeDelta: latDelta,
+    longitudeDelta: lngDelta,
+  };
+}
+
+function getAveragePrice(listings: Listing[]) {
+  if (listings.length === 0) return 0;
+  const total = listings.reduce((sum, l) => sum + (l.price || 0), 0);
+  return Math.round(total / listings.length);
+}
 
 export function SearchScreen() {
   const { locale, t } = useLocale();
@@ -56,11 +84,6 @@ export function SearchScreen() {
   const searchEnabled = Boolean(selectedCity) || (debouncedQuery.length > 0 && !showAutocomplete);
   const { data: searchResult, isLoading, isError, refetch } = useSearchListings(params, { enabled: searchEnabled });
   const listings: Listing[] = searchResult?.data || [];
-  const currency = listings[0]?.currency;
-  const averagePrice = useMemo(() => {
-    if (listings.length === 0) return null;
-    return Math.round(listings.reduce((sum, l) => sum + l.price, 0) / listings.length);
-  }, [listings]);
 
   const selectSuggestion = (suggestion: LocationSuggestion) => {
     const name = locale === "ar" ? suggestion.canonical_name_ar : suggestion.canonical_name_en;
@@ -152,11 +175,10 @@ export function SearchScreen() {
           </View>
         )}
 
-        {(selectedCity || (listings.length > 0 && !showAutocomplete)) && (
+        {selectedCity && (
           <View style={styles.activeFilter}>
             <Text style={styles.activeFilterText}>
-              {locale === "ar" ? t("search") : ""} {selectedCity || debouncedQuery}
-              {averagePrice !== null && currency ? ` — ${t("averagePrice")}: ${averagePrice} ${currency} / ${t("perNight")}` : ""}
+              {locale === "ar" ? t("search") : ""} {selectedCity}
             </Text>
           </View>
         )}
@@ -170,24 +192,34 @@ export function SearchScreen() {
         <EmptyView title={t("noResults")} subtitle={t("tryDifferentSearch")} />
       ) : viewMode === "map" ? (
         hasMapKey ? (
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: listings[0]?.lat || 30.0444,
-              longitude: listings[0]?.lng || 31.2357,
-              latitudeDelta: 0.1,
-              longitudeDelta: 0.1,
-            }}
-          >
-            {listings.map((listing: any) => (
-              <Marker
-                key={listing.id}
-                coordinate={{ latitude: listing.lat, longitude: listing.lng }}
-                title={listing.title}
-                onPress={() => goToDetail(listing.id)}
-              />
-            ))}
-          </MapView>
+          <View style={styles.mapContainer}>
+            <MapView
+              style={styles.map}
+              provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+              initialRegion={getMapRegion(listings)}
+            >
+              {listings.map((listing: Listing) => (
+                <Marker
+                  key={listing.id}
+                  coordinate={{ latitude: listing.lat, longitude: listing.lng }}
+                  onPress={() => goToDetail(listing.id)}
+                >
+                  <View style={styles.priceMarker}>
+                    <Text style={styles.priceMarkerText}>
+                      {listing.price} {listing.currency}
+                    </Text>
+                  </View>
+                </Marker>
+              ))}
+            </MapView>
+            {listings.length > 0 && (
+              <View style={styles.averagePill}>
+                <Text style={styles.averagePillText}>
+                  {t("avgPriceInResults")}: {getAveragePrice(listings)} {listings[0]?.currency}
+                </Text>
+              </View>
+            )}
+          </View>
         ) : (
           <View style={styles.map}>
             <EmptyView title={t("noMapKey")} />
@@ -307,7 +339,45 @@ const styles = StyleSheet.create({
   list: {
     padding: spacing.lg,
   },
+  mapContainer: {
+    flex: 1,
+    position: "relative",
+  },
   map: {
     flex: 1,
+  },
+  priceMarker: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.white,
+    minWidth: 60,
+    alignItems: "center",
+  },
+  priceMarkerText: {
+    color: colors.white,
+    fontSize: fontSize.sm,
+    fontWeight: "700",
+  },
+  averagePill: {
+    position: "absolute",
+    top: spacing.lg,
+    alignSelf: "center",
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  averagePillText: {
+    fontSize: fontSize.sm,
+    fontWeight: "700",
+    color: colors.text,
   },
 });

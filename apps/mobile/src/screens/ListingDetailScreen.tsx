@@ -61,6 +61,12 @@ export function ListingDetailScreen() {
     }
   };
 
+  const handleHostPress = () => {
+    if (listing.host_id) {
+      navigation.navigate("HostProfile", { hostId: listing.host_id });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -104,13 +110,13 @@ export function ListingDetailScreen() {
           </View>
 
           {listing.host_display_name && (
-            <View style={styles.hostRow}>
+            <Pressable style={styles.hostRow} onPress={handleHostPress}>
               <Text style={styles.hostLabel}>{t("profile")}: </Text>
               <Text style={styles.hostName}>{listing.host_display_name}</Text>
               {listing.host_kyc_status === "verified" && (
                 <Text style={styles.verifiedBadge}> ✓ {t("verified")}</Text>
               )}
-            </View>
+            </Pressable>
           )}
 
           <Section title={t("description")}>

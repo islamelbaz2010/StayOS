@@ -43,13 +43,19 @@ jobs:
           unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
           mv /tmp/cmdline-tools/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
           yes | sdkmanager --licenses
           sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Patch ExpoModulesCorePlugin for Gradle 8 compatibility
+        run: |
+          sed -i "s/from components\.release/if (components.findByName('release')) { from components.findByName('release') }/g" node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
 
       - name: Expo prebuild for Android
         run: npx expo prebuild --platform android --no-install

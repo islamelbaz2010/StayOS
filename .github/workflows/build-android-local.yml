@@ -2,9 +2,6 @@ name: Mobile Android APK Build (non-EAS)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - release/test-apk-build
 
 permissions:
   contents: read

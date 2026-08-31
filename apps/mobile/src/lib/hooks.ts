@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, hasTokens } from "./api";
+import { api } from "./api";
+import { useAuth } from "./AuthContext";
 import type {
   Booking,
   Listing,
@@ -94,12 +95,14 @@ export function useLocationAutocomplete(query: string) {
 }
 
 export function useFavorites() {
+  const { isAuthenticated } = useAuth();
   return useQuery({
     queryKey: ["favorites"],
     queryFn: async () => {
       const { data } = await api.get<{ data: Listing[]; total: number }>("/favorites");
       return data;
     },
+    enabled: isAuthenticated,
   });
 }
 
@@ -119,6 +122,7 @@ export function useToggleFavorite() {
 }
 
 export function useGuestBookings(status?: string) {
+  const { isAuthenticated } = useAuth();
   return useQuery({
     queryKey: ["bookings", status],
     queryFn: async () => {
@@ -127,6 +131,7 @@ export function useGuestBookings(status?: string) {
       });
       return data;
     },
+    enabled: isAuthenticated,
   });
 }
 
@@ -147,13 +152,14 @@ export function useCreateBooking() {
 }
 
 export function useMe() {
+  const { isAuthenticated } = useAuth();
   return useQuery({
     queryKey: ["me"],
     queryFn: async () => {
       const { data } = await api.get<User>("/auth/me");
       return data;
     },
-    enabled: hasTokens(),
+    enabled: isAuthenticated,
     retry: false,
   });
 }

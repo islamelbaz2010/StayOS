@@ -3,6 +3,7 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MapView, { Marker } from "react-native-maps";
 import { useListingDetail, useListingPhotos, useSimilarListings, useToggleFavorite, useFavorites, useCreateBooking } from "../lib/hooks";
+import { useAuth } from "../lib/AuthContext";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, ErrorView, EmptyView } from "../components/States";
@@ -16,6 +17,7 @@ export function ListingDetailScreen() {
   const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
   const route = useRoute<DetailRoute>();
+  const { isAuthenticated } = useAuth();
   const unitId = route.params?.unitId || "";
   const hasMapKey = Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY);
 
@@ -43,7 +45,20 @@ export function ListingDetailScreen() {
       : [];
 
   const handleBook = () => {
+    if (!isAuthenticated) {
+      navigation.navigate("Login", {
+        nextScreen: "Booking",
+        nextParams: { unitId, title, price: listing.price, currency: listing.currency, maxGuests: listing.max_guests },
+      });
+      return;
+    }
     navigation.navigate("Booking", { unitId, title, price: listing.price, currency: listing.currency, maxGuests: listing.max_guests });
+  };
+
+  const handleToggleFavorite = () => {
+    if (isAuthenticated) {
+      toggleFav.mutate(unitId);
+    }
   };
 
   return (
@@ -69,7 +84,7 @@ export function ListingDetailScreen() {
           )}
           <Pressable
             style={styles.heartButton}
-            onPress={() => toggleFav.mutate(unitId)}
+            onPress={handleToggleFavorite}
             hitSlop={12}
           >
             <Text style={styles.heart}>{isFavorite ? "♥" : "♡"}</Text>

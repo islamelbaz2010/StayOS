@@ -3,8 +3,9 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMe } from "../lib/hooks";
+import { useAuth } from "../lib/AuthContext";
 import { useLocale } from "../lib/LocaleContext";
-import { api, clearTokens, getRefreshToken } from "../lib/api";
+import { api, getRefreshToken } from "../lib/api";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner } from "../components/States";
 import type { RootStackParamList } from "../../App";
@@ -15,9 +16,10 @@ export function AccountScreen() {
   const { locale, setLocale, t } = useLocale();
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
-  const { data: user, isLoading, isFetching } = useMe();
+  const { isAuthenticated, logout } = useAuth();
+  const { data: user, isLoading } = useMe();
 
-  if (!isFetching && !user) {
+  if (!isAuthenticated) {
     return (
       <View style={styles.container}>
         <Pressable
@@ -30,7 +32,7 @@ export function AccountScreen() {
     );
   }
 
-  if (!user) return <LoadingSpinner />;
+  if (isLoading || !user) return <LoadingSpinner />;
 
   const handleLogout = async () => {
     try {
@@ -39,7 +41,7 @@ export function AccountScreen() {
         await api.post("/auth/logout", { refresh_token: refreshToken }).catch(() => {});
       }
     } finally {
-      await clearTokens();
+      await logout();
       queryClient.removeQueries({ queryKey: ["me"] });
       queryClient.removeQueries({ queryKey: ["favorites"] });
       queryClient.removeQueries({ queryKey: ["bookings"] });

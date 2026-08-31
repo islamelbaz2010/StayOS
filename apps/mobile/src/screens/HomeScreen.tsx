@@ -6,7 +6,7 @@ import { api } from "../lib/api";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { ListingCard } from "../components/ListingCard";
-import { LoadingSpinner } from "../components/States";
+import { LoadingSpinner, ErrorView, EmptyView } from "../components/States";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -27,7 +27,7 @@ export function HomeScreen() {
   const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
 
-  const { data: featured, isLoading } = useQuery({
+  const { data: featured, isLoading, isError, refetch } = useQuery({
     queryKey: ["featured"],
     queryFn: async () => {
       const { data } = await api.get<{ data: any[] }>("/listings", {
@@ -77,6 +77,10 @@ export function HomeScreen() {
         <Text style={styles.sectionTitle}>{t("featuredListings")}</Text>
         {isLoading ? (
           <LoadingSpinner />
+        ) : isError ? (
+          <ErrorView message={t("error")} onRetry={() => refetch()} />
+        ) : featured?.length === 0 ? (
+          <EmptyView title={t("noResults")} subtitle={t("tryDifferentSearch")} />
         ) : (
           featured?.map((listing: any) => (
             <ListingCard key={listing.id} listing={listing} onPress={goToDetail} />

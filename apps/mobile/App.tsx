@@ -8,7 +8,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LocaleProvider, useLocale } from "./src/lib/LocaleContext";
+import { AuthProvider, useAuth } from "./src/lib/AuthContext";
 import { colors } from "./src/lib/theme";
+import { LoadingSpinner } from "./src/components/States";
 
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { SearchScreen } from "./src/screens/SearchScreen";
@@ -24,7 +26,7 @@ export type RootStackParamList = {
   Search: { city?: string } | undefined;
   ListingDetail: { unitId: string };
   Booking: { unitId: string; title: string; price: number; currency: string; maxGuests: number };
-  Login: undefined;
+  Login: { nextScreen?: keyof RootStackParamList; nextParams?: any } | undefined;
   Favorites: undefined;
   Trips: undefined;
   Account: undefined;
@@ -84,6 +86,11 @@ function HomeTabs() {
 
 function AppContent() {
   const { isRTL } = useLocale();
+  const { isHydrated } = useAuth();
+
+  if (!isHydrated) {
+    return <LoadingSpinner />;
+  }
 
   if (isRTL && !I18nManager.isRTL) {
     I18nManager.forceRTL(true);
@@ -137,8 +144,10 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <LocaleProvider>
-          <AppContent />
-          <StatusBar style="auto" />
+          <AuthProvider>
+            <AppContent />
+            <StatusBar style="auto" />
+          </AuthProvider>
         </LocaleProvider>
       </SafeAreaProvider>
     </QueryClientProvider>

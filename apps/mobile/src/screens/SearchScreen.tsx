@@ -11,10 +11,11 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MapView, { Marker } from "react-native-maps";
 import { useSearchListings, useLocationAutocomplete, useToggleFavorite, useFavorites } from "../lib/hooks";
+import { useAuth } from "../lib/AuthContext";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { ListingCard } from "../components/ListingCard";
-import { LoadingSpinner, EmptyView } from "../components/States";
+import { LoadingSpinner, EmptyView, ErrorView } from "../components/States";
 import type { LocationSuggestion } from "../lib/types";
 import type { RootStackParamList } from "../../App";
 
@@ -25,6 +26,7 @@ export function SearchScreen() {
   const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
   const route = useRoute<SearchRoute>();
+  const { isAuthenticated } = useAuth();
   const initialCity = route.params?.city;
 
   const [query, setQuery] = useState(initialCity || "");
@@ -51,7 +53,7 @@ export function SearchScreen() {
     limit: 20,
   };
 
-  const { data: searchResult, isLoading } = useSearchListings(params);
+  const { data: searchResult, isLoading, isError, refetch } = useSearchListings(params);
   const listings = searchResult?.data || [];
 
   const selectSuggestion = (suggestion: LocationSuggestion) => {
@@ -71,6 +73,12 @@ export function SearchScreen() {
 
   const goToDetail = (unitId: string) => {
     navigation.navigate("ListingDetail", { unitId });
+  };
+
+  const handleToggleFavorite = (unitId: string) => {
+    if (isAuthenticated) {
+      toggleFav.mutate(unitId);
+    }
   };
 
   const shouldShowSuggestions =
@@ -149,6 +157,8 @@ export function SearchScreen() {
 
       {isLoading ? (
         <LoadingSpinner />
+      ) : isError ? (
+        <ErrorView message={t("error")} onRetry={() => refetch()} />
       ) : listings.length === 0 ? (
         <EmptyView title={t("noResults")} subtitle={t("tryDifferentSearch")} />
       ) : viewMode === "map" ? (
@@ -185,7 +195,7 @@ export function SearchScreen() {
               listing={item}
               onPress={goToDetail}
               isFavorite={favoriteIds.has(item.id)}
-              onToggleFavorite={(id) => toggleFav.mutate(id)}
+              onToggleFavorite={isAuthenticated ? handleToggleFavorite : undefined}
             />
           )}
           contentContainerStyle={styles.list}

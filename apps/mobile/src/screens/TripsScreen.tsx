@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useGuestBookings } from "../lib/hooks";
+import { useAuth } from "../lib/AuthContext";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, EmptyView } from "../components/States";
@@ -13,9 +14,24 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function TripsScreen() {
   const { t } = useLocale();
   const navigation = useNavigation<Nav>();
+  const { isAuthenticated } = useAuth();
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
 
   const { data: bookings, isLoading } = useGuestBookings();
+
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.container}>
+        <EmptyView title={t("loginRequired")} subtitle={t("loginToViewTrips")} />
+        <Pressable
+          style={styles.loginButton}
+          onPress={() => navigation.navigate("Login")}
+        >
+          <Text style={styles.loginButtonText}>{t("login")}</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -84,6 +100,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    padding: spacing.lg,
+    justifyContent: "center",
   },
   tabs: {
     flexDirection: "row",
@@ -142,5 +160,19 @@ const styles = StyleSheet.create({
   bookingGuests: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
+  },
+  loginButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.md,
+    alignItems: "center",
+    alignSelf: "center",
+    marginTop: spacing.lg,
+  },
+  loginButtonText: {
+    color: colors.white,
+    fontSize: fontSize.md,
+    fontWeight: "700",
   },
 });

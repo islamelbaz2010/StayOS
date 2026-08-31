@@ -1,22 +1,29 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, Alert } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AkedlyTurnstileUnsupportedError, resolveOtpProof } from "../lib/akedlyShield";
-import { api, setTokens } from "../lib/api";
+import { api } from "../lib/api";
+import { useAuth } from "../lib/AuthContext";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+type LoginRoute = RouteProp<RootStackParamList, "Login">;
 
 export function LoginScreen() {
   const { t } = useLocale();
   const navigation = useNavigation<Nav>();
+  const route = useRoute<LoginRoute>();
+  const { login } = useAuth();
   const [phone_number, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [loading, setLoading] = useState(false);
+
+  const nextScreen = route.params?.nextScreen;
+  const nextParams = route.params?.nextParams;
 
   const handleSendOtp = async () => {
     if (!phone_number || phone_number.length < 10) {
@@ -25,14 +32,14 @@ export function LoginScreen() {
     }
     setLoading(true);
     try {
-      // Solves Akedly's V1.2 Proof-of-Work challenge on-device via the official
-      // @akedly/shield package before sending — the user never sees this step.
       const proof = await resolveOtpProof();
       await api.post("/auth/otp/send", { phone_number, ...proof });
       setStep("otp");
     } catch (err: any) {
       if (err instanceof AkedlyTurnstileUnsupportedError) {
         Alert.alert(t("error"), err.message);
+      } else if (!err.response) {
+        Alert.alert(t("error"), t("networkError"));
       } else {
         const message = err?.response?.data?.error?.message_ar || err?.response?.data?.error?.message || t("error");
         Alert.alert(t("error"), message);
@@ -50,11 +57,19 @@ export function LoginScreen() {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/otp/verify", { phone_number, code: otp });
-      await setTokens(data.access_token, data.refresh_token);
-      navigation.navigate("Home");
+      await login(data.access_token, data.refresh_token);
+      if (nextScreen) {
+        navigation.navigate(nextScreen as any, nextParams);
+      } else {
+        navigation.navigate("Home");
+      }
     } catch (err: any) {
-      const message = err?.response?.data?.error?.message_ar || err?.response?.data?.error?.message || t("error");
-      Alert.alert(t("error"), message);
+      if (!err.response) {
+        Alert.alert(t("error"), t("networkError"));
+      } else {
+        const message = err?.response?.data?.error?.message_ar || err?.response?.data?.error?.message || t("error");
+        Alert.alert(t("error"), message);
+      }
     } finally {
       setLoading(false);
     }

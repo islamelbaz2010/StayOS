@@ -2,9 +2,9 @@ from datetime import UTC, date, datetime
 
 from app.auth.constants import UserRole
 from app.auth.models import User
-from app.availability import repository as availability_repository
+from app.availability.services import assert_availability_for_range
 from app.listings import repository as listings_repository
-from app.listings.constants import CalendarStatus, UnitStatus
+from app.listings.constants import UnitStatus
 from app.listings.models import Unit
 from app.shared.exceptions import (
     AuthorizationError,
@@ -52,57 +52,12 @@ def _assert_guest(user: User) -> None:
         raise AuthorizationError("Only guests can create bookings")
 
 
-def _assert_booking_dates(check_in: date, check_out: date) -> None:
-    today = datetime.now(UTC).date()
-    if check_in < today:
-        raise ValidationError("check_in cannot be in the past")
-    if check_out <= check_in:
-        raise ValidationError("check_out must be after check_in")
-
-
 def _assert_guest_capacity(unit: Unit, request: BookingCreate) -> None:
     total_guests = request.adults + request.children + request.infants
     if total_guests > unit.max_guests:
         raise ValidationError(
             f"This unit accommodates a maximum of {unit.max_guests} guests"
         )
-
-
-async def _assert_availability(
-    session: AsyncSession,
-    unit: Unit,
-    request: BookingCreate,
-) -> None:
-    listing = unit.listing
-    if listing is not None:
-        nights = (request.check_out - request.check_in).days
-        if nights < listing.min_nights:
-            raise ValidationError(
-                f"Stay must be at least {listing.min_nights} nights"
-            )
-        if nights > listing.max_nights:
-            raise ValidationError(
-                f"Stay cannot exceed {listing.max_nights} nights"
-            )
-
-    calendar_rules = await availability_repository.get_calendar_rules_for_unit(
-        session, unit.id, request.check_in, request.check_out
-    )
-    for rule in calendar_rules:
-        if rule.status in (CalendarStatus.BLOCKED, CalendarStatus.BOOKED, CalendarStatus.HOLD):
-            raise ConflictError("Requested dates are not available")
-
-    accepted_bookings = await availability_repository.get_accepted_bookings_for_unit(
-        session, unit.id, request.check_in, request.check_out
-    )
-    if accepted_bookings:
-        raise ConflictError("Requested dates are not available")
-
-    confirmed_reservations = await availability_repository.get_confirmed_reservations_for_unit(
-        session, unit.id, request.check_in, request.check_out
-    )
-    if confirmed_reservations:
-        raise ConflictError("Requested dates are not available")
 
 
 def _assert_authorized_to_view(booking: Booking, user: User) -> None:
@@ -158,16 +113,19 @@ async def create_booking(
     session: AsyncSession, user: User, request: BookingCreate
 ) -> BookingResponse:
     _assert_guest(user)
-    _assert_booking_dates(request.check_in, request.check_out)
 
     unit = await listings_repository.get_unit_with_listing(session, request.unit_id)
     if unit is None:
         raise NotFoundError("Unit not found")
-    if unit.status != UnitStatus.LISTED:
-        raise ValidationError("Unit is not available for booking")
+
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
 
     _assert_guest_capacity(unit, request)
-    await _assert_availability(session, unit, request)
+    await assert_availability_for_range(
+        session, unit, listing, request.check_in, request.check_out
+    )
 
     booking = await bookings_repository.create_booking(
         session,

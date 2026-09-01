@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.config import settings
+from app.availability import services as availability_services
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
@@ -493,29 +494,23 @@ async def get_availability(
     if listing is None:
         raise NotFoundError("Listing not found")
 
-    rules = await listings_repository.get_calendar_rules_in_range(
-        session, unit_id, check_in, check_out
+    days = await availability_services.get_unit_availability(
+        session, unit_id, check_in, check_out, listing=listing
     )
-
-    days: list[CalendarDay] = []
-    current = check_in
-    while current < check_out:
-        rule = pricing.find_rule_for_day(rules, current)
-        status = str(rule.status) if rule else str(CalendarStatus.AVAILABLE)
-        block_type = rule.block_type if rule else None
-        price = pricing.get_day_price(listing, rule, current)
-        days.append(
-            CalendarDay(
-                date=current, status=status, block_type=block_type, price_egp=price
-            )
-        )
-        current += timedelta(days=1)
 
     return AvailabilityResponse(
         unit_id=unit_id,
         check_in=check_in,
         check_out=check_out,
-        days=days,
+        days=[
+            CalendarDay(
+                date=day.date,
+                status=day.status,
+                block_type=day.block_type,
+                price_egp=day.price_egp or 0,
+            )
+            for day in days
+        ],
     )
 
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -6,52 +6,101 @@ import {
   Text,
   View,
   Alert,
-  Platform,
+  FlatList,
 } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { useCreateBooking } from "../lib/hooks";
+import { useCreateBooking, useAvailability } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
+import type { CalendarDay } from "../lib/types";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type BookingRoute = RouteProp<RootStackParamList, "Booking">;
 
-function formatDate(date: Date | null, locale: string): string {
-  if (!date) return "";
-  return date.toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+const MS_PER_DAY = 86_400_000;
+
+function stripTime(d: Date): Date {
+  const stripped = new Date(d);
+  stripped.setHours(0, 0, 0, 0);
+  return stripped;
+}
+
+function addDays(d: Date, days: number): Date {
+  const result = new Date(d);
+  result.setDate(result.getDate() + days);
+  return stripTime(result);
+}
+
+function dateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseKey(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return stripTime(new Date(y, m - 1, d));
+}
+
+function isBefore(a: Date, b: Date): boolean {
+  return a.getTime() < b.getTime();
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getTime() === b.getTime();
+}
+
+function daysBetween(start: Date, end: Date): number {
+  return Math.round((end.getTime() - start.getTime()) / MS_PER_DAY);
+}
+
+function monthLabel(d: Date, locale: string): string {
+  return d.toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+    month: "long",
     year: "numeric",
-    month: "short",
-    day: "numeric",
   });
 }
 
-function toISODate(date: Date | null): string {
-  if (!date) return "";
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
 export function BookingScreen() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
   const route = useRoute<BookingRoute>();
-  const { unitId, title, price, currency, maxGuests } = route.params;
+  const {
+    unitId,
+    title,
+    price,
+    currency,
+    maxGuests,
+    minNights,
+    maxNights,
+  } = route.params;
+
+  const today = useMemo(() => stripTime(new Date()), []);
+  const windowEnd = useMemo(() => addDays(today, 60), [today]);
+  const from = dateKey(today);
+  const to = dateKey(windowEnd);
+
+  const {
+    data: availability,
+    isLoading: isLoadingAvailability,
+    isError: isAvailabilityError,
+  } = useAvailability(unitId, from, to);
+
+  const dayMap = useMemo(() => {
+    const map = new Map<string, CalendarDay>();
+    if (availability?.days) {
+      for (const day of availability.days) {
+        map.set(day.date, day);
+      }
+    }
+    return map;
+  }, [availability]);
 
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
-  const [showCheckIn, setShowCheckIn] = useState(false);
-  const [showCheckOut, setShowCheckOut] = useState(false);
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
@@ -59,17 +108,80 @@ export function BookingScreen() {
   const createBooking = useCreateBooking();
 
   const totalGuests = adults + children + infants;
-  const nights = checkIn && checkOut
-    ? Math.max(0, Math.ceil((checkOut.getTime() - checkIn.getTime()) / 86400000))
-    : 0;
+  const nights = checkIn && checkOut ? daysBetween(checkIn, checkOut) : 0;
   const subtotal = price * Math.max(0, nights);
+
+  const calendarDays = useMemo(() => {
+    const days: Date[] = [];
+    let current = today;
+    while (isBefore(current, windowEnd) || isSameDay(current, windowEnd)) {
+      days.push(current);
+      current = addDays(current, 1);
+    }
+    return days;
+  }, [today, windowEnd]);
+
+  function isDayUnavailable(date: Date): boolean {
+    if (isBefore(date, today)) return true;
+    const key = dateKey(date);
+    const day = dayMap.get(key);
+    return !day || day.status !== "AVAILABLE";
+  }
+
+  function isInSelectedRange(date: Date): boolean {
+    if (!checkIn || !checkOut) return false;
+    return (
+      (isBefore(checkIn, date) || isSameDay(checkIn, date)) &&
+      (isBefore(date, checkOut) || isSameDay(date, checkOut))
+    );
+  }
+
+  function rangeContainsUnavailable(start: Date, end: Date): boolean {
+    let current = start;
+    while (isBefore(current, end)) {
+      if (isDayUnavailable(current)) return true;
+      current = addDays(current, 1);
+    }
+    return false;
+  }
+
+  function handleDayPress(date: Date) {
+    if (
+      !checkIn ||
+      (checkOut && !isSameDay(checkOut, date)) ||
+      isBefore(date, checkIn) ||
+      isSameDay(date, checkIn)
+    ) {
+      setCheckIn(date);
+      setCheckOut(null);
+      return;
+    }
+
+    const nights = daysBetween(checkIn, date);
+    if (nights < minNights) {
+      Alert.alert(
+        t("selectDates"),
+        t("minNights").replace("{n}", String(minNights))
+      );
+      return;
+    }
+    if (nights > maxNights) {
+      Alert.alert(
+        t("selectDates"),
+        t("maxNights").replace("{n}", String(maxNights))
+      );
+      return;
+    }
+    if (rangeContainsUnavailable(checkIn, date)) {
+      Alert.alert(t("selectDates"), t("unavailable"));
+      return;
+    }
+
+    setCheckOut(date);
+  }
 
   const handleConfirm = async () => {
     if (!checkIn || !checkOut) {
-      Alert.alert(t("error"), t("selectDates"));
-      return;
-    }
-    if (checkOut <= checkIn) {
       Alert.alert(t("error"), t("selectDates"));
       return;
     }
@@ -85,14 +197,14 @@ export function BookingScreen() {
     try {
       const created = await createBooking.mutateAsync({
         unit_id: unitId,
-        check_in: toISODate(checkIn),
-        check_out: toISODate(checkOut),
+        check_in: dateKey(checkIn),
+        check_out: dateKey(checkOut),
         adults,
         children,
         infants,
       });
       Alert.alert(t("bookingConfirmed"), created.status, [
-        { text: "OK", onPress: () => navigation.navigate("Home", { screen: "TripsTab" }) },
+        { text: "OK", onPress: () => (navigation as any).navigate("Home", { screen: "TripsTab" }) },
       ]);
     } catch (err: any) {
       const data = err?.response?.data;
@@ -106,74 +218,107 @@ export function BookingScreen() {
     }
   };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const sections = useMemo(() => {
+    const byMonth = new Map<string, Date[]>();
+    for (const d of calendarDays) {
+      const label = monthLabel(d, locale);
+      if (!byMonth.has(label)) byMonth.set(label, []);
+      byMonth.get(label)!.push(d);
+    }
+    return Array.from(byMonth.entries()).map(([title, days]) => ({
+      title,
+      days,
+      padding: days[0] ? days[0].getDay() : 0,
+    }));
+  }, [calendarDays, locale]);
+
+  if (isAvailabilityError) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{t("error")}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.pricePerNight}>{price} {currency} / {t("perNight")}</Text>
+        <Text style={styles.pricePerNight}>
+          {price} {currency} / {t("perNight")}
+        </Text>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("selectDates")}</Text>
-        <Pressable
-          style={styles.dateField}
-          onPress={() => setShowCheckIn(true)}
-        >
-          <Text style={styles.dateLabel}>{t("checkIn")}</Text>
-          <Text style={checkIn ? styles.dateValue : styles.datePlaceholder}>
-            {checkIn ? formatDate(checkIn, "en") : "YYYY-MM-DD"}
-          </Text>
-        </Pressable>
-        {showCheckIn && (
-          <DateTimePicker
-            value={checkIn || today}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            minimumDate={today}
-            onChange={(event, selectedDate) => {
-              setShowCheckIn(false);
-              if (event.type === "set" && selectedDate) {
-                const d = new Date(selectedDate);
-                d.setHours(0, 0, 0, 0);
-                setCheckIn(d);
-                if (checkOut && d >= checkOut) {
-                  setCheckOut(addDays(d, 1));
-                }
-              }
-            }}
-          />
-        )}
+        {isLoadingAvailability && <Text style={styles.loadingText}>{t("loading")}</Text>}
 
-        <Pressable
-          style={styles.dateField}
-          onPress={() => setShowCheckOut(true)}
-        >
-          <Text style={styles.dateLabel}>{t("checkOut")}</Text>
-          <Text style={checkOut ? styles.dateValue : styles.datePlaceholder}>
-            {checkOut ? formatDate(checkOut, "en") : "YYYY-MM-DD"}
-          </Text>
-        </Pressable>
-        {showCheckOut && (
-          <DateTimePicker
-            value={checkOut || (checkIn ? addDays(checkIn, 1) : addDays(today, 1))}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            minimumDate={checkIn ? addDays(checkIn, 1) : today}
-            onChange={(event, selectedDate) => {
-              setShowCheckOut(false);
-              if (event.type === "set" && selectedDate) {
-                const d = new Date(selectedDate);
-                d.setHours(0, 0, 0, 0);
-                setCheckOut(d);
-              }
-            }}
-          />
-        )}
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.dot, { backgroundColor: colors.white, borderColor: colors.primary }]} />
+            <Text style={styles.legendText}>{t("available")}</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.dot, { backgroundColor: colors.surface }]} />
+            <Text style={styles.legendText}>{t("unavailable")}</Text>
+          </View>
+        </View>
 
-        {nights > 0 && (
+        <FlatList
+          data={sections}
+          scrollEnabled={false}
+          keyExtractor={(item) => item.title}
+          renderItem={({ item: section }) => (
+            <View style={styles.monthBlock}>
+              <Text style={styles.monthTitle}>{section.title}</Text>
+              <View style={styles.weekRow}>
+                {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                  <Text key={i} style={styles.weekDay}>
+                    {d}
+                  </Text>
+                ))}
+              </View>
+              <View style={styles.daysGrid}>
+                {Array.from({ length: section.padding }).map((_, i) => (
+                  <View key={`pad-${i}`} style={styles.dayCell} />
+                ))}
+                {section.days.map((date) => {
+                  const key = dateKey(date);
+                  const unavailable = isDayUnavailable(date);
+                  const selected =
+                    (checkIn && isSameDay(date, checkIn)) ||
+                    (checkOut && isSameDay(date, checkOut));
+                  const inRange = isInSelectedRange(date);
+                  return (
+                    <Pressable
+                      key={key}
+                      disabled={unavailable}
+                      style={[
+                        styles.dayCell,
+                        unavailable && styles.dayUnavailable,
+                        inRange && styles.dayInRange,
+                        selected && styles.daySelected,
+                      ]}
+                      onPress={() => handleDayPress(date)}
+                    >
+                      <Text
+                        style={[
+                          styles.dayText,
+                          unavailable && styles.dayTextUnavailable,
+                          (selected || inRange) && styles.dayTextSelected,
+                        ]}
+                      >
+                        {date.getDate()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        />
+
+        {checkIn && checkOut && (
           <Text style={styles.nightsText}>
             {nights} {t("night")}
           </Text>
@@ -182,27 +327,12 @@ export function BookingScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("guests")}</Text>
-        <GuestStepper
-          label={t("adults")}
-          value={adults}
-          min={1}
-          onChange={setAdults}
-        />
-        <GuestStepper
-          label={t("children")}
-          value={children}
-          min={0}
-          onChange={setChildren}
-        />
-        <GuestStepper
-          label={t("infants")}
-          value={infants}
-          min={0}
-          onChange={setInfants}
-        />
+        <GuestStepper label={t("adults")} value={adults} min={1} onChange={setAdults} />
+        <GuestStepper label={t("children")} value={children} min={0} onChange={setChildren} />
+        <GuestStepper label={t("infants")} value={infants} min={0} onChange={setInfants} />
         {totalGuests > maxGuests && (
           <Text style={styles.errorText}>
-            {t("guests")}: {maxGuests} {t("maxGuests")} {t("maxGuests")}
+            {t("guests")}: {maxGuests} {t("maxGuests")}
           </Text>
         )}
       </View>
@@ -212,18 +342,26 @@ export function BookingScreen() {
           <Text style={styles.summaryText}>
             {price} {currency} × {Math.max(0, nights)} {t("night")}
           </Text>
-          <Text style={styles.summaryValue}>{subtotal} {currency}</Text>
+          <Text style={styles.summaryValue}>
+            {subtotal} {currency}
+          </Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryTotal}>{t("total")}</Text>
-          <Text style={styles.summaryTotalValue}>{subtotal} {currency}</Text>
+          <Text style={styles.summaryTotalValue}>
+            {subtotal} {currency}
+          </Text>
         </View>
       </View>
 
       <Pressable
-        style={[styles.confirmButton, createBooking.isPending && styles.confirmButtonDisabled]}
+        style={[
+          styles.confirmButton,
+          (createBooking.isPending || !checkIn || !checkOut) &&
+            styles.confirmButtonDisabled,
+        ]}
         onPress={handleConfirm}
-        disabled={createBooking.isPending}
+        disabled={createBooking.isPending || !checkIn || !checkOut}
       >
         <Text style={styles.confirmButtonText}>
           {createBooking.isPending ? t("loading") : t("confirmBooking")}
@@ -295,28 +433,86 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.md,
   },
-  dateField: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+  loadingText: {
+    fontSize: fontSize.md,
+    color: colors.textTertiary,
     marginBottom: spacing.md,
-    justifyContent: "center",
   },
-  dateLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textTertiary,
-    marginBottom: 2,
+  errorText: {
+    color: colors.error,
+    fontSize: fontSize.sm,
+    marginTop: spacing.sm,
   },
-  dateValue: {
+  legend: {
+    flexDirection: "row",
+    gap: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  legendText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  monthBlock: {
+    marginBottom: spacing.lg,
+  },
+  monthTitle: {
     fontSize: fontSize.md,
+    fontWeight: "700",
     color: colors.text,
-    fontWeight: "600",
+    marginBottom: spacing.sm,
   },
-  datePlaceholder: {
-    fontSize: fontSize.md,
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: spacing.xs,
+  },
+  weekDay: {
+    flex: 1,
+    textAlign: "center",
     color: colors.textTertiary,
+    fontSize: fontSize.xs,
+  },
+  daysGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  dayCell: {
+    width: `${100 / 7}%`,
+    aspectRatio: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+  },
+  dayUnavailable: {
+    backgroundColor: colors.surface,
+  },
+  dayInRange: {
+    backgroundColor: colors.primary50,
+  },
+  daySelected: {
+    backgroundColor: colors.primary,
+  },
+  dayText: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+  },
+  dayTextUnavailable: {
+    color: colors.textTertiary,
+  },
+  dayTextSelected: {
+    color: colors.white,
   },
   nightsText: {
     fontSize: fontSize.md,
@@ -360,11 +556,6 @@ const styles = StyleSheet.create({
     minWidth: 32,
     textAlign: "center",
     fontWeight: "600",
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: fontSize.sm,
-    marginTop: spacing.sm,
   },
   summary: {
     backgroundColor: colors.surface,

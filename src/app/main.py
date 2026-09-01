@@ -74,7 +74,7 @@ _ARABIC_MESSAGES = {
     "VALIDATION_ERROR": "فشل التحقق من البيانات",
     "AUTHENTICATION_ERROR": "لم يتم التحقق من الهوية",
     "AUTHORIZATION_ERROR": "غير مصرح بالدخول",
-    "CONFLICT_ERROR": "تعارض في البيانات",
+    "CONFLICT_ERROR": "التواريخ المطلوبة غير متاحة",
     "PAYMENT_ERROR": "فشلت عملية الدفع",
     "NOT_AUTHENTICATED": "لم يتم التحقق من الهوية",
     "FORBIDDEN": "غير مصرح بالدخول",
@@ -87,7 +87,7 @@ _HTTP_STATUS_CODES = {
     401: "NOT_AUTHENTICATED",
     403: "FORBIDDEN",
     404: "NOT_FOUND",
-    409: "CONFLICT",
+    409: "CONFLICT_ERROR",
     422: "VALIDATION_ERROR",
     500: "INTERNAL_ERROR",
 }

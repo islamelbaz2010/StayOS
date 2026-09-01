@@ -27,7 +27,7 @@ export type RootStackParamList = {
   Search: { city?: string } | undefined;
   ListingDetail: { unitId: string };
   HostProfile: { hostId: string };
-  Booking: { unitId: string; title: string; price: number; currency: string; maxGuests: number };
+  Booking: { unitId: string; title: string; price: number; currency: string; maxGuests: number; minNights: number; maxNights: number };
   Login: { nextScreen?: keyof RootStackParamList; nextParams?: any } | undefined;
   Favorites: undefined;
   Trips: undefined;

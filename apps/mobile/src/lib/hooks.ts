@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import { useAuth } from "./AuthContext";
 import type {
+  AvailabilityResponse,
   Booking,
   HostProfile,
   Listing,
@@ -54,6 +55,21 @@ export function useListingDetail(unitId: string) {
       return data;
     },
     enabled: Boolean(unitId),
+  });
+}
+
+export function useAvailability(unitId: string, from: string, to: string) {
+  return useQuery({
+    queryKey: ["availability", unitId, from, to],
+    queryFn: async () => {
+      const { data } = await api.get<AvailabilityResponse>(
+        `/listings/${unitId}/availability`,
+        { params: { check_in: from, check_out: to } }
+      );
+      return data;
+    },
+    enabled: Boolean(unitId) && Boolean(from) && Boolean(to),
+    staleTime: 60_000,
   });
 }
 

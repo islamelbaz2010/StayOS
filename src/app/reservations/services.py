@@ -8,10 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.config import settings
+from app.availability.services import assert_availability_for_range
 from app.finance import providers as payment_providers
 from app.listings import pricing
 from app.listings import repository as listings_repository
-from app.listings.constants import CalendarStatus, UnitStatus
+from app.listings.constants import UnitStatus
 from app.shared.exceptions import (
     AuthorizationError,
     ConflictError,
@@ -174,18 +175,12 @@ async def create_reservation(
     unit = await listings_repository.get_unit_with_listing(
         session, request.unit_id
     )
-    if unit is None or unit.status != UnitStatus.LISTED:
+    if unit is None:
         raise NotFoundError("Listing not available")
 
     listing = unit.listing
     if listing is None:
         raise NotFoundError("Listing details not found")
-
-    nights = (request.check_out - request.check_in).days
-    if nights < listing.min_nights or nights > listing.max_nights:
-        raise ValidationError(
-            f"Stay must be between {listing.min_nights} and {listing.max_nights} nights"
-        )
 
     total_guests = request.adults + request.children + request.infants
     if total_guests > unit.max_guests:
@@ -193,12 +188,13 @@ async def create_reservation(
             f"Maximum {unit.max_guests} guests allowed for this unit"
         )
 
+    await assert_availability_for_range(
+        session, unit, listing, request.check_in, request.check_out
+    )
+
     calendar_rules = await listings_repository.get_calendar_rules_in_range(
         session, unit.id, request.check_in, request.check_out
     )
-    for rule in calendar_rules:
-        if rule.status in (CalendarStatus.BLOCKED, CalendarStatus.BOOKED, CalendarStatus.HOLD):
-            raise ConflictError("Requested dates are not available")
 
     subtotal = pricing.compute_subtotal(listing, calendar_rules, request.check_in, request.check_out)
     amounts = _calculate_amounts(subtotal)

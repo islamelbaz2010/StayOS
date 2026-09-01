@@ -45,14 +45,20 @@ export function ListingDetailScreen() {
       : [];
 
   const handleBook = () => {
+    const bookingParams = {
+      unitId,
+      title,
+      price: listing.price,
+      currency: listing.currency,
+      maxGuests: listing.max_guests,
+      minNights: listing.min_nights,
+      maxNights: listing.max_nights,
+    };
     if (!isAuthenticated) {
-      navigation.navigate("Login", {
-        nextScreen: "Booking",
-        nextParams: { unitId, title, price: listing.price, currency: listing.currency, maxGuests: listing.max_guests },
-      });
+      navigation.navigate("Login", { nextScreen: "Booking", nextParams: bookingParams });
       return;
     }
-    navigation.navigate("Booking", { unitId, title, price: listing.price, currency: listing.currency, maxGuests: listing.max_guests });
+    navigation.navigate("Booking", bookingParams);
   };
 
   const handleToggleFavorite = () => {

@@ -96,3 +96,17 @@ export interface HostProfile {
   joined_at?: string | null;
   listings: Listing[];
 }
+
+export interface CalendarDay {
+  date: string;
+  status: string;
+  block_type?: string | null;
+  price_egp: number;
+}
+
+export interface AvailabilityResponse {
+  unit_id: string;
+  check_in: string;
+  check_out: string;
+  days: CalendarDay[];
+}

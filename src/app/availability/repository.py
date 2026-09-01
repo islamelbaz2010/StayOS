@@ -27,19 +27,28 @@ async def get_accepted_bookings_for_unit(
     unit_id: str,
     check_in: date,
     check_out: date,
+    exclude_booking_id: str | None = None,
 ) -> list[Booking]:
-    result = await session.execute(
+    stmt = (
         select(Booking)
         .where(
             Booking.unit_id == unit_id,
             Booking.status.in_(
-                (BookingStatus.ACCEPTED, BookingStatus.CONFIRMED, BookingStatus.COMPLETED)
+                (
+                    BookingStatus.REQUESTED,
+                    BookingStatus.ACCEPTED,
+                    BookingStatus.CONFIRMED,
+                    BookingStatus.COMPLETED,
+                )
             ),
             Booking.check_in < check_out,
             Booking.check_out > check_in,
         )
         .order_by(Booking.check_in)
     )
+    if exclude_booking_id is not None:
+        stmt = stmt.where(Booking.id != exclude_booking_id)
+    result = await session.execute(stmt)
     return list(result.scalars().all())
 
 

@@ -134,6 +134,7 @@ async def get_unit_availability(
     check_in: date,
     check_out: date,
     listing: UnitListing | None = None,
+    exclude_booking_id: str | None = None,
 ) -> list[AvailabilityDay]:
     """Return the per-day availability status for a unit in a date range.
 
@@ -150,7 +151,7 @@ async def get_unit_availability(
         session, unit_id, check_in, check_out
     )
     accepted_bookings = await availability_repository.get_accepted_bookings_for_unit(
-        session, unit_id, check_in, check_out
+        session, unit_id, check_in, check_out, exclude_booking_id=exclude_booking_id
     )
     confirmed_reservations = await availability_repository.get_confirmed_reservations_for_unit(
         session, unit_id, check_in, check_out
@@ -172,6 +173,7 @@ async def assert_availability_for_range(
     listing: UnitListing,
     check_in: date,
     check_out: date,
+    exclude_booking_id: str | None = None,
 ) -> None:
     """Shared backend safety check for both Booking and Reservation creation."""
     if unit.status != UnitStatus.LISTED:
@@ -195,7 +197,12 @@ async def assert_availability_for_range(
         )
 
     days = await get_unit_availability(
-        session, unit.id, check_in, check_out, listing=listing
+        session,
+        unit.id,
+        check_in,
+        check_out,
+        listing=listing,
+        exclude_booking_id=exclude_booking_id,
     )
     for day in days:
         if day.status != str(CalendarStatus.AVAILABLE):

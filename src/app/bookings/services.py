@@ -171,6 +171,24 @@ async def update_booking(
         if request.cancel_reason:
             update_fields["cancel_reason"] = request.cancel_reason
 
+    if request.status in (BookingStatus.ACCEPTED, BookingStatus.CONFIRMED):
+        unit = await listings_repository.get_unit_with_listing(
+            session, booking.unit_id
+        )
+        if unit is None:
+            raise NotFoundError("Unit not found")
+        listing = unit.listing
+        if listing is None:
+            raise NotFoundError("Listing details not found")
+        await assert_availability_for_range(
+            session,
+            unit,
+            listing,
+            booking.check_in,
+            booking.check_out,
+            exclude_booking_id=booking.id,
+        )
+
     updated = await bookings_repository.update_booking(session, booking, **update_fields)
 
     if request.status == BookingStatus.ACCEPTED:

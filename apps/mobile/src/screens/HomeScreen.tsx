@@ -46,7 +46,7 @@ export function HomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.appName}>{t("appName")}</Text>
       </View>

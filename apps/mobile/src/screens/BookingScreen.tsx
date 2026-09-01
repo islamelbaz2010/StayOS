@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -11,6 +11,7 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCreateBooking, useAvailability } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
+import { useAuth } from "../lib/AuthContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import type { CalendarDay } from "../lib/types";
 import type { RootStackParamList } from "../../App";
@@ -67,6 +68,7 @@ export function BookingScreen() {
   const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
   const route = useRoute<BookingRoute>();
+  const { isAuthenticated } = useAuth();
   const {
     unitId,
     title,
@@ -75,6 +77,11 @@ export function BookingScreen() {
     maxGuests,
     minNights,
     maxNights,
+    checkIn: checkInParam,
+    checkOut: checkOutParam,
+    adults: adultsParam,
+    children: childrenParam,
+    infants: infantsParam,
   } = route.params;
 
   const today = useMemo(() => stripTime(new Date()), []);
@@ -98,11 +105,23 @@ export function BookingScreen() {
     return map;
   }, [availability]);
 
-  const [checkIn, setCheckIn] = useState<Date | null>(null);
-  const [checkOut, setCheckOut] = useState<Date | null>(null);
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
-  const [infants, setInfants] = useState(0);
+  const [checkIn, setCheckIn] = useState<Date | null>(
+    checkInParam ? parseKey(checkInParam) : null
+  );
+  const [checkOut, setCheckOut] = useState<Date | null>(
+    checkOutParam ? parseKey(checkOutParam) : null
+  );
+  const [adults, setAdults] = useState(adultsParam ?? 1);
+  const [children, setChildren] = useState(childrenParam ?? 0);
+  const [infants, setInfants] = useState(infantsParam ?? 0);
+
+  useEffect(() => {
+    if (checkInParam) setCheckIn(parseKey(checkInParam));
+    if (checkOutParam) setCheckOut(parseKey(checkOutParam));
+    if (adultsParam !== undefined) setAdults(adultsParam);
+    if (childrenParam !== undefined) setChildren(childrenParam);
+    if (infantsParam !== undefined) setInfants(infantsParam);
+  }, [checkInParam, checkOutParam, adultsParam, childrenParam, infantsParam]);
 
   const createBooking = useCreateBooking();
 
@@ -190,6 +209,21 @@ export function BookingScreen() {
     }
     if (totalGuests > maxGuests) {
       Alert.alert(t("error"), `${t("guests")}: ${maxGuests} ${t("maxGuests")}`);
+      return;
+    }
+
+    if (!isAuthenticated) {
+      navigation.navigate("Login", {
+        nextScreen: "Booking",
+        nextParams: {
+          ...route.params,
+          checkIn: dateKey(checkIn),
+          checkOut: dateKey(checkOut),
+          adults,
+          children,
+          infants,
+        },
+      });
       return;
     }
 

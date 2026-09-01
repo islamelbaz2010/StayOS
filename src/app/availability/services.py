@@ -7,7 +7,7 @@ from app.auth.models import User
 from app.bookings.models import Booking
 from app.listings import pricing
 from app.listings import repository as listings_repository
-from app.listings.constants import CalendarBlockType, CalendarStatus
+from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import CalendarRule, Unit, UnitListing
 from app.reservations.models import Reservation
 from app.shared.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError

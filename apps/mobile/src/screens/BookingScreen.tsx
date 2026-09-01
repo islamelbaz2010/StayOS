@@ -286,17 +286,6 @@ export function BookingScreen() {
         <Text style={styles.sectionTitle}>{t("selectDates")}</Text>
         {isLoadingAvailability && <Text style={styles.loadingText}>{t("loading")}</Text>}
 
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.dot, { backgroundColor: colors.white, borderColor: colors.primary }]} />
-            <Text style={styles.legendText}>{t("available")}</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.dot, { backgroundColor: colors.surface }]} />
-            <Text style={styles.legendText}>{t("unavailable")}</Text>
-          </View>
-        </View>
-
         {sections.map((section) => (
           <View key={section.title} style={styles.monthBlock}>
             <Text style={styles.monthTitle}>{section.title}</Text>
@@ -470,26 +459,6 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: fontSize.sm,
     marginTop: spacing.sm,
-  },
-  legend: {
-    flexDirection: "row",
-    gap: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  legendText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
   },
   monthBlock: {
     marginBottom: spacing.lg,

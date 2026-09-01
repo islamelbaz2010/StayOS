@@ -494,6 +494,7 @@ const styles = StyleSheet.create({
   },
   dayUnavailable: {
     backgroundColor: colors.surface,
+    opacity: 0.45,
   },
   dayInRange: {
     backgroundColor: colors.primary50,
@@ -507,6 +508,8 @@ const styles = StyleSheet.create({
   },
   dayTextUnavailable: {
     color: colors.textTertiary,
+    textDecorationLine: "line-through",
+    opacity: 0.7,
   },
   dayTextSelected: {
     color: colors.white,

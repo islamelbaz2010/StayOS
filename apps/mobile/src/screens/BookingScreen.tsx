@@ -6,7 +6,6 @@ import {
   Text,
   View,
   Alert,
-  FlatList,
 } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -264,59 +263,54 @@ export function BookingScreen() {
           </View>
         </View>
 
-        <FlatList
-          data={sections}
-          scrollEnabled={false}
-          keyExtractor={(item) => item.title}
-          renderItem={({ item: section }) => (
-            <View style={styles.monthBlock}>
-              <Text style={styles.monthTitle}>{section.title}</Text>
-              <View style={styles.weekRow}>
-                {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                  <Text key={i} style={styles.weekDay}>
-                    {d}
-                  </Text>
-                ))}
-              </View>
-              <View style={styles.daysGrid}>
-                {Array.from({ length: section.padding }).map((_, i) => (
-                  <View key={`pad-${i}`} style={styles.dayCell} />
-                ))}
-                {section.days.map((date) => {
-                  const key = dateKey(date);
-                  const unavailable = isDayUnavailable(date);
-                  const selected =
-                    (checkIn && isSameDay(date, checkIn)) ||
-                    (checkOut && isSameDay(date, checkOut));
-                  const inRange = isInSelectedRange(date);
-                  return (
-                    <Pressable
-                      key={key}
-                      disabled={unavailable}
-                      style={[
-                        styles.dayCell,
-                        unavailable && styles.dayUnavailable,
-                        inRange && styles.dayInRange,
-                        selected && styles.daySelected,
-                      ]}
-                      onPress={() => handleDayPress(date)}
-                    >
-                      <Text
-                        style={[
-                          styles.dayText,
-                          unavailable && styles.dayTextUnavailable,
-                          (selected || inRange) && styles.dayTextSelected,
-                        ]}
-                      >
-                        {date.getDate()}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+        {sections.map((section) => (
+          <View key={section.title} style={styles.monthBlock}>
+            <Text style={styles.monthTitle}>{section.title}</Text>
+            <View style={styles.weekRow}>
+              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                <Text key={i} style={styles.weekDay}>
+                  {d}
+                </Text>
+              ))}
             </View>
-          )}
-        />
+            <View style={styles.daysGrid}>
+              {Array.from({ length: section.padding }).map((_, i) => (
+                <View key={`pad-${i}`} style={styles.dayCell} />
+              ))}
+              {section.days.map((date) => {
+                const key = dateKey(date);
+                const unavailable = isDayUnavailable(date);
+                const selected =
+                  (checkIn && isSameDay(date, checkIn)) ||
+                  (checkOut && isSameDay(date, checkOut));
+                const inRange = isInSelectedRange(date);
+                return (
+                  <Pressable
+                    key={key}
+                    disabled={unavailable}
+                    style={[
+                      styles.dayCell,
+                      unavailable && styles.dayUnavailable,
+                      inRange && styles.dayInRange,
+                      selected && styles.daySelected,
+                    ]}
+                    onPress={() => handleDayPress(date)}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        unavailable && styles.dayTextUnavailable,
+                        (selected || inRange) && styles.dayTextSelected,
+                      ]}
+                    >
+                      {date.getDate()}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ))}
 
         {checkIn && checkOut && (
           <Text style={styles.nightsText}>

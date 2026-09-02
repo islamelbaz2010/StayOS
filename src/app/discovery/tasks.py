@@ -14,7 +14,7 @@ from app.discovery.services import run_discovery
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(name="app.discovery.tasks.run_scheduled_discovery")  # type: ignore[misc]
+@celery_app.task(name="app.discovery.tasks.run_scheduled_discovery")  # type: ignore[untyped-decorator]
 def run_scheduled_discovery() -> dict[str, Any]:
     """Run discovery for all enabled configs."""
     import asyncio
@@ -80,7 +80,7 @@ def run_scheduled_discovery() -> dict[str, Any]:
     return asyncio.run(_run())
 
 
-@celery_app.task(name="app.discovery.tasks.run_discovery_manual")  # type: ignore[misc]
+@celery_app.task(name="app.discovery.tasks.run_discovery_manual")  # type: ignore[untyped-decorator]
 def run_discovery_manual(source: str, config_id: str | None = None) -> dict[str, Any]:
     """Manually trigger a discovery run for a specific source."""
     import asyncio

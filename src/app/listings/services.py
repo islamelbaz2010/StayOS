@@ -10,8 +10,14 @@ from sqlalchemy.orm import selectinload
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.config import settings
+from app.host.permissions import (
+    assert_can_edit_listing,
+    assert_can_manage_calendar,
+    assert_owner_or_admin,
+)
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
+from app.reviews import repository as reviews_repository
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 from . import configuration as listing_configuration
@@ -26,6 +32,7 @@ from .schemas import (
     CalendarRuleResponse,
     CalendarRuleUpdate,
     HostDashboardStats,
+    HostProfileResponse,
     HostReservationCalendarItem,
     HostReservationCalendarResponse,
     ListingCreate,
@@ -98,6 +105,9 @@ def _to_listing_response(
         cultural_tags=listing.cultural_tags,
         house_rules=listing.house_rules,
         check_in_instructions=listing.check_in_instructions,
+        check_in_time=listing.check_in_time,
+        check_out_time=listing.check_out_time,
+        pre_arrival_info_release_hours=listing.pre_arrival_info_release_hours,
         policies=listing.policies,
         base_price_egp=listing.base_price_egp,
         cleaning_fee_egp=listing.cleaning_fee_egp,
@@ -200,17 +210,22 @@ async def get_listing_detail(
 
     host = await _fetch_host(session, unit.host_id)
     lat, lng = await _fetch_coordinates(session, unit)
-    return _to_listing_response(unit, listing, lat, lng, host)
+    response = _to_listing_response(unit, listing, lat, lng, host)
+    response.average_rating, response.review_count = (
+        await reviews_repository.get_rating_aggregate_for_unit(session, unit_id)
+    )
+    return response
 
 
 async def get_host_listing_detail(
     session: AsyncSession, user: User, unit_id: str
 ) -> ListingResponse:
+    from app.host.permissions import assert_can_access_unit
+
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner can view it")
+    await assert_can_access_unit(session, user, unit)
 
     listing = unit.listing
     if listing is None:
@@ -240,8 +255,9 @@ async def submit_for_review(
 ) -> ListingResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_owner_or_admin(user, unit)
     if unit.status not in (UnitStatus.DRAFT, UnitStatus.REJECTED, UnitStatus.UNLISTED):
         raise ValidationError("Only draft or rejected listings can be submitted for review")
 
@@ -326,8 +342,7 @@ async def update_listing(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id:
-        raise AuthorizationError("Only the listing owner can update it")
+    await assert_can_edit_listing(session, user, unit)
 
     listing = unit.listing
     if listing is None:
@@ -386,10 +401,17 @@ async def search_listings(
         )
         hosts_map = {h.id: h for h in host_result.scalars().all()}
 
+    unit_ids = [unit.id for unit, _, _, _ in rows]
+    ratings_map = await reviews_repository.get_rating_aggregates_for_units(session, unit_ids)
+
     data = [
         _to_search_result(unit, listing, lat, lng, hosts_map.get(unit.host_id))
         for unit, listing, lat, lng in rows
     ]
+    for item, (unit, _, _, _) in zip(data, rows, strict=True):
+        avg_rating, review_count = ratings_map.get(unit.id, (None, 0))
+        item["average_rating"] = avg_rating
+        item["review_count"] = review_count
     has_more = offset + len(data) < total
     next_cursor = (
         ListingSearchFilters.encode_cursor(offset + filters.limit)
@@ -404,6 +426,51 @@ async def search_listings(
             has_more=has_more,
             total_count=total,
         ),
+    )
+
+
+async def get_host_profile(
+    session: AsyncSession, host_id: str
+) -> HostProfileResponse:
+    host = await _fetch_host(session, host_id)
+    if host is None:
+        raise NotFoundError("Host not found")
+
+    lat_col = func.ST_Y(Unit.coordinates).label("lat")
+    lng_col = func.ST_X(Unit.coordinates).label("lng")
+
+    result = await session.execute(
+        select(Unit, UnitListing, lat_col, lng_col)
+        .options(selectinload(Unit.photos))
+        .join(UnitListing, Unit.id == UnitListing.unit_id)
+        .where(
+            Unit.host_id == host_id,
+            Unit.status == UnitStatus.LISTED,
+        )
+        .order_by(Unit.created_at.desc())
+    )
+    rows = result.all()
+
+    ratings_map = await reviews_repository.get_rating_aggregates_for_units(
+        session, [unit.id for unit, _, _, _ in rows]
+    )
+    listings = []
+    for unit, listing, lat, lng in rows:
+        avg_rating, review_count = ratings_map.get(unit.id, (None, 0))
+        listings.append(
+            ListingSearchResult(
+                **_to_search_result(unit, listing, float(lat), float(lng), host),
+                average_rating=avg_rating,
+                review_count=review_count,
+            )
+        )
+
+    return HostProfileResponse(
+        id=host.id,
+        display_name=host.display_name,
+        kyc_status=host.kyc_status,
+        joined_at=str(host.created_at) if host.created_at else None,
+        listings=listings,
     )
 
 
@@ -538,8 +605,9 @@ async def publish_listing(
         raise AuthorizationError("Host KYC must be verified to publish a listing")
 
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_owner_or_admin(user, unit)
     if unit.status == UnitStatus.ARCHIVED:
         raise ValidationError("Archived listings cannot be published")
 
@@ -556,8 +624,9 @@ async def unpublish_listing(
 ) -> ListingResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_owner_or_admin(user, unit)
 
     unit = await listings_repository.set_unit_status(
         session, unit, UnitStatus.UNLISTED
@@ -574,8 +643,9 @@ async def archive_listing(
 ) -> ListingResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_owner_or_admin(user, unit)
 
     unit = await listings_repository.set_unit_status(
         session, unit, UnitStatus.ARCHIVED
@@ -595,8 +665,9 @@ async def create_host_calendar_rule(
 ) -> CalendarRuleResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     if request.status == CalendarStatus.BLOCKED and not request.block_type:
         request.block_type = CalendarBlockType.MANUAL
@@ -622,8 +693,9 @@ async def update_host_calendar_rule(
 ) -> CalendarRuleResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     rule = await listings_repository.get_calendar_rule_by_id(
         session, unit_id, rule_id
@@ -653,8 +725,9 @@ async def delete_host_calendar_rule(
 ) -> None:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     rule = await listings_repository.get_calendar_rule_by_id(
         session, unit_id, rule_id
@@ -675,8 +748,9 @@ async def bulk_update_availability(
 ) -> list[CalendarRuleResponse]:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     rules: list[tuple[date, date, str, str | None, int | None]] = []
     for item in request.rules:
@@ -699,8 +773,9 @@ async def bulk_update_pricing(
 ) -> list[CalendarRuleResponse]:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     rules: list[tuple[date, date, str, str | None, int | None]] = [
         (
@@ -773,8 +848,7 @@ async def generate_photo_presigned_url(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner or admin can upload photos")
+    await assert_can_edit_listing(session, user, unit)
 
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
     photo_key = f"listings/{unit_id}/photo_{uuid.uuid4().hex}.{ext}"
@@ -814,8 +888,7 @@ async def create_photo(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner or admin can upload photos")
+    await assert_can_edit_listing(session, user, unit)
 
     if request.is_cover:
         await listings_repository.clear_cover_flags(session, unit_id)
@@ -853,8 +926,7 @@ async def set_cover_photo(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner or admin can manage photos")
+    await assert_can_edit_listing(session, user, unit)
 
     photo = await listings_repository.get_photo_by_id(session, unit_id, photo_id)
     if photo is None:
@@ -878,8 +950,7 @@ async def delete_photo(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner or admin can manage photos")
+    await assert_can_edit_listing(session, user, unit)
 
     photo = await listings_repository.get_photo_by_id(session, unit_id, photo_id)
     if photo is None:

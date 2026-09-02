@@ -1,11 +1,12 @@
 from datetime import date
 from uuid import uuid4
 
-from app.listings.models import Unit
-from app.shared.exceptions import NotFoundError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from app.listings.models import Unit
+from app.shared.exceptions import NotFoundError
 
 from .constants import BookingStatus
 from .models import Booking

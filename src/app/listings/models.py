@@ -96,6 +96,9 @@ class UnitListing(UUIDMixin, Base):
     )
     house_rules: Mapped[str | None] = mapped_column(Text, nullable=True)
     check_in_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    check_in_time: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    check_out_time: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    pre_arrival_info_release_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
     policies: Mapped[str | None] = mapped_column(Text, nullable=True)
     base_price_egp: Mapped[int] = mapped_column(Integer, nullable=False)
     weekend_mult: Mapped[float] = mapped_column(

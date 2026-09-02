@@ -5,6 +5,15 @@
 
 
 export interface paths {
+  "/api/v1/auth/otp/challenge": {
+    /**
+     * Get Otp Challenge
+     * @description Proxies Akedly's V1.2 challenge so the mobile client can solve PoW (and
+     * obtain a Turnstile token, when required) before calling /otp/send. Keeps
+     * AKEDLY_API_KEY and AKEDLY_PIPELINE_ID backend-only.
+     */
+    get: operations["get_otp_challenge_api_v1_auth_otp_challenge_get"];
+  };
   "/api/v1/auth/otp/send": {
     /** Send Otp */
     post: operations["send_otp_api_v1_auth_otp_send_post"];
@@ -35,6 +44,10 @@ export interface paths {
     /** Update Account */
     patch: operations["update_account_api_v1_auth_me_account_patch"];
   };
+  "/api/v1/auth/me/role": {
+    /** Upgrade Role */
+    patch: operations["upgrade_role_api_v1_auth_me_role_patch"];
+  };
   "/api/v1/auth/device-token": {
     /** Register Device Token */
     post: operations["register_device_token_api_v1_auth_device_token_post"];
@@ -42,6 +55,17 @@ export interface paths {
   "/api/v1/auth/.well-known/jwks.json": {
     /** Public Key */
     get: operations["public_key_api_v1_auth__well_known_jwks_json_get"];
+  };
+  "/api/v1/auth/dev-token": {
+    /**
+     * Dev Token
+     * @description Issue a JWT token pair for a given user ID — development only.
+     *
+     * This endpoint bypasses Firebase/Twilio so the founder can validate UI
+     * and user journeys locally without external credentials. It is guarded
+     * by an ENVIRONMENT check and will 404 in any non-development deployment.
+     */
+    post: operations["dev_token_api_v1_auth_dev_token_post"];
   };
   "/api/v1/kyc/initiate": {
     /** Initiate Kyc */
@@ -55,9 +79,21 @@ export interface paths {
     /** Kyc Status */
     get: operations["kyc_status_api_v1_kyc_status_get"];
   };
+  "/api/v1/kyc/pending": {
+    /** List Pending Kyc */
+    get: operations["list_pending_kyc_api_v1_kyc_pending_get"];
+  };
   "/api/v1/kyc/documents/{document_id}/process": {
     /** Process Kyc */
     post: operations["process_kyc_api_v1_kyc_documents__document_id__process_post"];
+  };
+  "/api/v1/kyc/documents/{document_id}/approve": {
+    /** Approve Kyc */
+    post: operations["approve_kyc_api_v1_kyc_documents__document_id__approve_post"];
+  };
+  "/api/v1/kyc/documents/{document_id}/reject": {
+    /** Reject Kyc */
+    post: operations["reject_kyc_api_v1_kyc_documents__document_id__reject_post"];
   };
   "/api/v1/listings": {
     /** List Listings */
@@ -70,6 +106,42 @@ export interface paths {
     get: operations["get_listing_api_v1_listings__unit_id__get"];
     /** Patch Listing */
     patch: operations["patch_listing_api_v1_listings__unit_id__patch"];
+  };
+  "/api/v1/listings/host/listings": {
+    /** Get Host Listings Endpoint */
+    get: operations["get_host_listings_endpoint_api_v1_listings_host_listings_get"];
+  };
+  "/api/v1/listings/host/dashboard": {
+    /** Get Host Dashboard Endpoint */
+    get: operations["get_host_dashboard_endpoint_api_v1_listings_host_dashboard_get"];
+  };
+  "/api/v1/listings/host/reservations": {
+    /** Get Host Reservations Endpoint */
+    get: operations["get_host_reservations_endpoint_api_v1_listings_host_reservations_get"];
+  };
+  "/api/v1/listings/host/{unit_id}": {
+    /** Get Host Listing Endpoint */
+    get: operations["get_host_listing_endpoint_api_v1_listings_host__unit_id__get"];
+  };
+  "/api/v1/listings/profiles/host/{host_id}": {
+    /** Get Host Profile Endpoint */
+    get: operations["get_host_profile_endpoint_api_v1_listings_profiles_host__host_id__get"];
+  };
+  "/api/v1/listings/{unit_id}/submit": {
+    /** Post Submit For Review */
+    post: operations["post_submit_for_review_api_v1_listings__unit_id__submit_post"];
+  };
+  "/api/v1/listings/admin/pending": {
+    /** Get Admin Pending Endpoint */
+    get: operations["get_admin_pending_endpoint_api_v1_listings_admin_pending_get"];
+  };
+  "/api/v1/listings/admin/{unit_id}/approve": {
+    /** Post Approve Listing */
+    post: operations["post_approve_listing_api_v1_listings_admin__unit_id__approve_post"];
+  };
+  "/api/v1/listings/admin/{unit_id}/reject": {
+    /** Post Reject Listing */
+    post: operations["post_reject_listing_api_v1_listings_admin__unit_id__reject_post"];
   };
   "/api/v1/listings/{unit_id}/availability": {
     /** Get Listing Availability */
@@ -86,6 +158,24 @@ export interface paths {
   "/api/v1/listings/{unit_id}/archive": {
     /** Post Archive Listing */
     post: operations["post_archive_listing_api_v1_listings__unit_id__archive_post"];
+  };
+  "/api/v1/listings/{unit_id}/photos/presign": {
+    /** Presign Photo Upload */
+    post: operations["presign_photo_upload_api_v1_listings__unit_id__photos_presign_post"];
+  };
+  "/api/v1/listings/{unit_id}/photos": {
+    /** Get Photos */
+    get: operations["get_photos_api_v1_listings__unit_id__photos_get"];
+    /** Post Photo */
+    post: operations["post_photo_api_v1_listings__unit_id__photos_post"];
+  };
+  "/api/v1/listings/{unit_id}/photos/{photo_id}/cover": {
+    /** Patch Cover Photo */
+    patch: operations["patch_cover_photo_api_v1_listings__unit_id__photos__photo_id__cover_patch"];
+  };
+  "/api/v1/listings/{unit_id}/photos/{photo_id}": {
+    /** Delete Photo Endpoint */
+    delete: operations["delete_photo_endpoint_api_v1_listings__unit_id__photos__photo_id__delete"];
   };
   "/api/v1/listings/{unit_id}/calendar": {
     /** Post Host Calendar Rule */
@@ -105,13 +195,9 @@ export interface paths {
     /** Post Bulk Pricing */
     post: operations["post_bulk_pricing_api_v1_listings__unit_id__calendar_bulk_pricing_post"];
   };
-  "/api/v1/listings/host/dashboard": {
-    /** Get Host Dashboard Endpoint */
-    get: operations["get_host_dashboard_endpoint_api_v1_listings_host_dashboard_get"];
-  };
-  "/api/v1/listings/host/reservations": {
-    /** Get Host Reservations Endpoint */
-    get: operations["get_host_reservations_endpoint_api_v1_listings_host_reservations_get"];
+  "/api/v1/listings/{unit_id}/similar": {
+    /** Get Similar Listings Endpoint */
+    get: operations["get_similar_listings_endpoint_api_v1_listings__unit_id__similar_get"];
   };
   "/api/v1/availability/{unit_id}": {
     /** Get Unit Availability */
@@ -221,11 +307,113 @@ export interface paths {
     /** Post Booking */
     post: operations["post_booking_api_v1_bookings_post"];
   };
+  "/api/v1/bookings/guest": {
+    /** Get Guest Bookings */
+    get: operations["get_guest_bookings_api_v1_bookings_guest_get"];
+  };
   "/api/v1/bookings/{booking_id}": {
     /** Get Booking Detail */
     get: operations["get_booking_detail_api_v1_bookings__booking_id__get"];
     /** Patch Booking */
     patch: operations["patch_booking_api_v1_bookings__booking_id__patch"];
+  };
+  "/api/v1/bookings/{booking_id}/cancellation-preview": {
+    /** Get Cancellation Preview */
+    get: operations["get_cancellation_preview_api_v1_bookings__booking_id__cancellation_preview_get"];
+  };
+  "/api/v1/bookings/{booking_id}/cancel": {
+    /** Post Cancel Booking */
+    post: operations["post_cancel_booking_api_v1_bookings__booking_id__cancel_post"];
+  };
+  "/api/v1/bookings/{booking_id}/stay": {
+    /** Get Stay Info Endpoint */
+    get: operations["get_stay_info_endpoint_api_v1_bookings__booking_id__stay_get"];
+  };
+  "/api/v1/bookings/{booking_id}/check-in": {
+    /** Post Check In */
+    post: operations["post_check_in_api_v1_bookings__booking_id__check_in_post"];
+  };
+  "/api/v1/bookings/{booking_id}/check-out": {
+    /** Post Check Out */
+    post: operations["post_check_out_api_v1_bookings__booking_id__check_out_post"];
+  };
+  "/api/v1/bookings/{booking_id}/complete": {
+    /** Complete Booking Endpoint */
+    post: operations["complete_booking_endpoint_api_v1_bookings__booking_id__complete_post"];
+  };
+  "/api/v1/messages/conversations": {
+    /** Get Conversations */
+    get: operations["get_conversations_api_v1_messages_conversations_get"];
+  };
+  "/api/v1/messages/conversations/unread": {
+    /** Get Unread Count */
+    get: operations["get_unread_count_api_v1_messages_conversations_unread_get"];
+  };
+  "/api/v1/messages/conversations/{conversation_id}": {
+    /** Get Conversation Detail */
+    get: operations["get_conversation_detail_api_v1_messages_conversations__conversation_id__get"];
+  };
+  "/api/v1/messages/conversations/{conversation_id}/messages": {
+    /** Get Messages */
+    get: operations["get_messages_api_v1_messages_conversations__conversation_id__messages_get"];
+    /** Post Message */
+    post: operations["post_message_api_v1_messages_conversations__conversation_id__messages_post"];
+  };
+  "/api/v1/messages/conversations/{conversation_id}/read": {
+    /** Post Mark Read */
+    post: operations["post_mark_read_api_v1_messages_conversations__conversation_id__read_post"];
+  };
+  "/api/v1/messages/bookings/{booking_id}/conversation": {
+    /** Get Conversation For Booking */
+    get: operations["get_conversation_for_booking_api_v1_messages_bookings__booking_id__conversation_get"];
+  };
+  "/api/v1/messages/templates": {
+    /** Get Message Templates */
+    get: operations["get_message_templates_api_v1_messages_templates_get"];
+  };
+  "/api/v1/messages/conversations/{conversation_id}/automated": {
+    /** Post Automated Message */
+    post: operations["post_automated_message_api_v1_messages_conversations__conversation_id__automated_post"];
+  };
+  "/api/v1/payments/booking/{booking_id}": {
+    /** Get Payment For Booking */
+    get: operations["get_payment_for_booking_api_v1_payments_booking__booking_id__get"];
+  };
+  "/api/v1/payments/{payment_id}": {
+    /** Get Payment Detail */
+    get: operations["get_payment_detail_api_v1_payments__payment_id__get"];
+  };
+  "/api/v1/payments": {
+    /** List My Payments */
+    get: operations["list_my_payments_api_v1_payments_get"];
+  };
+  "/api/v1/payments/{payment_id}/proof/presign": {
+    /** Presign Proof */
+    post: operations["presign_proof_api_v1_payments__payment_id__proof_presign_post"];
+  };
+  "/api/v1/payments/{payment_id}/proof": {
+    /** Submit Proof */
+    post: operations["submit_proof_api_v1_payments__payment_id__proof_post"];
+  };
+  "/api/v1/payments/{payment_id}/verify": {
+    /** Verify Payment Endpoint */
+    post: operations["verify_payment_endpoint_api_v1_payments__payment_id__verify_post"];
+  };
+  "/api/v1/payments/{payment_id}/reject": {
+    /** Reject Payment Endpoint */
+    post: operations["reject_payment_endpoint_api_v1_payments__payment_id__reject_post"];
+  };
+  "/api/v1/payments/admin/queue": {
+    /** Payment Queue */
+    get: operations["payment_queue_api_v1_payments_admin_queue_get"];
+  };
+  "/api/v1/import/preview": {
+    /** Preview Import */
+    post: operations["preview_import_api_v1_import_preview_post"];
+  };
+  "/api/v1/import/confirm": {
+    /** Confirm Import */
+    post: operations["confirm_import_api_v1_import_confirm_post"];
   };
   "/api/v1/finance/wallets/me": {
     /** Get My Wallet */
@@ -268,6 +456,112 @@ export interface paths {
   "/api/v1/finance/webhooks/stripe": {
     /** Stripe Webhook */
     post: operations["stripe_webhook_api_v1_finance_webhooks_stripe_post"];
+  };
+  "/api/v1/discovery/sources": {
+    /** List Sources */
+    get: operations["list_sources_api_v1_discovery_sources_get"];
+  };
+  "/api/v1/discovery/stats": {
+    /** Get Discovery Stats */
+    get: operations["get_discovery_stats_api_v1_discovery_stats_get"];
+  };
+  "/api/v1/discovery/configs": {
+    /** List Configs */
+    get: operations["list_configs_api_v1_discovery_configs_get"];
+    /** Create Config */
+    post: operations["create_config_api_v1_discovery_configs_post"];
+  };
+  "/api/v1/discovery/candidates": {
+    /** List Candidates */
+    get: operations["list_candidates_api_v1_discovery_candidates_get"];
+  };
+  "/api/v1/discovery/candidates/{candidate_id}": {
+    /** Get Candidate */
+    get: operations["get_candidate_api_v1_discovery_candidates__candidate_id__get"];
+  };
+  "/api/v1/discovery/candidates/{candidate_id}/status": {
+    /** Update Candidate Status */
+    patch: operations["update_candidate_status_api_v1_discovery_candidates__candidate_id__status_patch"];
+  };
+  "/api/v1/discovery/candidates/{candidate_id}/import": {
+    /** Import Candidate */
+    post: operations["import_candidate_api_v1_discovery_candidates__candidate_id__import_post"];
+  };
+  "/api/v1/discovery/runs": {
+    /** List Runs */
+    get: operations["list_runs_api_v1_discovery_runs_get"];
+    /** Trigger Run */
+    post: operations["trigger_run_api_v1_discovery_runs_post"];
+  };
+  "/api/v1/favorites/{unit_id}": {
+    /** Toggle Favorite Endpoint */
+    post: operations["toggle_favorite_endpoint_api_v1_favorites__unit_id__post"];
+  };
+  "/api/v1/favorites": {
+    /** List Favorites */
+    get: operations["list_favorites_api_v1_favorites_get"];
+  };
+  "/api/v1/locations/autocomplete": {
+    /** Location Autocomplete Endpoint */
+    get: operations["location_autocomplete_endpoint_api_v1_locations_autocomplete_get"];
+  };
+  "/api/v1/locations/popular": {
+    /** Location Popular Endpoint */
+    get: operations["location_popular_endpoint_api_v1_locations_popular_get"];
+  };
+  "/api/v1/bookings/{booking_id}/reviews": {
+    /** Post Booking Review */
+    post: operations["post_booking_review_api_v1_bookings__booking_id__reviews_post"];
+  };
+  "/api/v1/listings/{unit_id}/reviews": {
+    /** Get Unit Reviews */
+    get: operations["get_unit_reviews_api_v1_listings__unit_id__reviews_get"];
+  };
+  "/api/v1/host/today": {
+    /** Get Host Today Endpoint */
+    get: operations["get_host_today_endpoint_api_v1_host_today_get"];
+  };
+  "/api/v1/host/reservations": {
+    /** List Host Reservations Endpoint */
+    get: operations["list_host_reservations_endpoint_api_v1_host_reservations_get"];
+  };
+  "/api/v1/host/reservations/{booking_id}": {
+    /** Get Host Reservation Detail Endpoint */
+    get: operations["get_host_reservation_detail_endpoint_api_v1_host_reservations__booking_id__get"];
+  };
+  "/api/v1/host/earnings": {
+    /** Get Host Earnings Endpoint */
+    get: operations["get_host_earnings_endpoint_api_v1_host_earnings_get"];
+  };
+  "/api/v1/host/calendar": {
+    /** Get Host Calendar Endpoint */
+    get: operations["get_host_calendar_endpoint_api_v1_host_calendar_get"];
+  };
+  "/api/v1/host/listings/{unit_id}/readiness": {
+    /** Get Listing Readiness Endpoint */
+    get: operations["get_listing_readiness_endpoint_api_v1_host_listings__unit_id__readiness_get"];
+  };
+  "/api/v1/host/listings/{unit_id}": {
+    /** Get Host Listing Detail Endpoint */
+    get: operations["get_host_listing_detail_endpoint_api_v1_host_listings__unit_id__get"];
+  };
+  "/api/v1/host/listings/{unit_id}/co-hosts": {
+    /** List Co Hosts Endpoint */
+    get: operations["list_co_hosts_endpoint_api_v1_host_listings__unit_id__co_hosts_get"];
+    /** Invite Co Host Endpoint */
+    post: operations["invite_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts_post"];
+  };
+  "/api/v1/host/listings/{unit_id}/co-hosts/{co_host_id}": {
+    /** Remove Co Host Endpoint */
+    delete: operations["remove_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts__co_host_id__delete"];
+    /** Update Co Host Endpoint */
+    patch: operations["update_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts__co_host_id__patch"];
+  };
+  "/api/v1/host/profile": {
+    /** Get Host Profile Endpoint */
+    get: operations["get_host_profile_endpoint_api_v1_host_profile_get"];
+    /** Update Host Profile Endpoint */
+    patch: operations["update_host_profile_endpoint_api_v1_host_profile_patch"];
   };
   "/health": {
     /** Health Check */
@@ -347,6 +641,15 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** AutomatedMessageSend */
+    AutomatedMessageSend: {
+      /** Template Key */
+      template_key: string;
+      /** Variables */
+      variables?: {
+        [key: string]: string;
+      };
+    };
     /** AvailabilityDay */
     AvailabilityDay: {
       /**
@@ -397,6 +700,38 @@ export interface components {
       /** Amenities */
       amenities?: string[] | null;
     };
+    /** Body_preview_import_api_v1_import_preview_post */
+    Body_preview_import_api_v1_import_preview_post: {
+      /** File */
+      file: string;
+    };
+    /** BookingCancelRequest */
+    BookingCancelRequest: {
+      /** Reason */
+      reason?: string | null;
+    };
+    /**
+     * BookingCancellationPreview
+     * @description Financial consequence of cancelling a booking, computed but not applied.
+     *
+     * Lets the UI show the guest/host what cancelling will actually cost before
+     * they confirm — the refund amount here is exactly what `cancel_booking`
+     * will apply if called immediately after.
+     */
+    BookingCancellationPreview: {
+      /** Booking Id */
+      booking_id: string;
+      /** Cancellable */
+      cancellable: boolean;
+      /** Cancelled By */
+      cancelled_by: string;
+      /** Total Paid Egp */
+      total_paid_egp: number;
+      /** Refund Amount Egp */
+      refund_amount_egp: number;
+      /** Refund Policy Applied */
+      refund_policy_applied: string;
+    };
     /** BookingCreate */
     BookingCreate: {
       /** Unit Id */
@@ -439,6 +774,8 @@ export interface components {
       host_id?: string | null;
       /** Status */
       status: string;
+      /** Stay Phase */
+      stay_phase: string;
       /**
        * Check In
        * Format: date
@@ -466,6 +803,12 @@ export interface components {
       rejected_at: string | null;
       /** Cancelled At */
       cancelled_at: string | null;
+      /** Cancelled By */
+      cancelled_by?: string | null;
+      /** Checked In At */
+      checked_in_at?: string | null;
+      /** Checked Out At */
+      checked_out_at?: string | null;
       /** Reject Reason */
       reject_reason: string | null;
       /** Cancel Reason */
@@ -485,7 +828,7 @@ export interface components {
      * BookingStatus
      * @enum {string}
      */
-    BookingStatus: "requested" | "accepted" | "confirmed" | "rejected" | "cancelled";
+    BookingStatus: "requested" | "accepted" | "confirmed" | "completed" | "rejected" | "cancelled";
     /** BookingUpdate */
     BookingUpdate: {
       status: components["schemas"]["BookingStatus"];
@@ -587,6 +930,38 @@ export interface components {
      * @enum {string}
      */
     CancellationReason: "change_of_plans" | "emergency" | "host_request" | "admin_request" | "payment_failure" | "fraud" | "other";
+    /**
+     * CandidateImportRequest
+     * @description Request to promote a candidate into the existing import pipeline.
+     */
+    CandidateImportRequest: {
+      /** Host Name */
+      host_name?: string | null;
+      /** Host Phone */
+      host_phone?: string | null;
+      /** Host Email */
+      host_email?: string | null;
+      /** Overrides */
+      overrides?: {
+        [key: string]: unknown;
+      };
+    };
+    /** CandidateListResponse */
+    CandidateListResponse: {
+      /** Data */
+      data: components["schemas"]["DiscoveryCandidateResponse"][];
+      /** Pagination */
+      pagination: {
+        [key: string]: unknown;
+      };
+    };
+    /** CandidateStatusUpdate */
+    CandidateStatusUpdate: {
+      /** Status */
+      status: string;
+      /** Notes */
+      notes?: string | null;
+    };
     /** ChecklistItem */
     ChecklistItem: {
       /** Item */
@@ -596,6 +971,136 @@ export interface components {
        * @default false
        */
       completed?: boolean;
+    };
+    /** CoHostInvite */
+    CoHostInvite: {
+      /** Co Host User Id */
+      co_host_user_id: string;
+      /**
+       * Permission Scope
+       * @default calendar_only
+       */
+      permission_scope?: string;
+    };
+    /** CoHostResponse */
+    CoHostResponse: {
+      /** Id */
+      id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** Co Host User Id */
+      co_host_user_id: string;
+      /** Co Host Display Name */
+      co_host_display_name?: string | null;
+      /** Co Host Phone */
+      co_host_phone?: string | null;
+      /** Permission Scope */
+      permission_scope: string;
+      /** Is Active */
+      is_active: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** CoHostUpdate */
+    CoHostUpdate: {
+      /** Permission Scope */
+      permission_scope?: string | null;
+      /** Is Active */
+      is_active?: boolean | null;
+    };
+    /** ConversationDetailResponse */
+    ConversationDetailResponse: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string | null;
+      /** Unit Id */
+      unit_id: string | null;
+      /** Type */
+      type: string;
+      /** Status */
+      status: string;
+      /** Participants */
+      participants: components["schemas"]["ParticipantResponse"][];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /** Messages */
+      messages: components["schemas"]["MessageResponse"][];
+    };
+    /** ConversationListItem */
+    ConversationListItem: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string | null;
+      /** Unit Id */
+      unit_id: string | null;
+      /** Type */
+      type: string;
+      /** Status */
+      status: string;
+      /** Unread Count */
+      unread_count: number;
+      last_message: components["schemas"]["MessageResponse"] | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** ConversationResponse */
+    ConversationResponse: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string | null;
+      /** Unit Id */
+      unit_id: string | null;
+      /** Type */
+      type: string;
+      /** Status */
+      status: string;
+      /** Participants */
+      participants: components["schemas"]["ParticipantResponse"][];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** DevTokenRequest */
+    DevTokenRequest: {
+      /**
+       * User Id
+       * @description ID of the user to issue tokens for (dev only)
+       */
+      user_id: string;
     };
     /** DeviceTokenRegisterRequest */
     DeviceTokenRegisterRequest: {
@@ -623,6 +1128,324 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+    };
+    /** DiscoveryCandidateResponse */
+    DiscoveryCandidateResponse: {
+      /** Id */
+      id: string;
+      /** Source */
+      source: string;
+      /** Source Url */
+      source_url: string;
+      /** External Listing Id */
+      external_listing_id?: string | null;
+      /**
+       * Discovered At
+       * Format: date-time
+       */
+      discovered_at: string;
+      /**
+       * Candidate Type
+       * @default PLACE
+       */
+      candidate_type?: string;
+      /** Raw Title */
+      raw_title?: string | null;
+      /** Raw Description */
+      raw_description?: string | null;
+      /** Raw Price */
+      raw_price?: string | null;
+      /** Raw Location */
+      raw_location?: string | null;
+      /** Raw Images */
+      raw_images?: string[];
+      /** Raw Amenities */
+      raw_amenities?: string[];
+      /** Title */
+      title?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Country */
+      country?: string | null;
+      /** City */
+      city?: string | null;
+      /** Zone */
+      zone?: string | null;
+      /** Latitude */
+      latitude?: number | null;
+      /** Longitude */
+      longitude?: number | null;
+      /** Property Type */
+      property_type?: string | null;
+      /** Bedrooms */
+      bedrooms?: number | null;
+      /** Bathrooms */
+      bathrooms?: number | null;
+      /** Guest Capacity */
+      guest_capacity?: number | null;
+      /** Nightly Price */
+      nightly_price?: number | null;
+      /** Currency */
+      currency?: string | null;
+      /** Image Urls */
+      image_urls?: string[];
+      /** Amenities */
+      amenities?: string[];
+      /** Source Confidence */
+      source_confidence: number;
+      /** Data Completeness Score */
+      data_completeness_score: number;
+      /** Qualification Score */
+      qualification_score: number;
+      /** Contact Status */
+      contact_status: string;
+      /** Contact Type */
+      contact_type?: string | null;
+      /** Contact Value */
+      contact_value?: string | null;
+      /** Contact Confidence */
+      contact_confidence: number;
+      /** Duplicate Status */
+      duplicate_status: string;
+      /** Duplicate Confidence */
+      duplicate_confidence: number;
+      /** Duplicate Of Id */
+      duplicate_of_id?: string | null;
+      /** Status */
+      status: string;
+      /** Notes */
+      notes?: string | null;
+      /** Imported Unit Id */
+      imported_unit_id?: string | null;
+      /** Run Id */
+      run_id?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** DiscoveryConfigCreate */
+    DiscoveryConfigCreate: {
+      /** Name */
+      name: string;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled?: boolean;
+      /**
+       * Country
+       * @default Egypt
+       */
+      country?: string;
+      /** City */
+      city?: string | null;
+      /** Zone */
+      zone?: string | null;
+      /** Property Type */
+      property_type?: string | null;
+      /** Min Price */
+      min_price?: number | null;
+      /** Max Price */
+      max_price?: number | null;
+      /** Min Bedrooms */
+      min_bedrooms?: number | null;
+      /** Min Guest Capacity */
+      min_guest_capacity?: number | null;
+      /** Keywords */
+      keywords?: string[];
+      /** Source */
+      source: string;
+      /**
+       * Frequency Hours
+       * @default 24
+       */
+      frequency_hours?: number;
+      /**
+       * Max Candidates Per Run
+       * @default 50
+       */
+      max_candidates_per_run?: number;
+    };
+    /** DiscoveryConfigResponse */
+    DiscoveryConfigResponse: {
+      /** Name */
+      name: string;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled?: boolean;
+      /**
+       * Country
+       * @default Egypt
+       */
+      country?: string;
+      /** City */
+      city?: string | null;
+      /** Zone */
+      zone?: string | null;
+      /** Property Type */
+      property_type?: string | null;
+      /** Min Price */
+      min_price?: number | null;
+      /** Max Price */
+      max_price?: number | null;
+      /** Min Bedrooms */
+      min_bedrooms?: number | null;
+      /** Min Guest Capacity */
+      min_guest_capacity?: number | null;
+      /** Keywords */
+      keywords?: string[];
+      /** Source */
+      source: string;
+      /**
+       * Frequency Hours
+       * @default 24
+       */
+      frequency_hours?: number;
+      /**
+       * Max Candidates Per Run
+       * @default 50
+       */
+      max_candidates_per_run?: number;
+      /** Id */
+      id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** DiscoveryRunResponse */
+    DiscoveryRunResponse: {
+      /** Id */
+      id: string;
+      /** Config Id */
+      config_id?: string | null;
+      /** Source */
+      source: string;
+      /** Status */
+      status: string;
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+      /** Completed At */
+      completed_at?: string | null;
+      /** Pages Scanned */
+      pages_scanned: number;
+      /** Candidates Found */
+      candidates_found: number;
+      /** New Candidates */
+      new_candidates: number;
+      /** Duplicates */
+      duplicates: number;
+      /** Qualified */
+      qualified: number;
+      /** Rejected */
+      rejected: number;
+      /** Errors */
+      errors?: string[];
+      /** Run Metadata */
+      run_metadata?: {
+        [key: string]: unknown;
+      };
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** DiscoveryRunTriggerRequest */
+    DiscoveryRunTriggerRequest: {
+      /** Config Id */
+      config_id?: string | null;
+      /** Source */
+      source?: string | null;
+    };
+    /** DiscoveryStatsResponse */
+    DiscoveryStatsResponse: {
+      /**
+       * Total Candidates
+       * @default 0
+       */
+      total_candidates?: number;
+      /**
+       * Unique Candidates
+       * @default 0
+       */
+      unique_candidates?: number;
+      /**
+       * Qualified Candidates
+       * @default 0
+       */
+      qualified_candidates?: number;
+      /**
+       * Prospects
+       * @default 0
+       */
+      prospects?: number;
+      /**
+       * Contacted
+       * @default 0
+       */
+      contacted?: number;
+      /**
+       * Owner Responses
+       * @default 0
+       */
+      owner_responses?: number;
+      /**
+       * Owners Interested
+       * @default 0
+       */
+      owners_interested?: number;
+      /**
+       * Ready For Import
+       * @default 0
+       */
+      ready_for_import?: number;
+      /**
+       * Imported
+       * @default 0
+       */
+      imported?: number;
+      /**
+       * Duplicate Rate
+       * @default 0
+       */
+      duplicate_rate?: number;
+      /** By Source */
+      by_source?: {
+        [key: string]: number;
+      };
+      /** By Candidate Type */
+      by_candidate_type?: {
+        [key: string]: number;
+      };
+      /**
+       * Contactable Candidates
+       * @default 0
+       */
+      contactable_candidates?: number;
     };
     /** EscrowListResponse */
     EscrowListResponse: {
@@ -664,6 +1487,22 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+    };
+    /** FavoriteListResponse */
+    FavoriteListResponse: {
+      /** Data */
+      data: {
+          [key: string]: unknown;
+        }[];
+      /** Total */
+      total: number;
+    };
+    /** FavoriteToggleResponse */
+    FavoriteToggleResponse: {
+      /** Unit Id */
+      unit_id: string;
+      /** Is Favorite */
+      is_favorite: boolean;
     };
     /** FieldStaffCreate */
     FieldStaffCreate: {
@@ -723,6 +1562,46 @@ export interface components {
       /** Redis */
       redis: string;
     };
+    /**
+     * HostCalendarDay
+     * @description A single day in the host calendar view.
+     */
+    HostCalendarDay: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Status */
+      status: string;
+      /** Block Type */
+      block_type?: string | null;
+      /** Price Egp */
+      price_egp: number;
+      /** Reservation Id */
+      reservation_id?: string | null;
+      /** Reservation Status */
+      reservation_status?: string | null;
+      /** Guest Name */
+      guest_name?: string | null;
+    };
+    /** HostCalendarResponse */
+    HostCalendarResponse: {
+      /** Unit Id */
+      unit_id: string | null;
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Days */
+      days: components["schemas"]["HostCalendarDay"][];
+    };
     /** HostDashboardStats */
     HostDashboardStats: {
       /** Total Listings */
@@ -737,6 +1616,147 @@ export interface components {
       total_revenue_egp: number;
       /** Occupancy Rate Pct */
       occupancy_rate_pct: number;
+    };
+    /**
+     * HostEarningsSummary
+     * @description Host-facing financial visibility — read-only, no payout claims.
+     */
+    HostEarningsSummary: {
+      /** Total Bookings */
+      total_bookings: number;
+      /** Confirmed Bookings */
+      confirmed_bookings: number;
+      /** Completed Stays */
+      completed_stays: number;
+      /** Total Revenue Egp */
+      total_revenue_egp: number;
+      /** Pending Verification Egp */
+      pending_verification_egp: number;
+      /** Refund Pending Egp */
+      refund_pending_egp: number;
+      /** Net Earnings Egp */
+      net_earnings_egp: number;
+      /** Per Unit */
+      per_unit?: {
+          [key: string]: unknown;
+        }[];
+    };
+    /**
+     * HostListingDetail
+     * @description Full listing detail for the host management view.
+     *
+     * Combines the listing response with readiness, photos, and
+     * permission scope so the mobile editor has everything it needs
+     * in one round-trip.
+     */
+    HostListingDetail: {
+      /** Id */
+      id: string;
+      /** Host Id */
+      host_id: string;
+      /** Property Type */
+      property_type: string;
+      /** Status */
+      status: string;
+      /** Lat */
+      lat: number;
+      /** Lng */
+      lng: number;
+      /** Governorate */
+      governorate: string;
+      /** City */
+      city: string;
+      /** Country */
+      country: string;
+      /** District */
+      district?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Max Guests */
+      max_guests: number;
+      /** Bedrooms */
+      bedrooms: number;
+      /** Beds */
+      beds: number;
+      /** Bathrooms */
+      bathrooms: number;
+      /** Category */
+      category: string;
+      /** Title Ar */
+      title_ar: string;
+      /** Title En */
+      title_en?: string | null;
+      /** Description Ar */
+      description_ar: string;
+      /** Description En */
+      description_en?: string | null;
+      /** Amenities */
+      amenities?: string[];
+      /** Cultural Tags */
+      cultural_tags?: string[];
+      /** House Rules */
+      house_rules?: string | null;
+      /** Check In Instructions */
+      check_in_instructions?: string | null;
+      /** Check In Time */
+      check_in_time?: string | null;
+      /** Check Out Time */
+      check_out_time?: string | null;
+      /** Pre Arrival Info Release Hours */
+      pre_arrival_info_release_hours?: number | null;
+      /** Policies */
+      policies?: string | null;
+      /** Base Price Egp */
+      base_price_egp: number;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp: number;
+      /** Cancellation Policy */
+      cancellation_policy: string;
+      /** Currency */
+      currency: string;
+      /** Weekend Mult */
+      weekend_mult: number;
+      /** Peak Mult */
+      peak_mult: number;
+      /** Min Nights */
+      min_nights: number;
+      /** Max Nights */
+      max_nights: number;
+      /** Cover Image */
+      cover_image?: string | null;
+      /** Photos */
+      photos?: components["schemas"]["HostListingPhoto"][];
+      readiness?: components["schemas"]["ListingReadinessResponse"] | null;
+      /**
+       * Permission Scope
+       * @default owner
+       */
+      permission_scope?: string;
+    };
+    /**
+     * HostListingPhoto
+     * @description Photo as seen in the host listing management view.
+     */
+    HostListingPhoto: {
+      /** Id */
+      id: string;
+      /** Url */
+      url: string;
+      /** Display Order */
+      display_order: number;
+      /** Is Cover */
+      is_cover: boolean;
+      /** Caption */
+      caption?: string | null;
+    };
+    /** HostProfileUpdate */
+    HostProfileUpdate: {
+      /** Display Name */
+      display_name?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Locale */
+      locale?: string | null;
     };
     /** HostReservationCalendarItem */
     HostReservationCalendarItem: {
@@ -777,6 +1797,336 @@ export interface components {
       check_out: string;
       /** Reservations */
       reservations: components["schemas"]["HostReservationCalendarItem"][];
+    };
+    /**
+     * HostReservationDetail
+     * @description Full reservation detail with payment and property context.
+     */
+    HostReservationDetail: {
+      booking: components["schemas"]["HostReservationSummary"];
+      /** Property */
+      property: {
+        [key: string]: unknown;
+      };
+      /** Payment */
+      payment: {
+        [key: string]: unknown;
+      } | null;
+      /** Cancellation Preview */
+      cancellation_preview: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /**
+     * HostReservationSummary
+     * @description A reservation as seen from the host's perspective.
+     */
+    HostReservationSummary: {
+      /** Id */
+      id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** Unit Title */
+      unit_title?: string | null;
+      /** Guest Id */
+      guest_id: string;
+      /** Guest Name */
+      guest_name?: string | null;
+      /** Guest Phone */
+      guest_phone?: string | null;
+      /** Status */
+      status: string;
+      /** Stay Phase */
+      stay_phase: string;
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Adults */
+      adults: number;
+      /** Children */
+      children: number;
+      /** Infants */
+      infants: number;
+      /**
+       * Requested At
+       * Format: date-time
+       */
+      requested_at: string;
+      /** Accepted At */
+      accepted_at?: string | null;
+      /** Cancelled At */
+      cancelled_at?: string | null;
+      /** Checked In At */
+      checked_in_at?: string | null;
+      /** Checked Out At */
+      checked_out_at?: string | null;
+      /** Cancel Reason */
+      cancel_reason?: string | null;
+    };
+    /**
+     * HostTodayItem
+     * @description A single actionable item on the host's today screen.
+     */
+    HostTodayItem: {
+      /** Item Type */
+      item_type: string;
+      /** Booking Id */
+      booking_id?: string | null;
+      /** Unit Id */
+      unit_id?: string | null;
+      /** Guest Name */
+      guest_name?: string | null;
+      /** Guest Id */
+      guest_id?: string | null;
+      /** Check In */
+      check_in?: string | null;
+      /** Check Out */
+      check_out?: string | null;
+      /** Status */
+      status?: string | null;
+      /** Stay Phase */
+      stay_phase?: string | null;
+      /** Title */
+      title: string;
+      /** Subtitle */
+      subtitle?: string | null;
+      /** Action Url */
+      action_url?: string | null;
+      /**
+       * Priority
+       * @default 0
+       */
+      priority?: number;
+    };
+    /**
+     * HostTodayResponse
+     * @description The host's operational dashboard — "what do I need to do today?".
+     */
+    HostTodayResponse: {
+      /** Items */
+      items: components["schemas"]["HostTodayItem"][];
+      /** Summary */
+      summary?: {
+        [key: string]: number;
+      };
+    };
+    /**
+     * ImportConfirmRequest
+     * @description Sent by the frontend after the user reviews the preview.
+     */
+    ImportConfirmRequest: {
+      /** Rows */
+      rows: components["schemas"]["ImportRowData"][];
+    };
+    /** ImportPreviewResponse */
+    ImportPreviewResponse: {
+      /** Total Rows */
+      total_rows: number;
+      /** Valid Rows */
+      valid_rows: number;
+      /** Invalid Rows */
+      invalid_rows: number;
+      /** Duplicate Rows */
+      duplicate_rows: number;
+      /** Rows */
+      rows: components["schemas"]["ImportPreviewRow"][];
+    };
+    /** ImportPreviewRow */
+    ImportPreviewRow: {
+      /** Row Number */
+      row_number: number;
+      /** Title */
+      title: string;
+      /** Description */
+      description: string;
+      /** Address */
+      address?: string | null;
+      /** District */
+      district?: string | null;
+      /** City */
+      city: string;
+      /** Governorate */
+      governorate: string;
+      /**
+       * Country
+       * @default Egypt
+       */
+      country?: string;
+      /** Latitude */
+      latitude: number;
+      /** Longitude */
+      longitude: number;
+      /** Property Type */
+      property_type: string;
+      /**
+       * Bedrooms
+       * @default 0
+       */
+      bedrooms?: number;
+      /**
+       * Beds
+       * @default 1
+       */
+      beds?: number;
+      /**
+       * Bathrooms
+       * @default 1
+       */
+      bathrooms?: number;
+      /**
+       * Max Guests
+       * @default 1
+       */
+      max_guests?: number;
+      /** Price */
+      price: number;
+      /**
+       * Currency
+       * @default EGP
+       */
+      currency?: string;
+      /** Amenities */
+      amenities?: string[];
+      /** Image Urls */
+      image_urls?: string[];
+      /** Host Name */
+      host_name?: string | null;
+      /** Host Phone */
+      host_phone?: string | null;
+      /** Host Email */
+      host_email?: string | null;
+      /**
+       * Status
+       * @default PENDING_VERIFICATION
+       */
+      status?: string;
+      /** Is Valid */
+      is_valid: boolean;
+      /**
+       * Is Duplicate
+       * @default false
+       */
+      is_duplicate?: boolean;
+      /** Errors */
+      errors?: components["schemas"]["ImportRowError"][];
+    };
+    /** ImportResultRow */
+    ImportResultRow: {
+      /** Row Number */
+      row_number: number;
+      /** Title */
+      title: string;
+      /** Unit Id */
+      unit_id?: string | null;
+      /** Status */
+      status: string;
+      /** Error */
+      error?: string | null;
+    };
+    /**
+     * ImportRowData
+     * @description Represents a single parsed row from an import file.
+     */
+    ImportRowData: {
+      /** Row Number */
+      row_number: number;
+      /** Title */
+      title: string;
+      /** Description */
+      description: string;
+      /** Address */
+      address?: string | null;
+      /** District */
+      district?: string | null;
+      /** City */
+      city: string;
+      /** Governorate */
+      governorate: string;
+      /**
+       * Country
+       * @default Egypt
+       */
+      country?: string;
+      /** Latitude */
+      latitude: number;
+      /** Longitude */
+      longitude: number;
+      /** Property Type */
+      property_type: string;
+      /**
+       * Bedrooms
+       * @default 0
+       */
+      bedrooms?: number;
+      /**
+       * Beds
+       * @default 1
+       */
+      beds?: number;
+      /**
+       * Bathrooms
+       * @default 1
+       */
+      bathrooms?: number;
+      /**
+       * Max Guests
+       * @default 1
+       */
+      max_guests?: number;
+      /** Price */
+      price: number;
+      /**
+       * Currency
+       * @default EGP
+       */
+      currency?: string;
+      /** Amenities */
+      amenities?: string[];
+      /** Image Urls */
+      image_urls?: string[];
+      /** Host Name */
+      host_name?: string | null;
+      /** Host Phone */
+      host_phone?: string | null;
+      /** Host Email */
+      host_email?: string | null;
+      /**
+       * Status
+       * @default PENDING_VERIFICATION
+       */
+      status?: string;
+    };
+    /** ImportRowError */
+    ImportRowError: {
+      /** Row Number */
+      row_number: number;
+      /** Field */
+      field: string;
+      /** Message */
+      message: string;
+    };
+    /** ImportSummaryResponse */
+    ImportSummaryResponse: {
+      /** Total Requested */
+      total_requested: number;
+      /** Created */
+      created: number;
+      /** Failed */
+      failed: number;
+      /** Results */
+      results: components["schemas"]["ImportResultRow"][];
+    };
+    /** KycApproveRequest */
+    KycApproveRequest: {
+      /** Legal Name */
+      legal_name?: string | null;
     };
     /** KycDocumentResponse */
     KycDocumentResponse: {
@@ -836,6 +2186,18 @@ export interface components {
        * Format: date-time
        */
       expires_at: string;
+    };
+    /** KycPendingListResponse */
+    KycPendingListResponse: {
+      /** Data */
+      data: components["schemas"]["KycDocumentResponse"][];
+      /** Total */
+      total: number;
+    };
+    /** KycRejectRequest */
+    KycRejectRequest: {
+      /** Reason */
+      reason: string;
     };
     /**
      * KycStatus
@@ -921,12 +2283,24 @@ export interface components {
       district?: string | null;
       /** Google Place Id */
       google_place_id?: string | null;
+      /** Address */
+      address?: string | null;
       /** Max Guests */
       max_guests: number;
       /** Bedrooms */
       bedrooms: number;
+      /**
+       * Beds
+       * @default 1
+       */
+      beds?: number;
       /** Bathrooms */
       bathrooms: number;
+      /**
+       * Category
+       * @default ENTIRE_PLACE
+       */
+      category?: string;
       /** Title Ar */
       title_ar: string;
       /** Title En */
@@ -941,6 +2315,16 @@ export interface components {
       cultural_tags?: string[];
       /** Base Price Egp */
       base_price_egp: number;
+      /**
+       * Cleaning Fee Egp
+       * @default 0
+       */
+      cleaning_fee_egp?: number;
+      /**
+       * Cancellation Policy
+       * @default FLEXIBLE
+       */
+      cancellation_policy?: string;
       /**
        * Weekend Mult
        * @default 1
@@ -965,6 +2349,12 @@ export interface components {
       house_rules?: string | null;
       /** Check In Instructions */
       check_in_instructions?: string | null;
+      /** Check In Time */
+      check_in_time?: string | null;
+      /** Check Out Time */
+      check_out_time?: string | null;
+      /** Pre Arrival Info Release Hours */
+      pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies?: string | null;
       /**
@@ -985,6 +2375,24 @@ export interface components {
        */
       is_draft?: boolean;
     };
+    /** ListingReadinessResponse */
+    ListingReadinessResponse: {
+      /** Unit Id */
+      unit_id: string;
+      /** Status */
+      status: string;
+      /** Missing Items */
+      missing_items: string[];
+      /**
+       * Computed At
+       * Format: date-time
+       */
+      computed_at: string;
+      /** Missing Item Labels */
+      missing_item_labels?: {
+        [key: string]: string;
+      };
+    };
     /** ListingResponse */
     ListingResponse: {
       /** Id */
@@ -992,11 +2400,11 @@ export interface components {
       /** Host Id */
       host_id: string;
       /** Host Display Name */
-      host_display_name: string | null;
+      host_display_name?: string | null;
       /** Host Kyc Status */
-      host_kyc_status: string | null;
+      host_kyc_status?: string | null;
       /** Host Joined At */
-      host_joined_at: string | null;
+      host_joined_at?: string | null;
       /** Property Type */
       property_type: string;
       /** Status */
@@ -1063,10 +2471,23 @@ export interface components {
       house_rules: string | null;
       /** Check In Instructions */
       check_in_instructions: string | null;
+      /** Check In Time */
+      check_in_time?: string | null;
+      /** Check Out Time */
+      check_out_time?: string | null;
+      /** Pre Arrival Info Release Hours */
+      pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies: string | null;
       /** Cover Image */
       cover_image?: string | null;
+      /** Average Rating */
+      average_rating?: number | null;
+      /**
+       * Review Count
+       * @default 0
+       */
+      review_count?: number;
     };
     /** ListingSearchResponse */
     ListingSearchResponse: {
@@ -1117,9 +2538,16 @@ export interface components {
       /** House Rules */
       house_rules: string | null;
       /** Host Kyc Status */
-      host_kyc_status: string | null;
+      host_kyc_status?: string | null;
       /** Cover Image */
       cover_image?: string | null;
+      /** Average Rating */
+      average_rating?: number | null;
+      /**
+       * Review Count
+       * @default 0
+       */
+      review_count?: number;
     };
     /** ListingUpdate */
     ListingUpdate: {
@@ -1137,6 +2565,16 @@ export interface components {
       cultural_tags?: string[] | null;
       /** Base Price Egp */
       base_price_egp?: number | null;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp?: number | null;
+      /** Cancellation Policy */
+      cancellation_policy?: string | null;
+      /** Category */
+      category?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Beds */
+      beds?: number | null;
       /** Weekend Mult */
       weekend_mult?: number | null;
       /** Peak Mult */
@@ -1149,6 +2587,12 @@ export interface components {
       house_rules?: string | null;
       /** Check In Instructions */
       check_in_instructions?: string | null;
+      /** Check In Time */
+      check_in_time?: string | null;
+      /** Check Out Time */
+      check_out_time?: string | null;
+      /** Pre Arrival Info Release Hours */
+      pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies?: string | null;
       /** Country */
@@ -1157,6 +2601,26 @@ export interface components {
       currency?: string | null;
       /** Cover Photo Id */
       cover_photo_id?: string | null;
+    };
+    /** LocationAutocompleteResponse */
+    LocationAutocompleteResponse: {
+      /** Suggestions */
+      suggestions: components["schemas"]["LocationSuggestion"][];
+    };
+    /** LocationSuggestion */
+    LocationSuggestion: {
+      /** Canonical Name En */
+      canonical_name_en: string;
+      /** Canonical Name Ar */
+      canonical_name_ar: string;
+      /** City */
+      city: string;
+      /** Governorate */
+      governorate: string;
+      /** Lat */
+      lat?: number | null;
+      /** Lng */
+      lng?: number | null;
     };
     /** MaintenanceRequestCreate */
     MaintenanceRequestCreate: {
@@ -1206,6 +2670,57 @@ export interface components {
       /** Related Task Id */
       related_task_id?: string | null;
     };
+    /** MarkReadRequest */
+    MarkReadRequest: Record<string, never>;
+    /** MessageCreate */
+    MessageCreate: {
+      /** Content */
+      content: string;
+    };
+    /** MessageResponse */
+    MessageResponse: {
+      /** Id */
+      id: string;
+      /** Conversation Id */
+      conversation_id: string;
+      /** Sender Id */
+      sender_id: string | null;
+      /** Sender Role */
+      sender_role: string;
+      /** Content */
+      content: string;
+      /** Status */
+      status: string;
+      /** Automation Type */
+      automation_type: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** MessageTemplateResponse */
+    MessageTemplateResponse: {
+      /** Id */
+      id: string;
+      /** Key */
+      key: string;
+      /** Name */
+      name: string;
+      /** Body */
+      body: string;
+      /** Variables */
+      variables: string[];
+      /** Category */
+      category: string;
+      /** Locale */
+      locale: string;
+    };
     /** OperationsDashboardResponse */
     OperationsDashboardResponse: {
       /** Pending Tasks */
@@ -1223,10 +2738,36 @@ export interface components {
       /** Active Field Staff */
       active_field_staff: number;
     };
+    /**
+     * OtpChallengeResponse
+     * @description Proxies Akedly's V1.2 /transactions/challenge response to the client.
+     * Never includes APIKey/pipelineID — those stay backend-only.
+     */
+    OtpChallengeResponse: {
+      /** Challenge */
+      challenge: string;
+      /** Difficulty */
+      difficulty: number;
+      /** Challenge Token */
+      challenge_token: string;
+      /** Challenge Required */
+      challenge_required: boolean;
+      /** Turnstile Required */
+      turnstile_required: boolean;
+      /** Turnstile Site Key */
+      turnstile_site_key?: string | null;
+    };
     /** OtpSendRequest */
     OtpSendRequest: {
       /** Phone Number */
       phone_number: string;
+      /** @description Client-solved PoW proof from @akedly/shield's solvePow(); omit to let the backend solve it server-side */
+      pow_solution?: components["schemas"]["PowSolution"] | null;
+      /**
+       * Turnstile Token
+       * @description Cloudflare Turnstile token, required only if Akedly's pipeline challenge demands one
+       */
+      turnstile_token?: string | null;
     };
     /** OtpSendResponse */
     OtpSendResponse: {
@@ -1250,6 +2791,15 @@ export interface components {
       has_more: boolean;
       /** Total Count */
       total_count: number;
+    };
+    /** ParticipantResponse */
+    ParticipantResponse: {
+      /** User Id */
+      user_id: string;
+      /** Role */
+      role: string;
+      /** Last Read At */
+      last_read_at: string | null;
     };
     /** PaymentConfirmationRequest */
     PaymentConfirmationRequest: {
@@ -1278,16 +2828,130 @@ export interface components {
       /** Captured At */
       captured_at: string | null;
     };
+    /** PaymentListItem */
+    PaymentListItem: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string;
+      /** Guest Id */
+      guest_id: string;
+      /** Host Id */
+      host_id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** Status */
+      status: string;
+      /** Method */
+      method: string;
+      /** Amount Egp */
+      amount_egp: number;
+      /** Reference Number */
+      reference_number: string;
+      /** Proof Url */
+      proof_url: string | null;
+      /** Proof Uploaded At */
+      proof_uploaded_at: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
     /**
      * PaymentMethod
      * @enum {string}
      */
     PaymentMethod: "fawry" | "meeza" | "vodafone_cash" | "card";
+    /** PaymentProofPresignRequest */
+    PaymentProofPresignRequest: {
+      /** Filename */
+      filename: string;
+      /** Content Type */
+      content_type: string;
+    };
+    /** PaymentProofPresignResponse */
+    PaymentProofPresignResponse: {
+      /** Upload Url */
+      upload_url: string;
+      /** Proof Key */
+      proof_key: string;
+    };
+    /** PaymentProofUpload */
+    PaymentProofUpload: {
+      /** S3 Key */
+      s3_key: string;
+      /** Url */
+      url: string;
+    };
     /**
      * PaymentProvider
      * @enum {string}
      */
     PaymentProvider: "paymob" | "stripe";
+    /** PaymentResponse */
+    PaymentResponse: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string;
+      /** Guest Id */
+      guest_id: string;
+      /** Host Id */
+      host_id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** Status */
+      status: string;
+      /** Method */
+      method: string;
+      /** Amount Egp */
+      amount_egp: number;
+      /** Nights */
+      nights: number;
+      /** Reference Number */
+      reference_number: string;
+      /** Proof S3 Key */
+      proof_s3_key: string | null;
+      /** Proof Url */
+      proof_url: string | null;
+      /** Proof Uploaded At */
+      proof_uploaded_at: string | null;
+      /** Verified At */
+      verified_at: string | null;
+      /** Verified By */
+      verified_by: string | null;
+      /** Rejected At */
+      rejected_at: string | null;
+      /** Rejected By */
+      rejected_by: string | null;
+      /** Reject Reason */
+      reject_reason: string | null;
+      /** Cancelled At */
+      cancelled_at: string | null;
+      /** Instructions */
+      instructions: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** PaymentVerifyRequest */
+    PaymentVerifyRequest: {
+      /** Reject Reason */
+      reject_reason?: string | null;
+    };
     /** PayoutListResponse */
     PayoutListResponse: {
       /**
@@ -1347,6 +3011,67 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+    };
+    /** PhotoCreate */
+    PhotoCreate: {
+      /** S3 Key */
+      s3_key: string;
+      /** Url */
+      url: string;
+      /** Caption */
+      caption?: string | null;
+      /**
+       * Is Cover
+       * @default false
+       */
+      is_cover?: boolean;
+      /**
+       * Display Order
+       * @default 0
+       */
+      display_order?: number;
+    };
+    /** PhotoPresignRequest */
+    PhotoPresignRequest: {
+      /** Filename */
+      filename: string;
+      /** Content Type */
+      content_type: string;
+    };
+    /** PhotoPresignResponse */
+    PhotoPresignResponse: {
+      /** Upload Url */
+      upload_url: string;
+      /** Photo Key */
+      photo_key: string;
+    };
+    /** PhotoResponse */
+    PhotoResponse: {
+      /** Id */
+      id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** S3 Key */
+      s3_key: string;
+      /** Url */
+      url: string;
+      /** Display Order */
+      display_order: number;
+      /** Is Cover */
+      is_cover: boolean;
+      /** Caption */
+      caption: string | null;
+    };
+    /**
+     * PowSolution
+     * @description Client-solved Akedly PoW proof, from @akedly/shield's solvePow() against a
+     * challenge fetched via GET /auth/otp/challenge.
+     */
+    PowSolution: {
+      /** Challenge Token */
+      challenge_token: string;
+      /** Nonce */
+      nonce: number;
     };
     /** PromoApplicationResponse */
     PromoApplicationResponse: {
@@ -1554,6 +3279,80 @@ export interface components {
      * @enum {string}
      */
     ReservationStatus: "pending_payment" | "confirmed" | "checked_in" | "checked_out" | "cancelled" | "disputed" | "completed";
+    /** ReviewCreate */
+    ReviewCreate: {
+      /** Rating */
+      rating: number;
+      /** Comment */
+      comment?: string | null;
+    };
+    /** ReviewListResponse */
+    ReviewListResponse: {
+      /** Data */
+      data: components["schemas"]["ReviewResponse"][];
+      /** Average Rating */
+      average_rating: number | null;
+      /** Review Count */
+      review_count: number;
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+    };
+    /** ReviewResponse */
+    ReviewResponse: {
+      /** Id */
+      id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** Booking Id */
+      booking_id: string;
+      /** Guest Id */
+      guest_id: string;
+      /** Guest Display Name */
+      guest_display_name?: string | null;
+      /** Rating */
+      rating: number;
+      /** Comment */
+      comment: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** RoleUpgradeRequest */
+    RoleUpgradeRequest: {
+      /** @default host */
+      role?: components["schemas"]["UserRole"];
+    };
+    /** RoleUpgradeResponse */
+    RoleUpgradeResponse: {
+      /** Id */
+      id: string;
+      /** Phone Number */
+      phone_number: string | null;
+      /** Email */
+      email: string | null;
+      /** Display Name */
+      display_name: string | null;
+      /** Locale */
+      locale: string;
+      role: components["schemas"]["UserRole"];
+      kyc_status: components["schemas"]["KycStatus"];
+      /** Is Active */
+      is_active: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
     /** RootResponse */
     RootResponse: {
       /** Message */
@@ -1566,6 +3365,64 @@ export interface components {
      * @enum {string}
      */
     StaffRole: "CLEANER" | "INSPECTOR" | "MAINTENANCE" | "OPERATIONS";
+    /**
+     * StayArrivalInfo
+     * @description Time-gated arrival/access information.
+     *
+     * `eligible` tells the client whether this booking has crossed the
+     * pre-arrival release threshold. When false, `check_in_instructions` is
+     * always null — the field is never populated early regardless of what the
+     * client requests.
+     */
+    StayArrivalInfo: {
+      /** Eligible */
+      eligible: boolean;
+      /** Check In Instructions */
+      check_in_instructions?: string | null;
+      /** Default Check In Time */
+      default_check_in_time: string;
+      /** Default Check Out Time */
+      default_check_out_time: string;
+    };
+    /** StayHostInfo */
+    StayHostInfo: {
+      /** Name */
+      name: string | null;
+      /** Phone */
+      phone?: string | null;
+    };
+    /**
+     * StayInfoResponse
+     * @description Aggregated Trip/Stay detail for a single booking — the backing data
+     * for the Mobile Trip detail screen. Not a duplicate of BookingResponse:
+     * this adds property/host/arrival information and review eligibility that
+     * the plain booking record doesn't carry.
+     */
+    StayInfoResponse: {
+      booking: components["schemas"]["BookingResponse"];
+      property: components["schemas"]["StayPropertyInfo"];
+      host: components["schemas"]["StayHostInfo"];
+      arrival: components["schemas"]["StayArrivalInfo"];
+      /** Review Eligible */
+      review_eligible: boolean;
+    };
+    /** StayPropertyInfo */
+    StayPropertyInfo: {
+      /** Unit Id */
+      unit_id: string;
+      /** Title */
+      title: string | null;
+      /** Address */
+      address: string | null;
+      /** Lat */
+      lat: number | null;
+      /** Lng */
+      lng: number | null;
+      /** House Rules */
+      house_rules: string | null;
+      /** Cancellation Policy */
+      cancellation_policy: string | null;
+    };
     /** TaskAssignRequest */
     TaskAssignRequest: {
       /** Field Staff Id */
@@ -1707,6 +3564,11 @@ export interface components {
       /** Refresh Token */
       refresh_token: string;
     };
+    /** UnreadCountResponse */
+    UnreadCountResponse: {
+      /** Total Unread */
+      total_unread: number;
+    };
     /** UserResponse */
     UserResponse: {
       /** Id */
@@ -1833,6 +3695,37 @@ export interface components {
       /** Price Override */
       price_override: number | null;
     };
+    /**
+     * HostProfileResponse
+     * @description Host's own profile — what they see about themselves.
+     */
+    app__host__schemas__HostProfileResponse: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string | null;
+      /** Phone Number */
+      phone_number: string | null;
+      /** Email */
+      email: string | null;
+      /** Kyc Status */
+      kyc_status: string;
+      /** Locale */
+      locale: string;
+      /** Is Active */
+      is_active: boolean;
+      /** Total Listings */
+      total_listings: number;
+      /** Listed Listings */
+      listed_listings: number;
+      /** Co Host Units */
+      co_host_units: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
     /** AvailabilityResponse */
     app__listings__schemas__AvailabilityResponse: {
       /** Unit Id */
@@ -1873,6 +3766,19 @@ export interface components {
       /** Price Override */
       price_override: number | null;
     };
+    /** HostProfileResponse */
+    app__listings__schemas__HostProfileResponse: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string | null;
+      /** Kyc Status */
+      kyc_status: string | null;
+      /** Joined At */
+      joined_at: string | null;
+      /** Listings */
+      listings: components["schemas"]["ListingSearchResult"][];
+    };
   };
   responses: never;
   parameters: never;
@@ -1887,6 +3793,22 @@ export type external = Record<string, never>;
 
 export interface operations {
 
+  /**
+   * Get Otp Challenge
+   * @description Proxies Akedly's V1.2 challenge so the mobile client can solve PoW (and
+   * obtain a Turnstile token, when required) before calling /otp/send. Keeps
+   * AKEDLY_API_KEY and AKEDLY_PIPELINE_ID backend-only.
+   */
+  get_otp_challenge_api_v1_auth_otp_challenge_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OtpChallengeResponse"];
+        };
+      };
+    };
+  };
   /** Send Otp */
   send_otp_api_v1_auth_otp_send_post: {
     requestBody: {
@@ -2043,6 +3965,28 @@ export interface operations {
       };
     };
   };
+  /** Upgrade Role */
+  upgrade_role_api_v1_auth_me_role_patch: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RoleUpgradeRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["RoleUpgradeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Register Device Token */
   register_device_token_api_v1_auth_device_token_post: {
     requestBody: {
@@ -2074,6 +4018,35 @@ export interface operations {
           "application/json": {
             [key: string]: string;
           };
+        };
+      };
+    };
+  };
+  /**
+   * Dev Token
+   * @description Issue a JWT token pair for a given user ID — development only.
+   *
+   * This endpoint bypasses Firebase/Twilio so the founder can validate UI
+   * and user journeys locally without external credentials. It is guarded
+   * by an ENVIRONMENT check and will 404 in any non-development deployment.
+   */
+  dev_token_api_v1_auth_dev_token_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DevTokenRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["TokenPair"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -2133,6 +4106,29 @@ export interface operations {
       };
     };
   };
+  /** List Pending Kyc */
+  list_pending_kyc_api_v1_kyc_pending_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["KycPendingListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Process Kyc */
   process_kyc_api_v1_kyc_documents__document_id__process_post: {
     parameters: {
@@ -2155,11 +4151,68 @@ export interface operations {
       };
     };
   };
+  /** Approve Kyc */
+  approve_kyc_api_v1_kyc_documents__document_id__approve_post: {
+    parameters: {
+      path: {
+        document_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["KycApproveRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["KycDocumentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Reject Kyc */
+  reject_kyc_api_v1_kyc_documents__document_id__reject_post: {
+    parameters: {
+      path: {
+        document_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["KycRejectRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["KycDocumentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** List Listings */
   list_listings_api_v1_listings_get: {
     parameters: {
       query?: {
         q?: string | null;
+        city?: string | null;
+        governorate?: string | null;
+        host_id?: string | null;
         sw_lat?: number | null;
         sw_lng?: number | null;
         ne_lat?: number | null;
@@ -2268,6 +4321,173 @@ export interface operations {
       };
     };
   };
+  /** Get Host Listings Endpoint */
+  get_host_listings_endpoint_api_v1_listings_host_listings_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingResponse"][];
+        };
+      };
+    };
+  };
+  /** Get Host Dashboard Endpoint */
+  get_host_dashboard_endpoint_api_v1_listings_host_dashboard_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostDashboardStats"];
+        };
+      };
+    };
+  };
+  /** Get Host Reservations Endpoint */
+  get_host_reservations_endpoint_api_v1_listings_host_reservations_get: {
+    parameters: {
+      query: {
+        check_in: string;
+        check_out: string;
+        unit_id?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostReservationCalendarResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Listing Endpoint */
+  get_host_listing_endpoint_api_v1_listings_host__unit_id__get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Profile Endpoint */
+  get_host_profile_endpoint_api_v1_listings_profiles_host__host_id__get: {
+    parameters: {
+      path: {
+        host_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["app__listings__schemas__HostProfileResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Submit For Review */
+  post_submit_for_review_api_v1_listings__unit_id__submit_post: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Admin Pending Endpoint */
+  get_admin_pending_endpoint_api_v1_listings_admin_pending_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingResponse"][];
+        };
+      };
+    };
+  };
+  /** Post Approve Listing */
+  post_approve_listing_api_v1_listings_admin__unit_id__approve_post: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Reject Listing */
+  post_reject_listing_api_v1_listings_admin__unit_id__reject_post: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Listing Availability */
   get_listing_availability_api_v1_listings__unit_id__availability_get: {
     parameters: {
@@ -2350,6 +4570,128 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ListingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Presign Photo Upload */
+  presign_photo_upload_api_v1_listings__unit_id__photos_presign_post: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PhotoPresignRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PhotoPresignResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Photos */
+  get_photos_api_v1_listings__unit_id__photos_get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PhotoResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Photo */
+  post_photo_api_v1_listings__unit_id__photos_post: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PhotoCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PhotoResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Patch Cover Photo */
+  patch_cover_photo_api_v1_listings__unit_id__photos__photo_id__cover_patch: {
+    parameters: {
+      path: {
+        unit_id: string;
+        photo_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PhotoResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Delete Photo Endpoint */
+  delete_photo_endpoint_api_v1_listings__unit_id__photos__photo_id__delete: {
+    parameters: {
+      path: {
+        unit_id: string;
+        photo_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */
@@ -2492,31 +4834,23 @@ export interface operations {
       };
     };
   };
-  /** Get Host Dashboard Endpoint */
-  get_host_dashboard_endpoint_api_v1_listings_host_dashboard_get: {
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["HostDashboardStats"];
-        };
-      };
-    };
-  };
-  /** Get Host Reservations Endpoint */
-  get_host_reservations_endpoint_api_v1_listings_host_reservations_get: {
+  /** Get Similar Listings Endpoint */
+  get_similar_listings_endpoint_api_v1_listings__unit_id__similar_get: {
     parameters: {
-      query: {
-        check_in: string;
-        check_out: string;
-        unit_id?: string | null;
+      query?: {
+        limit?: number;
+      };
+      path: {
+        unit_id: string;
       };
     };
     responses: {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": components["schemas"]["HostReservationCalendarResponse"];
+          "application/json": {
+              [key: string]: unknown;
+            }[];
         };
       };
       /** @description Validation Error */
@@ -3247,6 +5581,30 @@ export interface operations {
       };
     };
   };
+  /** Get Guest Bookings */
+  get_guest_bookings_api_v1_bookings_guest_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Booking Detail */
   get_booking_detail_api_v1_bookings__booking_id__get: {
     parameters: {
@@ -3286,6 +5644,590 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Cancellation Preview */
+  get_cancellation_preview_api_v1_bookings__booking_id__cancellation_preview_get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingCancellationPreview"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Cancel Booking */
+  post_cancel_booking_api_v1_bookings__booking_id__cancel_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BookingCancelRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Stay Info Endpoint */
+  get_stay_info_endpoint_api_v1_bookings__booking_id__stay_get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StayInfoResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Check In */
+  post_check_in_api_v1_bookings__booking_id__check_in_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Check Out */
+  post_check_out_api_v1_bookings__booking_id__check_out_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Complete Booking Endpoint */
+  complete_booking_endpoint_api_v1_bookings__booking_id__complete_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Conversations */
+  get_conversations_api_v1_messages_conversations_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ConversationListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Unread Count */
+  get_unread_count_api_v1_messages_conversations_unread_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["UnreadCountResponse"];
+        };
+      };
+    };
+  };
+  /** Get Conversation Detail */
+  get_conversation_detail_api_v1_messages_conversations__conversation_id__get: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ConversationDetailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Messages */
+  get_messages_api_v1_messages_conversations__conversation_id__messages_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      path: {
+        conversation_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MessageResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Message */
+  post_message_api_v1_messages_conversations__conversation_id__messages_post: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MessageCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Mark Read */
+  post_mark_read_api_v1_messages_conversations__conversation_id__read_post: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MarkReadRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Conversation For Booking */
+  get_conversation_for_booking_api_v1_messages_bookings__booking_id__conversation_get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ConversationResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Message Templates */
+  get_message_templates_api_v1_messages_templates_get: {
+    parameters: {
+      query?: {
+        locale?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MessageTemplateResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Automated Message */
+  post_automated_message_api_v1_messages_conversations__conversation_id__automated_post: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AutomatedMessageSend"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MessageResponse"] | null;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Payment For Booking */
+  get_payment_for_booking_api_v1_payments_booking__booking_id__get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Payment Detail */
+  get_payment_detail_api_v1_payments__payment_id__get: {
+    parameters: {
+      path: {
+        payment_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List My Payments */
+  list_my_payments_api_v1_payments_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Presign Proof */
+  presign_proof_api_v1_payments__payment_id__proof_presign_post: {
+    parameters: {
+      path: {
+        payment_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PaymentProofPresignRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentProofPresignResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Submit Proof */
+  submit_proof_api_v1_payments__payment_id__proof_post: {
+    parameters: {
+      path: {
+        payment_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PaymentProofUpload"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Verify Payment Endpoint */
+  verify_payment_endpoint_api_v1_payments__payment_id__verify_post: {
+    parameters: {
+      path: {
+        payment_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Reject Payment Endpoint */
+  reject_payment_endpoint_api_v1_payments__payment_id__reject_post: {
+    parameters: {
+      path: {
+        payment_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PaymentVerifyRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Payment Queue */
+  payment_queue_api_v1_payments_admin_queue_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Preview Import */
+  preview_import_api_v1_import_preview_post: {
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["Body_preview_import_api_v1_import_preview_post"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ImportPreviewResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Confirm Import */
+  confirm_import_api_v1_import_confirm_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ImportConfirmRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ImportSummaryResponse"];
         };
       };
       /** @description Validation Error */
@@ -3518,6 +6460,618 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["WebhookResponse"];
+        };
+      };
+    };
+  };
+  /** List Sources */
+  list_sources_api_v1_discovery_sources_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+              [key: string]: string;
+            }[];
+        };
+      };
+    };
+  };
+  /** Get Discovery Stats */
+  get_discovery_stats_api_v1_discovery_stats_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DiscoveryStatsResponse"];
+        };
+      };
+    };
+  };
+  /** List Configs */
+  list_configs_api_v1_discovery_configs_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DiscoveryConfigResponse"][];
+        };
+      };
+    };
+  };
+  /** Create Config */
+  create_config_api_v1_discovery_configs_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DiscoveryConfigCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DiscoveryConfigResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Candidates */
+  list_candidates_api_v1_discovery_candidates_get: {
+    parameters: {
+      query?: {
+        source?: string | null;
+        city?: string | null;
+        property_type?: string | null;
+        status?: string | null;
+        candidate_type?: string | null;
+        duplicate_status?: string | null;
+        contact_status?: string | null;
+        min_score?: number | null;
+        max_score?: number | null;
+        limit?: number;
+        offset?: number;
+        sort_by?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CandidateListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Candidate */
+  get_candidate_api_v1_discovery_candidates__candidate_id__get: {
+    parameters: {
+      path: {
+        candidate_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DiscoveryCandidateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Candidate Status */
+  update_candidate_status_api_v1_discovery_candidates__candidate_id__status_patch: {
+    parameters: {
+      path: {
+        candidate_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CandidateStatusUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DiscoveryCandidateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Import Candidate */
+  import_candidate_api_v1_discovery_candidates__candidate_id__import_post: {
+    parameters: {
+      path: {
+        candidate_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CandidateImportRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Runs */
+  list_runs_api_v1_discovery_runs_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DiscoveryRunResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Trigger Run */
+  trigger_run_api_v1_discovery_runs_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DiscoveryRunTriggerRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DiscoveryRunResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Toggle Favorite Endpoint */
+  toggle_favorite_endpoint_api_v1_favorites__unit_id__post: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["FavoriteToggleResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Favorites */
+  list_favorites_api_v1_favorites_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["FavoriteListResponse"];
+        };
+      };
+    };
+  };
+  /** Location Autocomplete Endpoint */
+  location_autocomplete_endpoint_api_v1_locations_autocomplete_get: {
+    parameters: {
+      query: {
+        q: string;
+        limit?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["LocationAutocompleteResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Location Popular Endpoint */
+  location_popular_endpoint_api_v1_locations_popular_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["LocationAutocompleteResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Booking Review */
+  post_booking_review_api_v1_bookings__booking_id__reviews_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["ReviewResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Unit Reviews */
+  get_unit_reviews_api_v1_listings__unit_id__reviews_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ReviewListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Today Endpoint */
+  get_host_today_endpoint_api_v1_host_today_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostTodayResponse"];
+        };
+      };
+    };
+  };
+  /** List Host Reservations Endpoint */
+  list_host_reservations_endpoint_api_v1_host_reservations_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostReservationSummary"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Reservation Detail Endpoint */
+  get_host_reservation_detail_endpoint_api_v1_host_reservations__booking_id__get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostReservationDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Earnings Endpoint */
+  get_host_earnings_endpoint_api_v1_host_earnings_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostEarningsSummary"];
+        };
+      };
+    };
+  };
+  /** Get Host Calendar Endpoint */
+  get_host_calendar_endpoint_api_v1_host_calendar_get: {
+    parameters: {
+      query: {
+        check_in: string;
+        check_out: string;
+        unit_id?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostCalendarResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Listing Readiness Endpoint */
+  get_listing_readiness_endpoint_api_v1_host_listings__unit_id__readiness_get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingReadinessResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Listing Detail Endpoint */
+  get_host_listing_detail_endpoint_api_v1_host_listings__unit_id__get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostListingDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Co Hosts Endpoint */
+  list_co_hosts_endpoint_api_v1_host_listings__unit_id__co_hosts_get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CoHostResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Invite Co Host Endpoint */
+  invite_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts_post: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CoHostInvite"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CoHostResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Remove Co Host Endpoint */
+  remove_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts__co_host_id__delete: {
+    parameters: {
+      path: {
+        unit_id: string;
+        co_host_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Co Host Endpoint */
+  update_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts__co_host_id__patch: {
+    parameters: {
+      path: {
+        unit_id: string;
+        co_host_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CoHostUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CoHostResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Profile Endpoint */
+  get_host_profile_endpoint_api_v1_host_profile_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["app__host__schemas__HostProfileResponse"];
+        };
+      };
+    };
+  };
+  /** Update Host Profile Endpoint */
+  update_host_profile_endpoint_api_v1_host_profile_patch: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HostProfileUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["app__host__schemas__HostProfileResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

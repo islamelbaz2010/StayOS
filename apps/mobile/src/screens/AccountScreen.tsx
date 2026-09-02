@@ -1,9 +1,10 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMe } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
-import { clearTokens } from "../lib/api";
+import { api, clearTokens, getRefreshToken } from "../lib/api";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner } from "../components/States";
 import type { RootStackParamList } from "../../App";
@@ -13,6 +14,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function AccountScreen() {
   const { locale, setLocale, t } = useLocale();
   const navigation = useNavigation<Nav>();
+  const queryClient = useQueryClient();
   const { data: user, isLoading } = useMe();
 
   if (isLoading) return <LoadingSpinner />;
@@ -31,8 +33,18 @@ export function AccountScreen() {
   }
 
   const handleLogout = async () => {
-    await clearTokens();
-    navigation.navigate("Home");
+    try {
+      const refreshToken = await getRefreshToken();
+      if (refreshToken) {
+        await api.post("/auth/logout", { refresh_token: refreshToken }).catch(() => {});
+      }
+    } finally {
+      await clearTokens();
+      queryClient.removeQueries({ queryKey: ["me"] });
+      queryClient.removeQueries({ queryKey: ["favorites"] });
+      queryClient.removeQueries({ queryKey: ["bookings"] });
+      navigation.navigate("Home");
+    }
   };
 
   return (

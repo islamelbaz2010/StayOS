@@ -1,16 +1,9 @@
 import { useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  Alert,
-  Platform,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Platform } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import axios from "axios";
 import { useCreateBooking } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
@@ -30,13 +23,30 @@ function formatDate(date: Date | null, locale: string): string {
 
 function toISODate(date: Date | null): string {
   if (!date) return "";
-  return date.toISOString().split("T")[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function addDays(date: Date, days: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
+}
+
+function getBookingErrorMessage(error: unknown, t: (key: string) => string): string {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    const detail = error.response?.data?.detail;
+    if (status === 401 || status === 403) return t("authRequired");
+    if (status === 409) return t("datesUnavailable");
+    if (status === 422) {
+      return typeof detail === "string" ? detail : t("validationError");
+    }
+    if (!error.response) return t("networkError");
+  }
+  return t("error");
 }
 
 export function BookingScreen() {
@@ -60,6 +70,9 @@ export function BookingScreen() {
     ? Math.max(0, Math.ceil((checkOut.getTime() - checkIn.getTime()) / 86400000))
     : 0;
   const subtotal = price * Math.max(0, nights);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const handleConfirm = async () => {
     if (!checkIn || !checkOut) {
@@ -89,15 +102,12 @@ export function BookingScreen() {
         infants,
       });
       Alert.alert(t("bookingConfirmed"), "", [
-        { text: "OK", onPress: () => navigation.navigate("Trips") },
+        { text: "OK", onPress: () => navigation.navigate("Home", { screen: "TripsTab" }) },
       ]);
-    } catch {
-      Alert.alert(t("bookingFailed"));
+    } catch (error) {
+      Alert.alert(t("bookingFailed"), getBookingErrorMessage(error, t));
     }
   };
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -108,10 +118,7 @@ export function BookingScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("selectDates")}</Text>
-        <Pressable
-          style={styles.dateField}
-          onPress={() => setShowCheckIn(true)}
-        >
+        <Pressable style={styles.dateField} onPress={() => setShowCheckIn(true)}>
           <Text style={styles.dateLabel}>{t("checkIn")}</Text>
           <Text style={checkIn ? styles.dateValue : styles.datePlaceholder}>
             {checkIn ? formatDate(checkIn, "en") : "YYYY-MM-DD"}
@@ -137,10 +144,7 @@ export function BookingScreen() {
           />
         )}
 
-        <Pressable
-          style={styles.dateField}
-          onPress={() => setShowCheckOut(true)}
-        >
+        <Pressable style={styles.dateField} onPress={() => setShowCheckOut(true)}>
           <Text style={styles.dateLabel}>{t("checkOut")}</Text>
           <Text style={checkOut ? styles.dateValue : styles.datePlaceholder}>
             {checkOut ? formatDate(checkOut, "en") : "YYYY-MM-DD"}
@@ -192,7 +196,7 @@ export function BookingScreen() {
         />
         {totalGuests > maxGuests && (
           <Text style={styles.errorText}>
-            {t("guests")}: {maxGuests} {t("maxGuests")} {t("maxGuests")}
+            {t("maxGuests")}: {maxGuests}
           </Text>
         )}
       </View>
@@ -208,6 +212,11 @@ export function BookingScreen() {
           <Text style={styles.summaryTotal}>{t("total")}</Text>
           <Text style={styles.summaryTotalValue}>{subtotal} {currency}</Text>
         </View>
+      </View>
+
+      <View style={styles.trustBox}>
+        <Text style={styles.trustTitle}>{t("trustMessage")}</Text>
+        <Text style={styles.trustSubtitle}>{t("trustMessageSubtitle")}</Text>
       </View>
 
       <Pressable
@@ -387,6 +396,23 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.primary,
     marginTop: spacing.sm,
+  },
+  trustBox: {
+    backgroundColor: colors.primary50,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  trustTitle: {
+    fontSize: fontSize.md,
+    fontWeight: "700",
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  trustSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
   confirmButton: {
     backgroundColor: colors.primary,

@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.bookings.repository import (

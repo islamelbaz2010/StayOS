@@ -19,13 +19,16 @@ from app.database import get_session
 from app.discovery import router as discovery_router
 from app.favorites import router as favorites_router
 from app.finance import router as finance_router
+from app.host import router as host_router
 from app.importer import router as import_router
 from app.kyc import router as kyc_router
 from app.listings import router as listings_router
+from app.messages import router as messages_router
 from app.operations import metrics as ops_metrics
 from app.operations import router as operations_router
 from app.payments import router as payments_router
 from app.reservations import router as reservations_router
+from app.reviews import router as reviews_router
 from app.security import audit_middleware, security_headers_middleware
 from app.security.logging import setup_logging
 from app.security.sentry import init_sentry
@@ -181,11 +184,14 @@ app.include_router(availability_router.router, prefix="/api/v1")
 app.include_router(operations_router.router, prefix="/api/v1")
 app.include_router(reservations_router.router, prefix="/api/v1")
 app.include_router(bookings_router.router, prefix="/api/v1")
+app.include_router(messages_router.router, prefix="/api/v1")
 app.include_router(payments_router.router, prefix="/api/v1")
 app.include_router(import_router.router, prefix="/api/v1")
 app.include_router(finance_router.router, prefix="/api/v1")
 app.include_router(discovery_router.router, prefix="/api/v1")
 app.include_router(favorites_router.router, prefix="/api/v1")
+app.include_router(reviews_router.router, prefix="/api/v1")
+app.include_router(host_router.router, prefix="/api/v1")
 
 
 async def _db_status(session: AsyncSession) -> str:

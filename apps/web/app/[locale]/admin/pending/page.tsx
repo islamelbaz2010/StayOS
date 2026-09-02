@@ -32,6 +32,12 @@ export default function AdminPendingListingsPage() {
               {t("pendingTitle")}
             </h1>
             <Link
+              href="/admin/discovery"
+              className="rounded-lg border border-brand-300 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100"
+            >
+              Supply Discovery
+            </Link>
+            <Link
               href="/admin/payments"
               className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
             >

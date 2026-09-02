@@ -2,7 +2,8 @@
 
 Shutdown procedure for every EPOS-managed AI session.
 
-Run through this checklist before closing the session. Always preserve history and append only verified information.
+Run through this checklist before closing the session. Always preserve
+history and append only verified information.
 
 ## 1. Review the session
 
@@ -15,37 +16,77 @@ Run through this checklist before closing the session. Always preserve history a
 ## 2. Update memory
 
 - Update working memory files in `.ai/CURRENT/`.
-- Append new facts, decisions, and lessons to the appropriate canonical records.
-- Never overwrite `MASTER_PROJECT_MEMORY.md`, `SPRINT_MEMORY.md`, or any append-only history file. If they exist, append verified deltas or create new canonical files with versioned names.
+- Append new facts, decisions, and lessons to the appropriate canonical
+  records.
+- Never overwrite `MASTER_PROJECT_MEMORY.md`, `SPRINT_MEMORY.md`, or any
+  append-only history file. If they exist, append verified deltas or create
+  new canonical files with versioned names.
 
 ## 3. Update sprint
 
-- Update `.ai/CURRENT/SPRINT_MEMORY.md` (or the local sprint working file) with completed items, new blockers, and changed scope.
+- Update `.ai/CURRENT/SPRINT_MEMORY.md` (or the local sprint working file)
+  with completed items, new blockers, and changed scope.
 - Record what was finished, what was deferred, and why.
 
 ## 4. Update project state
 
-- Update `.ai/CURRENT/PROJECT_STATE.md` (or the local project state working file) to reflect the current phase, status, blockers, and next action.
+- Update `.ai/CURRENT/PROJECT_STATE.md` (or the local project state working
+  file) to reflect the current phase, status, blockers, and next action.
 
 ## 5. Update decision log
 
-- Record any confirmed decisions in the decision log under `epos/` or `.ai/CURRENT/`.
-- If a decision is not yet confirmed, propose it in `.ai/AUDIT/` or the local `decisions/` area; do not record it as final.
+- Record any confirmed decisions in the decision log under `epos/` or
+  `.ai/CURRENT/`.
+- If a decision is not yet confirmed, propose it in `.ai/AUDIT/` or the local
+  `decisions/` area; do not record it as final.
+
+## 5A. Preserve Assessment Context
+
+If this session produced or materially changed any of the following:
+
+- Chat Context Extraction
+- Assessment Preparation / Decision Reconciliation
+- Product Version Audit
+- Management Situation Analysis
+- Project Portfolio Assessment
+
+record the exact canonical path and status.
+
+Distinguish clearly between:
+
+- Historical decision
+- Reconciled decision
+- Current repository fact
+- Management recommendation
+- Unresolved conflict
+
+Do NOT promote a management recommendation into a Founder decision.
+
+Do NOT overwrite previous assessment history.
+
+If a new assessment supersedes an older assessment, preserve the older
+record according to the repository's existing history convention and
+explicitly identify the newer assessment as the latest.
 
 ## 6. Update knowledge base
 
-- Capture patterns, lessons, and reusable insights in the knowledge base under `.ai/CURRENT/` or `epos/`.
+- Capture patterns, lessons, and reusable insights in the knowledge base
+  under `.ai/CURRENT/` or `epos/`.
 - Reference the originating session record.
 
 ## 7. Update next sprint
 
-- Produce or refresh `.ai/CURRENT/NEXT_SPRINT.md` (or the local next-sprint working file) with the next executable target.
-- Include objective, scope, exclusions, acceptance criteria, risks, dependencies, responsible roles, due date, and status.
+- Produce or refresh `.ai/CURRENT/NEXT_SPRINT.md` (or the local next-sprint
+  working file) with the next executable target.
+- Include objective, scope, exclusions, acceptance criteria, risks,
+  dependencies, responsible roles, due date, and status.
 
 ## 8. Generate AI_READY if required
 
-- If the user requested an export or the next session would benefit from a prepared context bundle, create `.ai/EXPORT/AI_READY/` contents.
-- Include a `SOURCE_INDEX.md` listing the canonical sources and a brief session summary.
+- If the user requested an export or the next session would benefit from a
+  prepared context bundle, create `.ai/EXPORT/AI_READY/` contents.
+- Include a `SOURCE_INDEX.md` listing the canonical sources and a brief
+  session summary.
 
 ## 9. Preserve history
 
@@ -55,8 +96,22 @@ Run through this checklist before closing the session. Always preserve history a
 
 ## 10. Append only verified information
 
-- Every new entry must be tagged with the source: session action, user instruction, or confirming principal.
-- Do not append speculation, unverified assumptions, or draft proposals as canonical fact.
+- Every new entry must be tagged with the source: session action, user
+  instruction, or confirming principal.
+- Do not append speculation, unverified assumptions, or draft proposals as
+  canonical fact.
+
+For assessment-related records, every new entry must also identify the
+source category where applicable:
+
+- Founder instruction
+- Reconciled historical decision
+- Repository evidence
+- Verified session action
+- Management recommendation
+
+Never record a Management Recommendation as a Founder Decision unless the
+Founder explicitly accepts it.
 
 ## 11. Produce Session Summary
 
@@ -68,8 +123,10 @@ Run through this checklist before closing the session. Always preserve history a
 - Any warnings or blockers for the next session.
 - A clear handoff message.
 
-Place the summary in `.ai/LOGS/` as `session-YYYY-MM-DD.md` or append it to the existing log file.
+Place the summary in `.ai/LOGS/` as `session-YYYY-MM-DD.md` or append it to
+the existing log file.
 
 ---
 
-After completing this checklist, the session may close. The next session begins with [`START_SESSION.md`](START_SESSION.md).
+After completing this checklist, the session may close. The next session
+begins with [`START_SESSION.md`](START_SESSION.md).

@@ -1,7 +1,8 @@
-import logging
 import json
+import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
+
 import git
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -10,7 +11,7 @@ logger = logging.getLogger("RepoIntel")
 def get_repo() -> git.Repo:
     return git.Repo(Path('.'), search_parent_directories=True)
 
-def get_all_files(root: Path = Path('.')) -> List[Path]:
+def get_all_files(root: Path = Path('.')) -> list[Path]:
     return [p for p in root.rglob('*') if p.is_file() and '.git' not in p.parts]
 
 def save_json(name: str, data: Any):

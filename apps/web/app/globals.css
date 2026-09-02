@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Hides the scrollbar on horizontally-scrolling rails (e.g. featured
+     listings carousel) while keeping the element scrollable via drag,
+     wheel, or the rail's own prev/next buttons. */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

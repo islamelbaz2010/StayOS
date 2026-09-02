@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
+
 from app.kyc import repository as kyc_repository
 from app.kyc import tasks as kyc_tasks
 from app.notifications import schemas as notification_schemas

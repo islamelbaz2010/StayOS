@@ -241,3 +241,130 @@ AI memory:
 | `.ai/LOGS/session-2026-07-27.md` | Session 004 appended |
 | `epos/SESSION_RECORD.md` | Session 004 appended |
 | `epos/WORKING_MEMORY.md` | Session 004 appended |
+
+---
+
+## Session 005 — 2026-08-14
+
+### Active Context
+
+**Current Branch**: `tooling/repository-intelligence`
+**HEAD Commit**: `9fd5f63` (2026-08-10) — discovery engine
+**Current Stage**: Code-Complete Pre-Alpha. Closed Alpha targeted 2026-08-19.
+**Uncommitted Changes**: 35 modified tracked files + 10+ new untracked files (see SESSION_RECORD.md Session 005)
+
+### This Session — Work Completed
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Produce MANAGEMENT_SITUATION_ANALYSIS.md (situational snapshot) | ✅ Complete (untracked) |
+| 2 | Produce PRODUCT_VERSION_ROADMAP_AUDIT.md (V1 audit) | ✅ Complete (untracked) |
+| 3 | Produce SUPPLY_PIPELINE_AUDIT.md (supply chain verification) | ✅ Complete (untracked) |
+| 4 | Produce SUPPLY_ACQUISITION_PLAYBOOK_FINAL.md | ✅ Complete (untracked) |
+| 5 | Implement favorites module (backend + migration 022) | ✅ Coded, NOT committed |
+| 6 | Implement commission calculation system (finance/services.py + tests) | ✅ Coded, NOT committed |
+| 7 | Auth, bookings, listings, payments enhancements | ✅ Coded, NOT committed |
+| 8 | Frontend improvements (login, admin, listing detail, layouts) | ✅ Coded, NOT committed |
+| 9 | Create Railway deployment config (railway.toml + startup.sh) | ✅ Coded, NOT committed |
+| 10 | Create mobile app scaffold (apps/mobile/) | ✅ Coded, NOT committed |
+| 11 | Create E2E transaction tests | ✅ Coded, NOT committed |
+| 12 | Update EPOS continuity files (this session close) | ✅ Complete |
+
+### This Session — Decisions Made
+
+None. Two open decisions created:
+1. Deployment platform: Railway vs AWS (both prepared, no founder decision)
+2. Mobile framework: React Native scaffold exists, no ADR
+
+### This Session — Issues Found
+
+| # | Issue | Severity |
+|---|---|---|
+| 1 | No deployed environment | CRITICAL |
+| 2 | 35 files uncommitted | HIGH |
+| 3 | Dual deployment path, no decision | HIGH |
+| 4 | Mobile scaffold without framework ADR | HIGH |
+| 5 | Closed Alpha gate missed (targeted 2026-08-19, 0% operational) | CRITICAL |
+
+### Files Modified This Session (EPOS only)
+
+| File | Action |
+|---|---|
+| `epos/PROJECT_STATE.md` | Updated: phase, metrics, Session 005 block appended |
+| `epos/SESSION_RECORD.md` | Session 005 appended |
+| `epos/WORKING_MEMORY.md` | Session 005 appended (this entry) |
+| `epos/NEXT_SPRINT.md` | Updated: current priorities |
+| `/Users/ahmed/.claude/projects/…/memory/MEMORY.md` | Updated: project state pointer |
+| `/Users/ahmed/.claude/projects/…/memory/project_implementation_baseline.md` | Updated: current metrics |
+
+---
+
+## Session 006 — 2026-08-24 — P0 Readiness + Legal + Commercial Decision Sprint
+
+**Current Branch**: `tooling/repository-intelligence` (unchanged)
+**Session shape**: four linked founder-directed sprints in one session — (1) P0 real-transaction-readiness diagnostic, (2) AWS S3 handoff prep, (3) legal-document drafting, (4) commercial payment-model decision + document reconciliation. No commits made; all work is new/edited files sitting uncommitted alongside the pre-existing diff from prior sessions.
+
+### This Session — Work Completed
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Live diagnostic probes against Railway production (`/auth/otp/send`, `/auth/dev-token`, `/listings/.../photos/presign`) | ✅ Complete — read-only, no data mutated |
+| 2 | Confirmed OTP (Twilio) not configured in production; confirmed `/auth/dev-token` bypass works (seed admin account) | ✅ Confirmed FACT |
+| 3 | Confirmed S3 presign returns 500 in production; confirmed CSV import bypasses S3 via `image_urls` | ✅ Confirmed FACT |
+| 4 | Airbnb/Booking.com legitimate-integration research | ✅ Complete — both classified FUTURE CHANNEL, no code written |
+| 5 | AWS S3 production handoff document (architecture, IAM, bucket, Railway vars, provider message) | ✅ Complete — no AWS resources created |
+| 6 | Egyptian legal/regulatory research (PDPL 151/2020 + Nov 2025 Executive Regs, Consumer Protection Law 181/2018, CBE payment-licensing rules) | ✅ Complete |
+| 7 | Created `docs/legal/` — 6 bilingual (EN/AR) draft documents: Terms of Service, Privacy Policy, Host Agreement, Cancellation & Refund Policy, Legal Gap Register, Legal Counsel Review Checklist | ✅ Complete — DRAFTS, not legally approved |
+| 8 | Discovered dormant `finance`/`reservations` module already implements full escrow/wallet/commission-split/payout architecture (Model A), inactive only because `STRIPE_SECRET_KEY` is unset | ✅ Confirmed FACT |
+| 9 | Discovered real, pre-configured commission rate in code: `GUEST_SERVICE_FEE_PCT=0.04`, `HOST_COMMISSION_PCT=0.10`, `PLATFORM_TAKE_RATE_PCT=0.02` — identical across all env files | ✅ Confirmed FACT |
+| 10 | Payment & Commission Policy + Paymob Requirements Request documents created | ✅ Complete — Paymob not contacted, not integrated |
+| 11 | Fixed live false "Escrow Protection — held until check-in" guest-facing copy (no such mechanism exists in code) | ✅ Fixed — `apps/web/messages/{en,ar}.json`, copy-only |
+| 12 | Legal & Commercial Decision Gate — made 14 previously-open business decisions (commission, cancellation tiers, refund timing, payment deadline, proof resubmission, host-cancellation treatment, no-show, duplicate payment, payout timing, service-fee refundability, V1 host-authorization process) under explicit founder delegation in this session | ✅ Complete — see Decisions Made below |
+| 13 | Reconciled all 6 legal/commercial documents to be internally consistent with the above decisions | ✅ Complete |
+
+### This Session — Decisions Made
+
+**Session-confirmed under explicit in-session founder delegation** ("You are authorized to make BUSINESS/PRODUCT decisions... DO NOT ASK ME TO MAKE THE BUSINESS DECISIONS AGAIN") — these are Project-Director-level product/commercial decisions, not yet a separate formal `DECISION_LOG.md`-style founder ratification distinct from this session. Full table: `docs/legal/STAYOS_V1_PAYMENT_AND_COMMISSION_POLICY.md` § 1.
+
+1. V1 commercial architecture = Model A: Guest → StayOS-controlled account → StayOS verifies → deducts commission → pays Host net.
+2. Commission: 10% host + 2% platform + 4% guest (kept as-found in code, adopted as official).
+3. Cancellation tiers: Flexible/Moderate/Strict = 24h/5d/1wk before check-in → 100%/100%/50% accommodation refund (adopted from existing live UI copy).
+4. Guest service fee: non-refundable on guest-initiated cancellation; refundable in full otherwise.
+5. Refund timing: 5 business days. Payment deadline: 24h post-acceptance. Proof resubmission: 3 attempts/48h. Host payout timing: 3 business days post-verification.
+6. Host cancellation / property-unavailable / host no-show: 100% guest refund, no StayOS commission retained, no invented monetary penalty; 2+ host cancellations in alpha triggers manual review.
+7. Guest no-show: no refund.
+8. V1 host authorization: founder personally confirms ownership for the first 1–10 (personal-network) listings; declaration + identity KYC only thereafter.
+9. Preserved as explicitly NOT decided (Project Director authority does not extend here): CBE PSP/payment-facilitator licensing classification, PDPL/KYC licensing obligation, final platform-role (marketplace vs. supplier) legal characterization — all marked `LEGAL COUNSEL REQUIRED`.
+10. Paymob, AWS/S3, Stripe, Akedly: explicitly not touched/implemented this session, per founder instruction.
+
+### This Session — Issues Found (new, in addition to prior open items)
+
+| # | Issue | Severity |
+|---|---|---|
+| 8 | Production OTP (Twilio) confirmed non-functional live — "provider is not configured" | HIGH — blocks normal login, but `/auth/dev-token` bypass exists |
+| 9 | Production S3/AWS credentials confirmed non-functional live (500 on presign) — blocks payment-proof upload and in-app KYC upload, does NOT block first listing (CSV import bypass exists) | HIGH |
+| 10 | No legal entity/registration exists to disclose per Consumer Protection Law Art. 37 | HIGH — required before real money |
+| 11 | Egypt PDPL (151/2020) Executive Regulations compliance deadline is **31 October 2026** — StayOS's KYC (ID + biometric face-match) processing may require PDPC licensing; unresolved | HIGH, time-sensitive |
+| 12 | Egypt CBE Law 194/2020 + June 2025 PSP/PSO licensing rules may apply to StayOS's chosen Guest→StayOS-account→Host payment model; unresolved | HIGH |
+| 13 | Payment instructions shown to guests point to a fake placeholder bank account (`Bank of Egypt`, `1234567890123456`) — real account required before real money | CRITICAL — this session's single P0 |
+| 14 | `{{refund_days}}` notification placeholder now has a decided value (5) but is not yet wired into the (dormant) call site | MEDIUM |
+
+### Files Modified/Created This Session
+
+| File | Action |
+|---|---|
+| `docs/legal/STAYOS_TERMS_OF_SERVICE_V1_DRAFT.md` | Created, then reconciled |
+| `docs/legal/STAYOS_PRIVACY_POLICY_V1_DRAFT.md` | Created |
+| `docs/legal/STAYOS_HOST_AGREEMENT_V1_DRAFT.md` | Created, then reconciled |
+| `docs/legal/STAYOS_CANCELLATION_REFUND_POLICY_V1_DRAFT.md` | Created, then rewritten with final decided rules |
+| `docs/legal/LEGAL_GAP_REGISTER.md` | Created, then updated (items closed) |
+| `docs/legal/LEGAL_COUNSEL_REVIEW_CHECKLIST.md` | Created, then updated (P0 priority section added) |
+| `docs/legal/STAYOS_V1_PAYMENT_AND_COMMISSION_POLICY.md` | Created, then rewritten as canonical decision source |
+| `docs/legal/PAYMOB_REQUIREMENTS_REQUEST.md` | Created, then finalized |
+| `apps/web/messages/en.json` | Edited — false escrow copy replaced |
+| `apps/web/messages/ar.json` | Edited — false escrow copy replaced |
+| `epos/WORKING_MEMORY.md` | Session 006 appended (this entry) |
+| `epos/SESSION_RECORD.md`, `epos/PROJECT_STATE.md`, `epos/NEXT_SPRINT.md`, `epos/REGISTRY.md` | Session 006 appended (end-of-session shutdown) |
+| `.ai/LOGS/session-2026-08-24.md` | Session log created |
+
+**No git commit, push, or deploy performed.** No AWS/Paymob/Twilio/Akedly credentials created or requested. No production code touched except the two message-file copy edits above.

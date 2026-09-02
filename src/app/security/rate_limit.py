@@ -26,7 +26,7 @@ return count
 
 
 async def rate_limit(
-    request: Request,  # type: ignore[type-arg]
+    request: Request,
     key_prefix: str = "rl",
     limit: int = 60,
     window_seconds: int = 60,
@@ -55,25 +55,25 @@ async def rate_limit(
         raise RateLimitError("Rate limit exceeded. Please try again later.")
 
 
-async def listings_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
+async def listings_rate_limit(request: Request) -> None:
     await rate_limit(request, key_prefix="listings", limit=120, window_seconds=60)
 
 
-async def login_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
+async def login_rate_limit(request: Request) -> None:
     await rate_limit(request, key_prefix="login", limit=10, window_seconds=300)
 
 
-async def otp_challenge_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
+async def otp_challenge_rate_limit(request: Request) -> None:
     await rate_limit(request, key_prefix="otp_challenge", limit=20, window_seconds=300)
 
 
-async def otp_send_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
+async def otp_send_rate_limit(request: Request) -> None:
     await rate_limit(request, key_prefix="otp_send", limit=5, window_seconds=300)
 
 
-async def otp_verify_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
+async def otp_verify_rate_limit(request: Request) -> None:
     await rate_limit(request, key_prefix="otp_verify", limit=10, window_seconds=300)
 
 
-async def refresh_rate_limit(request: Request) -> None:  # type: ignore[type-arg]
+async def refresh_rate_limit(request: Request) -> None:
     await rate_limit(request, key_prefix="refresh", limit=30, window_seconds=300)

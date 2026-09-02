@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
+
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.operations.constants import (

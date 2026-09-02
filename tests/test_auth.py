@@ -1,17 +1,19 @@
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
+from jose import jwt as jose_jwt
+
+from app.auth import repository as auth_repository
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
-from app.auth.models import Account, User
+from app.auth.models import Account, DeviceToken, User
 from app.auth.schemas import TokenPair
 from app.config import settings
 from app.database import get_session
 from app.main import app
-from fastapi.testclient import TestClient
-from jose import jwt as jose_jwt
 
 
 def _make_user(
@@ -290,3 +292,151 @@ def test_jwt_round_trip() -> None:
     assert payload["sub"] == user.id
     assert payload["type"] == "access"
     assert payload["kyc_status"] == "unverified"
+
+
+# ============================================================
+# AUTH REPOSITORY COVERAGE
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_get_device_token_by_token(fake_session: AsyncMock) -> None:
+    token = DeviceToken(
+        id=str(uuid.uuid4()),
+        user_id="user-1",
+        token="device-token-1",
+        platform="ios",
+        app_version="1.0",
+        is_active=True,
+        last_used_at=datetime.now(UTC),
+    )
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = token
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await auth_repository.get_device_token_by_token(fake_session, "device-token-1")
+    assert result == token
+
+
+@pytest.mark.asyncio
+async def test_upsert_device_token_updates_existing(fake_session: AsyncMock, monkeypatch) -> None:
+    existing = DeviceToken(
+        id=str(uuid.uuid4()),
+        user_id="user-1",
+        token="device-token-1",
+        platform="ios",
+        app_version="1.0",
+        is_active=True,
+        last_used_at=datetime.now(UTC),
+    )
+    monkeypatch.setattr(
+        auth_repository,
+        "get_device_token_by_token",
+        AsyncMock(return_value=existing),
+    )
+    result = await auth_repository.upsert_device_token(
+        fake_session, "user-1", "device-token-1", "android", "2.0"
+    )
+    assert result.platform == "android"
+    assert result.app_version == "2.0"
+
+
+@pytest.mark.asyncio
+async def test_upsert_device_token_creates_new(fake_session: AsyncMock, monkeypatch) -> None:
+    monkeypatch.setattr(
+        auth_repository,
+        "get_device_token_by_token",
+        AsyncMock(return_value=None),
+    )
+    result = await auth_repository.upsert_device_token(
+        fake_session, "user-1", "new-token", "ios", "1.0"
+    )
+    assert result.token == "new-token"
+    assert result.user_id == "user-1"
+    assert fake_session.add.called
+
+
+# ============================================================
+# AUTH DEPENDENCIES COVERAGE
+# ============================================================
+
+def test_get_current_user_invalid_payload(auth_client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(
+        auth_services,
+        "decode_token",
+        MagicMock(return_value={"sub": ""}),
+    )
+    response = auth_client.get(
+        "/api/v1/auth/me", headers={"Authorization": "Bearer invalid-token"}
+    )
+    assert response.status_code == 401
+
+
+def test_get_current_user_not_found(auth_client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(
+        auth_services,
+        "decode_token",
+        MagicMock(return_value={"sub": "missing-user"}),
+    )
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_id",
+        AsyncMock(return_value=None),
+    )
+    response = auth_client.get(
+        "/api/v1/auth/me", headers={"Authorization": "Bearer some-token"}
+    )
+    assert response.status_code == 401
+
+
+def test_get_current_user_disabled(auth_client: TestClient, monkeypatch) -> None:
+    user = _make_user()
+    user.is_active = False
+    monkeypatch.setattr(
+        auth_services,
+        "decode_token",
+        MagicMock(return_value={"sub": user.id}),
+    )
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_id",
+        AsyncMock(return_value=user),
+    )
+    token = auth_services.create_access_token(user)
+    response = auth_client.get(
+        "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 401
+
+
+def test_get_current_user_kyc_changed(auth_client: TestClient, monkeypatch) -> None:
+    user = _make_user(kyc_status=KycStatus.VERIFIED)
+    monkeypatch.setattr(
+        auth_services,
+        "decode_token",
+        MagicMock(return_value={"sub": user.id, "kyc_status": "rejected"}),
+    )
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_id",
+        AsyncMock(return_value=user),
+    )
+    token = auth_services.create_access_token(user)
+    response = auth_client.get(
+        "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 401
+
+
+def test_require_kyc_verified_rejects_unverified(auth_client: TestClient, monkeypatch) -> None:
+    user = _make_user(kyc_status=KycStatus.UNVERIFIED)
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_id",
+        AsyncMock(return_value=user),
+    )
+    token = auth_services.create_access_token(user)
+    response = auth_client.patch(
+        "/api/v1/auth/me/role",
+        json={"role": "host"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 422

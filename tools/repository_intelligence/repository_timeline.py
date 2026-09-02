@@ -1,5 +1,7 @@
-import git
 from pathlib import Path
+
+import git
+
 
 def generate_timeline():
     repo = git.Repo('.')

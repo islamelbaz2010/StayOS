@@ -1,7 +1,5 @@
 from datetime import date, datetime
 
-from app.listings.models import Unit
-from app.shared.models import Base, TimestampMixin, UUIDMixin
 from sqlalchemy import (
     CheckConstraint,
     Date,
@@ -14,6 +12,9 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.listings.models import Unit
+from app.shared.models import Base, TimestampMixin, UUIDMixin
 
 from .constants import BookingStatus
 
@@ -57,6 +58,15 @@ class Booking(UUIDMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=True
     )
     cancelled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    cancelled_by: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("auth.users.id"), nullable=True
+    )
+    checked_in_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    checked_out_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     reject_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

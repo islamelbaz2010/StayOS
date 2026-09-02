@@ -1,10 +1,13 @@
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from geoalchemy2.elements import WKTElement
+
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
+from app.config import settings
 from app.listings.constants import CalendarStatus
 from app.listings.models import CalendarRule, Unit, UnitListing
 from app.reservations.constants import PaymentStatus, ReservationStatus
@@ -17,6 +20,7 @@ from app.reservations.schemas import (
     ReservationListFilters,
 )
 from app.reservations.services import (
+    _compute_refund,
     apply_promo_code,
     cancel_reservation,
     check_in_reservation,
@@ -34,7 +38,6 @@ from app.shared.exceptions import (
     PaymentError,
     ValidationError,
 )
-from geoalchemy2.elements import WKTElement
 
 
 def _make_user(
@@ -424,6 +427,178 @@ async def test_cancel_reservation_by_guest(
     )
     assert result.status == ReservationStatus.CANCELLED
 
+    # refund_days must be populated on the booking.cancelled event payload so the
+    # cancellation notification template's {{refund_days}} placeholder never renders
+    # blank (see app/notifications/templates.py, "booking.cancelled").
+    assert (
+        repo.write_booking_event.call_args.kwargs["extra"]["refund_days"]
+        == settings.REFUND_PROCESSING_DAYS
+    )
+
+
+def _make_cancellable_reservation(
+    *,
+    provider: str = "paymob",
+    check_in: date,
+    created_at: datetime,
+    total_amount_egp: int = 4500,
+) -> Reservation:
+    reservation = Reservation(
+        id=str(uuid.uuid4()),
+        unit_id="unit-1",
+        guest_id="user-1",  # matches _make_user()'s default id
+        status=str(ReservationStatus.CONFIRMED),
+        check_in=check_in,
+        check_out=check_in + timedelta(days=3),
+        adults=2,
+        children=0,
+        infants=0,
+        total_amount_egp=total_amount_egp,
+        host_amount_egp=3800,
+        platform_fee_egp=200,
+        guest_fee_egp=500,
+        payment_method="fawry",
+        created_at=created_at,
+    )
+    reservation.payment_intents = [
+        PaymentIntent(
+            id=str(uuid.uuid4()),
+            reservation_id="res-1",
+            provider=provider,
+            provider_ref="ref-1",
+            amount_egp=total_amount_egp,
+            status=PaymentStatus.CAPTURED,
+        )
+    ]
+    reservation.promo_applications = []
+    return reservation
+
+
+def test_compute_refund_24h_grace_period_overrides_partial_window() -> None:
+    # Cancelled minutes after booking, but check-in is only 5 days away — which
+    # would normally land in the partial-refund window (3 < 5 <= 7). The 24h
+    # grace period must still grant a full refund.
+    check_in = datetime.now(UTC).date() + timedelta(days=5)
+    reservation = _make_cancellable_reservation(
+        check_in=check_in, created_at=datetime.now(UTC)
+    )
+    assert _compute_refund(reservation) == reservation.total_amount_egp
+
+
+def test_compute_refund_partial_window_applies_after_grace_period() -> None:
+    check_in = datetime.now(UTC).date() + timedelta(days=5)
+    reservation = _make_cancellable_reservation(
+        check_in=check_in, created_at=datetime.now(UTC) - timedelta(days=2)
+    )
+    assert _compute_refund(reservation) == int(
+        reservation.total_amount_egp * settings.CANCELLATION_PARTIAL_REFUND_PCT
+    )
+
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_stripe_issues_provider_refund(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    check_in = datetime.now(UTC).date() + timedelta(days=30)
+    reservation = _make_cancellable_reservation(
+        provider="stripe", check_in=check_in, created_at=datetime.now(UTC) - timedelta(days=2)
+    )
+    repo = _mock_repository(monkeypatch)
+    repo.get_reservation_with_relations = AsyncMock(return_value=reservation)
+    repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
+    repo.release_calendar_lock = AsyncMock()
+    repo.write_booking_event = AsyncMock()
+    refund_mock = AsyncMock(return_value={"id": "re_1", "status": "succeeded"})
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.refund_stripe_payment", refund_mock
+    )
+
+    result = await cancel_reservation(
+        fake_session, _make_user(), "res-1", ReservationCancelRequest(reason="change_of_plans")
+    )
+
+    assert result.status == ReservationStatus.CANCELLED
+    refund_mock.assert_awaited_once_with("ref-1", None)
+    assert reservation.payment_intents[0].status == PaymentStatus.REFUNDED
+
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_stripe_refund_failure_propagates(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    check_in = datetime.now(UTC).date() + timedelta(days=30)
+    reservation = _make_cancellable_reservation(
+        provider="stripe", check_in=check_in, created_at=datetime.now(UTC) - timedelta(days=2)
+    )
+    repo = _mock_repository(monkeypatch)
+    repo.get_reservation_with_relations = AsyncMock(return_value=reservation)
+    repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
+    repo.release_calendar_lock = AsyncMock()
+    repo.write_booking_event = AsyncMock()
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.refund_stripe_payment",
+        AsyncMock(side_effect=PaymentError("provider unreachable")),
+    )
+
+    with pytest.raises(PaymentError):
+        await cancel_reservation(
+            fake_session, _make_user(), "res-1", ReservationCancelRequest(reason="change_of_plans")
+        )
+
+    # No silent financial mutation: the intent must not be marked REFUNDED when
+    # the provider call actually failed.
+    assert reservation.payment_intents[0].status == PaymentStatus.CAPTURED
+
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_paymob_marks_refund_pending_for_manual_reconciliation(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    # Paymob has no automated refund integration in this codebase yet. The
+    # refund must not be silently reported as REFUNDED when no money has
+    # actually moved.
+    check_in = datetime.now(UTC).date() + timedelta(days=30)
+    reservation = _make_cancellable_reservation(
+        provider="paymob", check_in=check_in, created_at=datetime.now(UTC) - timedelta(days=2)
+    )
+    repo = _mock_repository(monkeypatch)
+    repo.get_reservation_with_relations = AsyncMock(return_value=reservation)
+    repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
+    repo.release_calendar_lock = AsyncMock()
+    repo.write_booking_event = AsyncMock()
+
+    result = await cancel_reservation(
+        fake_session, _make_user(), "res-1", ReservationCancelRequest(reason="change_of_plans")
+    )
+
+    assert result.status == ReservationStatus.CANCELLED
+    assert reservation.payment_intents[0].status == PaymentStatus.REFUND_PENDING
+
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_zero_refund_leaves_payment_captured(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    # A late cancellation that forfeits the full amount must not relabel the
+    # captured payment as REFUNDED — nothing was actually refunded.
+    check_in = datetime.now(UTC).date()
+    reservation = _make_cancellable_reservation(
+        provider="paymob", check_in=check_in, created_at=datetime.now(UTC) - timedelta(days=2)
+    )
+    repo = _mock_repository(monkeypatch)
+    repo.get_reservation_with_relations = AsyncMock(return_value=reservation)
+    repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
+    repo.release_calendar_lock = AsyncMock()
+    repo.write_booking_event = AsyncMock()
+
+    result = await cancel_reservation(
+        fake_session, _make_user(), "res-1", ReservationCancelRequest(reason="change_of_plans")
+    )
+
+    assert result.status == ReservationStatus.CANCELLED
+    assert result.refund_amount_egp == 0
+    assert reservation.payment_intents[0].status == PaymentStatus.CAPTURED
+
 
 @pytest.mark.asyncio
 async def test_check_in(fake_session: AsyncMock, monkeypatch) -> None:
@@ -612,6 +787,10 @@ async def test_fail_reservation_by_provider(fake_session: AsyncMock, monkeypatch
     assert result is not None
     assert result.status == ReservationStatus.CANCELLED
     assert intent.status == PaymentStatus.FAILED
+    assert (
+        repo.write_booking_event.call_args.kwargs["extra"]["refund_days"]
+        == settings.REFUND_PROCESSING_DAYS
+    )
 
 
 @pytest.mark.asyncio

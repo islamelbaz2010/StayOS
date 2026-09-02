@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from app.auth import repository as auth_repository
 from app.auth.models import Account, RefreshToken, User
 from app.kyc import repository as kyc_repository

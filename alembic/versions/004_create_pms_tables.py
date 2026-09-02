@@ -5,19 +5,19 @@ Revises: 003_create_auth_tables
 Create Date: 2026-07-21 09:00:00.000000
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
+from geoalchemy2 import Geometry
 from sqlalchemy.dialects import postgresql
 
-from geoalchemy2 import Geometry
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "004_create_pms_tables"
-down_revision: Union[str, None] = "003_create_auth_tables"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "003_create_auth_tables"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

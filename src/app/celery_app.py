@@ -13,6 +13,7 @@ celery_app = Celery(
         "app.finance.tasks",
         "app.notifications.tasks",
         "app.discovery.tasks",
+        "app.messages.tasks",
     ],
 )
 
@@ -56,6 +57,10 @@ celery_app.conf.update(
         "run-discovery-scheduled-every-6-hours": {
             "task": "app.discovery.tasks.run_scheduled_discovery",
             "schedule": crontab(hour="*/6", minute=30),
+        },
+        "send-scheduled-reservation-messages-daily-0800-utc": {
+            "task": "app.messages.tasks.process_scheduled_messages",
+            "schedule": crontab(hour=8, minute=0),
         },
     },
 )

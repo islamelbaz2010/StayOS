@@ -204,6 +204,20 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
             },
         },
     },
+    "message.received": {
+        "ar": {
+            "email": {
+                "subject": "رسالة جديدة",
+                "body": "لديك رسالة جديدة من {{sender_name}} بخصوص الحجز {{booking_id}}.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "New message",
+                "body": "You have a new message from {{sender_name}} regarding booking {{booking_id}}.",
+            },
+        },
+    },
     "owner.outreach": {
         "ar": {
             "whatsapp": {

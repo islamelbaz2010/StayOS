@@ -11,7 +11,7 @@ from .schemas import (
     FavoriteToggleResponse,
     LocationAutocompleteResponse,
 )
-from .services import get_user_favorites, location_autocomplete, toggle_favorite
+from .services import get_user_favorites, location_autocomplete, location_popular, toggle_favorite
 
 router = APIRouter(tags=["favorites", "locations"])
 
@@ -43,3 +43,11 @@ async def location_autocomplete_endpoint(
     session: AsyncSession = Depends(get_session),
 ) -> LocationAutocompleteResponse:
     return await location_autocomplete(session, q, limit)
+
+
+@router.get("/locations/popular", response_model=LocationAutocompleteResponse)
+async def location_popular_endpoint(
+    limit: int = Query(20, ge=1, le=50),
+    session: AsyncSession = Depends(get_session),
+) -> LocationAutocompleteResponse:
+    return await location_popular(session, limit)

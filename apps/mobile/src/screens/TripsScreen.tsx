@@ -6,16 +6,31 @@ import { useGuestBookings } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, EmptyView } from "../components/States";
+import { LeaveReviewModal } from "../components/LeaveReviewModal";
+import { CancelBookingModal } from "../components/CancelBookingModal";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+const CANCELLABLE_STATUSES = new Set(["requested", "accepted", "confirmed"]);
+const STATUS_KEYS: Record<string, string> = {
+  requested: "statusRequested",
+  accepted: "statusAccepted",
+  confirmed: "statusConfirmed",
+  rejected: "statusRejected",
+  cancelled: "statusCancelled",
+};
 
 export function TripsScreen() {
   const { t } = useLocale();
   const navigation = useNavigation<Nav>();
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
+  const [reviewTarget, setReviewTarget] = useState<{ bookingId: string; unitId: string } | null>(
+    null
+  );
+  const [cancelTarget, setCancelTarget] = useState<string | null>(null);
 
-  const { data: bookings, isLoading } = useGuestBookings();
+  const { data: bookings, isLoading, refetch } = useGuestBookings();
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -56,10 +71,10 @@ export function TripsScreen() {
           renderItem={({ item }) => (
             <Pressable
               style={styles.bookingCard}
-              onPress={() => navigation.navigate("ListingDetail", { unitId: item.unit_id })}
+              onPress={() => navigation.navigate("TripDetail", { bookingId: item.id })}
             >
               <View style={styles.bookingHeader}>
-                <Text style={styles.bookingStatus}>{item.status}</Text>
+                <Text style={styles.bookingStatus}>{t(STATUS_KEYS[item.status] ?? item.status)}</Text>
                 <Text style={styles.bookingDates}>
                   {item.check_in} → {item.check_out}
                 </Text>
@@ -70,10 +85,47 @@ export function TripsScreen() {
                   {item.children > 0 && ` · ${item.children} ${t("children")}`}
                 </Text>
               </View>
+              {item.status === "completed" && (
+                <Pressable
+                  style={styles.reviewButton}
+                  onPress={() => setReviewTarget({ bookingId: item.id, unitId: item.unit_id })}
+                >
+                  <Text style={styles.reviewButtonText}>{t("leaveReview")}</Text>
+                </Pressable>
+              )}
+              {CANCELLABLE_STATUSES.has(item.status) && (
+                <Pressable
+                  style={styles.cancelButton}
+                  onPress={() => setCancelTarget(item.id)}
+                >
+                  <Text style={styles.cancelButtonText}>{t("cancelBooking")}</Text>
+                </Pressable>
+              )}
             </Pressable>
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      {reviewTarget && (
+        <LeaveReviewModal
+          visible={Boolean(reviewTarget)}
+          bookingId={reviewTarget.bookingId}
+          unitId={reviewTarget.unitId}
+          onClose={() => setReviewTarget(null)}
+        />
+      )}
+
+      {cancelTarget && (
+        <CancelBookingModal
+          visible={Boolean(cancelTarget)}
+          bookingId={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onCancelled={() => {
+            setCancelTarget(null);
+            refetch();
+          }}
         />
       )}
     </View>
@@ -141,6 +193,34 @@ const styles = StyleSheet.create({
   },
   bookingGuests: {
     fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  reviewButton: {
+    marginTop: spacing.md,
+    alignSelf: "flex-start",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  reviewButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  cancelButton: {
+    marginTop: spacing.md,
+    alignSelf: "flex-start",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cancelButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
     color: colors.textSecondary,
   },
 });

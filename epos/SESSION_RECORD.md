@@ -396,3 +396,190 @@ Open Items: 13 blockers (3 Day-1), 6 open decisions, awaiting founder signature 
 Session Record: epos/SESSION_RECORD.md
 Shutdown: COMPLETE
 ```
+
+---
+
+# SESSION RECORD — Session 005
+
+**EPOS Registry ID**: EPOS-PROJ-001
+**Session Number**: 005
+**Session Date**: 2026-08-14
+**Session Theme**: Situational Analysis + Favorites/Commission/Mobile/Railway implementation (uncommitted)
+
+---
+
+## Session Objective
+
+Produce management-level situational analysis of the project state (code vs operational readiness) and implement remaining Closed Alpha features — favorites, commission system, mobile scaffold, Railway deployment config, E2E transaction tests.
+
+---
+
+## Context: What Happened Between Session 004 and Session 005
+
+Between 2026-07-27 and 2026-08-14, multiple implementation sessions completed the following (now committed to `tooling/repository-intelligence`):
+
+| Commit Range | Description |
+|---|---|
+| Sprint 3 Waves 1–3 | Host experience, gallery, guest trust signals, search + maps, manual checkout + payment proof upload |
+| `478dc85` | Launch blocker fixes + GO_LIVE_READINESS_REPORT |
+| `a3ccfcd` | 10 deployment blockers fixed + PRODUCTION_DEPLOYMENT_REPORT |
+| `bf19e69` | P0: CSV template, import data flow fix, owner outreach template, default PENDING_VERIFICATION |
+| `b9ed208` | P0 implementation report |
+| `9fd5f63` (2026-08-10) | Discovery Engine: OSM/Overpass + Google Places adapters, normalization, dedup, scoring, admin UI, migrations 020–021 |
+
+---
+
+## Work Performed This Session (2026-08-14)
+
+### Analysis Documents Produced (UNTRACKED — not in git)
+
+| Document | Purpose |
+|---|---|
+| `MANAGEMENT_SITUATION_ANALYSIS.md` | Executive situation snapshot: V1 YELLOW, code-complete pre-alpha, 5 days to planned alpha |
+| `PRODUCT_VERSION_ROADMAP_AUDIT.md` | Universal product audit: 88% code complete, 0% operational, blocker list |
+| `SUPPLY_PIPELINE_AUDIT.md` | Step-by-step supply pipeline verification: property source → import → publish → booking |
+| `SUPPLY_ACQUISITION_PLAYBOOK_FINAL.md` | Finalized supply acquisition playbook |
+| `StayOS_MANAGEMENT_SITUATION_Before_vs_After_Audit_2026-08-14.pptx` | Management presentation |
+
+### Code Changes (UNCOMMITTED — modified tracked files)
+
+| Area | Files | Change |
+|---|---|---|
+| Favorites backend | `src/app/favorites/` (new module), `alembic/versions/022_add_favorites_and_locations.py` | Full favorites CRUD + location data migration |
+| Commission system | `src/app/finance/services.py` (+114 lines), `tests/test_alpha_commission.py` | Alpha commission calculation logic + tests |
+| Auth | `src/app/auth/router.py` (+27 lines), `src/app/auth/schemas.py` (+4 lines) | Auth enhancements |
+| Bookings | `src/app/bookings/constants.py`, `repository.py`, `router.py`, `services.py`, `tests/test_bookings.py` | Booking flow improvements + test updates |
+| Listings | `src/app/listings/repository.py`, `router.py`, `schemas.py`, `services.py` | Listing improvements |
+| Finance | `src/app/finance/services.py` | Commission system |
+| Shared | `src/app/shared/outbox.py`, `src/app/database.py`, `src/app/config.py`, `src/app/celery_app.py`, `src/app/main.py` | Infrastructure/config updates |
+| Payments | `src/app/payments/services.py` | Payment flow fixes |
+| Frontend | `apps/web/app/[locale]/auth/login/page.tsx`, `admin/pending/page.tsx`, `listings/[unitId]/page.tsx`, `host/listings/[unitId]/edit/page.tsx`, `host/listings/[unitId]/photos/page.tsx`, `layout.tsx`, `app/layout.tsx`, `ListingMap.tsx`, `api.ts`, `next.config.mjs`, `package.json`, `playwright.config.ts` | Login UX, listing detail, admin pending, layout fixes |
+| Deployment | `railway.toml`, `startup.sh`, `docker-compose.staging.yml` | Railway deployment config + staging improvements |
+| Mobile | `apps/mobile/` | React Native scaffold (new, untracked) |
+| E2E | `apps/web/e2e/transaction/` | Transaction E2E test suite |
+
+---
+
+## Decisions Made This Session
+
+None confirmed by founder.
+
+OPEN (no decision made): Deployment platform — Railway (`railway.toml`) created in parallel with AWS Terraform. Two paths exist; no founder decision on which to use for Closed Alpha.
+
+OPEN (no decision made): Mobile framework — React Native scaffold (`apps/mobile/`) created, but no ADR written.
+
+---
+
+## Issues Found
+
+| # | Issue | Severity |
+|---|---|---|
+| 1 | No deployed environment — no staging or production URL exists | CRITICAL |
+| 2 | Large uncommitted diff (35 files, 687 insertions) — work not yet persisted to git | HIGH |
+| 3 | Dual deployment path: Railway AND AWS Terraform — no decision | HIGH |
+| 4 | Mobile scaffold exists (`apps/mobile/`) but no framework ADR, no integration | HIGH |
+| 5 | WhatsApp Business API approval: external dependency, not confirmed | HIGH |
+| 6 | Closed Alpha originally targeted 2026-08-19 (5 days from audit date) — operationally 0% ready | CRITICAL |
+| 7 | Phase 0 gate (10 transactions / 80 interviews) still formally unconfirmed | HIGH |
+
+---
+
+## Shutdown Protocol Execution
+
+```
+EPOS SHUTDOWN — StayOS — Session 005 — 2026-08-14
+Work Completed: Situational analysis docs produced. Favorites + commission + mobile + Railway code written but NOT committed.
+Decisions Made: None.
+Uncommitted Files: 35 modified tracked files + 10+ new untracked files.
+Open Items: 7 (see Issues Found). Critical: no deployed environment.
+Session Record: epos/SESSION_RECORD.md
+Shutdown: COMPLETE
+```
+
+---
+
+# SESSION RECORD — Session 006
+
+**EPOS Registry ID**: EPOS-PROJ-001
+**Session Number**: 006
+**Session Date**: 2026-08-24
+**Session Theme**: P0 real-transaction-readiness diagnostic → AWS S3 handoff → legal-document drafting → commercial payment-model decision & reconciliation
+
+---
+
+## Session Objective
+
+Four founder-directed sprints, run back-to-back: (1) determine the real engineering-vs-operations-vs-legal blockers standing between StayOS and its first real transaction, including a legitimate-route check on Airbnb/Booking.com and an OTP/S3 production diagnostic; (2) prepare an AWS S3 handoff package for a provider (Paymob-side) coordination; (3) draft a bilingual (EN/AR) V1 legal document package; (4) decide StayOS's V1 commercial payment/commission model and reconcile every legal/commercial document against that decision. Explicit instruction throughout: no application code changes, no commits/pushes/deploys, no invented legal/regulatory conclusions, no credentials created.
+
+---
+
+## Work Performed
+
+### Sprint 1 — P0 Real Transaction Readiness
+- Live, read-only diagnostic probes against the Railway production API confirmed: OTP (Twilio) is not configured in production (`"OTP provider is not configured"`); the `/auth/dev-token` development bypass is live and functional (issued a real JWT for the seeded admin user, `environment: staging` per `/version`); S3 photo-presign returns `500` (confirmed AWS credentials are not functional in production); CSV import (`image_urls`, external links) bypasses S3 entirely, so the first real listing is not blocked by the S3 issue; payment-proof upload has no non-S3 path, so it *is* blocked.
+- Airbnb: no legitimate current route (invite-only partner API, not accepting new requests; no public affiliate program since 2021; scraping excluded). Booking.com: Connectivity API (the route that would make inventory bookable via StayOS) has paused new applications; the open Demand/Affiliate API only redirects the guest to complete the booking on Booking.com, so it doesn't serve StayOS's own-transaction objective. Both classified **FUTURE CHANNEL / PARTNERSHIP**, per founder's own priority rule — not investigated further.
+- Legal minimum check: no Terms of Service, Privacy Policy, or Host Agreement exist as real documents anywhere in the product.
+
+### Sprint 2 — AWS S3 Production Handoff
+- Inspected the real S3 architecture: only two buckets in config (`S3_LISTINGS_BUCKET`, `S3_KYC_BUCKET`) — payment-proof uploads reuse the listings bucket; no CloudFront/endpoint setting exists anywhere; no presigned GET exists anywhere in the code — the listings bucket is architected for public-read access, the KYC bucket for fully private access; KYC additionally uses AWS Textract and Rekognition.
+- Produced least-privilege IAM requirements, the exact 5 Railway variable names, a ready-to-send provider message, and an 8-step founder procedure. No AWS resources created, no credentials requested or printed.
+
+### Sprint 3 — Legal Readiness
+- Researched current Egyptian legal/regulatory sources: Personal Data Protection Law 151/2020 (Executive Regulations in force since 2 Nov 2025, compliance deadline **31 Oct 2026**), Consumer Protection Law 181/2018 (Arts. 36–37 remote-contract disclosure), E-Signature Law 15/2004.
+- Created `docs/legal/` (new directory — no existing home fit a legal-policy package in the repository's governance-defined information architecture) with 6 bilingual documents: Terms of Service, Privacy Policy (with a full code-sourced data inventory table), Host Agreement/Owner Authorization (built around the identity-vs-ownership-vs-authorized-representative distinction, since KYC only verifies identity), Cancellation & Refund Policy, Legal Gap Register, Legal Counsel Review Checklist. Every business-decision gap marked `[FOUNDER DECISION REQUIRED]`, every genuine legal question marked `[LEGAL REVIEW REQUIRED]` — nothing invented.
+
+### Sprint 4 — Commercial Payment Model Decision + Reconciliation
+- Code inspection revealed the product already contains two parallel commercial architectures: the live `bookings`+`payments` manual-proof flow (guest shown one **fixed, hardcoded placeholder bank account** — not a per-host account; no field for a host's own bank details exists except on the *payout* side), and a dormant, fully-built `finance`+`reservations` escrow/wallet/commission-split/payout system (inactive only because `STRIPE_SECRET_KEY` is unset everywhere). Conclusion: the product was already architected around **Model A** (Guest → StayOS-controlled account → Host, commission deducted) — this was completed, not replaced.
+- Found a real, pre-configured commission rate identical across every environment file: `GUEST_SERVICE_FEE_PCT=4%`, `HOST_COMMISSION_PCT=10%`, `PLATFORM_TAKE_RATE_PCT=2%`.
+- Competitor research (Airbnb, Booking.com) and Egyptian regulatory research (Central Bank of Egypt Law 194/2020 + June 2025 PSP/PSO licensing rules, EGP 10–30M capital requirement for entities holding customer funds) — flagged as the one live regulatory question sitting directly on the recommended model, correctly left `LEGAL COUNSEL REQUIRED`, not resolved.
+- Produced `STAYOS_V1_PAYMENT_AND_COMMISSION_POLICY.md` and `PAYMOB_REQUIREMENTS_REQUEST.md`.
+- Found and fixed one live, guest-facing false claim: "Escrow Protection — Your payment is held securely until you check in" (`apps/web/messages/{en,ar}.json`) — no such mechanism exists anywhere in the code. This was the one code/copy change made in this entire session, justified as correcting an already-proven contradiction discovered during the decision work, per the founder's own stated exception.
+- Final Decision Gate: made all 14 previously-open V1 business decisions under explicit in-session founder delegation (see Decisions Made below), then reconciled all 6 legal/commercial documents so none contradict each other or the decided values.
+
+---
+
+## Decisions Made
+
+Full canonical table: `docs/legal/STAYOS_V1_PAYMENT_AND_COMMISSION_POLICY.md` § 1. Summary (session-confirmed under explicit delegated authority, not a separate pre-existing founder ratification):
+
+- Payment model: Guest → StayOS-controlled account → Host (Model A), commission deducted before payout.
+- Commission: 10% host + 2% platform + 4% guest — adopted as StayOS's official V1 rate (found in code, not invented).
+- Cancellation: Flexible/Moderate/Strict tiers (24h/5d/1wk → 100%/100%/50%), adopted from existing live UI copy.
+- Guest service fee: non-refundable on guest-initiated cancellation, refundable otherwise.
+- Refund timing 5 business days; payment deadline 24h; proof resubmission 3×/48h; host payout 3 business days post-verification.
+- Host cancellation / property-unavailable / host no-show: 100% guest refund, no host monetary penalty beyond forfeited commission.
+- Guest no-show: no refund.
+- V1 host authorization: founder personally confirms the first 1–10 listings; declaration + KYC only thereafter.
+- **Explicitly NOT decided (remains with Egyptian legal counsel):** CBE PSP/payment-facilitator licensing classification of the chosen model; PDPL/KYC biometric-processing licensing obligation (deadline pressure: 31 Oct 2026); final legal characterization of StayOS's platform role (marketplace vs. accommodation supplier).
+
+---
+
+## Open Items Carried Forward
+
+1. **P0 — Founder**: obtain a real bank/Vodafone Cash account to replace the placeholder in payment instructions (blocks the first real payment).
+2. **P0 — Founder**: obtain legal entity/registration details (blocks a complete, publishable Terms of Service under Consumer Protection Law Art. 37).
+3. **P0 — Legal Counsel**: CBE PSP licensing question; PDPL/KYC licensing question (31 Oct 2026 deadline); platform-role characterization.
+4. **P0 — Engineering (tiny, scoped)**: populate `refund_days=5` at the (dormant module's) notification call site.
+5. **P1 — Engineering**: build a refund-calculation function matching the now-decided cancellation tiers (not needed for a manually-computed alpha, needed before scale).
+6. **External — Founder**: send the finalized Paymob requirements request.
+7. All items already open before this session (deployment platform choice, mobile framework ADR, uncommitted 35+/188-line diff, Phase 0 gate conditions) remain open — not addressed this session, out of scope.
+
+---
+
+## Files Modified This Session
+
+See the table in `epos/WORKING_MEMORY.md` Session 006 entry (same list, not duplicated here). Net new: 8 files under `docs/legal/`. Edited: `apps/web/messages/en.json`, `apps/web/messages/ar.json` (copy-only). No git commit, push, or deploy performed.
+
+---
+
+## Shutdown Protocol Execution
+
+```
+EPOS SHUTDOWN — StayOS — Session 006 — 2026-08-24
+Work Completed: P0 diagnostic (live probes, no mutation) + AWS S3 handoff doc + 8-document legal/commercial package created + 14 V1 business decisions made and reconciled + 1 live false-copy bug fixed.
+Decisions Made: 14 (see Decisions Made above). 3 items explicitly left LEGAL COUNSEL REQUIRED, not decided.
+Files Modified: 8 new (docs/legal/), 2 edited (apps/web/messages/*.json), EPOS continuity files (this shutdown).
+Open Items: 7 new/updated (see above) + all pre-existing open items, unchanged.
+Session Record: epos/SESSION_RECORD.md (this entry)
+Shutdown: COMPLETE
+```

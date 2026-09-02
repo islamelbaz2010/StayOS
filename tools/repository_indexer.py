@@ -1,9 +1,9 @@
-import os
-import json
 import csv
+import json
+import os
 import re
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Configuration
 REPO_ROOT = Path('.')
@@ -29,17 +29,15 @@ def get_stats(file_path):
 
 def index_repository():
     index = []
-    tags = {}
-    relations = {}
 
     for root, _, files in os.walk(REPO_ROOT):
         if any(ignored in root for ignored in ['archive', '.git', 'tools']):
             continue
-            
+
         for file in files:
             path = Path(root) / file
             stats = get_stats(path)
-            
+
             entry = {
                 "file_name": file,
                 "path": str(path),
@@ -53,12 +51,13 @@ def index_repository():
             index.append(entry)
 
     # Save outputs
-    with open(INDEX_JSON, 'w') as f: json.dump(index, f, indent=4)
+    with open(INDEX_JSON, 'w') as f:
+        json.dump(index, f, indent=4)
     with open(INDEX_CSV, 'w') as f:
         writer = csv.DictWriter(f, fieldnames=index[0].keys())
         writer.writeheader()
         writer.writerows(index)
-        
+
     # Generate MD
     with open(INDEX_MD, 'w') as f:
         f.write("# Repository Master Index\n\n")

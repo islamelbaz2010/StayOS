@@ -1,18 +1,29 @@
 "use client";
 
+import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { BookingPanel } from "@/components/bookings/BookingPanel";
 import { GuestLayout } from "@/components/layouts";
+import { FavoriteButton } from "@/components/listings/FavoriteButton";
 import { Gallery } from "@/components/listings/Gallery";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
-import { ListingMap } from "@/components/listings/ListingMap";
+import { ReviewsSection } from "@/components/listings/ReviewsSection";
 import { TrustSection } from "@/components/listings/TrustSection";
 import { VerifiedBadge } from "@/components/listings/VerifiedBadge";
+import { RatingBadge } from "@/components/ui/RatingBadge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useListing, useListingPhotos } from "@/lib/queries/listings";
 import { formatMoney } from "@/lib/utils";
+
+const ListingMap = dynamic(
+  () => import("@/components/listings/ListingMap").then((m) => m.ListingMap),
+  { ssr: false, loading: () => (
+    <div className="h-64 w-full animate-pulse rounded-xl bg-neutral-100" />
+  ) }
+);
 
 const AMENITY_GROUPS: Record<string, string[]> = {
   ESSENTIALS: ["wifi", "ac", "air_conditioning", "heating", "towels", "bed_linens", "toiletries"],
@@ -73,19 +84,32 @@ export default function ListingDetailPage() {
 
   return (
     <GuestLayout>
-      <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <section className="container mx-auto px-0 py-0 sm:px-6 sm:py-8 lg:px-8">
         {isError ? (
           <ErrorState onRetry={() => refetch()} />
         ) : isPending ? (
           <ListingDetailSkeleton />
         ) : (
           <article className="mx-auto max-w-5xl">
+            {/* Gallery — first on mobile for visual impact */}
+            <div className="sm:mb-6 sm:px-0">
+              <Gallery
+                images={galleryImages}
+                alt={listing.title}
+              />
+            </div>
+
             {/* Title & badges */}
-            <header className="mb-6">
-              <h1 className="text-2xl font-bold text-neutral-900 sm:text-3xl">
-                {listing.title}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
+            <header className="mb-4 px-4 pt-4 sm:mb-6 sm:px-0">
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl lg:text-3xl">
+                  {listing.title}
+                </h1>
+                <FavoriteButton unitId={listing.id} size="md" className="flex-shrink-0 border border-neutral-200" />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-600 sm:gap-3 sm:text-sm">
+                <RatingBadge averageRating={listing.averageRating} reviewCount={listing.reviewCount} />
+                <span className="text-neutral-300">•</span>
                 <span>
                   {listing.city}, {listing.governorate}, {listing.country || "Egypt"}
                 </span>
@@ -104,18 +128,12 @@ export default function ListingDetailPage() {
               </div>
             </header>
 
-            {/* Gallery */}
-            <Gallery
-              images={galleryImages}
-              alt={listing.title}
-            />
-
             {/* Main content + sticky booking */}
-            <div className="mt-8 grid gap-8 lg:grid-cols-3">
-              <div className="space-y-8 lg:col-span-2">
+            <div className="grid gap-4 px-4 pb-24 sm:gap-6 sm:px-0 sm:pb-0 lg:grid-cols-3 lg:gap-8 lg:pb-0">
+              <div className="space-y-4 sm:space-y-6 lg:col-span-2">
                 {/* Property highlights */}
-                <section className="rounded-xl bg-white p-6 shadow-card">
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                     <div className="text-center">
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
                         <svg className="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -158,8 +176,8 @@ export default function ListingDetailPage() {
                 </section>
 
                 {/* Description */}
-                <section className="rounded-xl bg-white p-6 shadow-card">
-                  <h2 className="mb-3 text-lg font-semibold text-neutral-900">
+                <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+                  <h2 className="mb-2 text-base font-semibold text-neutral-900 sm:mb-3 sm:text-lg">
                     {t("description")}
                   </h2>
                   <p className="whitespace-pre-line text-sm leading-relaxed text-neutral-700">
@@ -169,8 +187,8 @@ export default function ListingDetailPage() {
 
                 {/* Amenities */}
                 {listing.amenities.length > 0 && (
-                  <section className="rounded-xl bg-white p-6 shadow-card">
-                    <h2 className="mb-4 text-lg font-semibold text-neutral-900">
+                  <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+                    <h2 className="mb-3 text-base font-semibold text-neutral-900 sm:mb-4 sm:text-lg">
                       {t("amenities")}
                     </h2>
                     {(() => {
@@ -211,12 +229,15 @@ export default function ListingDetailPage() {
                   </section>
                 )}
 
+                {/* Reviews */}
+                <ReviewsSection unitId={unitId} locale={params?.locale ?? "ar"} />
+
                 {/* Location */}
-                <section className="rounded-xl bg-white p-6 shadow-card">
-                  <h2 className="mb-3 text-lg font-semibold text-neutral-900">
+                <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+                  <h2 className="mb-2 text-base font-semibold text-neutral-900 sm:mb-3 sm:text-lg">
                     {t("location")}
                   </h2>
-                  <p className="mb-4 text-sm text-neutral-600">
+                  <p className="mb-3 text-sm text-neutral-600 sm:mb-4">
                     {listing.district ? `${listing.district}, ` : ""}
                     {listing.city}, {listing.governorate}, {listing.country}
                   </p>
@@ -230,8 +251,8 @@ export default function ListingDetailPage() {
 
                 {/* House rules */}
                 {listing.houseRules && (
-                  <section className="rounded-xl bg-white p-6 shadow-card">
-                    <h2 className="mb-3 text-lg font-semibold text-neutral-900">
+                  <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+                    <h2 className="mb-2 text-base font-semibold text-neutral-900 sm:mb-3 sm:text-lg">
                       {t("houseRules")}
                     </h2>
                     <p className="whitespace-pre-line text-sm leading-relaxed text-neutral-700">
@@ -242,8 +263,8 @@ export default function ListingDetailPage() {
 
                 {/* Cancellation policy */}
                 {listing.cancellationPolicy && (
-                  <section className="rounded-xl bg-white p-6 shadow-card">
-                    <h2 className="mb-3 text-lg font-semibold text-neutral-900">
+                  <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+                    <h2 className="mb-2 text-base font-semibold text-neutral-900 sm:mb-3 sm:text-lg">
                       {t("cancellationPolicy")}
                     </h2>
                     <p className="text-sm text-neutral-700">
@@ -258,12 +279,35 @@ export default function ListingDetailPage() {
                 <TrustSection listing={listing} />
               </div>
 
-              {/* Sticky booking card */}
-              <aside className="lg:col-span-1">
+              {/* Sticky booking card — desktop sidebar */}
+              <aside className="hidden lg:col-span-1 lg:block">
                 <div className="lg:sticky lg:top-24">
                   <BookingPanel listing={listing} />
                 </div>
               </aside>
+            </div>
+
+            {/* Sticky mobile booking bar */}
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 bg-white px-4 py-3 shadow-lg lg:hidden">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-bold text-neutral-900">
+                    {formatMoney(listing.price, listing.currency)}
+                    <span className="text-sm font-normal text-neutral-500"> / {t("perNight")}</span>
+                  </p>
+                </div>
+                <Link
+                  href={`#booking`}
+                  className="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                >
+                  {t("book")}
+                </Link>
+              </div>
+            </div>
+
+            {/* Mobile booking panel — inline, anchored */}
+            <div id="booking" className="px-4 pb-8 pt-4 lg:hidden">
+              <BookingPanel listing={listing} />
             </div>
           </article>
         )}

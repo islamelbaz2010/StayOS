@@ -73,6 +73,8 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     lng: item.lng,
     district: item.district,
     address: item.address,
+    averageRating: item.average_rating ?? null,
+    reviewCount: item.review_count ?? 0,
   };
 }
 
@@ -92,6 +94,8 @@ function mapSearchResult(item: ApiSearchResult): Listing {
     coverImage: item.cover_image ?? null,
     hostKycStatus: item.host_kyc_status ?? null,
     amenities: item.amenities,
+    averageRating: item.average_rating ?? null,
+    reviewCount: item.review_count ?? 0,
   };
 }
 
@@ -132,6 +136,24 @@ export function useListing(unitId: string) {
       return mapListingDetail(data);
     },
     enabled: Boolean(unitId),
+  });
+}
+
+type ApiAvailabilityResponse =
+  components["schemas"]["app__listings__schemas__AvailabilityResponse"];
+
+export function useListingAvailability(unitId: string, checkIn: string, checkOut: string) {
+  return useQuery({
+    queryKey: ["listing-availability", unitId, checkIn, checkOut],
+    queryFn: async () => {
+      const { data } = await api.get<ApiAvailabilityResponse>(
+        `/listings/${unitId}/availability`,
+        { params: { check_in: checkIn, check_out: checkOut } }
+      );
+      return data;
+    },
+    enabled: Boolean(unitId && checkIn && checkOut && checkOut > checkIn),
+    staleTime: 60_000,
   });
 }
 

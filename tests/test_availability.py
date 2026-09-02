@@ -1,20 +1,24 @@
 from datetime import UTC, date, datetime, timedelta
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from geoalchemy2.elements import WKTElement
+
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
+from app.availability import repository as availability_repository
 from app.availability import services as availability_services
+from app.availability.constants import AvailabilityStatus
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
+from app.listings import repository as listings_repository
 from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import CalendarRule, Unit
 from app.reservations.constants import ReservationStatus
 from app.reservations.models import Reservation
-from app.shared.exceptions import ConflictError, ValidationError
-from geoalchemy2.elements import WKTElement
+from app.shared.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 
 
 def _make_user(
@@ -497,3 +501,378 @@ def test_availability_routes(client, monkeypatch) -> None:
         headers={"Authorization": f"Bearer {token}"},
     )
     assert patch_resp.status_code == 200
+
+
+# ============================================================
+# AVAILABILITY REPOSITORY COVERAGE
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_get_calendar_rules_for_unit(fake_session: AsyncMock, monkeypatch) -> None:
+    rule = CalendarRule(
+        id=str(uuid4()),
+        unit_id="unit-1",
+        date_from=date(2026, 8, 1),
+        date_to=date(2026, 8, 5),
+        status=CalendarStatus.AVAILABLE,
+    )
+    monkeypatch.setattr(
+        listings_repository,
+        "get_calendar_rules_in_range",
+        AsyncMock(return_value=[rule]),
+    )
+    result = await availability_repository.get_calendar_rules_for_unit(
+        fake_session, "unit-1", date(2026, 8, 1), date(2026, 8, 5)
+    )
+    assert result == [rule]
+
+
+@pytest.mark.asyncio
+async def test_get_accepted_bookings_for_unit(fake_session: AsyncMock) -> None:
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await availability_repository.get_accepted_bookings_for_unit(
+        fake_session, "unit-1", date(2026, 8, 1), date(2026, 8, 5)
+    )
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_get_confirmed_reservations_for_unit(fake_session: AsyncMock) -> None:
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await availability_repository.get_confirmed_reservations_for_unit(
+        fake_session, "unit-1", date(2026, 8, 1), date(2026, 8, 5)
+    )
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_replace_host_availability_rules(fake_session: AsyncMock, monkeypatch) -> None:
+    rule = CalendarRule(
+        id=str(uuid4()),
+        unit_id="unit-1",
+        date_from=date(2026, 8, 1),
+        date_to=date(2026, 8, 5),
+        status=CalendarStatus.AVAILABLE,
+    )
+    monkeypatch.setattr(
+        listings_repository,
+        "bulk_replace_calendar_rules",
+        AsyncMock(return_value=[rule]),
+    )
+    result = await availability_repository.replace_host_availability_rules(
+        fake_session,
+        "unit-1",
+        [(date(2026, 8, 1), date(2026, 8, 5), "available", None)],
+    )
+    assert result == [rule]
+
+
+# ============================================================
+# AVAILABILITY SERVICES EDGE CASE COVERAGE
+# ============================================================
+
+
+@pytest.mark.asyncio
+async def test_get_availability_rejects_guest(fake_session: AsyncMock) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    with pytest.raises(AuthorizationError):
+        await availability_services.get_availability(
+            fake_session, guest, "unit-1", date(2026, 8, 1), date(2026, 8, 6)
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_availability_rejects_reversed_dates(
+    fake_session: AsyncMock,
+) -> None:
+    host = _make_user(role=UserRole.HOST)
+    with pytest.raises(ValidationError):
+        await availability_services.get_availability(
+            fake_session, host, "unit-1", date(2026, 8, 6), date(2026, 8, 1)
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_availability_rejects_long_range(fake_session: AsyncMock) -> None:
+    host = _make_user(role=UserRole.HOST)
+    with pytest.raises(ValidationError):
+        await availability_services.get_availability(
+            fake_session,
+            host,
+            "unit-1",
+            date(2026, 8, 1),
+            date(2027, 8, 2),
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_availability_raises_when_unit_not_found(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST)
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=None),
+    )
+    with pytest.raises(NotFoundError):
+        await availability_services.get_availability(
+            fake_session, host, "unit-1", date(2026, 8, 1), date(2026, 8, 6)
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_availability_admin_can_view_any_unit(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(role=UserRole.ADMIN, user_id="admin-1")
+    unit = _make_unit(host_id="host-1")
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_calendar_rules_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_confirmed_reservations_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    response = await availability_services.get_availability(
+        fake_session, admin, "unit-1", date(2026, 8, 1), date(2026, 8, 6)
+    )
+    assert response.unit_id == "unit-1"
+
+
+@pytest.mark.asyncio
+async def test_get_availability_raises_when_not_owner(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST, user_id="host-1")
+    unit = _make_unit(host_id="host-2")
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    with pytest.raises(AuthorizationError):
+        await availability_services.get_availability(
+            fake_session, host, "unit-1", date(2026, 8, 1), date(2026, 8, 6)
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_availability_includes_occupied_calendar_rules_and_reservations(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST)
+    unit = _make_unit(host.id)
+    reserved_rule = _make_rule(
+        status=CalendarStatus.BOOKED,
+        reservation_id="res-1",
+        date_from=date(2026, 8, 1),
+        date_to=date(2026, 8, 3),
+    )
+    booked_rule = _make_rule(
+        status=CalendarStatus.BOOKED,
+        date_from=date(2026, 8, 2),
+        date_to=date(2026, 8, 4),
+    )
+    reservation = _make_reservation(
+        check_in=date(2026, 8, 3), check_out=date(2026, 8, 5)
+    )
+
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_calendar_rules_for_unit",
+        AsyncMock(return_value=[reserved_rule, booked_rule]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_confirmed_reservations_for_unit",
+        AsyncMock(return_value=[reservation]),
+    )
+
+    response = await availability_services.get_availability(
+        fake_session, host, "unit-1", date(2026, 8, 1), date(2026, 8, 6)
+    )
+    assert response.days[0].status == CalendarStatus.BOOKED
+    assert response.days[3].status == CalendarStatus.BOOKED
+    assert response.days[4].status == CalendarStatus.AVAILABLE
+
+
+def test_validate_rules_rejects_reversed_dates() -> None:
+    from app.availability.schemas import AvailabilityRule, AvailabilityUpdateRequest
+
+    invalid_rule = AvailabilityRule.model_construct(
+        date_from=date(2026, 8, 5),
+        date_to=date(2026, 8, 1),
+        status=AvailabilityStatus.BLOCKED,
+    )
+    request = AvailabilityUpdateRequest.model_construct(rules=[invalid_rule])
+    with pytest.raises(ValidationError):
+        availability_services._validate_rules(request)
+
+
+@pytest.mark.asyncio
+async def test_update_availability_converts_available_rule(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST)
+    unit = _make_unit(host.id)
+    created_rule = _make_rule(
+        status=CalendarStatus.AVAILABLE,
+        date_from=date(2026, 8, 1),
+        date_to=date(2026, 8, 6),
+    )
+
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_calendar_rules_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_confirmed_reservations_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.replace_host_availability_rules",
+        AsyncMock(return_value=[created_rule]),
+    )
+
+    from app.availability.schemas import AvailabilityRule, AvailabilityUpdateRequest
+
+    request = AvailabilityUpdateRequest(
+        rules=[
+            AvailabilityRule(
+                date_from=date(2026, 8, 1),
+                date_to=date(2026, 8, 6),
+                status=AvailabilityStatus.AVAILABLE,
+            )
+        ]
+    )
+    result = await availability_services.update_availability(
+        fake_session, host, "unit-1", request
+    )
+    assert result[0].status == CalendarStatus.AVAILABLE
+
+
+@pytest.mark.asyncio
+async def test_update_availability_ignores_blocked_calendar_rule_overlap(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST)
+    unit = _make_unit(host.id)
+    blocked_rule = _make_rule(
+        status=CalendarStatus.BLOCKED,
+        date_from=date(2026, 8, 2),
+        date_to=date(2026, 8, 4),
+    )
+    created_rule = _make_rule(
+        status=CalendarStatus.BLOCKED,
+        date_from=date(2026, 8, 1),
+        date_to=date(2026, 8, 6),
+    )
+
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_calendar_rules_for_unit",
+        AsyncMock(return_value=[blocked_rule]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_confirmed_reservations_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.replace_host_availability_rules",
+        AsyncMock(return_value=[created_rule]),
+    )
+
+    from app.availability.schemas import AvailabilityRule, AvailabilityUpdateRequest
+
+    request = AvailabilityUpdateRequest(
+        rules=[
+            AvailabilityRule(
+                date_from=date(2026, 8, 1),
+                date_to=date(2026, 8, 6),
+                status=AvailabilityStatus.BLOCKED,
+            )
+        ]
+    )
+    result = await availability_services.update_availability(
+        fake_session, host, "unit-1", request
+    )
+    assert result[0].status == CalendarStatus.BLOCKED
+
+
+@pytest.mark.asyncio
+async def test_update_availability_rejects_booked_calendar_rule_overlap(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST)
+    unit = _make_unit(host.id)
+    booked_rule = _make_rule(
+        status=CalendarStatus.BOOKED,
+        date_from=date(2026, 8, 2),
+        date_to=date(2026, 8, 4),
+    )
+
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_calendar_rules_for_unit",
+        AsyncMock(return_value=[booked_rule]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_confirmed_reservations_for_unit",
+        AsyncMock(return_value=[]),
+    )
+
+    from app.availability.schemas import AvailabilityRule, AvailabilityUpdateRequest
+
+    request = AvailabilityUpdateRequest(
+        rules=[
+            AvailabilityRule(
+                date_from=date(2026, 8, 1),
+                date_to=date(2026, 8, 6),
+                status=AvailabilityStatus.AVAILABLE,
+            )
+        ]
+    )
+    with pytest.raises(ConflictError):
+        await availability_services.update_availability(
+            fake_session, host, "unit-1", request
+        )

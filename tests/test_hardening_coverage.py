@@ -1,14 +1,15 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import Request
+from fastapi.testclient import TestClient
+
 from app.database import get_session
 from app.main import app
 from app.notifications import templates
 from app.security import pii
 from app.security.rate_limit import RateLimitError, rate_limit
 from app.security.sentry import init_sentry
-from fastapi import Request
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture

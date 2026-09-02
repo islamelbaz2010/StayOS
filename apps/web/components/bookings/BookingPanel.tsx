@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import type { ListingDetail } from "@/lib/queries/listings";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useCreateBooking } from "@/lib/queries/bookings";
+import { useListingAvailability } from "@/lib/queries/listings";
 import { cn, formatMoney } from "@/lib/utils";
 
 import { BookingSuccess } from "./BookingSuccess";
@@ -63,6 +64,12 @@ export function BookingPanel({ listing }: BookingPanelProps) {
     }
   }, [checkIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const { data: availability } = useListingAvailability(listing.id, checkIn, checkOut);
+
+  const blockedDatesInRange = useMemo(() => {
+    return (availability?.days ?? []).filter((day) => day.status !== "AVAILABLE");
+  }, [availability]);
+
   const totalGuests = guests.adults + guests.children + guests.infants;
   const nights = useMemo(() => {
     const start = new Date(checkIn);
@@ -98,6 +105,8 @@ export function BookingPanel({ listing }: BookingPanelProps) {
       const checkOutDate = new Date(checkOut);
       if (checkOutDate <= checkInDate) {
         nextErrors.checkOut = t("checkOutAfterCheckIn");
+      } else if (blockedDatesInRange.length > 0) {
+        nextErrors.checkOut = t("datesUnavailable");
       }
     }
 
@@ -159,7 +168,11 @@ export function BookingPanel({ listing }: BookingPanelProps) {
     );
   }
 
-  const canSubmit = isAuthenticated && isGuest && !createBooking.isPending;
+  const canSubmit =
+    isAuthenticated &&
+    isGuest &&
+    !createBooking.isPending &&
+    blockedDatesInRange.length === 0;
 
   return (
     <section
@@ -254,6 +267,11 @@ export function BookingPanel({ listing }: BookingPanelProps) {
                 role="alert"
               >
                 {errors.checkOut}
+              </p>
+            )}
+            {!errors.checkOut && nights > 0 && blockedDatesInRange.length > 0 && (
+              <p className="mt-1 text-sm text-red-600" role="alert">
+                {t("datesUnavailable")}
               </p>
             )}
           </div>

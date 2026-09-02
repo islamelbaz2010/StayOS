@@ -1,6 +1,5 @@
 "use client";
 
-import { use } from "react";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -10,9 +9,9 @@ import { PhotoUpload } from "@/components/listings/PhotoUpload";
 export default function PhotosPage({
   params,
 }: {
-  params: Promise<{ unitId: string }>;
+  params: { unitId: string };
 }) {
-  const { unitId } = use(params);
+  const { unitId } = params;
   const t = useTranslations("photos");
 
   return (

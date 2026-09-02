@@ -58,6 +58,7 @@ def channels_for_event(event_type: str) -> list[str]:
         "booking.checked_in": [NotificationChannel.SMS],
         "booking.checked_out": [NotificationChannel.SMS],
         "booking.cancelled": [NotificationChannel.EMAIL, NotificationChannel.SMS],
+        "message.received": [NotificationChannel.EMAIL],
     }
     return mapping.get(event_type, [NotificationChannel.EMAIL])
 
@@ -68,7 +69,40 @@ async def create_notifications_for_event(
     event_type: str,
     payload: dict[str, Any],
 ) -> list[Notification]:
+    notifications: list[Notification] = []
+
+    # Some events (e.g. new in-app messages) may have multiple recipients.
+    recipients = payload.get("recipients")
+    if isinstance(recipients, list) and recipients:
+        for recipient in recipients:
+            notifications.extend(
+                await _create_notifications_for_contact(
+                    session,
+                    event_id,
+                    event_type,
+                    payload,
+                    contact=recipient,
+                )
+            )
+        return notifications
+
     contact = await resolve_recipient(session, event_type, payload)
+    return await _create_notifications_for_contact(
+        session,
+        event_id,
+        event_type,
+        payload,
+        contact=contact,
+    )
+
+
+async def _create_notifications_for_contact(
+    session: AsyncSession,
+    event_id: str,
+    event_type: str,
+    payload: dict[str, Any],
+    contact: dict[str, Any],
+) -> list[Notification]:
     locale = contact.get("locale") or "ar"
     notifications: list[Notification] = []
 

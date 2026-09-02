@@ -3,6 +3,8 @@ from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from geoalchemy2.elements import WKTElement
+
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.listings.constants import CalendarStatus, UnitStatus
@@ -21,7 +23,6 @@ from app.listings.services import (
     search_listings,
     update_listing,
 )
-from geoalchemy2.elements import WKTElement
 
 
 def _make_user(
@@ -176,6 +177,11 @@ async def test_get_listing_detail(fake_session: AsyncMock, monkeypatch) -> None:
     )
     monkeypatch.setattr(
         listings.services, "_fetch_host", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        listings.services.reviews_repository,
+        "get_rating_aggregate_for_unit",
+        AsyncMock(return_value=(None, 0)),
     )
 
     result = await get_listing_detail(fake_session, "unit-1")

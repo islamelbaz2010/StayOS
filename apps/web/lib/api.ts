@@ -2,7 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { clearSession, getSession, setSession } from "@/lib/auth/storage";
 
-const PUBLIC_PATHS = ["/auth/refresh", "/auth/firebase", "/auth/otp/send", "/auth/otp/verify"];
+const PUBLIC_PATHS = ["/auth/refresh", "/auth/firebase", "/auth/otp/send", "/auth/otp/verify", "/auth/dev-token"];
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",

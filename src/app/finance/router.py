@@ -208,7 +208,7 @@ async def process_payout_endpoint(
 
 @router.post("/webhooks/paymob", response_model=WebhookResponse)
 async def paymob_webhook(
-    request: Request,  # type: ignore[type-arg]
+    request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> WebhookResponse:
     body = await request.body()
@@ -274,7 +274,7 @@ async def paymob_webhook(
 
 @router.post("/webhooks/stripe", response_model=WebhookResponse)
 async def stripe_webhook(
-    request: Request,  # type: ignore[type-arg]
+    request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> WebhookResponse:
     body = await request.body()

@@ -1,8 +1,6 @@
-import json
-import os
 import time
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Configuration
 REPO_ROOT = Path('.')
@@ -12,7 +10,7 @@ DATA_DIR = REPO_ROOT / 'docs'
 def run_cto_analysis():
     start_time = time.time()
     CTO_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     # Analysis Logic
     analysis = {
         "status": "Active",
@@ -36,7 +34,7 @@ def run_cto_analysis():
 
     # Console Output
     duration = time.time() - start_time
-    print(f"--- StayOS CTO AI Analysis ---")
+    print("--- StayOS CTO AI Analysis ---")
     print(f"Health Score: {analysis['cto_score']}")
     print(f"Analysis completed in {duration:.2f}s")
     print(f"Reports available in {CTO_DIR}")

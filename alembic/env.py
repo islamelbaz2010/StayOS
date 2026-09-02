@@ -1,10 +1,12 @@
+import sys
 from logging.config import fileConfig
+from pathlib import Path
+
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
 from alembic import context
-import sys
-from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -15,10 +17,12 @@ from app.config import settings
 from app.finance import models as finance_models  # noqa: F401
 from app.kyc import models as kyc_models  # noqa: F401
 from app.listings import models as listings_models  # noqa: F401
+from app.messages import models as messages_models  # noqa: F401
 from app.notifications import models as notifications_models  # noqa: F401
-from app.payments import models as payments_models  # noqa: F401
 from app.operations import models as operations_models  # noqa: F401
+from app.payments import models as payments_models  # noqa: F401
 from app.reservations import models as reservation_models  # noqa: F401
+from app.reviews import models as reviews_models  # noqa: F401
 from app.shared.models import Base
 
 # this is the Alembic Config object

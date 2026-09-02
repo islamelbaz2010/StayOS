@@ -1,31 +1,31 @@
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
-import { ListingCard } from "../components/ListingCard";
+import { ListingRail } from "../components/ListingRail";
 import { LoadingSpinner } from "../components/States";
+import { usePopularLocations } from "../lib/hooks";
+import { getRecentlyViewed } from "../lib/recentlyViewed";
+import type { Listing, LocationSuggestion } from "../lib/types";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-const POPULAR_CITIES = [
-  { en: "New Cairo", ar: "نيو كايرو", city: "New Cairo" },
-  { en: "6th October", ar: "6 أكتوبر", city: "6th October" },
-  { en: "Maadi", ar: "المعادي", city: "Maadi" },
-  { en: "Zamalek", ar: "الزمالك", city: "Zamalek" },
-  { en: "Nasr City", ar: "مدينة نصر", city: "Nasr City" },
-  { en: "Cairo", ar: "القاهرة", city: "Cairo" },
-  { en: "Giza", ar: "الجيزة", city: "Giza" },
-  { en: "Alexandria", ar: "الإسكندرية", city: "Alexandria" },
-  { en: "Luxor", ar: "الأقصر", city: "Luxor" },
-];
-
 export function HomeScreen() {
   const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
+  const { data: popular } = usePopularLocations();
+  const [recentlyViewed, setRecentlyViewed] = useState<Listing[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getRecentlyViewed().then(setRecentlyViewed);
+    }, [])
+  );
 
   const { data: featured, isLoading } = useQuery({
     queryKey: ["featured"],
@@ -59,14 +59,14 @@ export function HomeScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("popularDestinations")}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.citiesScroll}>
-          {POPULAR_CITIES.map((c) => (
+          {popular?.map((city: LocationSuggestion) => (
             <Pressable
-              key={c.city}
+              key={city.canonical_name_en}
               style={styles.cityChip}
-              onPress={() => goToSearch(c.city)}
+              onPress={() => goToSearch(city.canonical_name_en)}
             >
               <Text style={styles.cityChipText}>
-                {locale === "ar" ? c.ar : c.en}
+                {locale === "ar" ? city.canonical_name_ar : city.canonical_name_en}
               </Text>
             </Pressable>
           ))}
@@ -78,11 +78,16 @@ export function HomeScreen() {
         {isLoading ? (
           <LoadingSpinner />
         ) : (
-          featured?.map((listing: any) => (
-            <ListingCard key={listing.id} listing={listing} onPress={goToDetail} />
-          ))
+          <ListingRail listings={featured || []} onPress={goToDetail} />
         )}
       </View>
+
+      {recentlyViewed.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("recentlyViewed")}</Text>
+          <ListingRail listings={recentlyViewed} onPress={goToDetail} />
+        </View>
+      )}
     </ScrollView>
   );
 }

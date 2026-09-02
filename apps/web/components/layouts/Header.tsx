@@ -27,6 +27,13 @@ export function Header() {
       {isAuthenticated && user?.role === "guest" && (
         <>
           <Link
+            href={`/${locale}/favorites`}
+            className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+            onClick={() => setMobileOpen(false)}
+          >
+            {t("favorites")}
+          </Link>
+          <Link
             href={`/${locale}/bookings`}
             className="text-sm font-medium text-neutral-700 hover:text-brand-600"
             onClick={() => setMobileOpen(false)}
@@ -170,6 +177,13 @@ export function Header() {
             </Link>
             {isAuthenticated && user?.role === "guest" && (
               <>
+                <Link
+                  href={`/${locale}/favorites`}
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {t("favorites")}
+                </Link>
                 <Link
                   href={`/${locale}/bookings`}
                   className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"

@@ -1,5 +1,7 @@
 from datetime import datetime
+
 from shared import get_repo, save_md
+
 
 def snapshot():
     repo = get_repo()
@@ -10,4 +12,5 @@ def snapshot():
 """
     save_md("PROJECT_SNAPSHOT.md", content)
 
-if __name__ == "__main__": snapshot()
+if __name__ == "__main__":
+    snapshot()

@@ -12,7 +12,7 @@ from . import consumers as finance_consumers
 from . import services as finance_services
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="app.finance.tasks.release_escrow",
     autoretry_for=(Exception,),
@@ -29,7 +29,7 @@ def release_escrow(self: Any, escrow_id: str) -> None:
     asyncio.run(_release())
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="app.finance.tasks.process_payout",
     autoretry_for=(Exception,),
@@ -46,7 +46,7 @@ def process_payout(self: Any, payout_id: str, provider: str | None = None) -> No
     asyncio.run(_process())
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="app.finance.tasks.process_pending_payouts",
     autoretry_for=(Exception,),
@@ -75,7 +75,7 @@ def process_pending_payouts(self: Any, batch_size: int = 50) -> int:
     return asyncio.run(_process_batch())
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="app.finance.tasks.process_outbox_events",
     autoretry_for=(Exception,),
@@ -87,7 +87,7 @@ def process_outbox_events(self: Any, batch_size: int = 100) -> int:
     return asyncio.run(finance_consumers.poll_and_process_outbox(batch_size))
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="app.finance.tasks.process_single_outbox_event",
     autoretry_for=(Exception,),

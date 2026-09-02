@@ -9,6 +9,10 @@ from sqlalchemy.orm import selectinload
 
 from app.listings.models import CalendarRule, Unit, UnitListing, UnitPhoto
 
+# Late import to avoid circular dependency — Payment is only used in
+# the host dashboard/reservation calendar queries below.
+from app.payments.models import Payment  # noqa: E402
+
 from .constants import CalendarStatus, UnitStatus
 from .schemas import ListingCreate, ListingSearchFilters, ListingUpdate
 
@@ -47,6 +51,9 @@ async def create_listing(
         cultural_tags=request.cultural_tags,
         house_rules=request.house_rules,
         check_in_instructions=request.check_in_instructions,
+        check_in_time=request.check_in_time,
+        check_out_time=request.check_out_time,
+        pre_arrival_info_release_hours=request.pre_arrival_info_release_hours,
         policies=request.policies,
         base_price_egp=request.base_price_egp,
         cleaning_fee_egp=request.cleaning_fee_egp,
@@ -182,6 +189,9 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
 
     if filters.governorate:
         stmt = stmt.where(func.lower(Unit.governorate) == filters.governorate.lower())
+
+    if filters.host_id:
+        stmt = stmt.where(Unit.host_id == filters.host_id)
 
     if filters.q:
         tsquery = func.plainto_tsquery("simple", filters.q)
@@ -340,8 +350,16 @@ async def bulk_replace_calendar_rules(
 async def get_host_dashboard_stats(
     session: AsyncSession, host_id: str
 ) -> dict[str, Any]:
-    from app.reservations.constants import ReservationStatus
-    from app.reservations.models import Reservation
+    """Host dashboard stats from the LIVE bookings + payments path.
+
+    Previously this used the legacy ``reservations`` architecture. It now
+    queries ``booking.bookings`` and ``payment.payments`` directly so the
+    host sees real operational data, not stale reservation records.
+    """
+    from app.bookings.constants import BookingStatus
+    from app.bookings.models import Booking
+    from app.payments.constants import PaymentStatus
+    from app.payments.models import Payment
 
     unit_ids = await get_host_unit_ids(session, host_id)
     if not unit_ids:
@@ -367,52 +385,50 @@ async def get_host_dashboard_stats(
     listed_listings = listed_listings or 0
 
     total_reservations = await session.scalar(
-        select(func.count(Reservation.id)).where(
-            Reservation.unit_id.in_(unit_ids)
+        select(func.count(Booking.id)).where(
+            Booking.unit_id.in_(unit_ids)
         )
     )
     total_reservations = total_reservations or 0
 
     today = date.today()
     upcoming_reservations = await session.scalar(
-        select(func.count(Reservation.id)).where(
-            Reservation.unit_id.in_(unit_ids),
-            Reservation.check_in >= today,
-            Reservation.status == ReservationStatus.CONFIRMED,
+        select(func.count(Booking.id)).where(
+            Booking.unit_id.in_(unit_ids),
+            Booking.check_in >= today,
+            Booking.status == BookingStatus.CONFIRMED,
         )
     )
     upcoming_reservations = upcoming_reservations or 0
 
+    # Revenue: sum of VERIFIED payment amounts for host's units
     revenue = await session.scalar(
-        select(func.coalesce(func.sum(Reservation.host_amount_egp), 0)).where(
-            Reservation.unit_id.in_(unit_ids),
-            Reservation.status == ReservationStatus.CONFIRMED,
+        select(func.coalesce(func.sum(Payment.amount_egp), 0)).where(
+            Payment.host_id == host_id,
+            Payment.status == PaymentStatus.VERIFIED,
         )
     )
     revenue = revenue or 0
 
+    # Occupancy: booked nights / available nights over 365-day horizon
     total_nights_raw = await session.scalar(
         select(
             func.coalesce(
                 func.sum(
-                    Reservation.check_out - Reservation.check_in
+                    Booking.check_out - Booking.check_in
                 ),
                 0,
             )
         ).where(
-            Reservation.unit_id.in_(unit_ids),
-            Reservation.status == ReservationStatus.CONFIRMED,
+            Booking.unit_id.in_(unit_ids),
+            Booking.status == BookingStatus.CONFIRMED,
         )
     )
-    total_nights: int = total_nights_raw if total_nights_raw is not None else 0  # type: ignore[assignment]
+    # SQLAlchemy infers date|int here, but the sum of date differences is
+    # always an integer number of nights. Cast through Any to satisfy mypy.
+    total_nights: int = int(total_nights_raw) if total_nights_raw is not None else 0  # type: ignore[call-overload]
 
-    # Approximate available nights over a 365-day horizon for all host units.
-    listed_units_count = await session.scalar(
-        select(func.count(Unit.id)).where(
-            Unit.host_id == host_id, Unit.status == UnitStatus.LISTED
-        )
-    )
-    listed_units_count = listed_units_count or 0
+    listed_units_count = listed_listings
     available_nights = listed_units_count * 365
     occupancy_rate = (
         (total_nights / available_nights * 100) if available_nights else 0.0
@@ -435,7 +451,12 @@ async def get_host_reservation_calendar(
     check_in: date,
     check_out: date,
 ) -> list[Any]:
-    from app.reservations.models import Reservation
+    """Host reservation calendar from the LIVE bookings path.
+
+    Previously this used the legacy ``reservations`` architecture. It now
+    queries ``booking.bookings`` directly.
+    """
+    from app.bookings.models import Booking
 
     unit_ids = await get_host_unit_ids(session, host_id)
     if not unit_ids:
@@ -446,17 +467,22 @@ async def get_host_reservation_calendar(
 
     result = await session.execute(
         select(
-            Reservation.id,
-            Reservation.unit_id,
-            Reservation.guest_id,
-            Reservation.status,
-            Reservation.check_in,
-            Reservation.check_out,
-            Reservation.total_amount_egp,
-        ).where(
-            Reservation.unit_id.in_(filter_unit_ids),
-            Reservation.check_in < check_out,
-            Reservation.check_out > check_in,
+            Booking.id,
+            Booking.unit_id,
+            Booking.guest_id,
+            Booking.status,
+            Booking.check_in,
+            Booking.check_out,
+            # Bookings don't have a total_amount_egp column; use the
+            # payment amount as the closest equivalent. For the calendar
+            # view this is informational only.
+            func.coalesce(Payment.amount_egp, 0).label("total_amount_egp"),
+        )
+        .outerjoin(Payment, Payment.booking_id == Booking.id)
+        .where(
+            Booking.unit_id.in_(filter_unit_ids),
+            Booking.check_in < check_out,
+            Booking.check_out > check_in,
         )
     )
     return list(result.all())

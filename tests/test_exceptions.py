@@ -1,13 +1,16 @@
+from fastapi import HTTPException, status
+
 from app.shared.exceptions import (
     AuthenticationError,
     AuthorizationError,
     ConflictError,
     NotFoundError,
+    PaymentError,
+    RateLimitError,
     StayOSError,
     ValidationError,
     to_http_exception,
 )
-from fastapi import HTTPException, status
 
 
 def test_not_found_error_maps_to_404() -> None:
@@ -41,3 +44,13 @@ def test_unknown_stayos_error_maps_to_500() -> None:
     exc = to_http_exception(StayOSError("generic"))
     assert isinstance(exc, HTTPException)
     assert exc.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+def test_rate_limit_error_maps_to_429() -> None:
+    exc = to_http_exception(RateLimitError("too many"))
+    assert exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+
+
+def test_payment_error_maps_to_422() -> None:
+    exc = to_http_exception(PaymentError("payment failed"))
+    assert exc.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT

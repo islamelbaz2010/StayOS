@@ -1,9 +1,10 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from fastapi.testclient import TestClient
+
 from app.database import get_session
 from app.main import app
-from fastapi.testclient import TestClient
 
 
 def _make_get_session_override(fake_session: AsyncMock):

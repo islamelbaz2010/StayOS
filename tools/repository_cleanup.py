@@ -2,19 +2,21 @@ import os
 import shutil
 from pathlib import Path
 
+
 def repository_cleanup():
     archive_base = Path('archive')
     legacy_dir = archive_base / 'legacy'
     raw_ai_dir = archive_base / 'raw-ai-output'
     raw_prompts_dir = archive_base / 'raw-prompts'
-    
+
     report = {'Moved': [], 'Skipped': [], 'Errors': []}
-    
+
     for d in [legacy_dir, raw_ai_dir, raw_prompts_dir]:
         d.mkdir(parents=True, exist_ok=True)
 
     def safe_move(src, dst_dir):
-        if not src.exists(): return
+        if not src.exists():
+            return
         dst = dst_dir / src.name
         if dst.exists():
             report['Skipped'].append(str(src))

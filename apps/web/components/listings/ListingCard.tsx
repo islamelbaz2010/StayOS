@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
+import { FavoriteButton } from "@/components/listings/FavoriteButton";
+import { RatingBadge } from "@/components/ui/RatingBadge";
 import { cn, formatMoney } from "@/lib/utils";
 
 export interface Listing {
@@ -22,6 +24,8 @@ export interface Listing {
   coverImage: string | null;
   hostKycStatus?: string | null;
   amenities?: string[];
+  averageRating?: number | null;
+  reviewCount?: number;
 }
 
 interface ListingCardProps {
@@ -60,8 +64,9 @@ export function ListingCard({ listing, className }: ListingCardProps) {
             loading="lazy"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
+          <FavoriteButton unitId={listing.id} className="absolute end-2 top-2" />
           {isVerified && (
-            <span className="absolute end-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-success-700 shadow-sm backdrop-blur-sm">
+            <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-success-700 shadow-sm backdrop-blur-sm">
               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
@@ -71,9 +76,16 @@ export function ListingCard({ listing, className }: ListingCardProps) {
         </div>
 
         <div className="p-4">
-          <h2 className="text-lg font-semibold text-neutral-900 line-clamp-1">
-            {listing.title}
-          </h2>
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-lg font-semibold text-neutral-900 line-clamp-1">
+              {listing.title}
+            </h2>
+            <RatingBadge
+              averageRating={listing.averageRating}
+              reviewCount={listing.reviewCount}
+              className="flex-shrink-0"
+            />
+          </div>
 
           <p className="mt-1 text-sm text-neutral-600 line-clamp-1">
             {listing.city}, {listing.governorate}, {listing.country || "Egypt"}

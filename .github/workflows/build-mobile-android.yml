@@ -1,0 +1,117 @@
+name: Mobile Android APK Build
+
+# Persistence pattern reproduced from islamelbaz2010/Tajribti's
+# .github/workflows/build-consumer-android.yml (inspected read-only,
+# not modified): build on push, upload the resulting APK as a
+# GitHub Actions artifact (not a Release, not a repo commit, not
+# GitHub Pages). See reports/audits/ANDROID_APK_AUTOMATION.md for
+# the full comparison and rationale.
+#
+# Unlike Tajribti (bare Flutter/Gradle project built entirely on the
+# runner), StayOS mobile is a managed Expo/EAS project with no
+# committed native android/ directory, so the actual APK compilation
+# stays on Expo's EAS Build cloud service (the same "preview" /
+# internal / APK profile already used for manual builds). This
+# workflow only automates that existing flow and adds the
+# artifact-upload persistence step, mirroring Tajribti's mechanism.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Deliberately excludes this workflow file's own path: publishing or
+      # editing the workflow must not, by itself, fire a push-triggered
+      # build attempt. Intentional runs still work via workflow_dispatch
+      # (manual) or an actual apps/mobile/** change (automatic).
+      - 'apps/mobile/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Build Android APK (EAS preview profile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify EXPO_TOKEN secret is configured
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::Required secret EXPO_TOKEN is not set."
+            echo "::error::EAS CLI authenticates non-interactively via the EXPO_TOKEN environment variable."
+            echo "::error::Create a token at https://expo.dev/accounts/islamelbaz/settings/access-tokens"
+            echo "::error::and add it as a repository secret named EXPO_TOKEN (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read app version
+        id: app_version
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger EAS Build (android / preview profile)
+        id: eas_build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx eas build \
+            --platform android \
+            --profile preview \
+            --non-interactive \
+            --json > eas-build-result.json
+
+          BUILD_URL=$(node -p "require('./eas-build-result.json')[0].artifacts.buildUrl")
+          if [ -z "$BUILD_URL" ] || [ "$BUILD_URL" = "undefined" ]; then
+            echo "::error::EAS build did not return a downloadable artifact URL. See eas-build-result.json for details."
+            exit 1
+          fi
+          echo "apk_url=$BUILD_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Download built APK
+        run: |
+          curl -fSL -o "StayOS-android-${{ steps.app_version.outputs.version }}-${{ github.run_number }}.apk" \
+            "${{ steps.eas_build.outputs.apk_url }}"
+          ls -lh "StayOS-android-${{ steps.app_version.outputs.version }}-${{ github.run_number }}.apk"
+
+      - name: Write build summary
+        run: |
+          {
+            echo "### 📱 StayOS Android APK"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Version | ${{ steps.app_version.outputs.version }} |"
+            echo "| Run number | ${{ github.run_number }} |"
+            echo "| Commit | ${{ github.sha }} |"
+            echo "| EAS profile | preview (internal / APK) |"
+            echo ""
+            echo "Download the APK from this run's **Artifacts** section above."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StayOS-android-${{ steps.app_version.outputs.version }}-${{ github.run_number }}
+          path: apps/mobile/StayOS-android-${{ steps.app_version.outputs.version }}-${{ github.run_number }}.apk
+          retention-days: 14
+          if-no-files-found: error

@@ -4,6 +4,8 @@ from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
+from fastapi.testclient import TestClient
+
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
@@ -17,7 +19,6 @@ from app.listings.schemas import (
     PhotoResponse,
 )
 from app.main import app
-from fastapi.testclient import TestClient
 
 
 def _make_user(

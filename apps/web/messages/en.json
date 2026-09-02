@@ -21,6 +21,7 @@
     "search": "Search",
     "host": "List your property",
     "trips": "My trips",
+    "favorites": "Favorites",
     "messages": "Messages",
     "account": "Account",
     "signIn": "Sign in",
@@ -227,6 +228,14 @@
     "featuredTitle": "Featured stays",
     "viewAll": "View all"
   },
+  "favorites": {
+    "title": "Favorites",
+    "subtitle": "Places you've saved for later",
+    "emptyTitle": "No favorites yet",
+    "emptySubtitle": "Tap the heart icon on a listing to save it here.",
+    "signInTitle": "Sign in to see your favorites",
+    "browseListings": "Browse listings"
+  },
   "listing": {
     "perNight": "per night",
     "propertyTypeLabel": {
@@ -242,6 +251,9 @@
     },
     "reviews": "{count} reviews",
     "noReviews": "No reviews yet",
+    "guest": "Guest",
+    "addToFavorites": "Save to favorites",
+    "removeFromFavorites": "Remove from favorites",
     "book": "Book now",
     "checkAvailability": "Check availability",
     "amenities": "Amenities",
@@ -304,8 +316,8 @@
     "verifiedProperty": "Verified Property",
     "verifiedHostTitle": "Verified Host",
     "verifiedHostDesc": "This host has completed identity verification and KYC checks.",
-    "escrowTitle": "Escrow Protection",
-    "escrowDesc": "Your payment is held securely until you check in.",
+    "escrowTitle": "Payment Verification",
+    "escrowDesc": "Our team manually verifies your payment before your booking is confirmed.",
     "cancellationTitle": "Cancellation Policy",
     "cancellationDesc": "Review the cancellation terms before booking.",
     "hostedBy": "Hosted by {name}",
@@ -327,7 +339,17 @@
       "confirmed": "Confirmed",
       "rejected": "Rejected",
       "cancelled": "Cancelled"
-    }
+    },
+    "cancelBooking": "Cancel booking",
+    "cancelModalTitle": "Cancel this booking?",
+    "cancelRefundFull": "You'll receive a full refund of {amount} EGP.",
+    "cancelRefundPartial": "You'll receive a partial refund of {amount} EGP (of {total} EGP paid).",
+    "cancelRefundNone": "This booking is not eligible for a refund under the cancellation policy.",
+    "cancelNoPayment": "No payment has been collected yet — there is nothing to refund.",
+    "cancelReasonPlaceholder": "Reason (optional)",
+    "cancelSubmitting": "Cancelling…",
+    "cancelSuccess": "Booking cancelled.",
+    "cancelError": "Could not cancel this booking. Please try again."
   },
   "booking": {
     "title": "Request to book",
@@ -353,6 +375,7 @@
     "checkOutRequired": "Check-out date is required.",
     "checkOutAfterCheckIn": "Check-out must be after check-in.",
     "checkInPast": "Check-in cannot be in the past.",
+    "datesUnavailable": "Some dates in this range are already booked. Please choose different dates.",
     "atLeastOneGuest": "At least one guest is required.",
     "atLeastOneAdult": "At least one adult is required.",
     "maxGuestsExceeded": "This property accommodates a maximum of {max} guests.",

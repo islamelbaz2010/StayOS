@@ -509,6 +509,7 @@ async def fail_reservation_by_provider(
             "cancellation_reason": "payment_failure",
             "refund_amount_egp": 0,
             "refund_policy_applied": "NO_REFUND",
+            "refund_days": settings.REFUND_PROCESSING_DAYS,
             "host_id": host_id,
         },
     )
@@ -543,7 +544,15 @@ async def cancel_reservation(
 
     for intent in reservation.payment_intents:
         if intent.status == PaymentStatus.CAPTURED:
-            intent.status = PaymentStatus.REFUNDED
+            # Only touch the provider (and only mark REFUNDED) when money is
+            # actually owed back. A late cancellation that forfeits the full
+            # amount leaves the payment CAPTURED — it was never refunded, so
+            # labelling it REFUNDED would be a silent, incorrect financial
+            # mutation the guest and finance team would both be misled by.
+            if refund_amount > 0:
+                intent.status = await _issue_refund(
+                    intent, refund_amount, reservation.total_amount_egp
+                )
             session.add(intent)
         elif intent.status in (PaymentStatus.PENDING, PaymentStatus.AUTHORIZED):
             intent.status = PaymentStatus.CANCELLED if refund_amount == 0 else PaymentStatus.REFUNDED
@@ -567,11 +576,44 @@ async def cancel_reservation(
             "refund_policy_applied": _refund_policy_label(
                 refund_amount, reservation.total_amount_egp
             ),
+            "refund_days": settings.REFUND_PROCESSING_DAYS,
             "host_id": host_id,
         },
     )
 
     return _to_response(reservation)
+
+
+async def _issue_refund(intent: Any, refund_amount: int, total_amount: int) -> PaymentStatus:
+    """Return funds to the guest through the original payment provider.
+
+    Returns the terminal status to persist on the payment intent: REFUNDED
+    once the provider has confirmed the funds were returned, or
+    REFUND_PENDING when this codebase cannot yet call the provider
+    automatically — the refund is owed but must be issued and reconciled
+    manually by finance rather than silently reported as complete.
+    """
+    partial_amount = None if refund_amount >= total_amount else refund_amount
+    if intent.provider == PaymentProvider.STRIPE:
+        try:
+            await payment_providers.refund_stripe_payment(intent.provider_ref, partial_amount)
+        except PaymentError as exc:
+            logger.error("Stripe refund failed for payment intent %s: %s", intent.id, exc)
+            raise
+        return PaymentStatus.REFUNDED
+
+    # Paymob refund API is not yet integrated in this codebase — no verified
+    # credentials/endpoint have been tested against it. FOUNDER DECISION
+    # NEEDED: activate/confirm the Paymob refund API before this can be
+    # automated. Until then, flag for manual finance reconciliation instead
+    # of falsely claiming the refund was issued.
+    logger.warning(
+        "Paymob refund not automated for payment intent %s; manual "
+        "reconciliation required (amount_egp=%s)",
+        intent.id,
+        refund_amount,
+    )
+    return PaymentStatus.REFUND_PENDING
 
 
 def _refund_policy_label(refund_amount: int, total_amount: int) -> str:
@@ -605,6 +647,13 @@ def _compute_refund(reservation: Reservation) -> int:
     booking_age_hours = (now - reservation.created_at).total_seconds() / 3600
     days_before_checkin = (reservation.check_in - now_date).days
 
+    # 24-hour grace period: a booking cancelled within a day of being made is
+    # always fully refunded, regardless of how close check-in is. This must be
+    # checked before the check-in-distance rules below, or it can never apply
+    # (a booking is at most 24h old at check time, so any check-in-distance
+    # branch that also requires "> CANCELLATION_FULL_REFUND_DAYS" is dead code).
+    if booking_age_hours <= 24:
+        return reservation.total_amount_egp
     if days_before_checkin > settings.CANCELLATION_FULL_REFUND_DAYS:
         return reservation.total_amount_egp
     if days_before_checkin > settings.CANCELLATION_PARTIAL_REFUND_DAYS:
@@ -612,8 +661,6 @@ def _compute_refund(reservation: Reservation) -> int:
             reservation.total_amount_egp
             * settings.CANCELLATION_PARTIAL_REFUND_PCT
         )
-    if booking_age_hours <= 24 and days_before_checkin > settings.CANCELLATION_FULL_REFUND_DAYS:
-        return reservation.total_amount_egp
     return 0
 
 

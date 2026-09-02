@@ -3,6 +3,8 @@ from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock
 
 import pytest
+from fastapi.testclient import TestClient
+
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
@@ -13,7 +15,6 @@ from app.reservations.schemas import (
     ReservationListResponse,
     ReservationResponse,
 )
-from fastapi.testclient import TestClient
 
 
 def _make_user(

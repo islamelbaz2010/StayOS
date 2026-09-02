@@ -1,0 +1,68 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^https?://127\\.0\\.0\\.1"
+    },
+    {
+      "pattern": "^https?://localhost"
+    },
+    {
+      "pattern": "^https?://192\\.168\\."
+    },
+    {
+      "pattern": "^https?://10\\."
+    },
+    {
+      "pattern": "^https?://172\\.(1[6-9]|2[0-9]|3[01])\\."
+    },
+    {
+      "pattern": "^exp://"
+    },
+    {
+      "pattern": "^https://expo\\.dev/artifacts/"
+    },
+    {
+      "pattern": "^https://stayos-demo-production\\.up\\.railway\\.app"
+    },
+    {
+      "pattern": "^https://web-amber-pi-98\\.vercel\\.app"
+    },
+    {
+      "pattern": "^/tmp/"
+    },
+    {
+      "pattern": "^mailto:"
+    },
+    {
+      "pattern": "^\\.\\./\\.\\./"
+    },
+    {
+      "pattern": "^\\.\\/(ROADMAP|RISKS|TASKS|MASTER_CONTEXT|PROJECT_VISION|ASSUMPTIONS|DECISION_LOG|MIGRATION_PLAN|PROJECT_RULES|REPOSITORY_AUDIT|REPOSITORY_CLASSIFICATION|REPOSITORY_REFACTOR_PLAN|SPRINT_1_REPORT)\\.md$"
+    },
+    {
+      "pattern": "^\\.\\./(ROADMAP|RISKS|TASKS|MASTER_CONTEXT|PROJECT_VISION|ASSUMPTIONS|DECISION_LOG|MIGRATION_PLAN|PROJECT_RULES|REPOSITORY_AUDIT|REPOSITORY_CLASSIFICATION|REPOSITORY_REFACTOR_PLAN|SPRINT_1_REPORT)\\.md$"
+    },
+    {
+      "pattern": "^templates/"
+    },
+    {
+      "pattern": "^\\.\\./api/"
+    },
+    {
+      "pattern": "^\\.\\./events\\.md$"
+    },
+    {
+      "pattern": "^\\.\\./ai_agents/"
+    },
+    {
+      "pattern": "^#sprint-reports$"
+    }
+  ],
+  "replacementPatterns": [],
+  "httpHeaders": [],
+  "timeout": "10s",
+  "retryOn429": true,
+  "retryCount": 2,
+  "fallbackRetryDelay": "5s",
+  "aliveStatusCodes": [200, 206, 301, 302, 308]
+}

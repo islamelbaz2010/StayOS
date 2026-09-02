@@ -2,10 +2,11 @@ import subprocess
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import Request
+
 from app.main import _db_status, _redis_status
 from app.operations import metrics as ops_metrics
 from app.shared import redis as redis_state
-from fastapi import Request
 
 
 def test_metrics_collector_records_and_renders() -> None:

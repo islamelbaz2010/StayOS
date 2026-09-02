@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
@@ -26,7 +27,6 @@ from app.listings.services import (
     update_host_calendar_rule,
 )
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
-
 from tests.test_listings_services import _make_unit
 
 

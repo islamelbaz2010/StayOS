@@ -1,0 +1,24 @@
+# Exclude large binary files and non-mobile artifacts from EAS Build uploads
+# Scope all patterns to root-level only where possible to avoid stripping mobile assets
+
+/.ai/
+/epos/
+/dump.rdb
+/archive/
+*.docx
+*.xlsx
+*.pptx
+*.apk
+/screen_*.png
+/window_dump*.xml
+/apps/web/
+/src/
+/tests/
+/alembic/
+/scripts/
+/infra/
+node_modules/
+.expo/
+.next/
+/apps/web/node_modules/
+/apps/web/.next/

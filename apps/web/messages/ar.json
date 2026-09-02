@@ -21,6 +21,7 @@
     "search": "بحث",
     "host": "أضف عقارك",
     "trips": "رحلاتي",
+    "favorites": "المفضلة",
     "messages": "الرسائل",
     "account": "الحساب",
     "signIn": "تسجيل الدخول",
@@ -227,6 +228,14 @@
     "featuredTitle": "إقامات مميزة",
     "viewAll": "عرض الكل"
   },
+  "favorites": {
+    "title": "المفضلة",
+    "subtitle": "الأماكن التي حفظتها لوقت لاحق",
+    "emptyTitle": "لا توجد مفضلات بعد",
+    "emptySubtitle": "اضغط على أيقونة القلب في أي إقامة لحفظها هنا.",
+    "signInTitle": "سجّل الدخول لرؤية مفضلاتك",
+    "browseListings": "تصفح الإقامات"
+  },
   "listing": {
     "perNight": "لليلة",
     "propertyTypeLabel": {
@@ -242,6 +251,9 @@
     },
     "reviews": "{count} تقييم",
     "noReviews": "لا توجد تقييمات بعد",
+    "guest": "ضيف",
+    "addToFavorites": "احفظ في المفضلة",
+    "removeFromFavorites": "إزالة من المفضلة",
     "book": "احجز الآن",
     "checkAvailability": "تحقق من التوفر",
     "amenities": "المرافق",
@@ -304,8 +316,8 @@
     "verifiedProperty": "عقار موثّق",
     "verifiedHostTitle": "مضيف موثّق",
     "verifiedHostDesc": "هذا المضيف أكمل التحقق من الهوية وفحوصات KYC.",
-    "escrowTitle": "حماية الضمان",
-    "escrowDesc": "يتم الاحتفاظ بمدفوعاتك بأمان حتى تسجيل الوصول.",
+    "escrowTitle": "التحقق من الدفع",
+    "escrowDesc": "يقوم فريقنا بالتحقق يدويًا من دفعتك قبل تأكيد حجزك.",
     "cancellationTitle": "سياسة الإلغاء",
     "cancellationDesc": "راجع شروط الإلغاء قبل الحجز.",
     "hostedBy": "مستضاف بواسطة {name}",
@@ -327,7 +339,17 @@
       "confirmed": "مؤكد",
       "rejected": "مرفوض",
       "cancelled": "ملغى"
-    }
+    },
+    "cancelBooking": "إلغاء الحجز",
+    "cancelModalTitle": "هل تريد إلغاء هذا الحجز؟",
+    "cancelRefundFull": "سيتم استرداد كامل المبلغ {amount} جنيه.",
+    "cancelRefundPartial": "سيتم استرداد {amount} جنيه (من إجمالي {total} جنيه مدفوع).",
+    "cancelRefundNone": "هذا الحجز غير مؤهل لاسترداد الأموال وفقًا لسياسة الإلغاء.",
+    "cancelNoPayment": "لم يتم تحصيل أي دفعة بعد — لا يوجد مبلغ لاسترداده.",
+    "cancelReasonPlaceholder": "السبب (اختياري)",
+    "cancelSubmitting": "جارٍ الإلغاء…",
+    "cancelSuccess": "تم إلغاء الحجز.",
+    "cancelError": "تعذّر إلغاء هذا الحجز. حاول مرة أخرى."
   },
   "booking": {
     "title": "طلب حجز",
@@ -353,6 +375,7 @@
     "checkOutRequired": "تاريخ المغادرة مطلوب.",
     "checkOutAfterCheckIn": "تاريخ المغادرة يجب أن يكون بعد تاريخ الوصول.",
     "checkInPast": "لا يمكن أن يكون تاريخ الوصول في الماضي.",
+    "datesUnavailable": "بعض التواريخ في هذا النطاق محجوزة بالفعل. برجاء اختيار تواريخ أخرى.",
     "atLeastOneGuest": "مطلوب ضيف واحد على الأقل.",
     "atLeastOneAdult": "مطلوب بالغ واحد على الأقل.",
     "maxGuestsExceeded": "هذا العقار يستوعب {max} ضيوف كحد أقصى.",

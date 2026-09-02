@@ -202,6 +202,13 @@ async def test_create_booking_success(fake_session: AsyncMock, monkeypatch) -> N
         AsyncMock(return_value=booking),
     )
 
+    # The messaging repository path queries for an existing conversation;
+    # configure a realistic async result so the lookup returns a conversation
+    # and avoids the unconfigured AsyncMock `scalar_one_or_none()` path.
+    conversation_result = MagicMock()
+    conversation_result.scalar_one_or_none.return_value = MagicMock()
+    fake_session.execute = AsyncMock(return_value=conversation_result)
+
     request = BookingCreate(
         unit_id=unit.id,
         check_in=_FUTURE_3,

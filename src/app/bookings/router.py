@@ -6,13 +6,25 @@ from app.auth.models import User
 from app.database import get_session
 from app.shared.exceptions import StayOSError, to_http_exception
 
-from .schemas import BookingCreate, BookingResponse, BookingUpdate
+from .schemas import (
+    BookingCancellationPreview,
+    BookingCancelRequest,
+    BookingCreate,
+    BookingResponse,
+    BookingUpdate,
+    StayInfoResponse,
+)
 from .services import (
+    cancel_booking,
+    check_in_booking,
+    check_out_booking,
     complete_booking,
     create_booking,
     get_booking,
+    get_stay_info,
     list_guest_bookings,
     list_host_bookings,
+    preview_booking_cancellation,
     update_booking,
 )
 
@@ -67,6 +79,67 @@ async def get_booking_detail(
 ) -> BookingResponse:
     try:
         return await get_booking(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/{booking_id}/cancellation-preview", response_model=BookingCancellationPreview)
+async def get_cancellation_preview(
+    booking_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> BookingCancellationPreview:
+    try:
+        return await preview_booking_cancellation(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{booking_id}/cancel", response_model=BookingResponse)
+async def post_cancel_booking(
+    booking_id: str,
+    request: BookingCancelRequest,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> BookingResponse:
+    try:
+        return await cancel_booking(session, user, booking_id, request.reason)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/{booking_id}/stay", response_model=StayInfoResponse)
+async def get_stay_info_endpoint(
+    booking_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> StayInfoResponse:
+    try:
+        return await get_stay_info(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{booking_id}/check-in", response_model=BookingResponse)
+async def post_check_in(
+    booking_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> BookingResponse:
+    try:
+        return await check_in_booking(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{booking_id}/check-out", response_model=BookingResponse)
+async def post_check_out(
+    booking_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> BookingResponse:
+    try:
+        return await check_out_booking(session, user, booking_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

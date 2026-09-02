@@ -199,3 +199,54 @@ Rate limiting should be disabled in `test` environment for speed. To test the Re
 **Import Date**: 2026-07-21
 
 PostgreSQL exclusion constraints on `tsrange` are the safest way to prevent overlapping HOLD/BOOKED calendar rules. Application code should catch `IntegrityError` and translate it into a domain `ConflictError`.
+
+---
+
+## KB-016: Two Parallel Commercial Architectures Exist — Check Before Assuming "No Commission Mechanism"
+
+**Original Source**: Session 006 — `src/app/finance/`, `src/app/reservations/` vs. `src/app/bookings/`, `src/app/payments/`
+**Original Date**: 2026-08-24
+**Imported By**: Session 006
+**Import Date**: 2026-08-24
+
+Before concluding a business rule "doesn't exist in the code," check for a dormant parallel module — a prior sprint may have built the real thing and just never wired it to the live-facing flow. Here, the live `bookings`+`payments` manual-payment flow has zero commission logic, but a complete escrow/wallet/commission-split/payout system already exists in `finance`+`reservations`, inactive only because `STRIPE_SECRET_KEY` is unset. The commission rate itself (`GUEST_SERVICE_FEE_PCT`, `HOST_COMMISSION_PCT`, `PLATFORM_TAKE_RATE_PCT`) was also already configured, identically, across every `.env*` file — a real decision someone made, not a placeholder. Lesson: grep broadly (`config.py`, all env files, dormant-looking modules) before telling a founder a number needs to be invented — it may already exist, just unconnected.
+
+---
+
+## KB-017: A Fixed, Hardcoded Payment-Instructions String Is a Design Signal, Not a Bug
+
+**Original Source**: Session 006 — `src/app/payments/services.py` `_build_instructions`
+**Original Date**: 2026-08-24
+**Imported By**: Session 006
+**Import Date**: 2026-08-24
+
+The guest-facing manual payment instructions showed one fixed bank account (a placeholder, but structurally *one* account, not per-host) — and no host-bank-account field exists anywhere except on the payout side (`finance.PayoutRequest.bank_account_info`, populated only when StayOS pays a Host, never when a Guest pays a Host). Together these prove the product's payment model was always "Guest pays StayOS, StayOS pays Host" (Model A), not "Guest pays Host directly" — even though nothing in any prior document had stated this explicitly. When a payment/instruction field looks suspiciously generic or placeholder-like, check whether the *data model* supports the alternative reading before assuming it's simply unfinished in an unintentional direction.
+
+---
+
+## KB-018: Official Reference Product Benchmark Established
+
+**Original Source**: `docs/governance/REFERENCE_PRODUCT_BENCHMARK.md`, `docs/governance/AGENT_EXECUTION_RULE.md`
+**Original Date**: 2026-09-02
+**Imported By**: Repository Governance Session
+**Import Date**: 2026-09-02
+
+StayOS now has a permanent, version-controlled Official Reference Product Benchmark in `docs/governance/REFERENCE_PRODUCT_BENCHMARK.md`. It consolidates approved findings from existing competitor research and product strategy documents into 30 reference domains. `docs/governance/AGENT_EXECUTION_RULE.md` defines the source-of-truth hierarchy and agent execution rules. No new competitor research was performed.
+
+Source-of-truth hierarchy:
+1. Founder Decisions
+2. StayOS PRD
+3. Reference Product Benchmark
+4. Current Repository
+5. Execution Prompts
+
+---
+
+## KB-019: Co-host Permissions Integrated Across Listing Operations
+
+**Original Source**: Session 007 — `src/app/listings/services.py`, `src/app/host/`
+**Original Date**: 2026-09-02
+**Imported By**: Session 007
+**Import Date**: 2026-09-02
+
+Co-host permissions from `app.host.permissions` are now enforced across the listing services: update, publish, unpublish, archive, submit, calendar rules, and photo management. A new host-facing listing detail endpoint (`GET /api/v1/host/listings/{unit_id}`) returns listing + photos + readiness + permission scope. Mobile host screens (`HostListing*`, `HostCreateListing`) were added to manage listings end-to-end. Eleven backend tests cover co-host permission enforcement.

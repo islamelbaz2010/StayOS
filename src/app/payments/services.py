@@ -28,25 +28,29 @@ from .schemas import (
 
 _PROOF_UPLOAD_TTL_SECONDS = 900
 
-_MANUAL_INSTRUCTIONS_AR = (
-    "لإتمام عملية الحجز، يرجى تحويل المبلغ المطلوب إلى الحساب التالي:\n"
-    "بنك مصر\n"
-    "رقم الحساب: 1234567890123456\n"
-    "اسم الحساب: StayOS\n"
-    "أو عبر فودافون كاش على الرقم: 01012345678\n\n"
-    "بعد التحويل، يرجى رفع إيصال الدفع (صورة أو PDF) من هذه الصفحة.\n"
-    "سيتم مراجعة الدفع خلال 24 ساعة وتأكيد حجزك."
-)
 
-_MANUAL_INSTRUCTIONS_EN = (
-    "To complete your booking, please transfer the required amount to:\n"
-    "Bank of Egypt\n"
-    "Account Number: 1234567890123456\n"
-    "Account Name: StayOS\n"
-    "Or via Vodafone Cash to: 01012345678\n\n"
-    "After transferring, please upload your payment receipt (image or PDF) from this page.\n"
-    "Your payment will be reviewed within 24 hours and your booking confirmed."
-)
+def _manual_instructions_ar(account_number: str, vodafone_number: str) -> str:
+    return (
+        "لإتمام عملية الحجز، يرجى تحويل المبلغ المطلوب إلى الحساب التالي:\n"
+        "بنك مصر\n"
+        f"رقم الحساب: {account_number}\n"
+        "اسم الحساب: StayOS\n"
+        f"أو عبر فودافون كاش على الرقم: {vodafone_number}\n\n"
+        "بعد التحويل، يرجى رفع إيصال الدفع (صورة أو PDF) من هذه الصفحة.\n"
+        "سيتم مراجعة الدفع خلال 24 ساعة وتأكيد حجزك."
+    )
+
+
+def _manual_instructions_en(account_number: str, vodafone_number: str) -> str:
+    return (
+        "To complete your booking, please transfer the required amount to:\n"
+        "Bank of Egypt\n"
+        f"Account Number: {account_number}\n"
+        "Account Name: StayOS\n"
+        f"Or via Vodafone Cash to: {vodafone_number}\n\n"
+        "After transferring, please upload your payment receipt (image or PDF) from this page.\n"
+        "Your payment will be reviewed within 24 hours and your booking confirmed."
+    )
 
 
 def _s3_client() -> Any:
@@ -59,7 +63,11 @@ def _s3_client() -> Any:
 
 
 def _build_instructions(locale: str = "ar") -> str:
-    return _MANUAL_INSTRUCTIONS_AR if locale == "ar" else _MANUAL_INSTRUCTIONS_EN
+    account_number = settings.PAYMENT_BANK_ACCOUNT_NUMBER
+    vodafone_number = settings.PAYMENT_VODAFONE_CASH_NUMBER
+    if locale == "ar":
+        return _manual_instructions_ar(account_number, vodafone_number)
+    return _manual_instructions_en(account_number, vodafone_number)
 
 
 def _generate_reference() -> str:

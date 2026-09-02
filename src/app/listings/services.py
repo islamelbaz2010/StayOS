@@ -10,6 +10,11 @@ from sqlalchemy.orm import selectinload
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.config import settings
+from app.host.permissions import (
+    assert_can_edit_listing,
+    assert_can_manage_calendar,
+    assert_owner_or_admin,
+)
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.reviews import repository as reviews_repository
@@ -100,6 +105,9 @@ def _to_listing_response(
         cultural_tags=listing.cultural_tags,
         house_rules=listing.house_rules,
         check_in_instructions=listing.check_in_instructions,
+        check_in_time=listing.check_in_time,
+        check_out_time=listing.check_out_time,
+        pre_arrival_info_release_hours=listing.pre_arrival_info_release_hours,
         policies=listing.policies,
         base_price_egp=listing.base_price_egp,
         cleaning_fee_egp=listing.cleaning_fee_egp,
@@ -212,11 +220,12 @@ async def get_listing_detail(
 async def get_host_listing_detail(
     session: AsyncSession, user: User, unit_id: str
 ) -> ListingResponse:
+    from app.host.permissions import assert_can_access_unit
+
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner can view it")
+    await assert_can_access_unit(session, user, unit)
 
     listing = unit.listing
     if listing is None:
@@ -246,8 +255,9 @@ async def submit_for_review(
 ) -> ListingResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_owner_or_admin(user, unit)
     if unit.status not in (UnitStatus.DRAFT, UnitStatus.REJECTED, UnitStatus.UNLISTED):
         raise ValidationError("Only draft or rejected listings can be submitted for review")
 
@@ -332,8 +342,7 @@ async def update_listing(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id:
-        raise AuthorizationError("Only the listing owner can update it")
+    await assert_can_edit_listing(session, user, unit)
 
     listing = unit.listing
     if listing is None:
@@ -596,8 +605,9 @@ async def publish_listing(
         raise AuthorizationError("Host KYC must be verified to publish a listing")
 
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_owner_or_admin(user, unit)
     if unit.status == UnitStatus.ARCHIVED:
         raise ValidationError("Archived listings cannot be published")
 
@@ -614,8 +624,9 @@ async def unpublish_listing(
 ) -> ListingResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_owner_or_admin(user, unit)
 
     unit = await listings_repository.set_unit_status(
         session, unit, UnitStatus.UNLISTED
@@ -632,8 +643,9 @@ async def archive_listing(
 ) -> ListingResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_owner_or_admin(user, unit)
 
     unit = await listings_repository.set_unit_status(
         session, unit, UnitStatus.ARCHIVED
@@ -653,8 +665,9 @@ async def create_host_calendar_rule(
 ) -> CalendarRuleResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     if request.status == CalendarStatus.BLOCKED and not request.block_type:
         request.block_type = CalendarBlockType.MANUAL
@@ -680,8 +693,9 @@ async def update_host_calendar_rule(
 ) -> CalendarRuleResponse:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     rule = await listings_repository.get_calendar_rule_by_id(
         session, unit_id, rule_id
@@ -711,8 +725,9 @@ async def delete_host_calendar_rule(
 ) -> None:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     rule = await listings_repository.get_calendar_rule_by_id(
         session, unit_id, rule_id
@@ -733,8 +748,9 @@ async def bulk_update_availability(
 ) -> list[CalendarRuleResponse]:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     rules: list[tuple[date, date, str, str | None, int | None]] = []
     for item in request.rules:
@@ -757,8 +773,9 @@ async def bulk_update_pricing(
 ) -> list[CalendarRuleResponse]:
     _assert_host(user)
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
-    if unit is None or unit.host_id != user.id:
+    if unit is None:
         raise NotFoundError("Listing not found")
+    await assert_can_manage_calendar(session, user, unit)
 
     rules: list[tuple[date, date, str, str | None, int | None]] = [
         (
@@ -831,8 +848,7 @@ async def generate_photo_presigned_url(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner or admin can upload photos")
+    await assert_can_edit_listing(session, user, unit)
 
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
     photo_key = f"listings/{unit_id}/photo_{uuid.uuid4().hex}.{ext}"
@@ -872,8 +888,7 @@ async def create_photo(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner or admin can upload photos")
+    await assert_can_edit_listing(session, user, unit)
 
     if request.is_cover:
         await listings_repository.clear_cover_flags(session, unit_id)
@@ -911,8 +926,7 @@ async def set_cover_photo(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner or admin can manage photos")
+    await assert_can_edit_listing(session, user, unit)
 
     photo = await listings_repository.get_photo_by_id(session, unit_id, photo_id)
     if photo is None:
@@ -936,8 +950,7 @@ async def delete_photo(
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.host_id != user.id and user.role != UserRole.ADMIN:
-        raise AuthorizationError("Only the listing owner or admin can manage photos")
+    await assert_can_edit_listing(session, user, unit)
 
     photo = await listings_repository.get_photo_by_id(session, unit_id, photo_id)
     if photo is None:

@@ -16,6 +16,26 @@ from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationE
 from geoalchemy2.elements import WKTElement
 
 
+def test_build_instructions_uses_settings_payment_destination(monkeypatch) -> None:
+    """The manual payment instructions must be sourced from settings (so the
+    founder can swap in the real account/number via env var, without a code
+    change) rather than from hardcoded literals in this module."""
+    monkeypatch.setattr(
+        payment_services.settings, "PAYMENT_BANK_ACCOUNT_NUMBER", "9999888877776666"
+    )
+    monkeypatch.setattr(
+        payment_services.settings, "PAYMENT_VODAFONE_CASH_NUMBER", "01099998888"
+    )
+
+    ar = payment_services._build_instructions("ar")
+    en = payment_services._build_instructions("en")
+
+    assert "9999888877776666" in ar
+    assert "01099998888" in ar
+    assert "9999888877776666" in en
+    assert "01099998888" in en
+
+
 def _make_user(
     user_id: str | None = None,
     role: UserRole = UserRole.GUEST,
@@ -162,10 +182,14 @@ async def test_create_payment_for_booking_success(fake_session: AsyncMock, monke
         "app.payments.services.payments_repository.create_payment",
         AsyncMock(return_value=payment),
     )
+    monkeypatch.setattr(
+        "app.bookings.repository.count_global_completed_bookings",
+        AsyncMock(return_value=0),
+    )
 
     result = await payment_services.create_payment_for_booking(fake_session, booking, guest)
     assert result.status == PaymentStatus.PENDING
-    assert result.amount_egp == 2050  # 500*4 + 50
+    assert result.amount_egp == 2050  # 500*4 + 50, no guest fee (Alpha)
     assert result.reference_number.startswith("STY-")
 
 

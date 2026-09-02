@@ -6,6 +6,8 @@ import type { components } from "@/lib/api-types";
 export type BookingCreate = components["schemas"]["BookingCreate"];
 export type BookingResponse = components["schemas"]["BookingResponse"];
 export type BookingUpdate = components["schemas"]["BookingUpdate"];
+export type BookingCancelRequest = components["schemas"]["BookingCancelRequest"];
+export type BookingCancellationPreview = components["schemas"]["BookingCancellationPreview"];
 
 export async function createBooking(payload: BookingCreate): Promise<BookingResponse> {
   const { data } = await api.post<BookingResponse>("/bookings", payload);
@@ -75,5 +77,37 @@ export function useUpdateBooking() {
   return useMutation({
     mutationFn: ({ bookingId, payload }: { bookingId: string; payload: BookingUpdate }) =>
       updateBooking(bookingId, payload),
+  });
+}
+
+export async function getCancellationPreview(
+  bookingId: string
+): Promise<BookingCancellationPreview> {
+  const { data } = await api.get<BookingCancellationPreview>(
+    `/bookings/${bookingId}/cancellation-preview`
+  );
+  return data;
+}
+
+export async function cancelBooking(
+  bookingId: string,
+  payload: BookingCancelRequest = {}
+): Promise<BookingResponse> {
+  const { data } = await api.post<BookingResponse>(`/bookings/${bookingId}/cancel`, payload);
+  return data;
+}
+
+export function useCancellationPreview(bookingId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["booking-cancellation-preview", bookingId],
+    queryFn: () => getCancellationPreview(bookingId),
+    enabled: enabled && Boolean(bookingId),
+  });
+}
+
+export function useCancelBooking() {
+  return useMutation({
+    mutationFn: ({ bookingId, payload }: { bookingId: string; payload?: BookingCancelRequest }) =>
+      cancelBooking(bookingId, payload),
   });
 }

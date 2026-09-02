@@ -23,6 +23,10 @@ class PaymentStatus(StrEnum):
     FAILED = "failed"
     REFUNDED = "refunded"
     CANCELLED = "cancelled"
+    # Refund is owed but could not be issued automatically through the provider
+    # (e.g. Paymob refund API is not yet integrated). Requires manual finance
+    # reconciliation — never surfaced to guests as a completed refund.
+    REFUND_PENDING = "refund_pending"
 
 
 class PaymentMethod(StrEnum):

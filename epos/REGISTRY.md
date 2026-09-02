@@ -82,3 +82,5 @@
 |---------|------|-------|--------|
 | Session 001 | 2026-07-21 | EPOS Onboarding | `epos/SESSION_RECORD.md` |
 | Session 002 | 2026-07-21 | FC-07 Platform Hardening + Shutdown | `epos/SESSION_RECORD.md` |
+| Session 005 | 2026-08-14 | Situational analysis (favorites/commission/mobile/Railway code written, uncommitted) | `epos/SESSION_RECORD.md` |
+| Session 006 | 2026-08-24 | P0 readiness diagnostic + AWS S3 handoff + legal drafting + commercial payment-model decision & reconciliation | `epos/SESSION_RECORD.md` |

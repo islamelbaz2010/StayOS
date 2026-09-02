@@ -34,6 +34,9 @@ class ListingCreate(BaseModel):
     max_nights: int = Field(default=30, ge=1)
     house_rules: str | None = None
     check_in_instructions: str | None = None
+    check_in_time: str | None = Field(None, max_length=5)
+    check_out_time: str | None = Field(None, max_length=5)
+    pre_arrival_info_release_hours: int | None = Field(None, ge=0)
     policies: str | None = None
     country: str = Field(default="Egypt", min_length=1, max_length=100)
     currency: str = Field(default="EGP", min_length=3, max_length=3)
@@ -89,6 +92,9 @@ class ListingUpdate(BaseModel):
     max_nights: int | None = Field(None, ge=1)
     house_rules: str | None = None
     check_in_instructions: str | None = None
+    check_in_time: str | None = Field(None, max_length=5)
+    check_out_time: str | None = Field(None, max_length=5)
+    pre_arrival_info_release_hours: int | None = Field(None, ge=0)
     policies: str | None = None
     country: str | None = Field(None, min_length=1, max_length=100)
     currency: str | None = Field(None, min_length=3, max_length=3)
@@ -172,6 +178,9 @@ class ListingResponse(BaseModel):
     max_nights: int
     house_rules: str | None
     check_in_instructions: str | None
+    check_in_time: str | None = None
+    check_out_time: str | None = None
+    pre_arrival_info_release_hours: int | None = None
     policies: str | None
     cover_image: str | None = None
     average_rating: float | None = None

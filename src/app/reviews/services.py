@@ -30,7 +30,15 @@ async def create_review(
 
     if booking.guest_id != user.id:
         raise AuthorizationError("You can only review your own bookings")
-    if booking.status != BookingStatus.COMPLETED:
+    # Eligible once the stay is administratively COMPLETED (finance/payout
+    # done), OR the guest has self-reported checkout — whichever comes
+    # first. A cancelled booking is never eligible even if it was somehow
+    # checked out. This only loosens the original COMPLETED-only gate; it
+    # never allows a review that wasn't already allowed.
+    stay_finished = (
+        booking.status == BookingStatus.COMPLETED or booking.checked_out_at is not None
+    )
+    if not stay_finished or booking.status == BookingStatus.CANCELLED:
         raise ValidationError("You can only review a stay after it's completed")
 
     existing = await reviews_repository.get_review_by_booking(session, booking_id)

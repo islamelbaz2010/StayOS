@@ -339,7 +339,17 @@
       "confirmed": "Confirmed",
       "rejected": "Rejected",
       "cancelled": "Cancelled"
-    }
+    },
+    "cancelBooking": "Cancel booking",
+    "cancelModalTitle": "Cancel this booking?",
+    "cancelRefundFull": "You'll receive a full refund of {amount} EGP.",
+    "cancelRefundPartial": "You'll receive a partial refund of {amount} EGP (of {total} EGP paid).",
+    "cancelRefundNone": "This booking is not eligible for a refund under the cancellation policy.",
+    "cancelNoPayment": "No payment has been collected yet — there is nothing to refund.",
+    "cancelReasonPlaceholder": "Reason (optional)",
+    "cancelSubmitting": "Cancelling…",
+    "cancelSuccess": "Booking cancelled.",
+    "cancelError": "Could not cancel this booking. Please try again."
   },
   "booking": {
     "title": "Request to book",

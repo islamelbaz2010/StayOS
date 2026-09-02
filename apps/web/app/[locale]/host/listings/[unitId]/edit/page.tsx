@@ -1,6 +1,5 @@
 "use client";
 
-import { use } from "react";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -12,9 +11,9 @@ import { useHostListing } from "@/lib/queries/hostListings";
 export default function EditListingPage({
   params,
 }: {
-  params: Promise<{ unitId: string }>;
+  params: { unitId: string };
 }) {
-  const { unitId } = use(params);
+  const { unitId } = params;
   const t = useTranslations("listingForm");
   const tc = useTranslations("common");
   const { data: listing, isLoading, error } = useHostListing(unitId);

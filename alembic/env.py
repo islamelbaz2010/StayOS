@@ -17,6 +17,7 @@ from app.config import settings
 from app.finance import models as finance_models  # noqa: F401
 from app.kyc import models as kyc_models  # noqa: F401
 from app.listings import models as listings_models  # noqa: F401
+from app.messages import models as messages_models  # noqa: F401
 from app.notifications import models as notifications_models  # noqa: F401
 from app.operations import models as operations_models  # noqa: F401
 from app.payments import models as payments_models  # noqa: F401

@@ -84,9 +84,43 @@ class Settings(BaseSettings):
     GUEST_SERVICE_FEE_PCT: float = Field(default=0.04, ge=0.0, le=1.0)
     HOST_COMMISSION_PCT: float = Field(default=0.10, ge=0.0, le=1.0)
     PLATFORM_TAKE_RATE_PCT: float = Field(default=0.02, ge=0.0, le=1.0)
+
+    # Manual payment collection destination (V1 Payment Policy Model A: guest pays
+    # a real StayOS-controlled account). Defaults below match the values previously
+    # hardcoded in app/payments/services.py verbatim (no behavior change) — they are
+    # PLACEHOLDERS and must be overridden with StayOS's real account/number before
+    # any real transaction; this session did not invent or source real values.
+    PAYMENT_BANK_ACCOUNT_NUMBER: str = Field(
+        default="1234567890123456",
+        description="PLACEHOLDER — guest-facing bank account number for manual payment collection. Must be replaced with StayOS's real account before any real transaction.",
+    )
+    PAYMENT_VODAFONE_CASH_NUMBER: str = Field(
+        default="01012345678",
+        description="PLACEHOLDER — guest-facing Vodafone Cash number for manual payment collection. Must be replaced with StayOS's real number before any real transaction.",
+    )
     CANCELLATION_FULL_REFUND_DAYS: int = Field(default=7, ge=0)
     CANCELLATION_PARTIAL_REFUND_DAYS: int = Field(default=3, ge=0)
     CANCELLATION_PARTIAL_REFUND_PCT: float = Field(default=0.5, ge=0.0, le=1.0)
+    REFUND_PROCESSING_DAYS: int = Field(
+        default=5,
+        ge=0,
+        description="Business days to process an approved refund; populates the {{refund_days}} notification placeholder (decided value, V1 Payment & Commission Policy)",
+    )
+
+    # Stay lifecycle timing — global defaults used until per-listing check-in
+    # windows/access-release timing exist. Configuration point, not a
+    # hardcoded assumption baked into business logic.
+    DEFAULT_CHECK_IN_TIME: str = Field(
+        default="15:00", description="Display-only default check-in time (HH:MM, listing-local)"
+    )
+    DEFAULT_CHECK_OUT_TIME: str = Field(
+        default="11:00", description="Display-only default check-out time (HH:MM, listing-local)"
+    )
+    PRE_ARRIVAL_INFO_RELEASE_HOURS: int = Field(
+        default=48,
+        ge=0,
+        description="Hours before check-in date that arrival/access instructions become visible to the guest",
+    )
 
     # Closed Alpha commercial incentives
     ALPHA_HOST_FREE_BOOKINGS: int = Field(default=3, ge=0, description="Number of completed bookings with 0% host commission before standard rate applies")

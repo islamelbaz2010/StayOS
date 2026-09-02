@@ -30,6 +30,41 @@ def test_render_template_fallback_to_english() -> None:
     assert "John" in body
 
 
+def test_render_template_booking_cancelled_populates_refund_days() -> None:
+    """refund_days = 5 (decided value) must actually reach the guest-facing
+    cancellation message, not render as an unfilled {{refund_days}} — the bug
+    tracked in docs/legal/LEGAL_GAP_REGISTER.md P0-4."""
+    _, body_en = templates.render_template(
+        "booking.cancelled",
+        "email",
+        "en",
+        {"reservation_id": "res-3", "refund_days": 5},
+    )
+    assert "{{refund_days}}" not in body_en
+    assert "within 5 business days" in body_en
+
+    _, body_ar = templates.render_template(
+        "booking.cancelled",
+        "email",
+        "ar",
+        {"reservation_id": "res-3", "refund_days": 5},
+    )
+    assert "{{refund_days}}" not in body_ar
+    assert "خلال 5 أيام عمل" in body_ar
+
+
+def test_render_template_booking_cancelled_blank_when_refund_days_missing() -> None:
+    """Documents the pre-fix failure mode: render_template silently substitutes an
+    empty string for an absent template variable rather than leaving the literal
+    placeholder — this is why the payload must always include refund_days, not why
+    the template itself needed to change."""
+    _, body = templates.render_template(
+        "booking.cancelled", "email", "en", {"reservation_id": "res-4"}
+    )
+    assert "{{refund_days}}" not in body
+    assert "within  business days" in body
+
+
 @pytest.mark.asyncio
 async def test_send_whatsapp_test_environment() -> None:
     result = await providers.send_whatsapp(

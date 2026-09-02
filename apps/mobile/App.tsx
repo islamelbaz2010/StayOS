@@ -9,16 +9,34 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LocaleProvider, useLocale } from "./src/lib/LocaleContext";
 import { colors } from "./src/lib/theme";
+import { useMe } from "./src/lib/hooks";
 
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { SearchScreen } from "./src/screens/SearchScreen";
 import { ListingDetailScreen } from "./src/screens/ListingDetailScreen";
 import { FavoritesScreen } from "./src/screens/FavoritesScreen";
 import { TripsScreen } from "./src/screens/TripsScreen";
+import { TripDetailScreen } from "./src/screens/TripDetailScreen";
 import { AccountScreen } from "./src/screens/AccountScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { BookingScreen } from "./src/screens/BookingScreen";
-import { HostProfileScreen } from "./src/screens/HostProfileScreen";
+import { HostProfileScreen as GuestHostProfileScreen } from "./src/screens/HostProfileScreen";
+import { MessageScreen } from "./src/screens/MessageScreen";
+
+// Host Operating System screens
+import { HostTodayScreen } from "./src/screens/host/HostTodayScreen";
+import { HostCalendarScreen } from "./src/screens/host/HostCalendarScreen";
+import { HostListingsScreen } from "./src/screens/host/HostListingsScreen";
+import { HostMessagesScreen } from "./src/screens/host/HostMessagesScreen";
+import { HostProfileScreen } from "./src/screens/host/HostProfileScreen";
+import { HostReservationDetailScreen } from "./src/screens/host/HostReservationDetailScreen";
+import { HostEarningsScreen } from "./src/screens/host/HostEarningsScreen";
+import { HostListingDetailScreen } from "./src/screens/host/HostListingDetailScreen";
+import { HostListingEditorScreen } from "./src/screens/host/HostListingEditorScreen";
+import { HostListingPhotosScreen } from "./src/screens/host/HostListingPhotosScreen";
+import { HostListingAvailabilityScreen } from "./src/screens/host/HostListingAvailabilityScreen";
+import { HostListingCoHostsScreen } from "./src/screens/host/HostListingCoHostsScreen";
+import { HostCreateListingScreen } from "./src/screens/host/HostCreateListingScreen";
 
 export type RootStackParamList = {
   Home: { screen?: "TripsTab" } | undefined;
@@ -26,10 +44,26 @@ export type RootStackParamList = {
   ListingDetail: { unitId: string };
   HostProfile: { hostId: string };
   Booking: { unitId: string; title: string; price: number; currency: string; maxGuests: number };
+  TripDetail: { bookingId: string };
+  Message: { bookingId: string };
   Login: undefined;
   Favorites: undefined;
   Trips: undefined;
   Account: undefined;
+  // Host routes
+  HostToday: undefined;
+  HostCalendar: undefined;
+  HostListings: undefined;
+  HostMessages: undefined;
+  HostReservationDetail: { bookingId: string };
+  HostEarnings: undefined;
+  HostSettings: undefined;
+  HostListingDetail: { unitId: string };
+  HostListingEditor: { unitId: string; section: string };
+  HostListingPhotos: { unitId: string };
+  HostListingAvailability: { unitId: string };
+  HostListingCoHosts: { unitId: string };
+  HostCreateListing: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -44,7 +78,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function getTabIconName(routeName: string, focused: boolean): keyof typeof Ionicons.glyphMap {
+function getGuestTabIconName(routeName: string, focused: boolean): keyof typeof Ionicons.glyphMap {
   switch (routeName) {
     case "HomeTab":
       return focused ? "home" : "home-outline";
@@ -61,7 +95,24 @@ function getTabIconName(routeName: string, focused: boolean): keyof typeof Ionic
   }
 }
 
-function HomeTabs() {
+function getHostTabIconName(routeName: string, focused: boolean): keyof typeof Ionicons.glyphMap {
+  switch (routeName) {
+    case "HostTodayTab":
+      return focused ? "today" : "today-outline";
+    case "HostCalendarTab":
+      return focused ? "calendar" : "calendar-outline";
+    case "HostListingsTab":
+      return focused ? "business" : "business-outline";
+    case "HostMessagesTab":
+      return focused ? "chatbubble" : "chatbubble-outline";
+    case "HostAccountTab":
+      return focused ? "person" : "person-outline";
+    default:
+      return "help-circle-outline";
+  }
+}
+
+function GuestTabs() {
   const { t } = useLocale();
   return (
     <Tab.Navigator
@@ -70,7 +121,7 @@ function HomeTabs() {
         tabBarInactiveTintColor: colors.textTertiary,
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
-          const iconName = getTabIconName(route.name, focused);
+          const iconName = getGuestTabIconName(route.name, focused);
           return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
@@ -84,8 +135,32 @@ function HomeTabs() {
   );
 }
 
+function HostTabs() {
+  const { t } = useLocale();
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
+        headerShown: false,
+        tabBarIcon: ({ focused, color, size }) => {
+          const iconName = getHostTabIconName(route.name, focused);
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="HostTodayTab" component={HostTodayScreen} options={{ tabBarLabel: t("hostToday") }} />
+      <Tab.Screen name="HostCalendarTab" component={HostCalendarScreen} options={{ tabBarLabel: t("hostCalendar") }} />
+      <Tab.Screen name="HostListingsTab" component={HostListingsScreen} options={{ tabBarLabel: t("hostListings") }} />
+      <Tab.Screen name="HostMessagesTab" component={HostMessagesScreen} options={{ tabBarLabel: t("hostMessages") }} />
+      <Tab.Screen name="HostAccountTab" component={HostProfileScreen} options={{ tabBarLabel: t("account") }} />
+    </Tab.Navigator>
+  );
+}
+
 function AppContent() {
   const { isRTL } = useLocale();
+  const { data: user } = useMe();
 
   if (isRTL && !I18nManager.isRTL) {
     I18nManager.forceRTL(true);
@@ -105,10 +180,15 @@ function AppContent() {
     },
   };
 
+  // Role-aware root: hosts (and admins) get the host tab navigator as
+  // their default home screen; guests get the guest tab navigator.
+  const isHost = user?.role === "host" || user?.role === "admin";
+  const HomeComponent = isHost ? HostTabs : GuestTabs;
+
   return (
     <NavigationContainer theme={theme}>
       <Stack.Navigator>
-        <Stack.Screen name="Home" component={HomeTabs} options={{ headerShown: false }} />
+        <Stack.Screen name="Home" component={HomeComponent} options={{ headerShown: false }} />
         <Stack.Screen
           name="Search"
           component={SearchScreen}
@@ -126,13 +206,63 @@ function AppContent() {
         />
         <Stack.Screen
           name="HostProfile"
-          component={HostProfileScreen}
+          component={GuestHostProfileScreen}
           options={{ title: "Host" }}
+        />
+        <Stack.Screen
+          name="TripDetail"
+          component={TripDetailScreen}
+          options={{ title: "Trip" }}
+        />
+        <Stack.Screen
+          name="Message"
+          component={MessageScreen}
+          options={{ title: "Messages" }}
         />
         <Stack.Screen
           name="Login"
           component={LoginScreen}
           options={{ title: "Login" }}
+        />
+        <Stack.Screen
+          name="HostReservationDetail"
+          component={HostReservationDetailScreen}
+          options={{ title: "Reservation" }}
+        />
+        <Stack.Screen
+          name="HostEarnings"
+          component={HostEarningsScreen}
+          options={{ title: "Earnings" }}
+        />
+        <Stack.Screen
+          name="HostListingDetail"
+          component={HostListingDetailScreen}
+          options={{ title: "Listing" }}
+        />
+        <Stack.Screen
+          name="HostListingEditor"
+          component={HostListingEditorScreen}
+          options={{ title: "Edit listing" }}
+        />
+        <Stack.Screen
+          name="HostListingPhotos"
+          component={HostListingPhotosScreen}
+          options={{ title: "Photos" }}
+        />
+        <Stack.Screen
+          name="HostListingAvailability"
+          component={HostListingAvailabilityScreen}
+          options={{ title: "Availability" }}
+        />
+        <Stack.Screen
+          name="HostListingCoHosts"
+          component={HostListingCoHostsScreen}
+          options={{ title: "Co-hosts" }}
+        />
+        <Stack.Screen
+          name="HostCreateListing"
+          component={HostCreateListingScreen}
+          options={{ title: "New listing" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

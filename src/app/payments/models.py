@@ -66,4 +66,8 @@ class Payment(UUIDMixin, TimestampMixin, Base):
     cancelled_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    refund_amount_egp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    refunded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     instructions: Mapped[str] = mapped_column(Text, nullable=False, default="")

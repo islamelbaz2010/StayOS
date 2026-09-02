@@ -6,8 +6,11 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
+import { CancelBookingButton } from "@/components/bookings/CancelBookingButton";
 import { useGuestBookings } from "@/lib/queries/bookings";
 import { formatDate } from "@/lib/utils";
+
+const CANCELLABLE_STATUSES = new Set(["requested", "accepted", "confirmed"]);
 
 const STATUS_STYLES: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800",
@@ -22,7 +25,7 @@ export default function MyTripsPage() {
   const tc = useTranslations("common");
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
-  const { data: bookings, isLoading, error } = useGuestBookings();
+  const { data: bookings, isLoading, error, refetch } = useGuestBookings();
 
   return (
     <ProtectedRoute allowedRoles={["guest"]}>
@@ -121,6 +124,9 @@ export default function MyTripsPage() {
                         <span className="text-sm text-danger-600">
                           {booking.reject_reason}
                         </span>
+                      )}
+                      {CANCELLABLE_STATUSES.has(booking.status) && (
+                        <CancelBookingButton booking={booking} onCancelled={() => refetch()} />
                       )}
                     </div>
                   </div>

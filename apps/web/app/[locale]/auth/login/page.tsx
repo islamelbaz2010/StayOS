@@ -7,6 +7,13 @@ import type { ConfirmationResult } from "firebase/auth";
 
 import { AuthLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
+import { api } from "@/lib/api";
+
+const DEV_USERS = [
+  { id: "seed-admin-0000-0000-000000000001", label: "Admin" },
+  { id: "seed-host-0000-0000-000000000002", label: "Host" },
+  { id: "seed-guest-000-0000-000000000003", label: "Guest" },
+];
 
 export default function LoginPage() {
   const t = useTranslations("auth");
@@ -24,6 +31,32 @@ export default function LoginPage() {
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [devLoading, setDevLoading] = useState<string | null>(null);
+
+  async function handleDevLogin(userId: string) {
+    setDevLoading(userId);
+    setError(null);
+    try {
+      const { data } = await api.post<{
+        access_token: string;
+        refresh_token: string;
+        token_type: string;
+        expires_in: number;
+      }>("/auth/dev-token", { user_id: userId });
+      const expiresAt = Date.now() + data.expires_in * 1000;
+      const { setSession } = await import("@/lib/auth/storage");
+      setSession({
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt,
+      });
+      router.push(redirect);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Dev login failed");
+    } finally {
+      setDevLoading(null);
+    }
+  }
 
   async function handleSend(event: FormEvent) {
     event.preventDefault();
@@ -157,6 +190,27 @@ export default function LoginPage() {
 
       {error && (
         <p className="mt-4 text-center text-sm text-danger-600">{error}</p>
+      )}
+
+      {!isFirebaseConfigured && (
+        <div className="mt-6 border-t border-neutral-200 pt-6">
+          <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-neutral-500">
+            Dev Login
+          </p>
+          <div className="flex flex-col gap-2">
+            {DEV_USERS.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                disabled={devLoading !== null}
+                onClick={() => handleDevLogin(u.id)}
+                className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-center text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-60"
+              >
+                {devLoading === u.id ? "Loading..." : `Login as ${u.label}`}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </AuthLayout>
   );

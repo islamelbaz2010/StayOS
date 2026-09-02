@@ -339,7 +339,17 @@
       "confirmed": "مؤكد",
       "rejected": "مرفوض",
       "cancelled": "ملغى"
-    }
+    },
+    "cancelBooking": "إلغاء الحجز",
+    "cancelModalTitle": "هل تريد إلغاء هذا الحجز؟",
+    "cancelRefundFull": "سيتم استرداد كامل المبلغ {amount} جنيه.",
+    "cancelRefundPartial": "سيتم استرداد {amount} جنيه (من إجمالي {total} جنيه مدفوع).",
+    "cancelRefundNone": "هذا الحجز غير مؤهل لاسترداد الأموال وفقًا لسياسة الإلغاء.",
+    "cancelNoPayment": "لم يتم تحصيل أي دفعة بعد — لا يوجد مبلغ لاسترداده.",
+    "cancelReasonPlaceholder": "السبب (اختياري)",
+    "cancelSubmitting": "جارٍ الإلغاء…",
+    "cancelSuccess": "تم إلغاء الحجز.",
+    "cancelError": "تعذّر إلغاء هذا الحجز. حاول مرة أخرى."
   },
   "booking": {
     "title": "طلب حجز",

@@ -24,6 +24,7 @@ _RELEVANT_EVENT_TYPES = (
     "booking.checked_in",
     "booking.checked_out",
     "booking.cancelled",
+    "message.received",
 )
 
 

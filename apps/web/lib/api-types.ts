@@ -317,9 +317,63 @@ export interface paths {
     /** Patch Booking */
     patch: operations["patch_booking_api_v1_bookings__booking_id__patch"];
   };
+  "/api/v1/bookings/{booking_id}/cancellation-preview": {
+    /** Get Cancellation Preview */
+    get: operations["get_cancellation_preview_api_v1_bookings__booking_id__cancellation_preview_get"];
+  };
+  "/api/v1/bookings/{booking_id}/cancel": {
+    /** Post Cancel Booking */
+    post: operations["post_cancel_booking_api_v1_bookings__booking_id__cancel_post"];
+  };
+  "/api/v1/bookings/{booking_id}/stay": {
+    /** Get Stay Info Endpoint */
+    get: operations["get_stay_info_endpoint_api_v1_bookings__booking_id__stay_get"];
+  };
+  "/api/v1/bookings/{booking_id}/check-in": {
+    /** Post Check In */
+    post: operations["post_check_in_api_v1_bookings__booking_id__check_in_post"];
+  };
+  "/api/v1/bookings/{booking_id}/check-out": {
+    /** Post Check Out */
+    post: operations["post_check_out_api_v1_bookings__booking_id__check_out_post"];
+  };
   "/api/v1/bookings/{booking_id}/complete": {
     /** Complete Booking Endpoint */
     post: operations["complete_booking_endpoint_api_v1_bookings__booking_id__complete_post"];
+  };
+  "/api/v1/messages/conversations": {
+    /** Get Conversations */
+    get: operations["get_conversations_api_v1_messages_conversations_get"];
+  };
+  "/api/v1/messages/conversations/unread": {
+    /** Get Unread Count */
+    get: operations["get_unread_count_api_v1_messages_conversations_unread_get"];
+  };
+  "/api/v1/messages/conversations/{conversation_id}": {
+    /** Get Conversation Detail */
+    get: operations["get_conversation_detail_api_v1_messages_conversations__conversation_id__get"];
+  };
+  "/api/v1/messages/conversations/{conversation_id}/messages": {
+    /** Get Messages */
+    get: operations["get_messages_api_v1_messages_conversations__conversation_id__messages_get"];
+    /** Post Message */
+    post: operations["post_message_api_v1_messages_conversations__conversation_id__messages_post"];
+  };
+  "/api/v1/messages/conversations/{conversation_id}/read": {
+    /** Post Mark Read */
+    post: operations["post_mark_read_api_v1_messages_conversations__conversation_id__read_post"];
+  };
+  "/api/v1/messages/bookings/{booking_id}/conversation": {
+    /** Get Conversation For Booking */
+    get: operations["get_conversation_for_booking_api_v1_messages_bookings__booking_id__conversation_get"];
+  };
+  "/api/v1/messages/templates": {
+    /** Get Message Templates */
+    get: operations["get_message_templates_api_v1_messages_templates_get"];
+  };
+  "/api/v1/messages/conversations/{conversation_id}/automated": {
+    /** Post Automated Message */
+    post: operations["post_automated_message_api_v1_messages_conversations__conversation_id__automated_post"];
   };
   "/api/v1/payments/booking/{booking_id}": {
     /** Get Payment For Booking */
@@ -541,6 +595,15 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** AutomatedMessageSend */
+    AutomatedMessageSend: {
+      /** Template Key */
+      template_key: string;
+      /** Variables */
+      variables?: {
+        [key: string]: string;
+      };
+    };
     /** AvailabilityDay */
     AvailabilityDay: {
       /**
@@ -596,6 +659,33 @@ export interface components {
       /** File */
       file: string;
     };
+    /** BookingCancelRequest */
+    BookingCancelRequest: {
+      /** Reason */
+      reason?: string | null;
+    };
+    /**
+     * BookingCancellationPreview
+     * @description Financial consequence of cancelling a booking, computed but not applied.
+     *
+     * Lets the UI show the guest/host what cancelling will actually cost before
+     * they confirm — the refund amount here is exactly what `cancel_booking`
+     * will apply if called immediately after.
+     */
+    BookingCancellationPreview: {
+      /** Booking Id */
+      booking_id: string;
+      /** Cancellable */
+      cancellable: boolean;
+      /** Cancelled By */
+      cancelled_by: string;
+      /** Total Paid Egp */
+      total_paid_egp: number;
+      /** Refund Amount Egp */
+      refund_amount_egp: number;
+      /** Refund Policy Applied */
+      refund_policy_applied: string;
+    };
     /** BookingCreate */
     BookingCreate: {
       /** Unit Id */
@@ -638,6 +728,8 @@ export interface components {
       host_id?: string | null;
       /** Status */
       status: string;
+      /** Stay Phase */
+      stay_phase: string;
       /**
        * Check In
        * Format: date
@@ -665,6 +757,12 @@ export interface components {
       rejected_at: string | null;
       /** Cancelled At */
       cancelled_at: string | null;
+      /** Cancelled By */
+      cancelled_by?: string | null;
+      /** Checked In At */
+      checked_in_at?: string | null;
+      /** Checked Out At */
+      checked_out_at?: string | null;
       /** Reject Reason */
       reject_reason: string | null;
       /** Cancel Reason */
@@ -827,6 +925,84 @@ export interface components {
        * @default false
        */
       completed?: boolean;
+    };
+    /** ConversationDetailResponse */
+    ConversationDetailResponse: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string | null;
+      /** Unit Id */
+      unit_id: string | null;
+      /** Type */
+      type: string;
+      /** Status */
+      status: string;
+      /** Participants */
+      participants: components["schemas"]["ParticipantResponse"][];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /** Messages */
+      messages: components["schemas"]["MessageResponse"][];
+    };
+    /** ConversationListItem */
+    ConversationListItem: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string | null;
+      /** Unit Id */
+      unit_id: string | null;
+      /** Type */
+      type: string;
+      /** Status */
+      status: string;
+      /** Unread Count */
+      unread_count: number;
+      last_message: components["schemas"]["MessageResponse"] | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** ConversationResponse */
+    ConversationResponse: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string | null;
+      /** Unit Id */
+      unit_id: string | null;
+      /** Type */
+      type: string;
+      /** Status */
+      status: string;
+      /** Participants */
+      participants: components["schemas"]["ParticipantResponse"][];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
     };
     /** DevTokenRequest */
     DevTokenRequest: {
@@ -1796,6 +1972,12 @@ export interface components {
       house_rules?: string | null;
       /** Check In Instructions */
       check_in_instructions?: string | null;
+      /** Check In Time */
+      check_in_time?: string | null;
+      /** Check Out Time */
+      check_out_time?: string | null;
+      /** Pre Arrival Info Release Hours */
+      pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies?: string | null;
       /**
@@ -1894,6 +2076,12 @@ export interface components {
       house_rules: string | null;
       /** Check In Instructions */
       check_in_instructions: string | null;
+      /** Check In Time */
+      check_in_time?: string | null;
+      /** Check Out Time */
+      check_out_time?: string | null;
+      /** Pre Arrival Info Release Hours */
+      pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies: string | null;
       /** Cover Image */
@@ -2004,6 +2192,12 @@ export interface components {
       house_rules?: string | null;
       /** Check In Instructions */
       check_in_instructions?: string | null;
+      /** Check In Time */
+      check_in_time?: string | null;
+      /** Check Out Time */
+      check_out_time?: string | null;
+      /** Pre Arrival Info Release Hours */
+      pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies?: string | null;
       /** Country */
@@ -2081,6 +2275,57 @@ export interface components {
       /** Related Task Id */
       related_task_id?: string | null;
     };
+    /** MarkReadRequest */
+    MarkReadRequest: Record<string, never>;
+    /** MessageCreate */
+    MessageCreate: {
+      /** Content */
+      content: string;
+    };
+    /** MessageResponse */
+    MessageResponse: {
+      /** Id */
+      id: string;
+      /** Conversation Id */
+      conversation_id: string;
+      /** Sender Id */
+      sender_id: string | null;
+      /** Sender Role */
+      sender_role: string;
+      /** Content */
+      content: string;
+      /** Status */
+      status: string;
+      /** Automation Type */
+      automation_type: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** MessageTemplateResponse */
+    MessageTemplateResponse: {
+      /** Id */
+      id: string;
+      /** Key */
+      key: string;
+      /** Name */
+      name: string;
+      /** Body */
+      body: string;
+      /** Variables */
+      variables: string[];
+      /** Category */
+      category: string;
+      /** Locale */
+      locale: string;
+    };
     /** OperationsDashboardResponse */
     OperationsDashboardResponse: {
       /** Pending Tasks */
@@ -2151,6 +2396,15 @@ export interface components {
       has_more: boolean;
       /** Total Count */
       total_count: number;
+    };
+    /** ParticipantResponse */
+    ParticipantResponse: {
+      /** User Id */
+      user_id: string;
+      /** Role */
+      role: string;
+      /** Last Read At */
+      last_read_at: string | null;
     };
     /** PaymentConfirmationRequest */
     PaymentConfirmationRequest: {
@@ -2716,6 +2970,64 @@ export interface components {
      * @enum {string}
      */
     StaffRole: "CLEANER" | "INSPECTOR" | "MAINTENANCE" | "OPERATIONS";
+    /**
+     * StayArrivalInfo
+     * @description Time-gated arrival/access information.
+     *
+     * `eligible` tells the client whether this booking has crossed the
+     * pre-arrival release threshold. When false, `check_in_instructions` is
+     * always null — the field is never populated early regardless of what the
+     * client requests.
+     */
+    StayArrivalInfo: {
+      /** Eligible */
+      eligible: boolean;
+      /** Check In Instructions */
+      check_in_instructions?: string | null;
+      /** Default Check In Time */
+      default_check_in_time: string;
+      /** Default Check Out Time */
+      default_check_out_time: string;
+    };
+    /** StayHostInfo */
+    StayHostInfo: {
+      /** Name */
+      name: string | null;
+      /** Phone */
+      phone?: string | null;
+    };
+    /**
+     * StayInfoResponse
+     * @description Aggregated Trip/Stay detail for a single booking — the backing data
+     * for the Mobile Trip detail screen. Not a duplicate of BookingResponse:
+     * this adds property/host/arrival information and review eligibility that
+     * the plain booking record doesn't carry.
+     */
+    StayInfoResponse: {
+      booking: components["schemas"]["BookingResponse"];
+      property: components["schemas"]["StayPropertyInfo"];
+      host: components["schemas"]["StayHostInfo"];
+      arrival: components["schemas"]["StayArrivalInfo"];
+      /** Review Eligible */
+      review_eligible: boolean;
+    };
+    /** StayPropertyInfo */
+    StayPropertyInfo: {
+      /** Unit Id */
+      unit_id: string;
+      /** Title */
+      title: string | null;
+      /** Address */
+      address: string | null;
+      /** Lat */
+      lat: number | null;
+      /** Lng */
+      lng: number | null;
+      /** House Rules */
+      house_rules: string | null;
+      /** Cancellation Policy */
+      cancellation_policy: string | null;
+    };
     /** TaskAssignRequest */
     TaskAssignRequest: {
       /** Field Staff Id */
@@ -2856,6 +3168,11 @@ export interface components {
     TokenRefreshRequest: {
       /** Refresh Token */
       refresh_token: string;
+    };
+    /** UnreadCountResponse */
+    UnreadCountResponse: {
+      /** Total Unread */
+      total_unread: number;
     };
     /** UserResponse */
     UserResponse: {
@@ -4898,6 +5215,121 @@ export interface operations {
       };
     };
   };
+  /** Get Cancellation Preview */
+  get_cancellation_preview_api_v1_bookings__booking_id__cancellation_preview_get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingCancellationPreview"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Cancel Booking */
+  post_cancel_booking_api_v1_bookings__booking_id__cancel_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BookingCancelRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Stay Info Endpoint */
+  get_stay_info_endpoint_api_v1_bookings__booking_id__stay_get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StayInfoResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Check In */
+  post_check_in_api_v1_bookings__booking_id__check_in_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Check Out */
+  post_check_out_api_v1_bookings__booking_id__check_out_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Complete Booking Endpoint */
   complete_booking_endpoint_api_v1_bookings__booking_id__complete_post: {
     parameters: {
@@ -4910,6 +5342,215 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Conversations */
+  get_conversations_api_v1_messages_conversations_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ConversationListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Unread Count */
+  get_unread_count_api_v1_messages_conversations_unread_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["UnreadCountResponse"];
+        };
+      };
+    };
+  };
+  /** Get Conversation Detail */
+  get_conversation_detail_api_v1_messages_conversations__conversation_id__get: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ConversationDetailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Messages */
+  get_messages_api_v1_messages_conversations__conversation_id__messages_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      path: {
+        conversation_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MessageResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Message */
+  post_message_api_v1_messages_conversations__conversation_id__messages_post: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MessageCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Mark Read */
+  post_mark_read_api_v1_messages_conversations__conversation_id__read_post: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MarkReadRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Conversation For Booking */
+  get_conversation_for_booking_api_v1_messages_bookings__booking_id__conversation_get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ConversationResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Message Templates */
+  get_message_templates_api_v1_messages_templates_get: {
+    parameters: {
+      query?: {
+        locale?: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MessageTemplateResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Automated Message */
+  post_automated_message_api_v1_messages_conversations__conversation_id__automated_post: {
+    parameters: {
+      path: {
+        conversation_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AutomatedMessageSend"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MessageResponse"] | null;
         };
       };
       /** @description Validation Error */

@@ -173,6 +173,29 @@ services:
           cpus: "0.5"
           memory: 512M
 
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+        NEXT_PUBLIC_IMAGE_HOSTS: ${NEXT_PUBLIC_IMAGE_HOSTS:-.amazonaws.com,localhost,127.0.0.1,example.com}
+    image: stayos/web:staging
+    container_name: stayos_staging_web
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - stayos_staging
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
 volumes:
   stayos_staging_postgres_data:
     driver: local

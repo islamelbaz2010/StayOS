@@ -21,12 +21,10 @@ export default async function LocaleLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir}>
-      <body>
-        <NextIntlClientProvider messages={messages}>
-          <Providers>{children}</Providers>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <div dir={dir} lang={locale}>
+      <NextIntlClientProvider messages={messages}>
+        <Providers>{children}</Providers>
+      </NextIntlClientProvider>
+    </div>
   );
 }

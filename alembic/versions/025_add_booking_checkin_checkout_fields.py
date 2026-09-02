@@ -1,7 +1,7 @@
 """Add check-in/check-out tracking fields to bookings
 
-Revision ID: 025_add_booking_checkin_checkout_fields
-Revises: 024_add_booking_cancellation_fields
+Revision ID: 025_add_booking_checkin_fields
+Revises: 024_add_booking_cancel_fields
 Create Date: 2026-09-02 00:00:00.000000
 
 Adds the operational stay-lifecycle timestamps used to derive a booking's
@@ -30,8 +30,8 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "025_add_booking_checkin_checkout_fields"
-down_revision: str | None = "024_add_booking_cancellation_fields"
+revision: str = "025_add_booking_checkin_fields"
+down_revision: str | None = "024_add_booking_cancel_fields"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

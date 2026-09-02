@@ -1,7 +1,7 @@
 """Create messaging domain and listing-specific stay configuration
 
-Revision ID: 026_create_messaging_and_listing_stay_config
-Revises: 025_add_booking_checkin_checkout_fields
+Revision ID: 026_create_messaging_stay_config
+Revises: 025_add_booking_checkin_fields
 Create Date: 2026-09-02 00:00:00.000000
 
 Adds the schema and tables required for reservation-linked conversations
@@ -19,8 +19,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision: str = "026_create_messaging_and_listing_stay_config"
-down_revision: str | None = "025_add_booking_checkin_checkout_fields"
+revision: str = "026_create_messaging_stay_config"
+down_revision: str | None = "025_add_booking_checkin_fields"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

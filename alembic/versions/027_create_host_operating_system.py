@@ -1,7 +1,7 @@
 """Create host operating system foundation: co-hosts and listing readiness
 
 Revision ID: 027_create_host_operating_system
-Revises: 026_create_messaging_and_listing_stay_config
+Revises: 026_create_messaging_stay_config
 Create Date: 2026-09-03 00:00:00.000000
 
 Adds:
@@ -22,7 +22,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "027_create_host_operating_system"
-down_revision: str | None = "026_create_messaging_and_listing_stay_config"
+down_revision: str | None = "026_create_messaging_stay_config"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -1,6 +1,6 @@
 """Add cancellation/refund audit fields to bookings and payments
 
-Revision ID: 024_add_booking_cancellation_fields
+Revision ID: 024_add_booking_cancel_fields
 Revises: 023_add_reviews
 Create Date: 2026-09-02 00:00:00.000000
 
@@ -26,7 +26,7 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "024_add_booking_cancellation_fields"
+revision: str = "024_add_booking_cancel_fields"
 down_revision: str | None = "023_add_reviews"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

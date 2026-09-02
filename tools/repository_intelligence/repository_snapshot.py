@@ -12,4 +12,5 @@ def snapshot():
 """
     save_md("PROJECT_SNAPSHOT.md", content)
 
-if __name__ == "__main__": snapshot()
+if __name__ == "__main__":
+    snapshot()

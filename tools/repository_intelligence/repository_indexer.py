@@ -26,4 +26,5 @@ def index():
     save_json("MASTER_INDEX.json", index_data)
     save_md("MASTER_INDEX.md", "# MASTER_INDEX\n\n- Total files: " + str(len(index_data)))
 
-if __name__ == "__main__": index()
+if __name__ == "__main__":
+    index()

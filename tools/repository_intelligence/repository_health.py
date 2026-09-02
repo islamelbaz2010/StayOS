@@ -12,4 +12,5 @@ def calculate_health():
 """
     save_md("PROJECT_HEALTH.md", report)
 
-if __name__ == "__main__": calculate_health()
+if __name__ == "__main__":
+    calculate_health()

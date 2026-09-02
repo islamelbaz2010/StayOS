@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from shared import load_index, save_report
 
 
@@ -10,4 +12,5 @@ def graph():
     mermaid.append("```")
     save_report("FOLDER_GRAPH.md", "\n".join(mermaid))
 
-if __name__ == "__main__": graph()
+if __name__ == "__main__":
+    graph()

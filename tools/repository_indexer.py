@@ -51,7 +51,8 @@ def index_repository():
             index.append(entry)
 
     # Save outputs
-    with open(INDEX_JSON, 'w') as f: json.dump(index, f, indent=4)
+    with open(INDEX_JSON, 'w') as f:
+        json.dump(index, f, indent=4)
     with open(INDEX_CSV, 'w') as f:
         writer = csv.DictWriter(f, fieldnames=index[0].keys())
         writer.writeheader()

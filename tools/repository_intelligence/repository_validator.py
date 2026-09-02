@@ -17,4 +17,5 @@ def validate():
 
     save_md("VALIDATION_REPORT.md", "\n".join(report))
 
-if __name__ == "__main__": validate()
+if __name__ == "__main__":
+    validate()

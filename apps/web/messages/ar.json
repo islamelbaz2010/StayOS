@@ -21,6 +21,7 @@
     "search": "بحث",
     "host": "أضف عقارك",
     "trips": "رحلاتي",
+    "favorites": "المفضلة",
     "messages": "الرسائل",
     "account": "الحساب",
     "signIn": "تسجيل الدخول",
@@ -227,6 +228,14 @@
     "featuredTitle": "إقامات مميزة",
     "viewAll": "عرض الكل"
   },
+  "favorites": {
+    "title": "المفضلة",
+    "subtitle": "الأماكن التي حفظتها لوقت لاحق",
+    "emptyTitle": "لا توجد مفضلات بعد",
+    "emptySubtitle": "اضغط على أيقونة القلب في أي إقامة لحفظها هنا.",
+    "signInTitle": "سجّل الدخول لرؤية مفضلاتك",
+    "browseListings": "تصفح الإقامات"
+  },
   "listing": {
     "perNight": "لليلة",
     "propertyTypeLabel": {
@@ -243,6 +252,8 @@
     "reviews": "{count} تقييم",
     "noReviews": "لا توجد تقييمات بعد",
     "guest": "ضيف",
+    "addToFavorites": "احفظ في المفضلة",
+    "removeFromFavorites": "إزالة من المفضلة",
     "book": "احجز الآن",
     "checkAvailability": "تحقق من التوفر",
     "amenities": "المرافق",

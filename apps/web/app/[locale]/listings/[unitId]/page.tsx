@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 
 import { BookingPanel } from "@/components/bookings/BookingPanel";
 import { GuestLayout } from "@/components/layouts";
+import { FavoriteButton } from "@/components/listings/FavoriteButton";
 import { Gallery } from "@/components/listings/Gallery";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
 import { ReviewsSection } from "@/components/listings/ReviewsSection";
@@ -100,9 +101,12 @@ export default function ListingDetailPage() {
 
             {/* Title & badges */}
             <header className="mb-4 px-4 pt-4 sm:mb-6 sm:px-0">
-              <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl lg:text-3xl">
-                {listing.title}
-              </h1>
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl lg:text-3xl">
+                  {listing.title}
+                </h1>
+                <FavoriteButton unitId={listing.id} size="md" className="flex-shrink-0 border border-neutral-200" />
+              </div>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-600 sm:gap-3 sm:text-sm">
                 <RatingBadge averageRating={listing.averageRating} reviewCount={listing.reviewCount} />
                 <span className="text-neutral-300">•</span>

@@ -21,6 +21,7 @@
     "search": "Search",
     "host": "List your property",
     "trips": "My trips",
+    "favorites": "Favorites",
     "messages": "Messages",
     "account": "Account",
     "signIn": "Sign in",
@@ -227,6 +228,14 @@
     "featuredTitle": "Featured stays",
     "viewAll": "View all"
   },
+  "favorites": {
+    "title": "Favorites",
+    "subtitle": "Places you've saved for later",
+    "emptyTitle": "No favorites yet",
+    "emptySubtitle": "Tap the heart icon on a listing to save it here.",
+    "signInTitle": "Sign in to see your favorites",
+    "browseListings": "Browse listings"
+  },
   "listing": {
     "perNight": "per night",
     "propertyTypeLabel": {
@@ -243,6 +252,8 @@
     "reviews": "{count} reviews",
     "noReviews": "No reviews yet",
     "guest": "Guest",
+    "addToFavorites": "Save to favorites",
+    "removeFromFavorites": "Remove from favorites",
     "book": "Book now",
     "checkAvailability": "Check availability",
     "amenities": "Amenities",

@@ -6,6 +6,7 @@ import { useGuestBookings } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, EmptyView } from "../components/States";
+import { LeaveReviewModal } from "../components/LeaveReviewModal";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -14,6 +15,9 @@ export function TripsScreen() {
   const { t } = useLocale();
   const navigation = useNavigation<Nav>();
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
+  const [reviewTarget, setReviewTarget] = useState<{ bookingId: string; unitId: string } | null>(
+    null
+  );
 
   const { data: bookings, isLoading } = useGuestBookings();
 
@@ -70,10 +74,27 @@ export function TripsScreen() {
                   {item.children > 0 && ` · ${item.children} ${t("children")}`}
                 </Text>
               </View>
+              {item.status === "completed" && (
+                <Pressable
+                  style={styles.reviewButton}
+                  onPress={() => setReviewTarget({ bookingId: item.id, unitId: item.unit_id })}
+                >
+                  <Text style={styles.reviewButtonText}>{t("leaveReview")}</Text>
+                </Pressable>
+              )}
             </Pressable>
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      {reviewTarget && (
+        <LeaveReviewModal
+          visible={Boolean(reviewTarget)}
+          bookingId={reviewTarget.bookingId}
+          unitId={reviewTarget.unitId}
+          onClose={() => setReviewTarget(null)}
         />
       )}
     </View>
@@ -142,5 +163,19 @@ const styles = StyleSheet.create({
   bookingGuests: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
+  },
+  reviewButton: {
+    marginTop: spacing.md,
+    alignSelf: "flex-start",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  reviewButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.primary,
   },
 });

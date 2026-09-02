@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from "rea
 import type { Listing } from "../lib/types";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { useLocale } from "../lib/LocaleContext";
+import { RatingBadge } from "./RatingBadge";
 
 interface ListingCardProps {
   listing: Listing;
@@ -56,9 +57,12 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
         )}
       </View>
       <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          <RatingBadge averageRating={listing.average_rating} reviewCount={listing.review_count} />
+        </View>
         <Text style={styles.location} numberOfLines={1}>
           {listing.city}, {listing.governorate}
         </Text>
@@ -126,11 +130,18 @@ const styles = StyleSheet.create({
   info: {
     padding: spacing.md,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+    marginBottom: 2,
+  },
   title: {
+    flex: 1,
     fontSize: fontSize.md,
     fontWeight: "600",
     color: colors.text,
-    marginBottom: 2,
   },
   location: {
     fontSize: fontSize.sm,

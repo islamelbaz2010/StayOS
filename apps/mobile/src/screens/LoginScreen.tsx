@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View, Alert } from "react-native";
+import { TouchableOpacity, StyleSheet, Text, TextInput, View, Alert } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AkedlyTurnstileUnsupportedError, resolveOtpProof } from "../lib/akedlyShield";
@@ -13,6 +14,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function LoginScreen() {
   const { t } = useLocale();
   const navigation = useNavigation<Nav>();
+  const queryClient = useQueryClient();
   const [phone_number, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -51,6 +53,32 @@ export function LoginScreen() {
     try {
       const { data } = await api.post("/auth/otp/verify", { phone_number, code: otp });
       await setTokens(data.access_token, data.refresh_token);
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      navigation.navigate("Home");
+    } catch (err: any) {
+      const message = err?.response?.data?.error?.message_ar || err?.response?.data?.error?.message || t("error");
+      Alert.alert(t("error"), message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const devGuestId = process.env.EXPO_PUBLIC_DEV_GUEST_ID;
+  const devLoginEnabled = process.env.EXPO_PUBLIC_ENABLE_DEV_LOGIN === "1";
+
+  const handleDevLogin = async () => {
+    if (!devGuestId) {
+      Alert.alert(t("error"), "Dev guest ID not configured");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data } = await api.post<{
+        access_token: string;
+        refresh_token: string;
+      }>("/auth/dev-token", { user_id: devGuestId });
+      await setTokens(data.access_token, data.refresh_token);
+      queryClient.invalidateQueries({ queryKey: ["me"] });
       navigation.navigate("Home");
     } catch (err: any) {
       const message = err?.response?.data?.error?.message_ar || err?.response?.data?.error?.message || t("error");
@@ -74,7 +102,7 @@ export function LoginScreen() {
             onChangeText={setPhoneNumber}
             keyboardType="phone-pad"
           />
-          <Pressable
+          <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleSendOtp}
             disabled={loading}
@@ -82,7 +110,16 @@ export function LoginScreen() {
             <Text style={styles.buttonText}>
               {loading ? t("loading") : t("sendOtp")}
             </Text>
-          </Pressable>
+          </TouchableOpacity>
+          {devLoginEnabled && (
+            <TouchableOpacity
+              style={[styles.devButton, loading && styles.buttonDisabled]}
+              onPress={handleDevLogin}
+              disabled={loading}
+            >
+              <Text style={styles.devButtonText}>Dev Login (Seed Guest)</Text>
+            </TouchableOpacity>
+          )}
         </>
       ) : (
         <>
@@ -94,7 +131,7 @@ export function LoginScreen() {
             onChangeText={setOtp}
             keyboardType="number-pad"
           />
-          <Pressable
+          <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleVerifyOtp}
             disabled={loading}
@@ -102,7 +139,16 @@ export function LoginScreen() {
             <Text style={styles.buttonText}>
               {loading ? t("loading") : t("verifyOtp")}
             </Text>
-          </Pressable>
+          </TouchableOpacity>
+          {devLoginEnabled && (
+            <TouchableOpacity
+              style={[styles.devButton, loading && styles.buttonDisabled]}
+              onPress={handleDevLogin}
+              disabled={loading}
+            >
+              <Text style={styles.devButtonText}>Dev Login (Seed Guest)</Text>
+            </TouchableOpacity>
+          )}
         </>
       )}
     </View>
@@ -152,5 +198,19 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSize.lg,
     fontWeight: "700",
+  },
+  devButton: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.lg,
+    borderRadius: radius.md,
+    alignItems: "center",
+  },
+  devButtonText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontWeight: "600",
   },
 });

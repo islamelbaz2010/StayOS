@@ -22,6 +22,8 @@ export interface Listing {
   host_kyc_status?: string | null;
   host_display_name?: string | null;
   cover_image?: string | null;
+  average_rating?: number | null;
+  review_count?: number;
 }
 
 export interface ListingDetail extends Listing {
@@ -79,6 +81,14 @@ export interface LocationSuggestion {
   governorate: string;
   lat: number | null;
   lng: number | null;
+}
+
+export interface HostProfile {
+  id: string;
+  display_name: string | null;
+  kyc_status: string | null;
+  joined_at: string | null;
+  listings: Listing[];
 }
 
 export interface User {

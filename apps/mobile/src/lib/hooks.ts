@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "./api";
+import { api, hasTokens } from "./api";
 import type {
   Booking,
   HostProfile,
@@ -80,6 +80,64 @@ export function useSimilarListings(unitId: string) {
   });
 }
 
+export interface Review {
+  id: string;
+  unit_id: string;
+  booking_id: string;
+  guest_id: string;
+  guest_display_name: string | null;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface ReviewListResponse {
+  data: Review[];
+  average_rating: number | null;
+  review_count: number;
+  limit: number;
+  offset: number;
+}
+
+export function useListingReviews(unitId: string, limit = 10) {
+  return useQuery({
+    queryKey: ["reviews", unitId],
+    queryFn: async () => {
+      const { data } = await api.get<ReviewListResponse>(`/listings/${unitId}/reviews`, {
+        params: { limit },
+      });
+      return data;
+    },
+    enabled: Boolean(unitId),
+  });
+}
+
+export function useCreateReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      bookingId,
+      rating,
+      comment,
+    }: {
+      bookingId: string;
+      unitId: string;
+      rating: number;
+      comment?: string;
+    }) => {
+      const { data } = await api.post<Review>(`/bookings/${bookingId}/reviews`, {
+        rating,
+        comment,
+      });
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["reviews", variables.unitId] });
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+}
+
 export function useLocationAutocomplete(query: string) {
   return useQuery({
     queryKey: ["autocomplete", query],
@@ -104,6 +162,28 @@ export function usePopularLocations() {
       );
       return data.suggestions;
     },
+  });
+}
+
+export interface AvailabilityDay {
+  date: string;
+  status: string;
+  block_type: string | null;
+  price_egp: number;
+}
+
+export function useListingAvailability(unitId: string, checkIn: string, checkOut: string) {
+  return useQuery({
+    queryKey: ["availability", unitId, checkIn, checkOut],
+    queryFn: async () => {
+      const { data } = await api.get<{ unit_id: string; days: AvailabilityDay[] }>(
+        `/listings/${unitId}/availability`,
+        { params: { check_in: checkIn, check_out: checkOut } }
+      );
+      return data;
+    },
+    enabled: Boolean(unitId && checkIn && checkOut),
+    staleTime: 60_000,
   });
 }
 
@@ -178,6 +258,7 @@ export function useMe() {
       const { data } = await api.get<User>("/auth/me");
       return data;
     },
+    enabled: hasTokens(),
     retry: false,
   });
 }

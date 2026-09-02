@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
+import { RatingBadge } from "@/components/ui/RatingBadge";
 import { cn, formatMoney } from "@/lib/utils";
 
 export interface Listing {
@@ -22,6 +23,8 @@ export interface Listing {
   coverImage: string | null;
   hostKycStatus?: string | null;
   amenities?: string[];
+  averageRating?: number | null;
+  reviewCount?: number;
 }
 
 interface ListingCardProps {
@@ -71,9 +74,16 @@ export function ListingCard({ listing, className }: ListingCardProps) {
         </div>
 
         <div className="p-4">
-          <h2 className="text-lg font-semibold text-neutral-900 line-clamp-1">
-            {listing.title}
-          </h2>
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-lg font-semibold text-neutral-900 line-clamp-1">
+              {listing.title}
+            </h2>
+            <RatingBadge
+              averageRating={listing.averageRating}
+              reviewCount={listing.reviewCount}
+              className="flex-shrink-0"
+            />
+          </div>
 
           <p className="mt-1 text-sm text-neutral-600 line-clamp-1">
             {listing.city}, {listing.governorate}, {listing.country || "Egypt"}

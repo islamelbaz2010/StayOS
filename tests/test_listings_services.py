@@ -177,6 +177,11 @@ async def test_get_listing_detail(fake_session: AsyncMock, monkeypatch) -> None:
     monkeypatch.setattr(
         listings.services, "_fetch_host", AsyncMock(return_value=None)
     )
+    monkeypatch.setattr(
+        listings.services.reviews_repository,
+        "get_rating_aggregate_for_unit",
+        AsyncMock(return_value=(None, 0)),
+    )
 
     result = await get_listing_detail(fake_session, "unit-1")
     assert result.id == "unit-1"

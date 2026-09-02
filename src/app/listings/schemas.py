@@ -174,6 +174,8 @@ class ListingResponse(BaseModel):
     check_in_instructions: str | None
     policies: str | None
     cover_image: str | None = None
+    average_rating: float | None = None
+    review_count: int = 0
 
 
 class ListingSearchResult(BaseModel):
@@ -199,6 +201,8 @@ class ListingSearchResult(BaseModel):
     house_rules: str | None
     host_kyc_status: str | None = None
     cover_image: str | None = None
+    average_rating: float | None = None
+    review_count: int = 0
 
 
 class PaginationInfo(BaseModel):

@@ -8,6 +8,7 @@ from app.auth.models import User
 from app.favorites.models import LocationAlias, UserFavorite
 from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing
+from app.reviews import repository as reviews_repository
 from app.shared.exceptions import NotFoundError
 
 from .schemas import (
@@ -62,8 +63,14 @@ async def get_user_favorites(
         .order_by(UserFavorite.created_at.desc())
     )
 
+    rows = result.all()
+    ratings_map = await reviews_repository.get_rating_aggregates_for_units(
+        session, [unit.id for unit, _, _, _ in rows]
+    )
+
     data = []
-    for unit, listing, lat, lng in result.all():
+    for unit, listing, lat, lng in rows:
+        avg_rating, review_count = ratings_map.get(unit.id, (None, 0))
         data.append({
             "id": unit.id,
             "title": listing.title_ar or listing.title_en or "",
@@ -80,6 +87,8 @@ async def get_user_favorites(
             "bathrooms": unit.bathrooms,
             "cover_image": listing.cover_photo.url if listing.cover_photo else None,
             "amenities": listing.amenities,
+            "average_rating": avg_rating,
+            "review_count": review_count,
         })
 
     return FavoriteListResponse(data=data, total=len(data))

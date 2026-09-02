@@ -12,6 +12,7 @@ from app.auth.models import User
 from app.config import settings
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
+from app.reviews import repository as reviews_repository
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 from . import configuration as listing_configuration
@@ -201,7 +202,11 @@ async def get_listing_detail(
 
     host = await _fetch_host(session, unit.host_id)
     lat, lng = await _fetch_coordinates(session, unit)
-    return _to_listing_response(unit, listing, lat, lng, host)
+    response = _to_listing_response(unit, listing, lat, lng, host)
+    response.average_rating, response.review_count = (
+        await reviews_repository.get_rating_aggregate_for_unit(session, unit_id)
+    )
+    return response
 
 
 async def get_host_listing_detail(
@@ -387,10 +392,17 @@ async def search_listings(
         )
         hosts_map = {h.id: h for h in host_result.scalars().all()}
 
+    unit_ids = [unit.id for unit, _, _, _ in rows]
+    ratings_map = await reviews_repository.get_rating_aggregates_for_units(session, unit_ids)
+
     data = [
         _to_search_result(unit, listing, lat, lng, hosts_map.get(unit.host_id))
         for unit, listing, lat, lng in rows
     ]
+    for item, (unit, _, _, _) in zip(data, rows, strict=True):
+        avg_rating, review_count = ratings_map.get(unit.id, (None, 0))
+        item["average_rating"] = avg_rating
+        item["review_count"] = review_count
     has_more = offset + len(data) < total
     next_cursor = (
         ListingSearchFilters.encode_cursor(offset + filters.limit)
@@ -430,10 +442,19 @@ async def get_host_profile(
     )
     rows = result.all()
 
-    listings = [
-        ListingSearchResult(**_to_search_result(unit, listing, float(lat), float(lng), host))
-        for unit, listing, lat, lng in rows
-    ]
+    ratings_map = await reviews_repository.get_rating_aggregates_for_units(
+        session, [unit.id for unit, _, _, _ in rows]
+    )
+    listings = []
+    for unit, listing, lat, lng in rows:
+        avg_rating, review_count = ratings_map.get(unit.id, (None, 0))
+        listings.append(
+            ListingSearchResult(
+                **_to_search_result(unit, listing, float(lat), float(lng), host),
+                average_rating=avg_rating,
+                review_count=review_count,
+            )
+        )
 
     return HostProfileResponse(
         id=host.id,

@@ -3,6 +3,9 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
+from fastapi.testclient import TestClient
+from jose import jwt as jose_jwt
+
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import Account, User
@@ -10,8 +13,6 @@ from app.auth.schemas import TokenPair
 from app.config import settings
 from app.database import get_session
 from app.main import app
-from fastapi.testclient import TestClient
-from jose import jwt as jose_jwt
 
 
 def _make_user(

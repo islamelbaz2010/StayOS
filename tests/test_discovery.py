@@ -1,48 +1,42 @@
 """Tests for the supply discovery module — normalizer, scoring, dedup, adapters, API."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from app.discovery.adapters.base import DiscoverySearchConfig, RawCandidate, SourceRegistry
+from app.discovery.adapters.google_places import GooglePlacesAdapter
 from app.discovery.adapters.json_api import JsonApiAdapter
 from app.discovery.adapters.manual import ManualSourceAdapter
 from app.discovery.adapters.overpass import OverpassAdapter, _build_overpass_query, _get_bbox
-from app.discovery.adapters.google_places import GooglePlacesAdapter
 from app.discovery.constants import (
-    CandidateStatus,
     CandidateType,
-    ContactStatus,
     DuplicateStatus,
     SourceStatus,
-)
-from app.discovery.scoring import (
-    classify_candidate_type,
-    compute_qualification_score,
-    compute_source_confidence,
-    PLACE_WEIGHTS,
 )
 from app.discovery.dedup import (
     classify_duplicate,
     compute_duplicate_confidence,
-    title_similarity,
-    price_similarity,
     coordinate_similarity,
+    price_similarity,
+    title_similarity,
 )
 from app.discovery.normalizer import (
-    normalize_candidate,
-    normalize_property_type,
-    normalize_city,
-    parse_price,
-    parse_coordinates,
     compute_completeness,
+    normalize_candidate,
+    normalize_city,
+    normalize_property_type,
+    parse_coordinates,
+    parse_price,
 )
 from app.discovery.scoring import (
-    compute_qualification_score,
+    PLACE_WEIGHTS,
+    classify_candidate_type,
     classify_qualification,
-    extract_contact,
+    compute_qualification_score,
     compute_source_confidence,
+    extract_contact,
 )
-
 
 # ─── Normalizer Tests ───
 

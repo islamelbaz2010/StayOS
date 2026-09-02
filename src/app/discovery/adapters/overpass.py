@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from typing import Any
 
 import httpx
@@ -68,7 +67,6 @@ _DEFAULT_RATE_LIMIT = 5.0  # seconds between requests
 
 # Bounding boxes for known Egyptian cities (south, west, north, east)
 _CITY_BBOXES: dict[str, tuple[float, float, float, float]] = {
-    "new cairo": (29.95, 31.40, 30.10, 31.60),
     "new cairo": (29.95, 31.40, 30.10, 31.60),
     "6th october": (29.90, 30.90, 30.08, 31.08),
     "6 october": (29.90, 30.90, 30.08, 31.08),

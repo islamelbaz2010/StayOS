@@ -1,3 +1,5 @@
+from fastapi import HTTPException, status
+
 from app.shared.exceptions import (
     AuthenticationError,
     AuthorizationError,
@@ -7,7 +9,6 @@ from app.shared.exceptions import (
     ValidationError,
     to_http_exception,
 )
-from fastapi import HTTPException, status
 
 
 def test_not_found_error_maps_to_404() -> None:

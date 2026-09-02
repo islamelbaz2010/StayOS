@@ -2,6 +2,7 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.repository import (
     bulk_replace_calendar_rules,

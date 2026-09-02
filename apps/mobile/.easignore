@@ -1,6 +1,8 @@
 # EAS Build upload exclusions
 # Root .gitignore is preserved as the base; these rules add EAS-specific exclusions.
 
+# === Re-include source directories incorrectly excluded by root .gitignore lib/ pattern ===
+!src/lib/
 # === Casing conflict fix ===
 **/.ai/LOGS/
 **/.ai/LOGS/**

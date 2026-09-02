@@ -3,10 +3,11 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app.listings.models import Unit
 from app.reservations.repository import acquire_calendar_lock
 from app.shared.exceptions import ConflictError
-from sqlalchemy.exc import IntegrityError
 
 
 @pytest.mark.asyncio

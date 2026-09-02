@@ -3,6 +3,7 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from app.listings.constants import CalendarStatus
 from app.listings.models import CalendarRule
 from app.reservations.constants import PaymentStatus, ReservationStatus

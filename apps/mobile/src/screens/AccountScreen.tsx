@@ -15,9 +15,11 @@ export function AccountScreen() {
   const { locale, setLocale, t } = useLocale();
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
-  const { data: user, isLoading, isFetching } = useMe();
+  const { data: user, isLoading } = useMe();
 
-  if (!isFetching && !user) {
+  if (isLoading) return <LoadingSpinner />;
+
+  if (!user) {
     return (
       <View style={styles.container}>
         <Pressable
@@ -29,8 +31,6 @@ export function AccountScreen() {
       </View>
     );
   }
-
-  if (!user) return <LoadingSpinner />;
 
   const handleLogout = async () => {
     try {

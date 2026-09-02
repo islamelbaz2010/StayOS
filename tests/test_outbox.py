@@ -3,8 +3,9 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-from app.shared.outbox import write_event
 from sqlalchemy import text
+
+from app.shared.outbox import write_event
 
 
 async def test_write_event_inserts_with_bound_parameters() -> None:

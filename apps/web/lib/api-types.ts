@@ -517,6 +517,52 @@ export interface paths {
     /** Get Unit Reviews */
     get: operations["get_unit_reviews_api_v1_listings__unit_id__reviews_get"];
   };
+  "/api/v1/host/today": {
+    /** Get Host Today Endpoint */
+    get: operations["get_host_today_endpoint_api_v1_host_today_get"];
+  };
+  "/api/v1/host/reservations": {
+    /** List Host Reservations Endpoint */
+    get: operations["list_host_reservations_endpoint_api_v1_host_reservations_get"];
+  };
+  "/api/v1/host/reservations/{booking_id}": {
+    /** Get Host Reservation Detail Endpoint */
+    get: operations["get_host_reservation_detail_endpoint_api_v1_host_reservations__booking_id__get"];
+  };
+  "/api/v1/host/earnings": {
+    /** Get Host Earnings Endpoint */
+    get: operations["get_host_earnings_endpoint_api_v1_host_earnings_get"];
+  };
+  "/api/v1/host/calendar": {
+    /** Get Host Calendar Endpoint */
+    get: operations["get_host_calendar_endpoint_api_v1_host_calendar_get"];
+  };
+  "/api/v1/host/listings/{unit_id}/readiness": {
+    /** Get Listing Readiness Endpoint */
+    get: operations["get_listing_readiness_endpoint_api_v1_host_listings__unit_id__readiness_get"];
+  };
+  "/api/v1/host/listings/{unit_id}": {
+    /** Get Host Listing Detail Endpoint */
+    get: operations["get_host_listing_detail_endpoint_api_v1_host_listings__unit_id__get"];
+  };
+  "/api/v1/host/listings/{unit_id}/co-hosts": {
+    /** List Co Hosts Endpoint */
+    get: operations["list_co_hosts_endpoint_api_v1_host_listings__unit_id__co_hosts_get"];
+    /** Invite Co Host Endpoint */
+    post: operations["invite_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts_post"];
+  };
+  "/api/v1/host/listings/{unit_id}/co-hosts/{co_host_id}": {
+    /** Remove Co Host Endpoint */
+    delete: operations["remove_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts__co_host_id__delete"];
+    /** Update Co Host Endpoint */
+    patch: operations["update_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts__co_host_id__patch"];
+  };
+  "/api/v1/host/profile": {
+    /** Get Host Profile Endpoint */
+    get: operations["get_host_profile_endpoint_api_v1_host_profile_get"];
+    /** Update Host Profile Endpoint */
+    patch: operations["update_host_profile_endpoint_api_v1_host_profile_patch"];
+  };
   "/health": {
     /** Health Check */
     get: operations["health_check_health_get"];
@@ -925,6 +971,50 @@ export interface components {
        * @default false
        */
       completed?: boolean;
+    };
+    /** CoHostInvite */
+    CoHostInvite: {
+      /** Co Host User Id */
+      co_host_user_id: string;
+      /**
+       * Permission Scope
+       * @default calendar_only
+       */
+      permission_scope?: string;
+    };
+    /** CoHostResponse */
+    CoHostResponse: {
+      /** Id */
+      id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** Co Host User Id */
+      co_host_user_id: string;
+      /** Co Host Display Name */
+      co_host_display_name?: string | null;
+      /** Co Host Phone */
+      co_host_phone?: string | null;
+      /** Permission Scope */
+      permission_scope: string;
+      /** Is Active */
+      is_active: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** CoHostUpdate */
+    CoHostUpdate: {
+      /** Permission Scope */
+      permission_scope?: string | null;
+      /** Is Active */
+      is_active?: boolean | null;
     };
     /** ConversationDetailResponse */
     ConversationDetailResponse: {
@@ -1472,6 +1562,46 @@ export interface components {
       /** Redis */
       redis: string;
     };
+    /**
+     * HostCalendarDay
+     * @description A single day in the host calendar view.
+     */
+    HostCalendarDay: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Status */
+      status: string;
+      /** Block Type */
+      block_type?: string | null;
+      /** Price Egp */
+      price_egp: number;
+      /** Reservation Id */
+      reservation_id?: string | null;
+      /** Reservation Status */
+      reservation_status?: string | null;
+      /** Guest Name */
+      guest_name?: string | null;
+    };
+    /** HostCalendarResponse */
+    HostCalendarResponse: {
+      /** Unit Id */
+      unit_id: string | null;
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Days */
+      days: components["schemas"]["HostCalendarDay"][];
+    };
     /** HostDashboardStats */
     HostDashboardStats: {
       /** Total Listings */
@@ -1487,18 +1617,146 @@ export interface components {
       /** Occupancy Rate Pct */
       occupancy_rate_pct: number;
     };
-    /** HostProfileResponse */
-    HostProfileResponse: {
+    /**
+     * HostEarningsSummary
+     * @description Host-facing financial visibility — read-only, no payout claims.
+     */
+    HostEarningsSummary: {
+      /** Total Bookings */
+      total_bookings: number;
+      /** Confirmed Bookings */
+      confirmed_bookings: number;
+      /** Completed Stays */
+      completed_stays: number;
+      /** Total Revenue Egp */
+      total_revenue_egp: number;
+      /** Pending Verification Egp */
+      pending_verification_egp: number;
+      /** Refund Pending Egp */
+      refund_pending_egp: number;
+      /** Net Earnings Egp */
+      net_earnings_egp: number;
+      /** Per Unit */
+      per_unit?: {
+          [key: string]: unknown;
+        }[];
+    };
+    /**
+     * HostListingDetail
+     * @description Full listing detail for the host management view.
+     *
+     * Combines the listing response with readiness, photos, and
+     * permission scope so the mobile editor has everything it needs
+     * in one round-trip.
+     */
+    HostListingDetail: {
       /** Id */
       id: string;
+      /** Host Id */
+      host_id: string;
+      /** Property Type */
+      property_type: string;
+      /** Status */
+      status: string;
+      /** Lat */
+      lat: number;
+      /** Lng */
+      lng: number;
+      /** Governorate */
+      governorate: string;
+      /** City */
+      city: string;
+      /** Country */
+      country: string;
+      /** District */
+      district?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Max Guests */
+      max_guests: number;
+      /** Bedrooms */
+      bedrooms: number;
+      /** Beds */
+      beds: number;
+      /** Bathrooms */
+      bathrooms: number;
+      /** Category */
+      category: string;
+      /** Title Ar */
+      title_ar: string;
+      /** Title En */
+      title_en?: string | null;
+      /** Description Ar */
+      description_ar: string;
+      /** Description En */
+      description_en?: string | null;
+      /** Amenities */
+      amenities?: string[];
+      /** Cultural Tags */
+      cultural_tags?: string[];
+      /** House Rules */
+      house_rules?: string | null;
+      /** Check In Instructions */
+      check_in_instructions?: string | null;
+      /** Check In Time */
+      check_in_time?: string | null;
+      /** Check Out Time */
+      check_out_time?: string | null;
+      /** Pre Arrival Info Release Hours */
+      pre_arrival_info_release_hours?: number | null;
+      /** Policies */
+      policies?: string | null;
+      /** Base Price Egp */
+      base_price_egp: number;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp: number;
+      /** Cancellation Policy */
+      cancellation_policy: string;
+      /** Currency */
+      currency: string;
+      /** Weekend Mult */
+      weekend_mult: number;
+      /** Peak Mult */
+      peak_mult: number;
+      /** Min Nights */
+      min_nights: number;
+      /** Max Nights */
+      max_nights: number;
+      /** Cover Image */
+      cover_image?: string | null;
+      /** Photos */
+      photos?: components["schemas"]["HostListingPhoto"][];
+      readiness?: components["schemas"]["ListingReadinessResponse"] | null;
+      /**
+       * Permission Scope
+       * @default owner
+       */
+      permission_scope?: string;
+    };
+    /**
+     * HostListingPhoto
+     * @description Photo as seen in the host listing management view.
+     */
+    HostListingPhoto: {
+      /** Id */
+      id: string;
+      /** Url */
+      url: string;
+      /** Display Order */
+      display_order: number;
+      /** Is Cover */
+      is_cover: boolean;
+      /** Caption */
+      caption?: string | null;
+    };
+    /** HostProfileUpdate */
+    HostProfileUpdate: {
       /** Display Name */
-      display_name: string | null;
-      /** Kyc Status */
-      kyc_status: string | null;
-      /** Joined At */
-      joined_at: string | null;
-      /** Listings */
-      listings: components["schemas"]["ListingSearchResult"][];
+      display_name?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Locale */
+      locale?: string | null;
     };
     /** HostReservationCalendarItem */
     HostReservationCalendarItem: {
@@ -1539,6 +1797,125 @@ export interface components {
       check_out: string;
       /** Reservations */
       reservations: components["schemas"]["HostReservationCalendarItem"][];
+    };
+    /**
+     * HostReservationDetail
+     * @description Full reservation detail with payment and property context.
+     */
+    HostReservationDetail: {
+      booking: components["schemas"]["HostReservationSummary"];
+      /** Property */
+      property: {
+        [key: string]: unknown;
+      };
+      /** Payment */
+      payment: {
+        [key: string]: unknown;
+      } | null;
+      /** Cancellation Preview */
+      cancellation_preview: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /**
+     * HostReservationSummary
+     * @description A reservation as seen from the host's perspective.
+     */
+    HostReservationSummary: {
+      /** Id */
+      id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** Unit Title */
+      unit_title?: string | null;
+      /** Guest Id */
+      guest_id: string;
+      /** Guest Name */
+      guest_name?: string | null;
+      /** Guest Phone */
+      guest_phone?: string | null;
+      /** Status */
+      status: string;
+      /** Stay Phase */
+      stay_phase: string;
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Adults */
+      adults: number;
+      /** Children */
+      children: number;
+      /** Infants */
+      infants: number;
+      /**
+       * Requested At
+       * Format: date-time
+       */
+      requested_at: string;
+      /** Accepted At */
+      accepted_at?: string | null;
+      /** Cancelled At */
+      cancelled_at?: string | null;
+      /** Checked In At */
+      checked_in_at?: string | null;
+      /** Checked Out At */
+      checked_out_at?: string | null;
+      /** Cancel Reason */
+      cancel_reason?: string | null;
+    };
+    /**
+     * HostTodayItem
+     * @description A single actionable item on the host's today screen.
+     */
+    HostTodayItem: {
+      /** Item Type */
+      item_type: string;
+      /** Booking Id */
+      booking_id?: string | null;
+      /** Unit Id */
+      unit_id?: string | null;
+      /** Guest Name */
+      guest_name?: string | null;
+      /** Guest Id */
+      guest_id?: string | null;
+      /** Check In */
+      check_in?: string | null;
+      /** Check Out */
+      check_out?: string | null;
+      /** Status */
+      status?: string | null;
+      /** Stay Phase */
+      stay_phase?: string | null;
+      /** Title */
+      title: string;
+      /** Subtitle */
+      subtitle?: string | null;
+      /** Action Url */
+      action_url?: string | null;
+      /**
+       * Priority
+       * @default 0
+       */
+      priority?: number;
+    };
+    /**
+     * HostTodayResponse
+     * @description The host's operational dashboard — "what do I need to do today?".
+     */
+    HostTodayResponse: {
+      /** Items */
+      items: components["schemas"]["HostTodayItem"][];
+      /** Summary */
+      summary?: {
+        [key: string]: number;
+      };
     };
     /**
      * ImportConfirmRequest
@@ -1997,6 +2374,24 @@ export interface components {
        * @default false
        */
       is_draft?: boolean;
+    };
+    /** ListingReadinessResponse */
+    ListingReadinessResponse: {
+      /** Unit Id */
+      unit_id: string;
+      /** Status */
+      status: string;
+      /** Missing Items */
+      missing_items: string[];
+      /**
+       * Computed At
+       * Format: date-time
+       */
+      computed_at: string;
+      /** Missing Item Labels */
+      missing_item_labels?: {
+        [key: string]: string;
+      };
     };
     /** ListingResponse */
     ListingResponse: {
@@ -3300,6 +3695,37 @@ export interface components {
       /** Price Override */
       price_override: number | null;
     };
+    /**
+     * HostProfileResponse
+     * @description Host's own profile — what they see about themselves.
+     */
+    app__host__schemas__HostProfileResponse: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string | null;
+      /** Phone Number */
+      phone_number: string | null;
+      /** Email */
+      email: string | null;
+      /** Kyc Status */
+      kyc_status: string;
+      /** Locale */
+      locale: string;
+      /** Is Active */
+      is_active: boolean;
+      /** Total Listings */
+      total_listings: number;
+      /** Listed Listings */
+      listed_listings: number;
+      /** Co Host Units */
+      co_host_units: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
     /** AvailabilityResponse */
     app__listings__schemas__AvailabilityResponse: {
       /** Unit Id */
@@ -3339,6 +3765,19 @@ export interface components {
       block_type: string | null;
       /** Price Override */
       price_override: number | null;
+    };
+    /** HostProfileResponse */
+    app__listings__schemas__HostProfileResponse: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string | null;
+      /** Kyc Status */
+      kyc_status: string | null;
+      /** Joined At */
+      joined_at: string | null;
+      /** Listings */
+      listings: components["schemas"]["ListingSearchResult"][];
     };
   };
   responses: never;
@@ -3961,7 +4400,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": components["schemas"]["HostProfileResponse"];
+          "application/json": components["schemas"]["app__listings__schemas__HostProfileResponse"];
         };
       };
       /** @description Validation Error */
@@ -6358,6 +6797,275 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ReviewListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Today Endpoint */
+  get_host_today_endpoint_api_v1_host_today_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostTodayResponse"];
+        };
+      };
+    };
+  };
+  /** List Host Reservations Endpoint */
+  list_host_reservations_endpoint_api_v1_host_reservations_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostReservationSummary"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Reservation Detail Endpoint */
+  get_host_reservation_detail_endpoint_api_v1_host_reservations__booking_id__get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostReservationDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Earnings Endpoint */
+  get_host_earnings_endpoint_api_v1_host_earnings_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostEarningsSummary"];
+        };
+      };
+    };
+  };
+  /** Get Host Calendar Endpoint */
+  get_host_calendar_endpoint_api_v1_host_calendar_get: {
+    parameters: {
+      query: {
+        check_in: string;
+        check_out: string;
+        unit_id?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostCalendarResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Listing Readiness Endpoint */
+  get_listing_readiness_endpoint_api_v1_host_listings__unit_id__readiness_get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingReadinessResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Listing Detail Endpoint */
+  get_host_listing_detail_endpoint_api_v1_host_listings__unit_id__get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostListingDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Co Hosts Endpoint */
+  list_co_hosts_endpoint_api_v1_host_listings__unit_id__co_hosts_get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CoHostResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Invite Co Host Endpoint */
+  invite_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts_post: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CoHostInvite"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CoHostResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Remove Co Host Endpoint */
+  remove_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts__co_host_id__delete: {
+    parameters: {
+      path: {
+        unit_id: string;
+        co_host_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Co Host Endpoint */
+  update_co_host_endpoint_api_v1_host_listings__unit_id__co_hosts__co_host_id__patch: {
+    parameters: {
+      path: {
+        unit_id: string;
+        co_host_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CoHostUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["CoHostResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Host Profile Endpoint */
+  get_host_profile_endpoint_api_v1_host_profile_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["app__host__schemas__HostProfileResponse"];
+        };
+      };
+    };
+  };
+  /** Update Host Profile Endpoint */
+  update_host_profile_endpoint_api_v1_host_profile_patch: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HostProfileUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["app__host__schemas__HostProfileResponse"];
         };
       };
       /** @description Validation Error */

@@ -8,7 +8,7 @@ from . import consumers, services
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task  # type: ignore[misc]
+@celery_app.task  # type: ignore[untyped-decorator]
 def process_outbox_events() -> int:
     """Celery task that polls the outbox for notification events."""
     import asyncio
@@ -16,7 +16,7 @@ def process_outbox_events() -> int:
     return asyncio.run(consumers.poll_and_process_outbox())
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     max_retries=3,
     default_retry_delay=60,

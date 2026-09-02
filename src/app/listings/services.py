@@ -538,8 +538,8 @@ async def get_similar_listings(
         hosts_map = {h.id: h for h in host_result.scalars().all()}
 
     return [
-        _to_search_result(u, li, float(lat), float(lng), hosts_map.get(u.host_id))
-        for u, li, lat, lng in rows
+        _to_search_result(u, listing, float(lat), float(lng), hosts_map.get(u.host_id))
+        for u, listing, lat, lng in rows
     ]
 
 

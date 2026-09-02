@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
+
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
@@ -22,7 +24,6 @@ from app.finance.constants import (
 from app.finance.models import EscrowAccount, FinancialTransaction, PayoutRequest, Wallet
 from app.main import app
 from app.shared.exceptions import PaymentError
-from fastapi.testclient import TestClient
 
 
 class _FakeResponse:

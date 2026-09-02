@@ -18,7 +18,7 @@ async def _run_processing(document_id: str) -> None:
             await process_kyc_document(session, document_id)
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="app.kyc.tasks.process_kyc_document",
     autoretry_for=(Exception,),

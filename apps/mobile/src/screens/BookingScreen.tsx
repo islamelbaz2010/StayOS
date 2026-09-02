@@ -1,19 +1,12 @@
 import { useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  Alert,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Platform } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 import { useCreateBooking } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
-import { DateRangeCalendar } from "../components/DateRangeCalendar";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -34,6 +27,12 @@ function toISODate(date: Date | null): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
 }
 
 function getBookingErrorMessage(error: unknown, t: (key: string) => string): string {
@@ -58,7 +57,8 @@ export function BookingScreen() {
 
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
-  const [showCalendar, setShowCalendar] = useState(false);
+  const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showCheckOut, setShowCheckOut] = useState(false);
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
@@ -70,6 +70,9 @@ export function BookingScreen() {
     ? Math.max(0, Math.ceil((checkOut.getTime() - checkIn.getTime()) / 86400000))
     : 0;
   const subtotal = price * Math.max(0, nights);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const handleConfirm = async () => {
     if (!checkIn || !checkOut) {
@@ -115,21 +118,54 @@ export function BookingScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("selectDates")}</Text>
-        <Pressable style={styles.dateRangeField} onPress={() => setShowCalendar(true)}>
-          <View style={styles.dateRangeHalf}>
-            <Text style={styles.dateLabel}>{t("checkIn")}</Text>
-            <Text style={checkIn ? styles.dateValue : styles.datePlaceholder}>
-              {checkIn ? formatDate(checkIn, "en") : t("selectDates")}
-            </Text>
-          </View>
-          <View style={styles.dateRangeDivider} />
-          <View style={styles.dateRangeHalf}>
-            <Text style={styles.dateLabel}>{t("checkOut")}</Text>
-            <Text style={checkOut ? styles.dateValue : styles.datePlaceholder}>
-              {checkOut ? formatDate(checkOut, "en") : t("selectDates")}
-            </Text>
-          </View>
+        <Pressable style={styles.dateField} onPress={() => setShowCheckIn(true)}>
+          <Text style={styles.dateLabel}>{t("checkIn")}</Text>
+          <Text style={checkIn ? styles.dateValue : styles.datePlaceholder}>
+            {checkIn ? formatDate(checkIn, "en") : "YYYY-MM-DD"}
+          </Text>
         </Pressable>
+        {showCheckIn && (
+          <DateTimePicker
+            value={checkIn || today}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            minimumDate={today}
+            onChange={(event, selectedDate) => {
+              setShowCheckIn(false);
+              if (event.type === "set" && selectedDate) {
+                const d = new Date(selectedDate);
+                d.setHours(0, 0, 0, 0);
+                setCheckIn(d);
+                if (checkOut && d >= checkOut) {
+                  setCheckOut(addDays(d, 1));
+                }
+              }
+            }}
+          />
+        )}
+
+        <Pressable style={styles.dateField} onPress={() => setShowCheckOut(true)}>
+          <Text style={styles.dateLabel}>{t("checkOut")}</Text>
+          <Text style={checkOut ? styles.dateValue : styles.datePlaceholder}>
+            {checkOut ? formatDate(checkOut, "en") : "YYYY-MM-DD"}
+          </Text>
+        </Pressable>
+        {showCheckOut && (
+          <DateTimePicker
+            value={checkOut || (checkIn ? addDays(checkIn, 1) : addDays(today, 1))}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            minimumDate={checkIn ? addDays(checkIn, 1) : today}
+            onChange={(event, selectedDate) => {
+              setShowCheckOut(false);
+              if (event.type === "set" && selectedDate) {
+                const d = new Date(selectedDate);
+                d.setHours(0, 0, 0, 0);
+                setCheckOut(d);
+              }
+            }}
+          />
+        )}
 
         {nights > 0 && (
           <Text style={styles.nightsText}>
@@ -137,19 +173,6 @@ export function BookingScreen() {
           </Text>
         )}
       </View>
-
-      <DateRangeCalendar
-        visible={showCalendar}
-        unitId={unitId}
-        initialCheckIn={checkIn}
-        initialCheckOut={checkOut}
-        onClose={() => setShowCalendar(false)}
-        onConfirm={(newCheckIn, newCheckOut) => {
-          setCheckIn(newCheckIn);
-          setCheckOut(newCheckOut);
-          setShowCalendar(false);
-        }}
-      />
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("guests")}</Text>
@@ -271,22 +294,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.md,
   },
-  dateRangeField: {
-    flexDirection: "row",
-    height: 64,
+  dateField: {
+    height: 48,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    marginBottom: spacing.md,
-  },
-  dateRangeHalf: {
-    flex: 1,
-    justifyContent: "center",
     paddingHorizontal: spacing.md,
-  },
-  dateRangeDivider: {
-    width: 1,
-    backgroundColor: colors.border,
+    marginBottom: spacing.md,
+    justifyContent: "center",
   },
   dateLabel: {
     fontSize: fontSize.xs,
@@ -382,21 +397,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginTop: spacing.sm,
   },
-  confirmButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.lg,
-    borderRadius: radius.md,
-    alignItems: "center",
-    marginBottom: spacing.xxl,
-  },
-  confirmButtonDisabled: {
-    opacity: 0.6,
-  },
-  confirmButtonText: {
-    color: colors.white,
-    fontSize: fontSize.lg,
-    fontWeight: "700",
-  },
   trustBox: {
     backgroundColor: colors.primary50,
     borderRadius: radius.md,
@@ -413,5 +413,20 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+  confirmButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.lg,
+    borderRadius: radius.md,
+    alignItems: "center",
+    marginBottom: spacing.xxl,
+  },
+  confirmButtonDisabled: {
+    opacity: 0.6,
+  },
+  confirmButtonText: {
+    color: colors.white,
+    fontSize: fontSize.lg,
+    fontWeight: "700",
   },
 });

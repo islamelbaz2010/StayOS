@@ -103,7 +103,7 @@ def _solve_pow_sync(challenge: str, difficulty: int) -> int:
     prefix = "0" * difficulty
     nonce = 0
     while True:
-        digest = hashlib.sha256(f"{challenge}:{nonce}".encode("utf-8")).hexdigest()
+        digest = hashlib.sha256(f"{challenge}:{nonce}".encode()).hexdigest()
         if digest.startswith(prefix):
             return nonce
         nonce += 1

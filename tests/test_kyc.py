@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
+
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus
 from app.auth.models import User
@@ -10,7 +12,6 @@ from app.database import get_session
 from app.kyc import services as kyc_services
 from app.kyc.models import KycDocument
 from app.main import app
-from fastapi.testclient import TestClient
 
 
 def _make_user(

@@ -3,6 +3,8 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
+from geoalchemy2.elements import WKTElement
+
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
@@ -14,7 +16,6 @@ from app.listings.models import CalendarRule, Unit
 from app.reservations.constants import ReservationStatus
 from app.reservations.models import Reservation
 from app.shared.exceptions import ConflictError, ValidationError
-from geoalchemy2.elements import WKTElement
 
 
 def _make_user(

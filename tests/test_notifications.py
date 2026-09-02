@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import AsyncMock
 
 import pytest
+
 from app.notifications import constants as notification_constants
 from app.notifications import providers, repository, services, templates
 from app.notifications.models import Notification

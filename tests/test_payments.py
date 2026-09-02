@@ -3,6 +3,8 @@ from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from geoalchemy2.elements import WKTElement
+
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.bookings.constants import BookingStatus
@@ -13,7 +15,6 @@ from app.payments import services as payment_services
 from app.payments.constants import PaymentMethod, PaymentStatus
 from app.payments.models import Payment
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
-from geoalchemy2.elements import WKTElement
 
 
 def test_build_instructions_uses_settings_payment_destination(monkeypatch) -> None:

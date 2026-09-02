@@ -9,7 +9,7 @@ from .consumers import consume_single_event, poll_and_process_outbox
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="app.operations.tasks.process_outbox_events",
     autoretry_for=(Exception,),
@@ -21,7 +21,7 @@ def process_outbox_events(self: Any, batch_size: int = 100) -> int:
     return asyncio.run(poll_and_process_outbox(batch_size))
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="app.operations.tasks.process_single_outbox_event",
     autoretry_for=(Exception,),
@@ -33,7 +33,7 @@ def process_single_outbox_event(self: Any, event_id: str) -> bool:
     return asyncio.run(consume_single_event(event_id))
 
 
-@celery_app.task(  # type: ignore[misc]
+@celery_app.task(  # type: ignore[untyped-decorator]
     name="app.operations.tasks.spawn_recurring_tasks",
     ignore_result=True,
 )

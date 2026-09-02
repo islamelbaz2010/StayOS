@@ -1,9 +1,11 @@
 """Alpha commission regression tests."""
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from app.finance import services as fs
+
 from app.config import Settings
+from app.finance import services as fs
 
 
 def _s():
@@ -129,8 +131,9 @@ def test_fixed_fee_still_supported():
 # Tests the real pricing path via create_payment_for_booking
 
 async def _run_payment_creation(global_completed, base_price=500, nights=2, cleaning=50):
-    from app.payments import services as ps
     from datetime import date
+
+    from app.payments import services as ps
     s = _s()
     booking = MagicMock()
     booking.id = str(uuid.uuid4())

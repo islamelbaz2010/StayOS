@@ -2,6 +2,8 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from geoalchemy2.elements import WKTElement
+
 from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import CalendarRule, Unit, UnitListing
 from app.listings.repository import (
@@ -13,7 +15,6 @@ from app.listings.repository import (
     update_unit_listing,
 )
 from app.listings.schemas import ListingCreate, ListingSearchFilters, ListingUpdate
-from geoalchemy2.elements import WKTElement
 
 
 def _make_session() -> AsyncMock:

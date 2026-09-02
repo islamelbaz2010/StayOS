@@ -3,6 +3,8 @@ import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import Request
+
 from app.config import settings as app_settings
 from app.security import pii
 from app.security.audit import _safe_payload, audit_middleware
@@ -10,7 +12,6 @@ from app.security.logging import JsonFormatter, setup_logging
 from app.security.middleware import security_headers_middleware
 from app.security.rate_limit import RateLimitError, login_rate_limit, rate_limit
 from app.security.secrets import SecretNotFoundError, SecretsManager
-from fastapi import Request
 
 
 def test_mask_pii_email() -> None:

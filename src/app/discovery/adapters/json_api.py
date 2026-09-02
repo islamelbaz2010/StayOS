@@ -125,7 +125,8 @@ class JsonApiAdapter(SourceAdapter):
     def _extract_items(self, data: dict[str, Any]) -> list[dict[str, Any]]:
         for key in ("data", "items", "results", "listings"):
             if key in data and isinstance(data[key], list):
-                return data[key]
+                result: list[dict[str, Any]] = data[key]
+                return result
         if isinstance(data, list):
             return data
         return []
@@ -138,7 +139,7 @@ class JsonApiAdapter(SourceAdapter):
                 return data["next_page"] is not None
             pagination = data.get("pagination", {})
             if isinstance(pagination, dict):
-                return pagination.get("has_more", False)
+                return bool(pagination.get("has_more", False))
         return False
 
     def _map_to_candidate(self, item: dict[str, Any]) -> RawCandidate | None:

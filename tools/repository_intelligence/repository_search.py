@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+
 def search(query: str):
     for p in Path('.').rglob('*'):
         if query.lower() in p.name.lower():

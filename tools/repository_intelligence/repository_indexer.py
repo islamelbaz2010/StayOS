@@ -1,16 +1,17 @@
 import hashlib
-from pathlib import Path
-from shared import get_repo, get_all_files, save_json, save_md
+
+from shared import get_all_files, get_repo, save_json, save_md
+
 
 def index():
     repo = get_repo()
     index_data = []
-    
+
     for p in get_all_files():
         stat = p.stat()
         content = p.read_text(errors='ignore')
         fhash = hashlib.sha256(p.read_bytes()).hexdigest()
-        
+
         index_data.append({
             "path": str(p),
             "ext": p.suffix,
@@ -21,7 +22,7 @@ def index():
             "words": len(content.split()) if p.suffix == '.md' else 0,
             "git_status": repo.git.execute(['git', 'status', '--porcelain', str(p)])
         })
-    
+
     save_json("MASTER_INDEX.json", index_data)
     save_md("MASTER_INDEX.md", "# MASTER_INDEX\n\n- Total files: " + str(len(index_data)))
 

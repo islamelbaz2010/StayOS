@@ -14,13 +14,16 @@ from app.reservations.repository import (
     count_user_reservations,
     create_payment_intent,
     create_promo_application,
+    get_payment_intent_by_provider_ref,
     get_payment_intent_by_ref,
     get_promo_code_by_code,
     get_reservation_with_relations,
     list_user_reservations,
     release_calendar_lock,
+    update_payment_intent,
     write_booking_event,
 )
+from app.shared.exceptions import ConflictError, NotFoundError
 
 
 def _make_session() -> AsyncMock:
@@ -239,3 +242,126 @@ async def test_write_booking_event(fake_session: AsyncMock) -> None:
     fake_session.execute = AsyncMock()
     await write_booking_event(fake_session, "booking.initiated", reservation)
     fake_session.execute.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_acquire_calendar_lock_unit_not_found(fake_session: AsyncMock) -> None:
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none = MagicMock(return_value=None)
+    fake_session.execute = AsyncMock(return_value=result_mock)
+    with pytest.raises(NotFoundError):
+        await acquire_calendar_lock(
+            fake_session, "missing", "res-1", date(2026, 8, 1), date(2026, 8, 4)
+        )
+
+
+@pytest.mark.asyncio
+async def test_acquire_calendar_lock_conflict_raises(fake_session: AsyncMock) -> None:
+    unit_result = MagicMock()
+    unit_result.scalar_one_or_none = MagicMock(return_value=MagicMock(id="unit-1"))
+    conflict_result = MagicMock()
+    conflict_result.scalar_one_or_none = MagicMock(return_value=MagicMock())
+
+    def _execute_side_effect(*args, **kwargs):
+        if unit_result.scalar_one_or_none.called:
+            return conflict_result
+        return unit_result
+
+    fake_session.execute = AsyncMock(side_effect=_execute_side_effect)
+    with pytest.raises(ConflictError):
+        await acquire_calendar_lock(
+            fake_session, "unit-1", "res-1", date(2026, 8, 1), date(2026, 8, 4)
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_payment_intent_by_provider_ref(fake_session: AsyncMock) -> None:
+    intent = PaymentIntent(
+        id="pi-1",
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="ref-1",
+        amount_egp=1000,
+        status=PaymentStatus.PENDING,
+    )
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none = MagicMock(return_value=intent)
+    fake_session.execute = AsyncMock(return_value=result_mock)
+    result = await get_payment_intent_by_provider_ref(fake_session, "ref-1")
+    assert result == intent
+
+
+@pytest.mark.asyncio
+async def test_update_payment_intent(fake_session: AsyncMock) -> None:
+    intent = PaymentIntent(
+        id="pi-1",
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="ref-1",
+        amount_egp=1000,
+        status=PaymentStatus.PENDING,
+    )
+    result = await update_payment_intent(
+        fake_session, intent, status=PaymentStatus.CAPTURED
+    )
+    assert result.status == PaymentStatus.CAPTURED
+
+
+@pytest.mark.asyncio
+async def test_count_user_reservations_with_guest_and_status(fake_session: AsyncMock) -> None:
+    fake_session.scalar = AsyncMock(return_value=3)
+    result = await count_user_reservations(
+        fake_session, None, "guest-1", ReservationStatus.CONFIRMED
+    )
+    assert result == 3
+
+
+@pytest.mark.asyncio
+async def test_list_user_reservations_with_guest_and_status(fake_session: AsyncMock) -> None:
+    reservation = Reservation(
+        id=str(uuid.uuid4()),
+        unit_id="unit-1",
+        guest_id="guest-1",
+        status=str(ReservationStatus.CONFIRMED),
+        check_in=date(2026, 8, 1),
+        check_out=date(2026, 8, 4),
+        adults=2,
+        children=0,
+        infants=0,
+        total_amount_egp=1000,
+        host_amount_egp=800,
+        platform_fee_egp=100,
+        guest_fee_egp=100,
+        payment_method="fawry",
+    )
+    scalars_mock = MagicMock()
+    scalars_mock.all = MagicMock(return_value=[reservation])
+    result_mock = MagicMock()
+    result_mock.scalars = MagicMock(return_value=scalars_mock)
+    fake_session.execute = AsyncMock(return_value=result_mock)
+    result = await list_user_reservations(
+        fake_session, None, "guest-1", ReservationStatus.CONFIRMED, 0, 20
+    )
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_write_booking_event_with_extra(fake_session: AsyncMock) -> None:
+    reservation = Reservation(
+        id=str(uuid.uuid4()),
+        unit_id="unit-1",
+        guest_id="guest-1",
+        status=str(ReservationStatus.PENDING_PAYMENT),
+        check_in=date(2026, 8, 1),
+        check_out=date(2026, 8, 4),
+        adults=2,
+        children=0,
+        infants=0,
+        total_amount_egp=1000,
+        host_amount_egp=800,
+        platform_fee_egp=100,
+        guest_fee_egp=100,
+        payment_method="fawry",
+    )
+    fake_session.execute = AsyncMock()
+    await write_booking_event(fake_session, "booking.initiated", reservation, {"extra": "data"})

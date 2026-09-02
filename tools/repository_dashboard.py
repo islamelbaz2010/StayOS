@@ -1,8 +1,7 @@
 import json
-import os
 import time
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Configuration
 REPO_ROOT = Path('.')
@@ -12,11 +11,13 @@ DATA_DIR = REPO_ROOT / 'docs'
 def generate_dashboard():
     start_time = time.time()
     DASHBOARD_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     # Load Data
     try:
-        with open(DATA_DIR / 'MASTER_INDEX.json', 'r') as f: index = json.load(f)
-        with open(DATA_DIR / 'audit/REPOSITORY_SCORECARD.md', 'r') as f: scorecard = f.read()
+        with open(DATA_DIR / 'MASTER_INDEX.json') as f:
+            index = json.load(f)
+        with open(DATA_DIR / 'audit/REPOSITORY_SCORECARD.md'):
+            pass
     except FileNotFoundError:
         print("Error: Required data files not found. Run indexer and auditor first.")
         return
@@ -24,7 +25,7 @@ def generate_dashboard():
     # Data Processing
     total_files = len(index)
     total_words = sum(f['words'] for f in index)
-    
+
     # Generate Markdown Dashboard
     dashboard_content = f"""# Executive Dashboard - StayOS
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
@@ -45,7 +46,7 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 | Architecture | Low |
 | Engineering | Medium |
 """
-    
+
     with open(DASHBOARD_DIR / 'EXECUTIVE_DASHBOARD.md', 'w') as f:
         f.write(dashboard_content)
 

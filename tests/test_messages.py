@@ -4,16 +4,23 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from app.auth import repository as auth_repository
+from app.auth import services as auth_services
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
+from app.database import get_session
 from app.messages import constants as message_constants
 from app.messages import repository as messages_repository
+from app.messages import router as messages_router
 from app.messages import schemas as message_schemas
 from app.messages import services as messages_services
+from app.messages import tasks as messages_tasks
+from app.messages import templates as message_templates
 from app.messages.constants import MessageStatus
-from app.shared.exceptions import AuthorizationError, ValidationError
+from app.messages.models import Message, MessageTemplate
+from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 
 def _make_user(
@@ -740,3 +747,1038 @@ async def test_list_message_templates_ar_locale() -> None:
     assert len(templates) > 0
     # Arabic templates should have Arabic names
     assert any(t.name for t in templates)
+
+
+# ============================================================
+# COVERAGE GAP HELPERS AND FIXTURES
+# ============================================================
+
+def _token_for(user: User) -> str:
+    return auth_services.create_access_token(user)
+
+
+def _patch_auth_user(monkeypatch, user: User) -> None:
+    monkeypatch.setattr(
+        "app.auth.dependencies.auth_repository.get_user_by_id",
+        AsyncMock(return_value=user),
+    )
+
+
+def _make_get_session_override(fake_session: AsyncMock):
+    async def _override():
+        yield fake_session
+
+    return _override
+
+
+@pytest.fixture
+def messages_client(client, fake_session):
+    from app.main import app
+
+    app.dependency_overrides[get_session] = _make_get_session_override(fake_session)
+    yield client
+    app.dependency_overrides.pop(get_session, None)
+
+
+def _make_message_response() -> message_schemas.MessageResponse:
+    now = datetime.now(UTC)
+    return message_schemas.MessageResponse(
+        id=str(uuid.uuid4()),
+        conversation_id="conv-1",
+        sender_id="guest-1",
+        sender_role="guest",
+        content="Hello",
+        status="sent",
+        automation_type=None,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+def _make_participant_response(user_id: str = "guest-1", role: str = "guest") -> message_schemas.ParticipantResponse:
+    return message_schemas.ParticipantResponse(user_id=user_id, role=role, last_read_at=None)
+
+
+def _make_conversation_response() -> message_schemas.ConversationResponse:
+    now = datetime.now(UTC)
+    return message_schemas.ConversationResponse(
+        id="conv-1",
+        booking_id="booking-1",
+        unit_id="unit-1",
+        type="reservation",
+        status="active",
+        participants=[_make_participant_response("guest-1", "guest"), _make_participant_response("host-1", "host")],
+        created_at=now,
+        updated_at=now,
+    )
+
+
+def _make_conversation_detail_response() -> message_schemas.ConversationDetailResponse:
+    base = _make_conversation_response()
+    return message_schemas.ConversationDetailResponse(
+        **base.model_dump(),
+        messages=[_make_message_response()],
+    )
+
+
+def _make_conversation_list_item() -> message_schemas.ConversationListItem:
+    now = datetime.now(UTC)
+    return message_schemas.ConversationListItem(
+        id="conv-1",
+        booking_id="booking-1",
+        unit_id="unit-1",
+        type="reservation",
+        status="active",
+        unread_count=0,
+        last_message=_make_message_response(),
+        created_at=now,
+        updated_at=now,
+    )
+
+
+def _make_message_template_response() -> message_schemas.MessageTemplateResponse:
+    return message_schemas.MessageTemplateResponse(
+        id="static-welcome",
+        key="welcome",
+        name="Welcome",
+        body="",
+        variables=["guest_name", "property_name"],
+        category="host_quick_reply",
+        locale="ar",
+    )
+
+
+def _make_process_booking(
+    status,
+    check_in,
+    check_out,
+    checked_in_at=None,
+    checked_out_at=None,
+    unit=None,
+):
+    booking = MagicMock()
+    booking.id = str(uuid.uuid4())
+    booking.guest_id = "guest-1"
+    booking.status = status
+    booking.check_in = check_in
+    booking.check_out = check_out
+    booking.checked_in_at = checked_in_at
+    booking.checked_out_at = checked_out_at
+    booking.unit = unit
+    if unit is None:
+        booking.unit = MagicMock()
+        booking.unit.id = "unit-1"
+        booking.unit.host_id = "host-1"
+        listing = MagicMock()
+        listing.title_en = "Test Villa"
+        listing.title_ar = "فيلا"
+        listing.check_in_time = "15:00"
+        listing.check_out_time = "11:00"
+        booking.unit.listing = listing
+    return booking
+
+
+class _FakeBeginCM:
+    async def __aenter__(self) -> None:
+        return None
+
+    async def __aexit__(self, *args: object) -> bool:
+        return False
+
+
+def _fake_session_cm_factory(session: AsyncMock):
+    class _FakeSessionCM:
+        async def __aenter__(self) -> AsyncMock:
+            return session
+
+        async def __aexit__(self, *args: object) -> bool:
+            return False
+
+    return _FakeSessionCM
+
+
+# ============================================================
+# REPOSITORY COVERAGE
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_create_conversation_for_booking(fake_session: AsyncMock) -> None:
+    fake_session.add = MagicMock()
+    fake_session.add_all = MagicMock()
+    conversation = await messages_repository.create_conversation_for_booking(
+        fake_session, "booking-1", "unit-1", "guest-1", "host-1"
+    )
+    assert conversation.booking_id == "booking-1"
+    assert conversation.unit_id == "unit-1"
+    participants = fake_session.add_all.call_args[0][0]
+    assert len(participants) == 2
+    assert fake_session.add.called
+    assert fake_session.flush.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_by_id(fake_session: AsyncMock) -> None:
+    conversation = _make_conversation()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = conversation
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await messages_repository.get_conversation_by_id(fake_session, conversation.id)
+    assert result == conversation
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_by_id_or_raise_not_found(fake_session: AsyncMock) -> None:
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    with pytest.raises(NotFoundError):
+        await messages_repository.get_conversation_by_id_or_raise(fake_session, "missing")
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_by_booking(fake_session: AsyncMock) -> None:
+    conversation = _make_conversation()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = conversation
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await messages_repository.get_conversation_by_booking(fake_session, "booking-1")
+    assert result == conversation
+
+
+@pytest.mark.asyncio
+async def test_is_conversation_participant(fake_session: AsyncMock) -> None:
+    participant = MagicMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = participant
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    assert await messages_repository.is_conversation_participant(fake_session, "conv-1", "guest-1")
+
+
+@pytest.mark.asyncio
+async def test_create_message(fake_session: AsyncMock) -> None:
+    fake_session.add = MagicMock()
+    message = await messages_repository.create_message(
+        fake_session, "conv-1", "guest-1", "guest", "Hello"
+    )
+    assert message.conversation_id == "conv-1"
+    assert message.sender_id == "guest-1"
+    assert message.status == MessageStatus.SENT
+    assert fake_session.add.called
+    assert fake_session.flush.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_list_messages_for_conversation(fake_session: AsyncMock) -> None:
+    message = _make_message()
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [message]
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await messages_repository.list_messages_for_conversation(fake_session, "conv-1")
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_user_conversations(fake_session: AsyncMock) -> None:
+    conversation = _make_conversation()
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [conversation]
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await messages_repository.list_user_conversations(fake_session, "guest-1")
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_get_participant(fake_session: AsyncMock) -> None:
+    participant = MagicMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = participant
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await messages_repository.get_participant(fake_session, "conv-1", "guest-1")
+    assert result == participant
+
+
+@pytest.mark.asyncio
+async def test_get_automated_message_exists(fake_session: AsyncMock) -> None:
+    mock_result = MagicMock()
+    mock_result.scalar_one.return_value = 1
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    assert await messages_repository.get_automated_message_exists(fake_session, "conv-1", "booking_confirmed")
+
+
+@pytest.mark.asyncio
+async def test_list_message_templates(fake_session: AsyncMock) -> None:
+    template = MessageTemplate(
+        key="welcome",
+        name="Welcome",
+        body="Hi {{guest_name}}",
+        variables=["guest_name"],
+        category="host_quick_reply",
+        locale="en",
+    )
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [template]
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await messages_repository.list_message_templates(fake_session, category="host_quick_reply", locale="en")
+    assert len(result) == 1
+    assert result[0].key == "welcome"
+
+
+@pytest.mark.asyncio
+async def test_get_message_template_by_key(fake_session: AsyncMock) -> None:
+    template = MessageTemplate(
+        key="welcome",
+        name="Welcome",
+        body="Hi {{guest_name}}",
+        variables=["guest_name"],
+        category="host_quick_reply",
+        locale="en",
+    )
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = template
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await messages_repository.get_message_template_by_key(fake_session, "welcome", locale="en")
+    assert result == template
+
+
+# ============================================================
+# SERVICES COVERAGE
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_notify_message_recipients(monkeypatch) -> None:
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    conversation = _make_conversation()
+    message = _make_message()
+    write_event_mock = AsyncMock()
+    monkeypatch.setattr(messages_services, "write_event", write_event_mock)
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=host)
+    )
+    await messages_services._notify_message_recipients(MagicMock(), conversation, guest, message)
+    assert write_event_mock.called
+    payload = write_event_mock.call_args.kwargs["payload"]
+    assert payload["recipients"][0]["user_id"] == host.id
+
+
+@pytest.mark.asyncio
+async def test_notify_message_recipients_skips_missing_user(monkeypatch) -> None:
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    message = _make_message()
+    write_event_mock = AsyncMock()
+    monkeypatch.setattr(messages_services, "write_event", write_event_mock)
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=None)
+    )
+    await messages_services._notify_message_recipients(MagicMock(), conversation, guest, message)
+    assert not write_event_mock.called
+
+
+@pytest.mark.asyncio
+async def test_notify_message_recipients_no_other_participants(monkeypatch) -> None:
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    conversation.participants = [p for p in conversation.participants if p.user_id == guest.id]
+    message = _make_message()
+    write_event_mock = AsyncMock()
+    monkeypatch.setattr(messages_services, "write_event", write_event_mock)
+    await messages_services._notify_message_recipients(MagicMock(), conversation, guest, message)
+    assert not write_event_mock.called
+
+
+@pytest.mark.asyncio
+async def test_send_message_too_long(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    monkeypatch.setattr(
+        messages_repository, "get_conversation_by_id_or_raise", AsyncMock(return_value=conversation)
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=True)
+    )
+    request = type("R", (), {"content": "x" * 4001})()
+    with pytest.raises(ValidationError):
+        await messages_services.send_message(fake_session, guest, conversation.id, request)
+
+
+@pytest.mark.asyncio
+async def test_participant_role_for_user_unauthorized(fake_session: AsyncMock, monkeypatch) -> None:
+    _guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    other = _make_user(user_id="other-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    monkeypatch.setattr(
+        messages_repository, "get_conversation_by_id_or_raise", AsyncMock(return_value=conversation)
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=True)
+    )
+    request = message_schemas.MessageCreate(content="Hello")
+    with pytest.raises(AuthorizationError):
+        await messages_services.send_message(fake_session, other, conversation.id, request)
+
+
+@pytest.mark.asyncio
+async def test_list_conversations(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    conversation.messages = [_make_message()]
+    participant = MagicMock()
+    participant.last_read_at = None
+    monkeypatch.setattr(
+        messages_repository, "list_user_conversations", AsyncMock(return_value=[conversation])
+    )
+    monkeypatch.setattr(
+        messages_repository, "get_participant", AsyncMock(return_value=participant)
+    )
+    monkeypatch.setattr(
+        messages_repository, "count_unread_messages", AsyncMock(return_value=2)
+    )
+    result = await messages_services.list_conversations(fake_session, guest)
+    assert len(result) == 1
+    assert result[0].unread_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_unread_count(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    participant = MagicMock()
+    participant.last_read_at = None
+    monkeypatch.setattr(
+        messages_repository, "list_user_conversations", AsyncMock(return_value=[conversation])
+    )
+    monkeypatch.setattr(
+        messages_repository, "get_participant", AsyncMock(return_value=participant)
+    )
+    monkeypatch.setattr(
+        messages_repository, "count_unread_messages", AsyncMock(return_value=3)
+    )
+    result = await messages_services.get_unread_count(fake_session, guest)
+    assert result.total_unread == 3
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_for_booking_unit_not_found(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    booking = _make_booking(guest.id, "host-1")
+    booking.unit = None
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    with pytest.raises(NotFoundError):
+        await messages_services.get_conversation_for_booking(fake_session, guest, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_send_booking_confirmed(fake_session: AsyncMock, monkeypatch) -> None:
+    conversation = _make_conversation()
+    send_mock = AsyncMock(return_value=_make_message())
+    monkeypatch.setattr(messages_repository, "get_conversation_by_booking", AsyncMock(return_value=conversation))
+    monkeypatch.setattr(messages_services, "send_automated_message", send_mock)
+    booking = _make_booking("guest-1", "host-1", status=BookingStatus.CONFIRMED)
+    listing = MagicMock()
+    listing.title_en = "Villa"
+    listing.title_ar = None
+    result = await messages_services.send_booking_confirmed(fake_session, booking, listing, "host-1")
+    assert result is not None
+    send_mock.assert_awaited_once()
+    variables = send_mock.call_args.kwargs["variables"]
+    assert variables["property_name"] == "Villa"
+
+
+@pytest.mark.asyncio
+async def test_send_automated_message_success(fake_session: AsyncMock, monkeypatch) -> None:
+    fake_session.add = MagicMock()
+    now = datetime.now(UTC)
+    conversation = _make_conversation()
+    message = Message(
+        id="msg-1",
+        conversation_id=conversation.id,
+        sender_id=None,
+        sender_role="system",
+        content="Your booking is confirmed.",
+        status="sent",
+        automation_type="booking_confirmed",
+        created_at=now,
+        updated_at=now,
+    )
+    monkeypatch.setattr(
+        messages_repository, "get_conversation_by_id_or_raise", AsyncMock(return_value=conversation)
+    )
+    monkeypatch.setattr(
+        messages_repository, "get_automated_message_exists", AsyncMock(return_value=False)
+    )
+    monkeypatch.setattr(
+        messages_repository, "create_message", AsyncMock(return_value=message)
+    )
+    result = await messages_services.send_automated_message(
+        fake_session,
+        conversation.id,
+        "booking_confirmed",
+        "booking_confirmed",
+        {"property_name": "Villa"},
+        locale="en",
+    )
+    assert isinstance(result, message_schemas.MessageResponse)
+    assert result.content == "Your booking is confirmed."
+    assert fake_session.add.called
+    assert fake_session.flush.await_count >= 1
+
+
+@pytest.mark.asyncio
+async def test_process_scheduled_messages_pre_arrival(fake_session: AsyncMock, monkeypatch) -> None:
+    today = datetime.now(UTC).date()
+    booking = _make_process_booking(
+        str(BookingStatus.CONFIRMED),
+        today + timedelta(days=1),
+        today + timedelta(days=3),
+    )
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    message = _make_message()
+    _patch_process_scheduled_mocks(fake_session, monkeypatch, [booking], guest, conversation, message)
+    count = await messages_services.process_scheduled_messages(fake_session)
+    assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_process_scheduled_messages_check_in(fake_session: AsyncMock, monkeypatch) -> None:
+    today = datetime.now(UTC).date()
+    booking = _make_process_booking(
+        str(BookingStatus.CONFIRMED),
+        today,
+        today + timedelta(days=2),
+    )
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    message = _make_message()
+    _patch_process_scheduled_mocks(fake_session, monkeypatch, [booking], guest, conversation, message)
+    count = await messages_services.process_scheduled_messages(fake_session)
+    assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_process_scheduled_messages_checkout(fake_session: AsyncMock, monkeypatch) -> None:
+    today = datetime.now(UTC).date()
+    booking = _make_process_booking(
+        str(BookingStatus.CONFIRMED),
+        today - timedelta(days=2),
+        today + timedelta(days=1),
+        checked_in_at=datetime.now(UTC),
+    )
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    message = _make_message()
+    _patch_process_scheduled_mocks(fake_session, monkeypatch, [booking], guest, conversation, message)
+    count = await messages_services.process_scheduled_messages(fake_session)
+    assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_process_scheduled_messages_review(fake_session: AsyncMock, monkeypatch) -> None:
+    today = datetime.now(UTC).date()
+    booking = _make_process_booking(
+        str(BookingStatus.COMPLETED),
+        today - timedelta(days=5),
+        today - timedelta(days=1),
+        checked_in_at=datetime.now(UTC),
+        checked_out_at=datetime.now(UTC),
+    )
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    message = _make_message()
+    _patch_process_scheduled_mocks(fake_session, monkeypatch, [booking], guest, conversation, message)
+    count = await messages_services.process_scheduled_messages(fake_session)
+    assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_process_scheduled_messages_no_eligible(fake_session: AsyncMock, monkeypatch) -> None:
+    today = datetime.now(UTC).date()
+    booking = _make_process_booking(
+        str(BookingStatus.CONFIRMED),
+        today + timedelta(days=10),
+        today + timedelta(days=12),
+    )
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    message = _make_message()
+    _patch_process_scheduled_mocks(fake_session, monkeypatch, [booking], guest, conversation, message)
+    count = await messages_services.process_scheduled_messages(fake_session)
+    assert count == 0
+
+
+@pytest.mark.asyncio
+async def test_process_scheduled_messages_skips_missing_unit(fake_session: AsyncMock, monkeypatch) -> None:
+    today = datetime.now(UTC).date()
+    booking = _make_process_booking(
+        str(BookingStatus.CONFIRMED),
+        today + timedelta(days=1),
+        today + timedelta(days=3),
+    )
+    booking.unit = None
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()
+    message = _make_message()
+    _patch_process_scheduled_mocks(fake_session, monkeypatch, [booking], guest, conversation, message)
+    count = await messages_services.process_scheduled_messages(fake_session)
+    assert count == 0
+
+
+def _patch_process_scheduled_mocks(fake_session, monkeypatch, bookings, guest, conversation, message):
+    mock_result = MagicMock()
+    scalars_mock = MagicMock()
+    scalars_mock.all.return_value = bookings
+    mock_result.scalars.return_value = scalars_mock
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    fake_session.get = AsyncMock(return_value=guest)
+    monkeypatch.setattr(
+        messages_repository, "get_conversation_by_booking", AsyncMock(return_value=conversation)
+    )
+    monkeypatch.setattr(
+        messages_repository, "get_or_create_conversation_for_booking", AsyncMock(return_value=conversation)
+    )
+    monkeypatch.setattr(
+        messages_services, "send_automated_message", AsyncMock(return_value=message)
+    )
+
+
+# ============================================================
+# ROUTER COVERAGE
+# ============================================================
+
+def test_get_conversations_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "list_conversations",
+        AsyncMock(return_value=[_make_conversation_list_item()]),
+    )
+    token = _token_for(user)
+    response = messages_client.get(
+        "/api/v1/messages/conversations",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_get_unread_count_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "get_unread_count",
+        AsyncMock(return_value=message_schemas.UnreadCountResponse(total_unread=5)),
+    )
+    token = _token_for(user)
+    response = messages_client.get(
+        "/api/v1/messages/conversations/unread",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["total_unread"] == 5
+
+
+def test_get_conversation_detail_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "get_conversation_detail",
+        AsyncMock(return_value=_make_conversation_detail_response()),
+    )
+    token = _token_for(user)
+    response = messages_client.get(
+        "/api/v1/messages/conversations/conv-1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == "conv-1"
+
+
+def test_get_messages_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "list_messages",
+        AsyncMock(return_value=[_make_message_response()]),
+    )
+    token = _token_for(user)
+    response = messages_client.get(
+        "/api/v1/messages/conversations/conv-1/messages",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_post_message_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "send_message",
+        AsyncMock(return_value=_make_message_response()),
+    )
+    token = _token_for(user)
+    response = messages_client.post(
+        "/api/v1/messages/conversations/conv-1/messages",
+        json={"content": "Hello host"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["content"] == "Hello"
+
+
+def test_post_mark_read_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "mark_conversation_read",
+        AsyncMock(),
+    )
+    token = _token_for(user)
+    response = messages_client.post(
+        "/api/v1/messages/conversations/conv-1/read",
+        json={},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+
+def test_get_conversation_for_booking_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "get_conversation_for_booking",
+        AsyncMock(return_value=_make_conversation_response()),
+    )
+    token = _token_for(user)
+    response = messages_client.get(
+        "/api/v1/messages/bookings/booking-1/conversation",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == "conv-1"
+
+
+def test_get_message_templates_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "list_message_templates",
+        AsyncMock(return_value=[_make_message_template_response()]),
+    )
+    token = _token_for(user)
+    response = messages_client.get(
+        "/api/v1/messages/templates?locale=en",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_post_automated_message_route(messages_client, monkeypatch) -> None:
+    user = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services, "send_automated_message",
+        AsyncMock(return_value=_make_message_response()),
+    )
+    token = _token_for(user)
+    response = messages_client.post(
+        "/api/v1/messages/conversations/conv-1/automated",
+        json={"template_key": "booking_confirmed", "variables": {"property_name": "Villa"}},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+
+
+# ============================================================
+# TASKS COVERAGE
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_run_process_scheduled_messages_lock_acquired(fake_session: AsyncMock, monkeypatch) -> None:
+    redis_client = AsyncMock()
+    redis_client.set = AsyncMock(return_value=True)
+    redis_client.delete = AsyncMock()
+    monkeypatch.setattr(messages_tasks.redis_state, "redis_client", redis_client)
+    fake_session.begin = MagicMock(return_value=_FakeBeginCM())
+    monkeypatch.setattr(messages_tasks, "AsyncSessionLocal", _fake_session_cm_factory(fake_session))
+    monkeypatch.setattr(messages_services, "process_scheduled_messages", AsyncMock(return_value=7))
+    result = await messages_tasks._run_process_scheduled_messages()
+    assert result == 7
+    redis_client.set.assert_awaited_once()
+    redis_client.delete.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_run_process_scheduled_messages_lock_not_acquired(fake_session: AsyncMock, monkeypatch) -> None:
+    redis_client = AsyncMock()
+    redis_client.set = AsyncMock(return_value=False)
+    redis_client.delete = AsyncMock()
+    monkeypatch.setattr(messages_tasks.redis_state, "redis_client", redis_client)
+    fake_session.begin = MagicMock(return_value=_FakeBeginCM())
+    monkeypatch.setattr(messages_tasks, "AsyncSessionLocal", _fake_session_cm_factory(fake_session))
+    result = await messages_tasks._run_process_scheduled_messages()
+    assert result == 0
+    redis_client.delete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_run_process_scheduled_messages_releases_lock_on_error(fake_session: AsyncMock, monkeypatch) -> None:
+    redis_client = AsyncMock()
+    redis_client.set = AsyncMock(return_value=True)
+    redis_client.delete = AsyncMock()
+    monkeypatch.setattr(messages_tasks.redis_state, "redis_client", redis_client)
+    fake_session.begin = MagicMock(return_value=_FakeBeginCM())
+    monkeypatch.setattr(messages_tasks, "AsyncSessionLocal", _fake_session_cm_factory(fake_session))
+    monkeypatch.setattr(messages_services, "process_scheduled_messages", AsyncMock(side_effect=RuntimeError("boom")))
+    with pytest.raises(RuntimeError):
+        await messages_tasks._run_process_scheduled_messages()
+    redis_client.delete.assert_awaited_once()
+
+
+def test_process_scheduled_messages_task_runs(monkeypatch) -> None:
+    async def _fake_run():
+        return 5
+
+    monkeypatch.setattr(messages_tasks, "_run_process_scheduled_messages", _fake_run)
+    result = messages_tasks.process_scheduled_messages.run()
+    assert result == 5
+
+
+def test_render_quick_reply_unknown_template_raises() -> None:
+    with pytest.raises(ValueError):
+        message_templates.render_quick_reply("unknown_key", "ar", {})
+
+
+# ============================================================
+# SERVICES & ROUTER EXCEPTION COVERAGE
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_get_conversation_detail_success(fake_session: AsyncMock, monkeypatch) -> None:
+    conversation = _make_conversation()
+    message = _make_message()
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "is_conversation_participant",
+        AsyncMock(return_value=True),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "list_messages_for_conversation",
+        AsyncMock(return_value=[message]),
+    )
+    user = _make_user()
+    result = await messages_services.get_conversation_detail(fake_session, user, conversation.id)
+    assert result.id == conversation.id
+
+
+@pytest.mark.asyncio
+async def test_list_messages_success(fake_session: AsyncMock, monkeypatch) -> None:
+    message = _make_message()
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=_make_conversation()),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "is_conversation_participant",
+        AsyncMock(return_value=True),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "list_messages_for_conversation",
+        AsyncMock(return_value=[message]),
+    )
+    user = _make_user()
+    result = await messages_services.list_messages(fake_session, user, "conv-1")
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_mark_conversation_read_success(fake_session: AsyncMock, monkeypatch) -> None:
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=_make_conversation()),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "is_conversation_participant",
+        AsyncMock(return_value=True),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "mark_conversation_read",
+        AsyncMock(),
+    )
+    user = _make_user()
+    await messages_services.mark_conversation_read(fake_session, user, "conv-1")
+    messages_repository.mark_conversation_read.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_send_booking_confirmed_creates_conversation(fake_session: AsyncMock, monkeypatch) -> None:
+    booking = _make_process_booking(
+        BookingStatus.CONFIRMED,
+        datetime.now(UTC).date(),
+        datetime.now(UTC).date() + timedelta(days=2),
+    )
+    conversation = _make_conversation()
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_booking",
+        AsyncMock(side_effect=[None, conversation]),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "get_or_create_conversation_for_booking",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_services,
+        "send_automated_message",
+        AsyncMock(return_value=_make_message()),
+    )
+    await messages_services.send_booking_confirmed(fake_session, booking, booking.unit.listing, "host-1")
+    messages_repository.get_or_create_conversation_for_booking.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_process_scheduled_messages_creates_conversation(fake_session: AsyncMock, monkeypatch) -> None:
+    today = datetime.now(UTC).date()
+    booking = _make_process_booking(
+        BookingStatus.CONFIRMED,
+        today,
+        today + timedelta(days=2),
+    )
+    conversation = _make_conversation()
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_booking",
+        AsyncMock(side_effect=[None, conversation]),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "get_or_create_conversation_for_booking",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_services,
+        "send_automated_message",
+        AsyncMock(return_value=_make_message()),
+    )
+    guest = _make_user()
+    session_get_mock = AsyncMock(return_value=guest)
+    fake_session.get = session_get_mock
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [booking]
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    await messages_services.process_scheduled_messages(fake_session)
+    messages_repository.get_or_create_conversation_for_booking.assert_awaited()
+
+
+# router exception branches
+def _assert_route_returns_404(messages_client, monkeypatch, route_func_name, method, url, json=None, role=UserRole.GUEST):
+    user = _make_user(role=role)
+    _patch_auth_user(monkeypatch, user)
+    monkeypatch.setattr(
+        messages_router.messages_services,
+        route_func_name,
+        AsyncMock(side_effect=NotFoundError("missing")),
+    )
+    token = _token_for(user)
+    caller = getattr(messages_client, method)
+    kwargs = {"headers": {"Authorization": f"Bearer {token}"}}
+    if json is not None:
+        kwargs["json"] = json
+    response = caller(url, **kwargs)
+    assert response.status_code == 404
+
+
+def test_get_conversations_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client, monkeypatch, "list_conversations", "get", "/api/v1/messages/conversations"
+    )
+
+
+def test_get_unread_count_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client, monkeypatch, "get_unread_count", "get", "/api/v1/messages/conversations/unread"
+    )
+
+
+def test_get_conversation_detail_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client, monkeypatch, "get_conversation_detail", "get", "/api/v1/messages/conversations/conv-1"
+    )
+
+
+def test_get_messages_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client, monkeypatch, "list_messages", "get", "/api/v1/messages/conversations/conv-1/messages"
+    )
+
+
+def test_post_message_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client,
+        monkeypatch,
+        "send_message",
+        "post",
+        "/api/v1/messages/conversations/conv-1/messages",
+        json={"content": "hi"},
+    )
+
+
+def test_post_mark_read_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client,
+        monkeypatch,
+        "mark_conversation_read",
+        "post",
+        "/api/v1/messages/conversations/conv-1/read",
+        json={},
+    )
+
+
+def test_get_conversation_for_booking_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client,
+        monkeypatch,
+        "get_conversation_for_booking",
+        "get",
+        "/api/v1/messages/bookings/booking-1/conversation",
+    )
+
+
+def test_get_message_templates_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client,
+        monkeypatch,
+        "list_message_templates",
+        "get",
+        "/api/v1/messages/templates",
+    )
+
+
+def test_post_automated_message_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client,
+        monkeypatch,
+        "send_automated_message",
+        "post",
+        "/api/v1/messages/conversations/conv-1/automated",
+        json={"template_key": "welcome", "variables": {}},
+        role=UserRole.ADMIN,
+    )

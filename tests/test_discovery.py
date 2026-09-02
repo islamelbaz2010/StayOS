@@ -359,6 +359,19 @@ class TestAdapters:
         assert results[0].external_listing_id == "123"
 
 
+@pytest.fixture(autouse=True)
+def _no_google_places_key(monkeypatch):
+    """Ensure Google Places adapter tests run without a real API key."""
+    from app.discovery.adapters.base import registry
+    from app.discovery.adapters.google_places import settings as gp_settings
+
+    monkeypatch.setattr(gp_settings, "GOOGLE_MAPS_API_KEY", None)
+    for adapter in registry._adapters.values():
+        if isinstance(adapter, GooglePlacesAdapter):
+            adapter._api_key = None
+            adapter.source_status = SourceStatus.REQUIRES_CREDENTIALS
+
+
 # ─── API Integration Tests ───
 
 

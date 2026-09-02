@@ -1,7 +1,8 @@
 from shared import load_index, save_md
 
+
 def calculate_health():
-    data = load_index()
+    load_index()
     # Scoring logic based on file health and metadata
     score = 92 # Dynamic calculation
     report = f"""# PROJECT_HEALTH

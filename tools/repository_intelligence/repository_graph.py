@@ -1,5 +1,6 @@
 from shared import load_index, save_report
 
+
 def graph():
     data = load_index()
     mermaid = ["# FOLDER_GRAPH", "```mermaid", "graph TD"]

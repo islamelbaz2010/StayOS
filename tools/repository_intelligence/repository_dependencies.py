@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from shared import get_all_files
+
 
 def generate_deps():
     graph = ["# DEPENDENCY_GRAPH", "## Python Imports"]

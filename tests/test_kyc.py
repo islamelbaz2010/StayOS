@@ -9,6 +9,7 @@ from app.auth import services as auth_services
 from app.auth.constants import KycStatus
 from app.auth.models import User
 from app.database import get_session
+from app.kyc import repository as kyc_repository
 from app.kyc import services as kyc_services
 from app.kyc.models import KycDocument
 from app.main import app
@@ -269,3 +270,13 @@ def test_kyc_services_process_document(monkeypatch) -> None:
 
     result = asyncio.run(kyc_services.process_kyc_document(None, document.id))
     assert result.status == "verified"
+
+
+@pytest.mark.asyncio
+async def test_get_pending_kyc_documents(fake_session: AsyncMock) -> None:
+    document = _make_document("user-1")
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [document]
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    result = await kyc_repository.get_pending_kyc_documents(fake_session)
+    assert len(result) == 1

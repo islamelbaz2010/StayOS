@@ -173,6 +173,42 @@ export interface PaymentProofPresignResponse {
   proof_key: string;
 }
 
+export interface KycUploadUrls {
+  front: string;
+  back: string;
+  selfie: string;
+}
+
+export interface KycInitiateResponse {
+  document_id: string;
+  upload_urls: KycUploadUrls;
+  expires_at: string;
+}
+
+export interface KycDocument {
+  id: string;
+  user_id: string;
+  account_id: string | null;
+  document_type: string;
+  document_number: string | null;
+  status: string;
+  legal_name: string | null;
+  front_image_key: string | null;
+  back_image_key: string | null;
+  selfie_image_key: string | null;
+  verified_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KycStatusResponse {
+  user_id: string;
+  kyc_status: string;
+  documents: KycDocument[];
+}
+
 export interface LocationSuggestion {
   canonical_name_en: string;
   canonical_name_ar: string;

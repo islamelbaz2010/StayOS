@@ -21,7 +21,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "StayOS needs access to your photos to upload your payment receipt."
+          "photosPermission": "StayOS needs access to your photos to upload payment receipts and identity documents.",
+          "cameraPermission": "StayOS needs camera access to photograph your identity document and take a verification selfie."
         }
       ],
       "expo-document-picker"

@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+
 import { api, hasTokens } from "./api";
 import type {
   Booking,
@@ -23,6 +25,8 @@ import type {
   LocationSuggestion,
   Message,
   MessageTemplate,
+  Payment,
+  PaymentProofPresignResponse,
   PhotoCreatePayload,
   PhotoPresignResponse,
   PhotoResponse,
@@ -296,6 +300,69 @@ export function useCancelBooking() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+}
+
+export function usePaymentByBooking(bookingId: string) {
+  return useQuery({
+    queryKey: ["payment", "booking", bookingId],
+    queryFn: async () => {
+      const { data } = await api.get<Payment>(`/payments/booking/${bookingId}`);
+      return data;
+    },
+    enabled: Boolean(bookingId),
+    retry: (failureCount, error) => {
+      // A 404 simply means the host has not accepted yet — no payment exists.
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+  });
+}
+
+export function usePresignProof() {
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      filename,
+      contentType,
+    }: {
+      paymentId: string;
+      filename: string;
+      contentType: string;
+    }) => {
+      const { data } = await api.post<PaymentProofPresignResponse>(
+        `/payments/${paymentId}/proof/presign`,
+        { filename, content_type: contentType }
+      );
+      return data;
+    },
+  });
+}
+
+export function useUploadProof() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      s3Key,
+      url,
+    }: {
+      paymentId: string;
+      s3Key: string;
+      url?: string;
+    }) => {
+      const { data } = await api.post<Payment>(`/payments/${paymentId}/proof`, {
+        s3_key: s3Key,
+        url,
+      });
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["payment", "booking", data.booking_id] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
     },
   });
 }

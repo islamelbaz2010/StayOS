@@ -17,7 +17,15 @@
     "android": {
       "package": "com.stayos.mobile"
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "StayOS needs access to your photos to upload your payment receipt."
+        }
+      ],
+      "expo-document-picker"
+    ],
     "extra": {
       "eas": {
         "projectId": "04b13a13-9ae5-4bdb-8211-a2b862116bbc"

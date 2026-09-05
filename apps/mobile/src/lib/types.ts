@@ -130,6 +130,49 @@ export interface StayInfo {
   review_eligible: boolean;
 }
 
+export type PaymentStatus =
+  | "pending"
+  | "proof_uploaded"
+  | "verified"
+  | "rejected"
+  | "cancelled"
+  | "refund_pending"
+  | "refunded";
+
+export interface Payment {
+  id: string;
+  booking_id: string;
+  guest_id: string;
+  host_id: string;
+  unit_id: string;
+  status: PaymentStatus;
+  method: string;
+  amount_egp: number;
+  accommodation_amount_egp: number | null;
+  guest_service_fee_egp: number | null;
+  nights: number;
+  reference_number: string;
+  payment_deadline_at: string | null;
+  proof_rejection_count: number;
+  proof_s3_key: string | null;
+  proof_url: string | null;
+  proof_uploaded_at: string | null;
+  verified_at: string | null;
+  verified_by: string | null;
+  rejected_at: string | null;
+  rejected_by: string | null;
+  reject_reason: string | null;
+  cancelled_at: string | null;
+  instructions: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentProofPresignResponse {
+  upload_url: string;
+  proof_key: string;
+}
+
 export interface LocationSuggestion {
   canonical_name_en: string;
   canonical_name_ar: string;

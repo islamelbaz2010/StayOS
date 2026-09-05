@@ -656,7 +656,8 @@
     "dashboard": "لوحة التحكم",
     "properties": "العقارات",
     "reservations": "الحجوزات",
-    "kyc": "التحقق من الهوية"
+    "kyc": "التحقق من الهوية",
+    "messages": "الرسائل"
   },
   "landing": {
     "trustVerified": "مضيفون موثقون",
@@ -665,5 +666,14 @@
     "trustPaymentDesc": "تحويلات بنكية يتم التحقق منها من قبل فريقنا قبل التأكيد.",
     "trustSupport": "دعم محلي",
     "trustSupportDesc": "دعم بالعربية والإنجليزية طوال فترة إقامتك."
+  },
+  "messages": {
+    "inboxTitle": "الرسائل",
+    "conversation": "محادثة",
+    "empty": "لا توجد رسائل بعد",
+    "loadError": "تعذّر تحميل الرسائل",
+    "backToInbox": "العودة إلى الرسائل",
+    "typeMessage": "اكتب رسالة...",
+    "send": "إرسال"
   }
 }

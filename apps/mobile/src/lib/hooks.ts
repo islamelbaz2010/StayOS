@@ -8,6 +8,7 @@ import type {
   CalendarRuleCreatePayload,
   CalendarRuleResponse,
   Conversation,
+  ConversationListItem,
   CoHost,
   HostCalendarResponse,
   HostEarningsSummary,
@@ -472,6 +473,32 @@ export function useMe() {
   });
 }
 
+export function useConversations() {
+  return useQuery({
+    queryKey: ["conversations"],
+    queryFn: async () => {
+      const { data } = await api.get<ConversationListItem[]>("/messages/conversations");
+      return data;
+    },
+    enabled: hasTokens(),
+    refetchInterval: 15000,
+  });
+}
+
+export function useUnreadCount() {
+  return useQuery({
+    queryKey: ["conversations", "unread"],
+    queryFn: async () => {
+      const { data } = await api.get<{ total_unread: number }>(
+        "/messages/conversations/unread"
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    refetchInterval: 15000,
+  });
+}
+
 export function useConversationForBooking(bookingId: string) {
   return useQuery({
     queryKey: ["conversation", "booking", bookingId],
@@ -507,14 +534,19 @@ export function useSendMessage(conversationId: string | null) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 }
 
 export function useMarkRead(conversationId: string | null) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
       await api.post(`/messages/conversations/${conversationId}/read`, {});
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 }

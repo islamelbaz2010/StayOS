@@ -264,6 +264,20 @@ export interface Conversation {
   updated_at: string;
 }
 
+export interface ConversationListItem {
+  id: string;
+  booking_id: string | null;
+  unit_id: string | null;
+  type: string;
+  status: string;
+  unread_count: number;
+  counterparty_name: string | null;
+  unit_title: string | null;
+  last_message: Message | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MessageTemplate {
   id: string;
   key: string;

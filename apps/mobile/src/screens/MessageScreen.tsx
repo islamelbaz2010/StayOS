@@ -23,15 +23,15 @@ type MessageRoute = RouteProp<RootStackParamList, "Message">;
 export function MessageScreen() {
   const { t } = useLocale();
   const route = useRoute<MessageRoute>();
-  const { bookingId } = route.params;
+  const { bookingId, conversationId: directConversationId } = route.params;
   const flatListRef = useRef<FlatList>(null);
   const [input, setInput] = useState("");
 
   const { data: me } = useMe();
   const currentUserId = me?.id ?? null;
   const { data: conversation, isLoading: conversationLoading, error: conversationError } =
-    useConversationForBooking(bookingId);
-  const conversationId = conversation?.id ?? null;
+    useConversationForBooking(directConversationId ? "" : (bookingId ?? ""));
+  const conversationId = directConversationId ?? conversation?.id ?? null;
   const { data: messages, isLoading: messagesLoading, error: messagesError } =
     useMessages(conversationId);
   const send = useSendMessage(conversationId);
@@ -43,8 +43,8 @@ export function MessageScreen() {
     }
   }, [conversationId]);
 
-  if (conversationLoading) return <LoadingSpinner />;
-  if (conversationError || !conversation) {
+  if (conversationLoading && !directConversationId) return <LoadingSpinner />;
+  if (!conversationId || (!directConversationId && (conversationError || !conversation))) {
     return <ErrorView message={t("loadMessagesError")} onRetry={() => {}} />;
   }
 

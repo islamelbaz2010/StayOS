@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -1198,3 +1198,197 @@ def test_payment_detail_not_found_returns_404(payments_client, monkeypatch) -> N
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# V1 payment deadline, proof resubmission limits, amount breakdown
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_create_payment_sets_deadline_and_amount_breakdown(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Payment creation must record the 24h proof deadline and the
+    accommodation/service-fee split used later by refund computation."""
+    from app.config import settings
+
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing = _make_listing(unit)
+    booking = _make_booking(unit, guest)
+
+    payment = _make_payment(booking, guest, host)
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_by_booking",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    create_mock = AsyncMock(return_value=payment)
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.create_payment", create_mock
+    )
+    # Past the alpha free-booking window so the 4% guest fee applies.
+    monkeypatch.setattr(
+        "app.bookings.repository.count_global_completed_bookings",
+        AsyncMock(return_value=50),
+    )
+
+    before = datetime.now(UTC)
+    await payment_services.create_payment_for_booking(fake_session, booking, guest)
+
+    kwargs = create_mock.call_args.kwargs
+    # subtotal = 500*4 + 50 cleaning = 2050; fee = 4% of 2050 = 82
+    assert kwargs["accommodation_amount_egp"] == 2050
+    assert kwargs["guest_service_fee_egp"] == 82
+    assert kwargs["amount_egp"] == 2132
+    deadline = kwargs["payment_deadline_at"]
+    assert deadline is not None
+    delta = (deadline - before).total_seconds() / 3600
+    assert abs(delta - settings.PAYMENT_DEADLINE_HOURS) < 0.01
+
+
+@pytest.mark.asyncio
+async def test_reject_payment_counts_attempts(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host, status=PaymentStatus.PROOF_UPLOADED)
+
+    def _apply(_s, p, **kw):
+        for k, v in kw.items():
+            setattr(p, k, v)
+        return p
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.update_payment",
+        AsyncMock(side_effect=_apply),
+    )
+    cancel_mock = AsyncMock()
+    monkeypatch.setattr(
+        "app.bookings.services.cancel_booking_system", cancel_mock
+    )
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = guest
+    fake_session.execute = AsyncMock(return_value=mock_result)
+
+    await payment_services.reject_payment(fake_session, admin, payment.id, "unclear")
+
+    assert payment.proof_rejection_count == 1
+    assert payment.first_rejected_at is not None
+    assert not cancel_mock.called
+
+
+@pytest.mark.asyncio
+async def test_reject_payment_exhaustion_cancels_booking(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """V1 policy §2.2 — the third rejection cancels the booking."""
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host, status=PaymentStatus.PROOF_UPLOADED)
+    payment.proof_rejection_count = 2
+    payment.first_rejected_at = datetime.now(UTC) - timedelta(hours=5)
+
+    def _apply(_s, p, **kw):
+        for k, v in kw.items():
+            setattr(p, k, v)
+        return p
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.update_payment",
+        AsyncMock(side_effect=_apply),
+    )
+    cancel_mock = AsyncMock()
+    monkeypatch.setattr(
+        "app.bookings.services.cancel_booking_system", cancel_mock
+    )
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = guest
+    fake_session.execute = AsyncMock(return_value=mock_result)
+
+    await payment_services.reject_payment(fake_session, admin, payment.id, "fake receipt")
+
+    assert payment.proof_rejection_count == 3
+    cancel_mock.assert_awaited_once()
+    assert cancel_mock.call_args.kwargs["reason"] == "payment_proof_resubmission_exhausted"
+
+
+@pytest.mark.asyncio
+async def test_upload_proof_blocked_after_rejection_limit(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host, status=PaymentStatus.PENDING)
+    payment.proof_rejection_count = 3
+    payment.first_rejected_at = datetime.now(UTC) - timedelta(hours=1)
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+
+    with pytest.raises(ValidationError):
+        await payment_services.upload_proof(
+            fake_session, guest, payment.id, "payments/x/proof.jpg", None
+        )
+
+
+@pytest.mark.asyncio
+async def test_upload_proof_blocked_after_resubmission_window(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """48h after the first rejection the window is closed even if fewer
+    than 3 rejections were recorded."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host, status=PaymentStatus.PENDING)
+    payment.proof_rejection_count = 1
+    payment.first_rejected_at = datetime.now(UTC) - timedelta(hours=49)
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+
+    with pytest.raises(ValidationError):
+        await payment_services.upload_proof(
+            fake_session, guest, payment.id, "payments/x/proof.jpg", None
+        )
+
+
+def test_payment_proof_bucket_prefers_dedicated_bucket(monkeypatch) -> None:
+    """P0-3: payment proofs must not go to the public listing-photo bucket
+    when a dedicated private bucket is configured."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "S3_PAYMENT_PROOF_BUCKET", "stayos-proofs")
+    monkeypatch.setattr(settings, "S3_LISTINGS_BUCKET", "stayos-listings")
+    assert settings.payment_proof_bucket == "stayos-proofs"
+
+    monkeypatch.setattr(settings, "S3_PAYMENT_PROOF_BUCKET", "")
+    assert settings.payment_proof_bucket == "stayos-listings"

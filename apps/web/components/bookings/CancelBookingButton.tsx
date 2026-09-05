@@ -76,6 +76,27 @@ export function CancelBookingButton({ booking, onCancelled }: CancelBookingButto
         </p>
       )}
 
+      {preview.data &&
+        preview.data.cancelled_by === "guest" &&
+        (preview.data.service_fee_retained_egp ?? 0) > 0 && (
+          <div className="mt-2 text-sm text-neutral-600">
+            {preview.data.cancellation_policy && (
+              <p>
+                {t("cancelPolicyLabel", {
+                  policy: t(
+                    `policy.${preview.data.cancellation_policy.toLowerCase()}`
+                  ),
+                })}
+              </p>
+            )}
+            <p>
+              {t("cancelServiceFeeRetained", {
+                amount: preview.data.service_fee_retained_egp ?? 0,
+              })}
+            </p>
+          </div>
+        )}
+
       {error && (
         <p className="mt-2 rounded-lg bg-red-50 p-2 text-sm text-red-800" role="alert">
           {error}

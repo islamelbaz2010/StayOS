@@ -18,6 +18,7 @@ const STATUS_STYLES: Record<string, string> = {
   confirmed: "bg-green-100 text-green-800",
   rejected: "bg-red-100 text-red-800",
   cancelled: "bg-neutral-200 text-neutral-700",
+  no_show: "bg-neutral-200 text-neutral-700",
 };
 
 export default function MyTripsPage() {

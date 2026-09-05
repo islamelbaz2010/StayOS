@@ -23,6 +23,10 @@ export interface PaymentResponse {
   reject_reason: string | null;
   cancelled_at: string | null;
   instructions: string;
+  accommodation_amount_egp: number | null;
+  guest_service_fee_egp: number | null;
+  payment_deadline_at: string | null;
+  proof_rejection_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +43,10 @@ export interface PaymentListItem {
   reference_number: string;
   proof_url: string | null;
   proof_uploaded_at: string | null;
+  accommodation_amount_egp: number | null;
+  guest_service_fee_egp: number | null;
+  payment_deadline_at: string | null;
+  proof_rejection_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -55,7 +63,7 @@ export interface PaymentProofPresignResponse {
 
 export interface PaymentProofUpload {
   s3_key: string;
-  url: string;
+  url?: string;
 }
 
 export interface PaymentRejectRequest {

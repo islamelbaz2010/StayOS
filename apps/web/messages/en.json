@@ -338,10 +338,18 @@
       "accepted": "Accepted",
       "confirmed": "Confirmed",
       "rejected": "Rejected",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
     },
     "cancelBooking": "Cancel booking",
     "cancelModalTitle": "Cancel this booking?",
+    "cancelPolicyLabel": "Cancellation policy: {policy}",
+    "cancelServiceFeeRetained": "The service fee of {amount} EGP is non-refundable.",
+    "policy": {
+      "flexible": "Flexible",
+      "moderate": "Moderate",
+      "strict": "Strict"
+    },
     "cancelRefundFull": "You'll receive a full refund of {amount} EGP.",
     "cancelRefundPartial": "You'll receive a partial refund of {amount} EGP (of {total} EGP paid).",
     "cancelRefundNone": "This booking is not eligible for a refund under the cancellation policy.",
@@ -413,14 +421,16 @@
       "accepted": "Accepted",
       "confirmed": "Confirmed",
       "rejected": "Rejected",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
     },
     "status": {
       "requested": "Requested",
       "accepted": "Accepted",
       "confirmed": "Confirmed",
       "rejected": "Rejected",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
     },
     "confirmedMessage": "Payment verified — booking confirmed."
   },
@@ -517,6 +527,8 @@
     "proofImage": "Payment receipt",
     "uploadDisabled": "Receipt upload is not available at this stage.",
     "rejectReason": "Rejection reason",
+    "deadlineWarning": "Submit proof before {deadline} or your booking may be cancelled.",
+    "attemptsRemaining": "You have {count} proof submission attempts remaining.",
     "bookingNotFound": "Booking not found",
     "noPaymentYet": "Payment not available yet",
     "noPaymentHint": "Payment instructions will appear here after the host accepts your booking.",

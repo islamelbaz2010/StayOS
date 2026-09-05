@@ -41,8 +41,14 @@ export function HostReservationDetailScreen() {
         {booking.guest_phone && (
           <InfoRow label={t("reservationGuestPhone")} value={booking.guest_phone} />
         )}
-        <InfoRow label={t("reservationStatus")} value={booking.status} />
-        <InfoRow label={t("stayStatus")} value={booking.stay_phase} />
+        <InfoRow
+          label={t("reservationStatus")}
+          value={booking.status === "no_show" ? t("statusNoShow") : booking.status}
+        />
+        <InfoRow
+          label={t("stayStatus")}
+          value={booking.stay_phase === "no_show" ? t("statusNoShow") : booking.stay_phase}
+        />
       </View>
 
       {/* Dates */}

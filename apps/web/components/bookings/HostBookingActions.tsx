@@ -48,7 +48,11 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
     }
   }
 
-  if (booking.status === "cancelled" || booking.status === "rejected") {
+  if (
+    booking.status === "cancelled" ||
+    booking.status === "rejected" ||
+    booking.status === "no_show"
+  ) {
     return (
       <p className="text-sm text-neutral-500">{t("finalStatus", { status: booking.status })}</p>
     );

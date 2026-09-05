@@ -432,22 +432,25 @@ async def get_host_reservation_detail(
         from app.bookings.services import (
             _cancellation_actor,
             _evaluate_cancellation_refund,
+            _listing_for_booking,
             _refund_policy_label,
         )
         try:
             cancelled_by = _cancellation_actor(booking, user)
             current_payment = await payments_repository.get_payment_by_booking(session, booking.id)
-            refund_amount, total_paid = _evaluate_cancellation_refund(
+            listing = await _listing_for_booking(session, booking)
+            refund_amount, total_paid, service_fee_retained = _evaluate_cancellation_refund(
                 cancelled_by=cancelled_by,
                 payment=current_payment,
-                requested_at=booking.requested_at,
-                check_in=booking.check_in,
+                booking=booking,
+                listing=listing,
             )
             cancellation_preview = {
                 "cancellable": True,
                 "cancelled_by": cancelled_by,
                 "total_paid_egp": total_paid,
                 "refund_amount_egp": refund_amount,
+                "service_fee_retained_egp": service_fee_retained,
                 "refund_policy_applied": _refund_policy_label(refund_amount, total_paid),
             }
         except AuthorizationError:

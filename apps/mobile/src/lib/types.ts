@@ -63,7 +63,8 @@ export type StayPhase =
   | "checked_out"
   | "completed"
   | "cancelled"
-  | "rejected";
+  | "rejected"
+  | "no_show";
 
 export interface Booking {
   id: string;
@@ -95,6 +96,8 @@ export interface BookingCancellationPreview {
   total_paid_egp: number;
   refund_amount_egp: number;
   refund_policy_applied: string;
+  cancellation_policy: string | null;
+  service_fee_retained_egp: number;
 }
 
 export interface StayPropertyInfo {
@@ -275,6 +278,8 @@ export interface HostReservationDetail {
     total_paid_egp: number;
     refund_amount_egp: number;
     refund_policy_applied: string;
+    cancellation_policy: string | null;
+    service_fee_retained_egp: number;
   } | null;
 }
 

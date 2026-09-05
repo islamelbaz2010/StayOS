@@ -338,10 +338,18 @@
       "accepted": "مقبول",
       "confirmed": "مؤكد",
       "rejected": "مرفوض",
-      "cancelled": "ملغى"
+      "cancelled": "ملغى",
+      "no_show": "لم يحضر"
     },
     "cancelBooking": "إلغاء الحجز",
     "cancelModalTitle": "هل تريد إلغاء هذا الحجز؟",
+    "cancelPolicyLabel": "سياسة الإلغاء: {policy}",
+    "cancelServiceFeeRetained": "رسوم الخدمة البالغة {amount} جنيه غير قابلة للاسترداد.",
+    "policy": {
+      "flexible": "مرن",
+      "moderate": "معتدل",
+      "strict": "صارم"
+    },
     "cancelRefundFull": "سيتم استرداد كامل المبلغ {amount} جنيه.",
     "cancelRefundPartial": "سيتم استرداد {amount} جنيه (من إجمالي {total} جنيه مدفوع).",
     "cancelRefundNone": "هذا الحجز غير مؤهل لاسترداد الأموال وفقًا لسياسة الإلغاء.",
@@ -413,14 +421,16 @@
       "accepted": "مقبول",
       "confirmed": "مؤكد",
       "rejected": "مرفوض",
-      "cancelled": "ملغى"
+      "cancelled": "ملغى",
+      "no_show": "لم يحضر"
     },
     "status": {
       "requested": "مطلوب",
       "accepted": "مقبول",
       "confirmed": "مؤكد",
       "rejected": "مرفوض",
-      "cancelled": "ملغى"
+      "cancelled": "ملغى",
+      "no_show": "لم يحضر"
     },
     "confirmedMessage": "تم التحقق من الدفع — تم تأكيد الحجز."
   },
@@ -517,6 +527,8 @@
     "proofImage": "إيصال الدفع",
     "uploadDisabled": "لا يمكن رفع الإيصال في هذه المرحلة.",
     "rejectReason": "سبب الرفض",
+    "deadlineWarning": "أرسل إثبات الدفع قبل {deadline} وإلا قد يتم إلغاء حجزك.",
+    "attemptsRemaining": "لديك {count} محاولات متبقية لإرسال إثبات الدفع.",
     "bookingNotFound": "الحجز غير موجود",
     "noPaymentYet": "الدفع غير متاح بعد",
     "noPaymentHint": "ستظهر تعليمات الدفع هنا بعد قبول المضيف لحجزك.",

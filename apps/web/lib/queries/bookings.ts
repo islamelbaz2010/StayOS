@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 import type { components } from "@/lib/api-types";
@@ -109,5 +109,54 @@ export function useCancelBooking() {
   return useMutation({
     mutationFn: ({ bookingId, payload }: { bookingId: string; payload?: BookingCancelRequest }) =>
       cancelBooking(bookingId, payload),
+  });
+}
+
+export type StayInfoResponse = components["schemas"]["StayInfoResponse"];
+
+export function useStayInfo(bookingId: string) {
+  return useQuery({
+    queryKey: ["stay-info", bookingId],
+    queryFn: async () => {
+      const { data } = await api.get<StayInfoResponse>(
+        `/bookings/${bookingId}/stay`
+      );
+      return data;
+    },
+    enabled: Boolean(bookingId),
+  });
+}
+
+export function useCheckIn() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { data } = await api.post<BookingResponse>(
+        `/bookings/${bookingId}/check-in`
+      );
+      return data;
+    },
+    onSuccess: (_data, bookingId) => {
+      queryClient.invalidateQueries({ queryKey: ["stay-info", bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
+  });
+}
+
+export function useCheckOut() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { data } = await api.post<BookingResponse>(
+        `/bookings/${bookingId}/check-out`
+      );
+      return data;
+    },
+    onSuccess: (_data, bookingId) => {
+      queryClient.invalidateQueries({ queryKey: ["stay-info", bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
   });
 }

@@ -96,3 +96,24 @@ export function useMarkRead(conversationId: string | null) {
     },
   });
 }
+
+export interface ConversationResponse {
+  id: string;
+  booking_id: string | null;
+  unit_id: string | null;
+  type: string;
+  status: string;
+}
+
+export function useBookingConversation(bookingId: string | null) {
+  return useQuery({
+    queryKey: ["conversation", "booking", bookingId],
+    queryFn: async () => {
+      const { data } = await api.get<ConversationResponse>(
+        `/messages/bookings/${bookingId}/conversation`
+      );
+      return data;
+    },
+    enabled: Boolean(bookingId),
+  });
+}

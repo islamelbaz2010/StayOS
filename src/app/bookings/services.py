@@ -9,7 +9,7 @@ from app.auth.constants import UserRole
 from app.auth.models import User
 from app.config import settings
 from app.listings import repository as listings_repository
-from app.listings.constants import UnitStatus
+from app.listings.constants import CancellationPolicy, UnitStatus
 from app.listings.models import Unit
 from app.messages import services as messages_services
 from app.payments import repository as payments_repository
@@ -59,6 +59,8 @@ def _compute_stay_phase(booking: Booking) -> str:
         return "cancelled"
     if status == BookingStatus.REJECTED:
         return "rejected"
+    if status == BookingStatus.NO_SHOW:
+        return "no_show"
     if status == BookingStatus.COMPLETED:
         return "completed"
 
@@ -179,10 +181,15 @@ def _assert_status_transition(current: BookingStatus, new: BookingStatus) -> Non
             BookingStatus.CANCELLED,
         ],
         BookingStatus.ACCEPTED: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
-        BookingStatus.CONFIRMED: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
+        BookingStatus.CONFIRMED: [
+            BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW,
+        ],
         BookingStatus.REJECTED: [],
         BookingStatus.COMPLETED: [],
         BookingStatus.CANCELLED: [],
+        BookingStatus.NO_SHOW: [],
     }
     if new not in allowed.get(current, []):
         raise ValidationError(
@@ -225,26 +232,63 @@ def _cancellation_actor(booking: Booking, user: User) -> str:
     raise AuthorizationError("Only the guest, host, or an admin can cancel a booking")
 
 
-def _compute_guest_cancellation_refund(
-    *, requested_at: datetime, check_in: date, amount_egp: int
-) -> int:
-    """Refund owed when the GUEST cancels, per the configured policy.
+def _check_in_datetime(booking: Booking, listing: Any | None) -> datetime:
+    """The moment the tier windows are measured against: check-in day at the
+    listing's check-in time (fallback to the global display default)."""
+    time_str = getattr(listing, "check_in_time", None)
+    if not isinstance(time_str, str) or not time_str:
+        time_str = settings.DEFAULT_CHECK_IN_TIME
+    try:
+        hour, minute = (int(part) for part in time_str.split(":", 1))
+    except (ValueError, AttributeError):
+        hour, minute = 15, 0
+    return datetime.combine(
+        booking.check_in, datetime.min.time(), tzinfo=UTC
+    ).replace(hour=hour, minute=minute)
 
-    A 24h no-questions-asked grace period from booking creation always
-    fully refunds. After that, the refund scales down the closer check-in
-    gets, per CANCELLATION_FULL_REFUND_DAYS / CANCELLATION_PARTIAL_REFUND_DAYS.
+
+def _compute_guest_accommodation_refund(
+    *,
+    booking: Booking,
+    listing: Any | None,
+    accommodation_amount_egp: int,
+) -> int:
+    """Accommodation refund owed when the GUEST cancels, per the decided V1
+    cancellation tiers (STAYOS_CANCELLATION_REFUND_POLICY_V1 §3).
+
+    The listing's ``cancellation_policy`` selects the tier:
+
+    - FLEXIBLE: full accommodation refund if cancelled ≥24h before check-in
+    - MODERATE: full accommodation refund if cancelled ≥5 days before check-in
+    - STRICT: 50% accommodation refund if cancelled ≥7 days before check-in
+    - Otherwise: no accommodation refund
+
+    The 24h grace period from booking creation (existing StayOS behaviour)
+    still fully refunds the accommodation amount regardless of tier. The
+    guest service fee is handled by the caller — it is non-refundable for
+    guest-initiated cancellations per the same policy.
     """
     now = datetime.now(UTC)
-    booking_age_hours = (now - requested_at).total_seconds() / 3600
-    days_before_checkin = (check_in - now.date()).days
-
+    booking_age_hours = (now - booking.requested_at).total_seconds() / 3600
     if booking_age_hours <= 24:
-        return amount_egp
-    if days_before_checkin > settings.CANCELLATION_FULL_REFUND_DAYS:
-        return amount_egp
-    if days_before_checkin > settings.CANCELLATION_PARTIAL_REFUND_DAYS:
-        return int(round(amount_egp * settings.CANCELLATION_PARTIAL_REFUND_PCT))
-    return 0
+        return accommodation_amount_egp
+
+    policy = getattr(listing, "cancellation_policy", None)
+    if not isinstance(policy, str) or not policy:
+        policy = CancellationPolicy.FLEXIBLE
+    hours_before_checkin = (_check_in_datetime(booking, listing) - now).total_seconds() / 3600
+
+    if policy == CancellationPolicy.FLEXIBLE:
+        return accommodation_amount_egp if hours_before_checkin >= 24 else 0
+    if policy == CancellationPolicy.MODERATE:
+        return accommodation_amount_egp if hours_before_checkin >= 5 * 24 else 0
+    if policy == CancellationPolicy.STRICT:
+        return (
+            int(round(accommodation_amount_egp * 0.5))
+            if hours_before_checkin >= 7 * 24
+            else 0
+        )
+    return accommodation_amount_egp
 
 
 def _refund_policy_label(refund_amount: int, total_paid: int) -> str:
@@ -258,27 +302,40 @@ def _refund_policy_label(refund_amount: int, total_paid: int) -> str:
 
 
 def _evaluate_cancellation_refund(
-    *, cancelled_by: str, payment: Payment | None, requested_at: datetime, check_in: date
-) -> tuple[int, int]:
-    """Returns (refund_amount_egp, total_paid_egp).
+    *,
+    cancelled_by: str,
+    payment: Payment | None,
+    booking: Booking,
+    listing: Any | None,
+) -> tuple[int, int, int]:
+    """Returns (refund_amount_egp, total_paid_egp, service_fee_retained_egp).
 
     Only a VERIFIED payment represents money actually collected from the
     guest — PENDING/PROOF_UPLOADED/REJECTED payments never moved money, so
     there is nothing to refund. A host- or admin-initiated cancellation is
     never charged to the guest: they didn't choose to cancel, so they get
-    everything back regardless of the check-in-distance policy.
+    everything back regardless of the check-in-distance policy (V1 policy §4,
+    §5, §6). For guest-initiated cancellations the guest service fee is
+    non-refundable once paid (V1 policy §3) — only the accommodation amount
+    is subject to the tier table.
     """
     total_paid = payment.amount_egp if payment is not None and payment.status == PaymentStatus.VERIFIED else 0
     if total_paid == 0:
-        return 0, 0
-    if cancelled_by in ("host", "admin"):
-        return total_paid, total_paid
-    return (
-        _compute_guest_cancellation_refund(
-            requested_at=requested_at, check_in=check_in, amount_egp=total_paid
-        ),
-        total_paid,
+        return 0, 0, 0
+    if cancelled_by in ("host", "admin", "system"):
+        return total_paid, total_paid, 0
+    # Rows predating the amount breakdown have no recorded fee — treat the
+    # whole amount as refundable accommodation rather than guessing.
+    service_fee = payment.guest_service_fee_egp or 0 if payment is not None else 0
+    accommodation = (
+        payment.accommodation_amount_egp
+        if payment is not None and payment.accommodation_amount_egp is not None
+        else total_paid - service_fee
     )
+    accommodation_refund = _compute_guest_accommodation_refund(
+        booking=booking, listing=listing, accommodation_amount_egp=accommodation
+    )
+    return accommodation_refund, total_paid, min(service_fee, total_paid - accommodation_refund)
 
 
 async def _settle_payment_on_cancel(
@@ -335,47 +392,62 @@ async def preview_booking_cancellation(
     cancelled_by = _cancellation_actor(booking, user)
 
     current_status = BookingStatus(booking.status)
+    listing = await _listing_for_booking(session, booking)
     payment = await payments_repository.get_payment_by_booking(session, booking.id)
-    refund_amount, total_paid = _evaluate_cancellation_refund(
+    refund_amount, total_paid, service_fee_retained = _evaluate_cancellation_refund(
         cancelled_by=cancelled_by,
         payment=payment,
-        requested_at=booking.requested_at,
-        check_in=booking.check_in,
+        booking=booking,
+        listing=listing,
     )
 
     return BookingCancellationPreview(
         booking_id=booking.id,
         cancellable=current_status in _CANCELLABLE_STATUSES,
         cancelled_by=cancelled_by,
+        cancellation_policy=_policy_name(listing),
         total_paid_egp=total_paid,
         refund_amount_egp=refund_amount,
+        service_fee_retained_egp=service_fee_retained,
         refund_policy_applied=_refund_policy_label(refund_amount, total_paid),
     )
 
 
-async def cancel_booking(
-    session: AsyncSession, user: User, booking_id: str, reason: str | None = None
-) -> BookingResponse:
-    """Cancel a booking as a real lifecycle operation, not a status flip.
+def _policy_name(listing: Any | None) -> str | None:
+    policy = getattr(listing, "cancellation_policy", None)
+    return policy if isinstance(policy, str) and policy else None
 
-    Validates the actor and current state, computes the refund owed under
-    the cancellation policy, settles the payment record accordingly,
-    updates the booking, and emits a `booking.cancelled` event carrying the
-    financial outcome so notifications/finance can act on it.
-    """
-    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    cancelled_by = _cancellation_actor(booking, user)
 
+async def _listing_for_booking(session: AsyncSession, booking: Booking) -> Any | None:
+    # ``booking.unit`` is selectin-loaded but ``unit.listing`` is a separate
+    # lazy relationship that can't be awaited here — always go through the
+    # repository which eager-loads it.
+    fetched = await listings_repository.get_unit_with_listing(
+        session, booking.unit_id
+    )
+    return getattr(fetched, "listing", None) if fetched is not None else None
+
+
+async def _apply_cancellation(
+    session: AsyncSession,
+    booking: Booking,
+    *,
+    cancelled_by: str,
+    cancelled_by_user_id: str | None,
+    reason: str | None,
+) -> Booking:
+    """Shared cancellation engine for user- and system-initiated cancels."""
     current_status = BookingStatus(booking.status)
     if current_status not in _CANCELLABLE_STATUSES:
         raise ValidationError(f"Cannot cancel a booking that is {current_status}")
 
+    listing = await _listing_for_booking(session, booking)
     payment = await payments_repository.get_payment_by_booking(session, booking.id)
-    refund_amount, total_paid = _evaluate_cancellation_refund(
+    refund_amount, total_paid, service_fee_retained = _evaluate_cancellation_refund(
         cancelled_by=cancelled_by,
         payment=payment,
-        requested_at=booking.requested_at,
-        check_in=booking.check_in,
+        booking=booking,
+        listing=listing,
     )
     refund_status = await _settle_payment_on_cancel(session, payment, refund_amount)
 
@@ -384,7 +456,7 @@ async def cancel_booking(
         booking,
         status=str(BookingStatus.CANCELLED),
         cancelled_at=datetime.now(UTC),
-        cancelled_by=user.id,
+        cancelled_by=cancelled_by_user_id,
         cancel_reason=reason,
     )
 
@@ -404,11 +476,110 @@ async def cancel_booking(
             "host_id": host_id,
             "cancelled_by": cancelled_by,
             "cancellation_reason": reason,
+            "cancellation_policy": _policy_name(listing),
             "total_paid_egp": total_paid,
             "refund_amount_egp": refund_amount,
+            "service_fee_retained_egp": service_fee_retained,
             "refund_policy_applied": _refund_policy_label(refund_amount, total_paid),
             "refund_status": refund_status,
             "refund_days": settings.REFUND_PROCESSING_DAYS,
+            "guest_name": guest_user.display_name if guest_user else "Guest",
+            "guest_phone": guest_user.phone_number if guest_user else None,
+            "guest_email": guest_user.email if guest_user else None,
+            "locale": guest_user.locale if guest_user else "ar",
+        },
+    )
+
+    return updated
+
+
+async def cancel_booking(
+    session: AsyncSession, user: User, booking_id: str, reason: str | None = None
+) -> BookingResponse:
+    """Cancel a booking as a real lifecycle operation, not a status flip.
+
+    Validates the actor and current state, computes the refund owed under
+    the cancellation policy, settles the payment record accordingly,
+    updates the booking, and emits a `booking.cancelled` event carrying the
+    financial outcome so notifications/finance can act on it.
+    """
+    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
+    cancelled_by = _cancellation_actor(booking, user)
+    updated = await _apply_cancellation(
+        session,
+        booking,
+        cancelled_by=cancelled_by,
+        cancelled_by_user_id=user.id,
+        reason=reason,
+    )
+    return _to_response(updated)
+
+
+async def cancel_booking_system(
+    session: AsyncSession, booking_id: str, reason: str
+) -> Booking:
+    """System-initiated cancellation (payment deadline expiry, proof
+    resubmission exhaustion — V1 policy §1.2/§2.2/§5).
+
+    No actor row is recorded (`cancelled_by` stays NULL); the event payload
+    carries ``cancelled_by="system"`` so consumers can distinguish it.
+    """
+    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
+    return await _apply_cancellation(
+        session,
+        booking,
+        cancelled_by="system",
+        cancelled_by_user_id=None,
+        reason=reason,
+    )
+
+
+async def mark_guest_no_show(
+    session: AsyncSession, user: User, booking_id: str
+) -> BookingResponse:
+    """Mark a confirmed booking as a guest no-show (admin-only).
+
+    V1 policy §7.1: the host declares the no-show via the support contact and
+    a StayOS admin confirms it — this endpoint is that confirmation step. A
+    no-show is a terminal state with no refund of the accommodation amount or
+    the service fee: the property was held for the guest, so the VERIFIED
+    payment is left untouched.
+    """
+    if user.role != UserRole.ADMIN:
+        raise AuthorizationError("Only admins can confirm a no-show")
+
+    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
+    current_status = BookingStatus(booking.status)
+    if current_status != BookingStatus.CONFIRMED:
+        raise ValidationError(
+            f"Only a confirmed booking can be marked as no-show (currently {current_status})"
+        )
+    if booking.checked_in_at is not None:
+        raise ValidationError("Cannot mark a checked-in booking as no-show")
+    if datetime.now(UTC).date() < booking.check_in:
+        raise ValidationError("A booking cannot be marked as no-show before check-in")
+
+    updated = await bookings_repository.update_booking(
+        session,
+        booking,
+        status=str(BookingStatus.NO_SHOW),
+    )
+
+    host_id = booking.unit.host_id if booking.unit is not None else None
+    guest_result = await session.execute(select(User).where(User.id == booking.guest_id))
+    guest_user = guest_result.scalar_one_or_none()
+
+    await write_event(
+        session,
+        aggregate_type="Booking",
+        aggregate_id=UUID(booking.id),
+        event_type="booking.no_show",
+        payload={
+            "reservation_id": booking.id,
+            "booking_id": booking.id,
+            "unit_id": booking.unit_id,
+            "host_id": host_id,
+            "confirmed_by": user.id,
             "guest_name": guest_user.display_name if guest_user else "Guest",
             "guest_phone": guest_user.phone_number if guest_user else None,
             "guest_email": guest_user.email if guest_user else None,

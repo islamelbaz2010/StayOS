@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     META_PHONE_NUMBER_ID: str = Field(default="", description="Meta WhatsApp phone number ID")
 
     S3_LISTINGS_BUCKET: str = Field(default="", description="S3 bucket for listing photos")
+    S3_PAYMENT_PROOF_BUCKET: str = Field(
+        default="",
+        description="Private S3 bucket for payment proof uploads (P0-3: payment proofs can contain bank details and must not share the public listing-photo bucket). Falls back to S3_LISTINGS_BUCKET when unset so dev/test environments keep working.",
+    )
     S3_KYC_BUCKET: str = Field(default="", description="S3 bucket for KYC documents")
     AWS_REGION: str = Field(default="", description="AWS region")
     AWS_ACCESS_KEY_ID: str = Field(default="", description="AWS access key ID")
@@ -101,6 +105,17 @@ class Settings(BaseSettings):
     CANCELLATION_FULL_REFUND_DAYS: int = Field(default=7, ge=0)
     CANCELLATION_PARTIAL_REFUND_DAYS: int = Field(default=3, ge=0)
     CANCELLATION_PARTIAL_REFUND_PCT: float = Field(default=0.5, ge=0.0, le=1.0)
+    # V1 Cancellation & Refund Policy §1.2 — once the host accepts, the guest
+    # has 24 hours to submit payment proof before the booking may be cancelled.
+    PAYMENT_DEADLINE_HOURS: int = Field(
+        default=24,
+        ge=1,
+        description="Hours the guest has to submit payment proof after host acceptance (V1 policy §1.2)",
+    )
+    # V1 Cancellation & Refund Policy §2.2 — up to 3 proof rejections within
+    # 48 hours of the first rejection, then the booking is cancelled.
+    PAYMENT_PROOF_MAX_REJECTIONS: int = Field(default=3, ge=1)
+    PAYMENT_PROOF_RESUBMISSION_WINDOW_HOURS: int = Field(default=48, ge=1)
     REFUND_PROCESSING_DAYS: int = Field(
         default=5,
         ge=0,
@@ -125,6 +140,10 @@ class Settings(BaseSettings):
     # Closed Alpha commercial incentives
     ALPHA_HOST_FREE_BOOKINGS: int = Field(default=3, ge=0, description="Number of completed bookings with 0% host commission before standard rate applies")
     ALPHA_GUEST_FREE_BOOKINGS: int = Field(default=10, ge=0, description="Number of completed bookings globally with 0% guest service fee before standard rate applies")
+
+    @property
+    def payment_proof_bucket(self) -> str:
+        return self.S3_PAYMENT_PROOF_BUCKET or self.S3_LISTINGS_BUCKET
 
     @property
     def cors_origins_list(self) -> list[str]:

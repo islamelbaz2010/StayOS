@@ -19,6 +19,7 @@ const STATUS_KEYS: Record<string, string> = {
   confirmed: "statusConfirmed",
   rejected: "statusRejected",
   cancelled: "statusCancelled",
+  no_show: "statusNoShow",
 };
 
 export function TripsScreen() {
@@ -37,8 +38,8 @@ export function TripsScreen() {
   const now = new Date();
   const filtered = (bookings || []).filter((b: any) => {
     const checkIn = new Date(b.check_in);
-    if (tab === "upcoming") return checkIn >= now && b.status !== "cancelled";
-    return checkIn < now || b.status === "cancelled";
+    if (tab === "upcoming") return checkIn >= now && b.status !== "cancelled" && b.status !== "no_show";
+    return checkIn < now || b.status === "cancelled" || b.status === "no_show";
   });
 
   return (

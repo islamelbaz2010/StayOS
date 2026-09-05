@@ -1169,3 +1169,424 @@ async def test_get_stay_info_unauthorized_cross_guest(
 
     with pytest.raises(AuthorizationError):
         await booking_services.get_stay_info(fake_session, other_guest, booking.id)
+
+
+# ---------------------------------------------------------------------------
+# V1 cancellation tiers, service-fee retention, system cancel, no-show
+# ---------------------------------------------------------------------------
+
+
+def _listing_for_policy(unit: Unit, policy: str) -> UnitListing:
+    listing = _make_listing(unit_id=unit.id)
+    listing.cancellation_policy = policy
+    listing.check_in_time = "15:00"
+    return listing
+
+
+def _patch_listing_lookup(monkeypatch, listing: UnitListing | None) -> None:
+    fake_unit = MagicMock()
+    fake_unit.listing = listing
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=fake_unit),
+    )
+
+
+def _patch_cancel_infra(
+    fake_session: AsyncMock, monkeypatch, booking: Booking, payment: Payment | None, guest: User
+) -> AsyncMock:
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(bookings_repository, "update_booking", _apply_booking_update)
+    monkeypatch.setattr(
+        payments_repository, "get_payment_by_booking", AsyncMock(return_value=payment)
+    )
+    monkeypatch.setattr(
+        payments_repository,
+        "update_payment",
+        AsyncMock(side_effect=lambda _s, p, **kw: _apply_kwargs(p, kw)),
+    )
+    write_event_mock = AsyncMock()
+    monkeypatch.setattr("app.bookings.services.write_event", write_event_mock)
+    _stub_user_lookup(fake_session, guest)
+    return write_event_mock
+
+
+@pytest.mark.asyncio
+async def test_cancel_booking_guest_flexible_tier_refunds_accommodation_retains_fee(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """FLEXIBLE + ≥24h before check-in: full accommodation refund, but the
+    guest service fee is non-refundable (V1 policy §3)."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY + timedelta(days=10),
+        check_out=_TODAY + timedelta(days=13),
+        requested_at=datetime.now(UTC) - timedelta(days=5),
+    )
+    payment = _make_payment(booking, status=PaymentStatus.VERIFIED, amount_egp=3120)
+    payment.accommodation_amount_egp = 3000
+    payment.guest_service_fee_egp = 120
+
+    _patch_listing_lookup(monkeypatch, _listing_for_policy(unit, "FLEXIBLE"))
+    write_event_mock = _patch_cancel_infra(fake_session, monkeypatch, booking, payment, guest)
+
+    result = await booking_services.cancel_booking(fake_session, guest, booking.id)
+
+    assert result.status == BookingStatus.CANCELLED
+    assert payment.status == PaymentStatus.REFUND_PENDING
+    assert payment.refund_amount_egp == 3000
+    payload = write_event_mock.call_args.kwargs["payload"]
+    assert payload["refund_amount_egp"] == 3000
+    assert payload["service_fee_retained_egp"] == 120
+    assert payload["cancellation_policy"] == "FLEXIBLE"
+    assert payload["refund_policy_applied"] == "PARTIAL_REFUND"
+
+
+@pytest.mark.asyncio
+async def test_cancel_booking_guest_flexible_tier_within_24h_no_refund(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """FLEXIBLE + <24h before check-in: no accommodation refund (V1 §3)."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY,
+        check_out=_TODAY + timedelta(days=3),
+        requested_at=datetime.now(UTC) - timedelta(days=10),
+    )
+    payment = _make_payment(booking, status=PaymentStatus.VERIFIED, amount_egp=3120)
+    payment.accommodation_amount_egp = 3000
+    payment.guest_service_fee_egp = 120
+
+    _patch_listing_lookup(monkeypatch, _listing_for_policy(unit, "FLEXIBLE"))
+    write_event_mock = _patch_cancel_infra(fake_session, monkeypatch, booking, payment, guest)
+
+    result = await booking_services.cancel_booking(fake_session, guest, booking.id)
+
+    assert result.status == BookingStatus.CANCELLED
+    assert payment.status == PaymentStatus.VERIFIED
+    payload = write_event_mock.call_args.kwargs["payload"]
+    assert payload["refund_amount_egp"] == 0
+    assert payload["service_fee_retained_egp"] == 120
+    assert payload["refund_policy_applied"] == "NO_REFUND"
+
+
+@pytest.mark.asyncio
+async def test_cancel_booking_guest_moderate_tier_boundary(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """MODERATE: full accommodation refund only at ≥5 days before check-in."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY + timedelta(days=6),
+        check_out=_TODAY + timedelta(days=9),
+        requested_at=datetime.now(UTC) - timedelta(days=10),
+    )
+    payment = _make_payment(booking, status=PaymentStatus.VERIFIED, amount_egp=3120)
+    payment.accommodation_amount_egp = 3000
+    payment.guest_service_fee_egp = 120
+
+    _patch_listing_lookup(monkeypatch, _listing_for_policy(unit, "MODERATE"))
+    _patch_cancel_infra(fake_session, monkeypatch, booking, payment, guest)
+
+    await booking_services.cancel_booking(fake_session, guest, booking.id)
+    assert payment.refund_amount_egp == 3000
+
+    # Same tier, inside the window → nothing refunded.
+    unit2 = _make_unit(unit_id="unit-2", host_id=host.id)
+    booking2 = _make_booking(
+        unit2,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY + timedelta(days=3),
+        check_out=_TODAY + timedelta(days=6),
+        requested_at=datetime.now(UTC) - timedelta(days=10),
+    )
+    payment2 = _make_payment(booking2, status=PaymentStatus.VERIFIED, amount_egp=3120)
+    payment2.accommodation_amount_egp = 3000
+    payment2.guest_service_fee_egp = 120
+    _patch_listing_lookup(monkeypatch, _listing_for_policy(unit2, "MODERATE"))
+    _patch_cancel_infra(fake_session, monkeypatch, booking2, payment2, guest)
+
+    await booking_services.cancel_booking(fake_session, guest, booking2.id)
+    assert payment2.status == PaymentStatus.VERIFIED
+    assert payment2.refund_amount_egp is None
+
+
+@pytest.mark.asyncio
+async def test_cancel_booking_guest_strict_tier_half_refund(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """STRICT: 50% accommodation refund at ≥7 days before check-in."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY + timedelta(days=10),
+        check_out=_TODAY + timedelta(days=13),
+        requested_at=datetime.now(UTC) - timedelta(days=10),
+    )
+    payment = _make_payment(booking, status=PaymentStatus.VERIFIED, amount_egp=3120)
+    payment.accommodation_amount_egp = 3000
+    payment.guest_service_fee_egp = 120
+
+    _patch_listing_lookup(monkeypatch, _listing_for_policy(unit, "STRICT"))
+    write_event_mock = _patch_cancel_infra(fake_session, monkeypatch, booking, payment, guest)
+
+    result = await booking_services.cancel_booking(fake_session, guest, booking.id)
+
+    assert result.status == BookingStatus.CANCELLED
+    assert payment.status == PaymentStatus.REFUND_PENDING
+    assert payment.refund_amount_egp == 1500
+    payload = write_event_mock.call_args.kwargs["payload"]
+    assert payload["refund_amount_egp"] == 1500
+    assert payload["service_fee_retained_egp"] == 120
+
+
+@pytest.mark.asyncio
+async def test_cancel_booking_host_cancellation_refunds_service_fee(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Host-initiated cancellation refunds 100% including the service fee
+    (V1 policy §4 exception to §3)."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY,
+        check_out=_TODAY + timedelta(days=3),
+        requested_at=datetime.now(UTC) - timedelta(days=10),
+    )
+    payment = _make_payment(booking, status=PaymentStatus.VERIFIED, amount_egp=3120)
+    payment.accommodation_amount_egp = 3000
+    payment.guest_service_fee_egp = 120
+
+    _patch_listing_lookup(monkeypatch, _listing_for_policy(unit, "STRICT"))
+    write_event_mock = _patch_cancel_infra(fake_session, monkeypatch, booking, payment, guest)
+
+    await booking_services.cancel_booking(fake_session, host, booking.id, "double booked")
+
+    assert payment.status == PaymentStatus.REFUND_PENDING
+    assert payment.refund_amount_egp == 3120
+    payload = write_event_mock.call_args.kwargs["payload"]
+    assert payload["refund_amount_egp"] == 3120
+    assert payload["service_fee_retained_egp"] == 0
+
+
+@pytest.mark.asyncio
+async def test_cancel_booking_system_cancel_marks_system_actor(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """System cancellations (deadline expiry, proof exhaustion) record no
+    user id but report cancelled_by="system" in the event payload."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.ACCEPTED)
+    payment = _make_payment(booking, status=PaymentStatus.PENDING, amount_egp=3000)
+
+    _patch_listing_lookup(monkeypatch, None)
+    write_event_mock = _patch_cancel_infra(fake_session, monkeypatch, booking, payment, guest)
+
+    updated = await booking_services.cancel_booking_system(
+        fake_session, booking.id, reason="payment_deadline_expired"
+    )
+
+    assert updated.status == str(BookingStatus.CANCELLED)
+    assert updated.cancelled_by is None
+    assert payment.status == PaymentStatus.CANCELLED
+    payload = write_event_mock.call_args.kwargs["payload"]
+    assert payload["cancelled_by"] == "system"
+    assert payload["cancellation_reason"] == "payment_deadline_expired"
+
+
+@pytest.mark.asyncio
+async def test_cancel_booking_system_rejects_terminal_state(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.CANCELLED)
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(ValidationError):
+        await booking_services.cancel_booking_system(
+            fake_session, booking.id, reason="payment_deadline_expired"
+        )
+
+
+# --- mark_guest_no_show (V1 policy §7.1) ------------------------------------
+
+
+def _confirmed_past_checkin_booking(unit: Unit, guest: User) -> Booking:
+    return _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY - timedelta(days=1),
+        check_out=_TODAY + timedelta(days=2),
+        requested_at=datetime.now(UTC) - timedelta(days=10),
+    )
+
+
+@pytest.mark.asyncio
+async def test_mark_guest_no_show_admin_success(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _confirmed_past_checkin_booking(unit, guest)
+    payment = _make_payment(booking, status=PaymentStatus.VERIFIED, amount_egp=3120)
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(bookings_repository, "update_booking", _apply_booking_update)
+    update_payment_mock = AsyncMock()
+    monkeypatch.setattr(payments_repository, "update_payment", update_payment_mock)
+    write_event_mock = AsyncMock()
+    monkeypatch.setattr("app.bookings.services.write_event", write_event_mock)
+    _stub_user_lookup(fake_session, guest)
+
+    result = await booking_services.mark_guest_no_show(fake_session, admin, booking.id)
+
+    assert result.status == BookingStatus.NO_SHOW
+    # No refund: the verified payment is left untouched.
+    assert payment.status == PaymentStatus.VERIFIED
+    assert not update_payment_mock.called
+    assert write_event_mock.call_args.kwargs["event_type"] == "booking.no_show"
+    payload = write_event_mock.call_args.kwargs["payload"]
+    assert payload["confirmed_by"] == admin.id
+
+
+@pytest.mark.asyncio
+async def test_mark_guest_no_show_non_admin_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    guest = _make_user(role=UserRole.GUEST)
+    unit = _make_unit(host_id=host.id)
+    booking = _confirmed_past_checkin_booking(unit, guest)
+
+    with pytest.raises(AuthorizationError):
+        await booking_services.mark_guest_no_show(fake_session, host, booking.id)
+    with pytest.raises(AuthorizationError):
+        await booking_services.mark_guest_no_show(fake_session, guest, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_mark_guest_no_show_requires_confirmed_status(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.ACCEPTED)
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(ValidationError):
+        await booking_services.mark_guest_no_show(fake_session, admin, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_mark_guest_no_show_before_checkin_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit, guest, status=BookingStatus.CONFIRMED, check_in=_TODAY + timedelta(days=2)
+    )
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(ValidationError):
+        await booking_services.mark_guest_no_show(fake_session, admin, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_mark_guest_no_show_checked_in_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _confirmed_past_checkin_booking(unit, guest)
+    booking.checked_in_at = datetime.now(UTC)
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(ValidationError):
+        await booking_services.mark_guest_no_show(fake_session, admin, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_preview_exposes_policy_and_retained_fee(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY + timedelta(days=10),
+        check_out=_TODAY + timedelta(days=13),
+        requested_at=datetime.now(UTC) - timedelta(days=5),
+    )
+    payment = _make_payment(booking, status=PaymentStatus.VERIFIED, amount_egp=3120)
+    payment.accommodation_amount_egp = 3000
+    payment.guest_service_fee_egp = 120
+
+    _patch_listing_lookup(monkeypatch, _listing_for_policy(unit, "FLEXIBLE"))
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(
+        payments_repository, "get_payment_by_booking", AsyncMock(return_value=payment)
+    )
+
+    preview = await booking_services.preview_booking_cancellation(
+        fake_session, guest, booking.id
+    )
+
+    assert preview.cancellation_policy == "FLEXIBLE"
+    assert preview.refund_amount_egp == 3000
+    assert preview.service_fee_retained_egp == 120

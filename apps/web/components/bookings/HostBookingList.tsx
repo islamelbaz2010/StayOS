@@ -18,6 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
   confirmed: "bg-emerald-100 text-emerald-800",
   rejected: "bg-red-100 text-red-800",
   cancelled: "bg-neutral-200 text-neutral-700",
+  no_show: "bg-neutral-200 text-neutral-700",
 };
 
 function nights(checkIn: string, checkOut: string): number {

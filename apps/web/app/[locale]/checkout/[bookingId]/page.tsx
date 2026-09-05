@@ -92,6 +92,22 @@ function CheckoutContent({ bookingId, locale }: { bookingId: string; locale: str
         )}
       </div>
 
+      {canUpload && payment.payment_deadline_at && (
+        <p className="rounded-xl bg-amber-50 p-4 text-sm font-medium text-amber-800 shadow-card">
+          {t("deadlineWarning", {
+            deadline: new Date(payment.payment_deadline_at).toLocaleString(dateLocale),
+          })}
+        </p>
+      )}
+
+      {canUpload && payment.proof_rejection_count > 0 && (
+        <p className="text-sm text-neutral-600">
+          {t("attemptsRemaining", {
+            count: Math.max(0, 3 - payment.proof_rejection_count),
+          })}
+        </p>
+      )}
+
       {/* Booking summary */}
       <div className="rounded-xl bg-white p-6 shadow-card">
         <h2 className="mb-4 text-lg font-bold text-neutral-900">

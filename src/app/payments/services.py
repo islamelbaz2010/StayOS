@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import boto3
@@ -84,8 +84,12 @@ def _to_response(payment: Payment) -> PaymentResponse:
         status=payment.status,
         method=payment.method,
         amount_egp=payment.amount_egp,
+        accommodation_amount_egp=payment.accommodation_amount_egp,
+        guest_service_fee_egp=payment.guest_service_fee_egp,
         nights=payment.nights,
         reference_number=payment.reference_number,
+        payment_deadline_at=payment.payment_deadline_at,
+        proof_rejection_count=payment.proof_rejection_count or 0,
         proof_s3_key=payment.proof_s3_key,
         proof_url=payment.proof_url,
         proof_uploaded_at=payment.proof_uploaded_at,
@@ -112,6 +116,8 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
         method=payment.method,
         amount_egp=payment.amount_egp,
         reference_number=payment.reference_number,
+        payment_deadline_at=payment.payment_deadline_at,
+        proof_rejection_count=payment.proof_rejection_count or 0,
         proof_url=payment.proof_url,
         proof_uploaded_at=payment.proof_uploaded_at,
         created_at=payment.created_at,
@@ -196,6 +202,10 @@ async def create_payment_for_booking(
 
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()
+    # V1 policy §1.2 — the guest has PAYMENT_DEADLINE_HOURS from host
+    # acceptance (payment creation) to submit proof before the booking may
+    # be cancelled by the expiry sweep.
+    deadline = datetime.now(UTC) + timedelta(hours=settings.PAYMENT_DEADLINE_HOURS)
 
     payment = await payments_repository.create_payment(
         session,
@@ -204,9 +214,12 @@ async def create_payment_for_booking(
         host_id=unit.host_id,
         unit_id=booking.unit_id,
         amount_egp=amount,
+        accommodation_amount_egp=subtotal,
+        guest_service_fee_egp=guest_fee,
         nights=nights,
         reference_number=reference,
         instructions=instructions,
+        payment_deadline_at=deadline,
     )
 
     await _emit_outbox_event(
@@ -267,6 +280,7 @@ async def presign_proof_upload(
         raise ValidationError(
             "Proof can only be uploaded when payment is pending or rejected"
         )
+    _assert_resubmission_allowed(payment)
 
     allowed_types = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
     if content_type not in allowed_types:
@@ -279,7 +293,7 @@ async def presign_proof_upload(
     upload_url = client.generate_presigned_url(
         "put_object",
         Params={
-            "Bucket": settings.S3_LISTINGS_BUCKET,
+            "Bucket": settings.payment_proof_bucket,
             "Key": proof_key,
             "ContentType": content_type,
         },
@@ -289,12 +303,36 @@ async def presign_proof_upload(
     return PaymentProofPresignResponse(upload_url=upload_url, proof_key=proof_key)
 
 
+def _assert_resubmission_allowed(payment: Payment) -> None:
+    """V1 policy §2.2 — proof may be resubmitted at most
+    PAYMENT_PROOF_MAX_REJECTIONS times within
+    PAYMENT_PROOF_RESUBMISSION_WINDOW_HOURS of the first rejection.
+
+    Exhaustion normally cancels the booking at rejection time, so this guard
+    is the defence-in-depth backstop for races and pre-existing rows.
+    """
+    if (
+        (payment.proof_rejection_count or 0) >= settings.PAYMENT_PROOF_MAX_REJECTIONS
+    ):
+        raise ValidationError(
+            "Payment proof resubmission limit reached — this booking can no longer be paid"
+        )
+    if payment.first_rejected_at is not None:
+        window_end = payment.first_rejected_at + timedelta(
+            hours=settings.PAYMENT_PROOF_RESUBMISSION_WINDOW_HOURS
+        )
+        if datetime.now(UTC) > window_end:
+            raise ValidationError(
+                "Payment proof resubmission window has expired — this booking can no longer be paid"
+            )
+
+
 async def upload_proof(
     session: AsyncSession,
     user: User,
     payment_id: str,
     s3_key: str,
-    url: str,
+    url: str | None,
 ) -> PaymentResponse:
     payment = await payments_repository.get_payment_or_raise(session, payment_id)
     if payment.guest_id != user.id:
@@ -304,6 +342,7 @@ async def upload_proof(
         raise ValidationError(
             "Proof can only be uploaded when payment is pending or rejected"
         )
+    _assert_resubmission_allowed(payment)
 
     now = datetime.now(UTC)
     updated = await payments_repository.update_payment(
@@ -395,6 +434,15 @@ async def reject_payment(
         raise ValidationError("Only payments with uploaded proof can be rejected")
 
     now = datetime.now(UTC)
+    rejection_count = (payment.proof_rejection_count or 0) + 1
+    first_rejected_at = payment.first_rejected_at or now
+    window_end = first_rejected_at + timedelta(
+        hours=settings.PAYMENT_PROOF_RESUBMISSION_WINDOW_HOURS
+    )
+    exhausted = (
+        rejection_count >= settings.PAYMENT_PROOF_MAX_REJECTIONS
+        or now > window_end
+    )
     updated = await payments_repository.update_payment(
         session,
         payment,
@@ -402,6 +450,8 @@ async def reject_payment(
         rejected_at=now,
         rejected_by=user.id,
         reject_reason=reject_reason,
+        proof_rejection_count=rejection_count,
+        first_rejected_at=first_rejected_at,
     )
 
     guest = await session.execute(select(User).where(User.id == payment.guest_id))
@@ -415,12 +465,27 @@ async def reject_payment(
             "payment_id": payment.id,
             "booking_id": payment.booking_id,
             "reject_reason": reject_reason,
+            "proof_rejection_count": rejection_count,
+            "resubmissions_remaining": max(
+                0, settings.PAYMENT_PROOF_MAX_REJECTIONS - rejection_count
+            ),
             "guest_name": guest_user.display_name if guest_user else "Guest",
             "guest_phone": guest_user.phone_number if guest_user else None,
             "guest_email": guest_user.email if guest_user else None,
             "locale": guest_user.locale if guest_user else "ar",
         },
     )
+
+    if exhausted:
+        # V1 policy §2.2 — resubmission attempts exhausted or window elapsed:
+        # the booking is cancelled and the guest may submit a new request.
+        from app.bookings import services as booking_services
+
+        await booking_services.cancel_booking_system(
+            session,
+            payment.booking_id,
+            reason="payment_proof_resubmission_exhausted",
+        )
 
     return _to_response(updated)
 

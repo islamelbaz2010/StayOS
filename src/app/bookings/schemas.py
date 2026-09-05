@@ -44,8 +44,14 @@ class BookingCancellationPreview(BaseModel):
     booking_id: str
     cancellable: bool
     cancelled_by: str  # "guest" | "host" | "admin" — perspective of the requester
+    # Listing's cancellation tier (FLEXIBLE/MODERATE/STRICT) — null if the
+    # unit has no listing yet.
+    cancellation_policy: str | None = None
     total_paid_egp: int
     refund_amount_egp: int
+    # Non-refundable guest service fee kept by StayOS on a guest-initiated
+    # cancellation (V1 policy §3). Always 0 for host/admin cancellations.
+    service_fee_retained_egp: int = 0
     refund_policy_applied: str
 
 

@@ -4,6 +4,12 @@ import { useCancelBooking, useCancellationPreview } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 
+const POLICY_KEYS: Record<string, string> = {
+  FLEXIBLE: "listingCancellationFlexible",
+  MODERATE: "listingCancellationModerate",
+  STRICT: "listingCancellationStrict",
+};
+
 interface CancelBookingModalProps {
   visible: boolean;
   bookingId: string;
@@ -54,6 +60,18 @@ export function CancelBookingModal({ visible, bookingId, onClose, onCancelled }:
                   : p.refund_amount_egp === 0
                     ? t("cancelRefundNone")
                     : `${t("cancelRefundPartial")} ${p.refund_amount_egp} ${t("egp")} (${t("cancelRefundOf")} ${p.total_paid_egp} ${t("egp")} ${t("cancelRefundPaid")}).`}
+            </Text>
+          )}
+
+          {p && p.cancelled_by === "guest" && (p.service_fee_retained_egp ?? 0) > 0 && (
+            <Text style={styles.policyText}>
+              {p.cancellation_policy && POLICY_KEYS[p.cancellation_policy]
+                ? `${t("cancelPolicyLabel")} ${t(POLICY_KEYS[p.cancellation_policy])}. `
+                : ""}
+              {t("cancelServiceFeeRetained").replace(
+                "{amount}",
+                String(p.service_fee_retained_egp)
+              )}
             </Text>
           )}
 
@@ -127,6 +145,11 @@ const styles = StyleSheet.create({
   refundText: {
     fontSize: fontSize.md,
     color: colors.text,
+    marginBottom: spacing.md,
+  },
+  policyText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
     marginBottom: spacing.md,
   },
   input: {

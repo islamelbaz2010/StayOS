@@ -204,6 +204,26 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
             },
         },
     },
+    "booking.no_show": {
+        "ar": {
+            "email": {
+                "subject": "تسجيل عدم حضور",
+                "body": "تم تسجيل عدم حضور للحجز {{reservation_id}}. وفقًا لسياسة الإلغاء، لا يحق استرداد مبلغ الإقامة أو رسوم الخدمة.",
+            },
+            "sms": {
+                "body": "تم تسجيل عدم حضور للحجز {{reservation_id}}.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "No-show recorded",
+                "body": "A no-show was recorded for booking {{reservation_id}}. Per the cancellation policy, the accommodation amount and service fee are not refundable.",
+            },
+            "sms": {
+                "body": "A no-show was recorded for booking {{reservation_id}}.",
+            },
+        },
+    },
     "message.received": {
         "ar": {
             "email": {

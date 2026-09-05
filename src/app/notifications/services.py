@@ -58,6 +58,7 @@ def channels_for_event(event_type: str) -> list[str]:
         "booking.checked_in": [NotificationChannel.SMS],
         "booking.checked_out": [NotificationChannel.SMS],
         "booking.cancelled": [NotificationChannel.EMAIL, NotificationChannel.SMS],
+        "booking.no_show": [NotificationChannel.EMAIL, NotificationChannel.SMS],
         "message.received": [NotificationChannel.EMAIL],
     }
     return mapping.get(event_type, [NotificationChannel.EMAIL])

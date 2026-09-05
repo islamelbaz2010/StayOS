@@ -337,6 +337,10 @@ export interface paths {
     /** Post Check Out */
     post: operations["post_check_out_api_v1_bookings__booking_id__check_out_post"];
   };
+  "/api/v1/bookings/{booking_id}/no-show": {
+    /** Post No Show */
+    post: operations["post_no_show_api_v1_bookings__booking_id__no_show_post"];
+  };
   "/api/v1/bookings/{booking_id}/complete": {
     /** Complete Booking Endpoint */
     post: operations["complete_booking_endpoint_api_v1_bookings__booking_id__complete_post"];
@@ -725,10 +729,17 @@ export interface components {
       cancellable: boolean;
       /** Cancelled By */
       cancelled_by: string;
+      /** Cancellation Policy */
+      cancellation_policy?: string | null;
       /** Total Paid Egp */
       total_paid_egp: number;
       /** Refund Amount Egp */
       refund_amount_egp: number;
+      /**
+       * Service Fee Retained Egp
+       * @default 0
+       */
+      service_fee_retained_egp?: number;
       /** Refund Policy Applied */
       refund_policy_applied: string;
     };
@@ -828,7 +839,7 @@ export interface components {
      * BookingStatus
      * @enum {string}
      */
-    BookingStatus: "requested" | "accepted" | "confirmed" | "completed" | "rejected" | "cancelled";
+    BookingStatus: "requested" | "accepted" | "confirmed" | "completed" | "rejected" | "cancelled" | "no_show";
     /** BookingUpdate */
     BookingUpdate: {
       status: components["schemas"]["BookingStatus"];
@@ -2848,10 +2859,21 @@ export interface components {
       amount_egp: number;
       /** Reference Number */
       reference_number: string;
+      /** Payment Deadline At */
+      payment_deadline_at?: string | null;
+      /**
+       * Proof Rejection Count
+       * @default 0
+       */
+      proof_rejection_count?: number;
       /** Proof Url */
       proof_url: string | null;
       /** Proof Uploaded At */
       proof_uploaded_at: string | null;
+      /** Accommodation Amount Egp */
+      accommodation_amount_egp?: number | null;
+      /** Guest Service Fee Egp */
+      guest_service_fee_egp?: number | null;
       /**
        * Created At
        * Format: date-time
@@ -2887,7 +2909,7 @@ export interface components {
       /** S3 Key */
       s3_key: string;
       /** Url */
-      url: string;
+      url?: string | null;
     };
     /**
      * PaymentProvider
@@ -2912,10 +2934,21 @@ export interface components {
       method: string;
       /** Amount Egp */
       amount_egp: number;
+      /** Accommodation Amount Egp */
+      accommodation_amount_egp?: number | null;
+      /** Guest Service Fee Egp */
+      guest_service_fee_egp?: number | null;
       /** Nights */
       nights: number;
       /** Reference Number */
       reference_number: string;
+      /** Payment Deadline At */
+      payment_deadline_at?: string | null;
+      /**
+       * Proof Rejection Count
+       * @default 0
+       */
+      proof_rejection_count?: number;
       /** Proof S3 Key */
       proof_s3_key: string | null;
       /** Proof Url */
@@ -5749,6 +5782,28 @@ export interface operations {
   };
   /** Post Check Out */
   post_check_out_api_v1_bookings__booking_id__check_out_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post No Show */
+  post_no_show_api_v1_bookings__booking_id__no_show_post: {
     parameters: {
       path: {
         booking_id: string;

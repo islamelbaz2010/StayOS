@@ -8,6 +8,7 @@ celery_app = Celery(
     broker=str(settings.REDIS_URL).replace("/0", "/1"),
     backend=str(settings.REDIS_URL).replace("/0", "/2"),
     include=[
+        "app.bookings.tasks",
         "app.kyc.tasks",
         "app.operations.tasks",
         "app.finance.tasks",
@@ -57,6 +58,10 @@ celery_app.conf.update(
         "run-discovery-scheduled-every-6-hours": {
             "task": "app.discovery.tasks.run_scheduled_discovery",
             "schedule": crontab(hour="*/6", minute=30),
+        },
+        "expire-unpaid-bookings-every-15-minutes": {
+            "task": "app.bookings.tasks.expire_unpaid_bookings",
+            "schedule": 900.0,
         },
         "send-scheduled-reservation-messages-daily-0800-utc": {
             "task": "app.messages.tasks.process_scheduled_messages",

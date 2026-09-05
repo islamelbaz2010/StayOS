@@ -24,6 +24,7 @@ from .services import (
     get_stay_info,
     list_guest_bookings,
     list_host_bookings,
+    mark_guest_no_show,
     preview_booking_cancellation,
     update_booking,
 )
@@ -140,6 +141,18 @@ async def post_check_out(
 ) -> BookingResponse:
     try:
         return await check_out_booking(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{booking_id}/no-show", response_model=BookingResponse)
+async def post_no_show(
+    booking_id: str,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> BookingResponse:
+    try:
+        return await mark_guest_no_show(session, user, booking_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

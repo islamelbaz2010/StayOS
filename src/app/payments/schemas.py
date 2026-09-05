@@ -15,7 +15,9 @@ class PaymentProofPresignResponse(BaseModel):
 
 class PaymentProofUpload(BaseModel):
     s3_key: str
-    url: str
+    # Kept optional for older clients; the server treats the s3_key as the
+    # source of truth since the proof bucket is private (P0-3).
+    url: str | None = None
 
 
 class PaymentVerifyRequest(BaseModel):
@@ -33,8 +35,12 @@ class PaymentResponse(BaseModel):
     status: str
     method: str
     amount_egp: int
+    accommodation_amount_egp: int | None = None
+    guest_service_fee_egp: int | None = None
     nights: int
     reference_number: str
+    payment_deadline_at: datetime | None = None
+    proof_rejection_count: int = 0
     proof_s3_key: str | None
     proof_url: str | None
     proof_uploaded_at: datetime | None
@@ -61,6 +67,8 @@ class PaymentListItem(BaseModel):
     method: str
     amount_egp: int
     reference_number: str
+    payment_deadline_at: datetime | None = None
+    proof_rejection_count: int = 0
     proof_url: str | None
     proof_uploaded_at: datetime | None
     created_at: datetime

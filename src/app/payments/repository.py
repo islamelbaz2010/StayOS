@@ -1,7 +1,11 @@
+from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.bookings.constants import BookingStatus
+from app.bookings.models import Booking
 
 from .constants import PaymentStatus
 from .models import Payment
@@ -17,6 +21,9 @@ async def create_payment(
     nights: int,
     reference_number: str,
     instructions: str,
+    accommodation_amount_egp: int | None = None,
+    guest_service_fee_egp: int | None = None,
+    payment_deadline_at: datetime | None = None,
 ) -> Payment:
     payment = Payment(
         id=str(uuid4()),
@@ -26,9 +33,12 @@ async def create_payment(
         unit_id=unit_id,
         status=PaymentStatus.PENDING,
         amount_egp=amount_egp,
+        accommodation_amount_egp=accommodation_amount_egp,
+        guest_service_fee_egp=guest_service_fee_egp,
         nights=nights,
         reference_number=reference_number,
         instructions=instructions,
+        payment_deadline_at=payment_deadline_at,
     )
     session.add(payment)
     await session.flush()
@@ -90,6 +100,33 @@ async def list_pending_payments(
         stmt = stmt.where(
             Payment.status.in_([PaymentStatus.PENDING, PaymentStatus.PROOF_UPLOADED])
         )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def list_expired_unpaid_payments(
+    session: AsyncSession,
+    now: datetime,
+    limit: int = 100,
+) -> list[Payment]:
+    """Payments past their proof-submission deadline with nothing to review.
+
+    Only PENDING or REJECTED payments qualify — a PROOF_UPLOADED payment has
+    a receipt awaiting admin review, so its deadline is satisfied. The linked
+    booking must still be ACCEPTED (not yet confirmed/cancelled).
+    """
+    stmt = (
+        select(Payment)
+        .join(Booking, Payment.booking_id == Booking.id)
+        .where(
+            Payment.payment_deadline_at.isnot(None),
+            Payment.payment_deadline_at < now,
+            Payment.status.in_([PaymentStatus.PENDING, PaymentStatus.REJECTED]),
+            Booking.status == BookingStatus.ACCEPTED,
+        )
+        .order_by(Payment.payment_deadline_at)
+        .limit(limit)
+    )
     result = await session.execute(stmt)
     return list(result.scalars().all())
 

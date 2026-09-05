@@ -26,6 +26,7 @@ const PHASE_KEYS: Record<StayPhase, string> = {
   completed: "stayPhaseCompleted",
   cancelled: "statusCancelled",
   rejected: "statusRejected",
+  no_show: "statusNoShow",
 };
 
 const hasMapKey = Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY);
@@ -84,7 +85,7 @@ export function TripDetailScreen() {
       </Section>
 
       {/* Arrival */}
-      {phase !== "cancelled" && phase !== "rejected" && (
+      {phase !== "cancelled" && phase !== "rejected" && phase !== "no_show" && (
         <Section title={t("arrivalInfo")}>
           {property.address && <Text style={styles.bodyText}>{property.address}</Text>}
           <Text style={styles.metaText}>

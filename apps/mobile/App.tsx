@@ -9,7 +9,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LocaleProvider, useLocale } from "./src/lib/LocaleContext";
 import { colors } from "./src/lib/theme";
-import { useMe } from "./src/lib/hooks";
+import { useMe, useUnreadCount } from "./src/lib/hooks";
 
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { SearchScreen } from "./src/screens/SearchScreen";
@@ -29,7 +29,7 @@ import { MessageScreen } from "./src/screens/MessageScreen";
 import { HostTodayScreen } from "./src/screens/host/HostTodayScreen";
 import { HostCalendarScreen } from "./src/screens/host/HostCalendarScreen";
 import { HostListingsScreen } from "./src/screens/host/HostListingsScreen";
-import { HostMessagesScreen } from "./src/screens/host/HostMessagesScreen";
+import { InboxScreen } from "./src/screens/InboxScreen";
 import { HostProfileScreen } from "./src/screens/host/HostProfileScreen";
 import { HostReservationDetailScreen } from "./src/screens/host/HostReservationDetailScreen";
 import { HostEarningsScreen } from "./src/screens/host/HostEarningsScreen";
@@ -49,7 +49,7 @@ export type RootStackParamList = {
   TripDetail: { bookingId: string };
   Payment: { bookingId: string };
   Kyc: undefined;
-  Message: { bookingId: string };
+  Message: { bookingId?: string; conversationId?: string };
   Login: undefined;
   Favorites: undefined;
   Trips: undefined;
@@ -92,6 +92,8 @@ function getGuestTabIconName(routeName: string, focused: boolean): keyof typeof 
       return focused ? "heart" : "heart-outline";
     case "TripsTab":
       return focused ? "airplane" : "airplane-outline";
+    case "MessagesTab":
+      return focused ? "chatbubble" : "chatbubble-outline";
     case "AccountTab":
       return focused ? "person" : "person-outline";
     default:
@@ -118,6 +120,8 @@ function getHostTabIconName(routeName: string, focused: boolean): keyof typeof I
 
 function GuestTabs() {
   const { t } = useLocale();
+  const { data: unread } = useUnreadCount();
+  const unreadCount = unread?.total_unread ?? 0;
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -134,6 +138,14 @@ function GuestTabs() {
       <Tab.Screen name="SearchTab" component={SearchScreen} options={{ tabBarLabel: t("search") }} />
       <Tab.Screen name="FavoritesTab" component={FavoritesScreen} options={{ tabBarLabel: t("favorites") }} />
       <Tab.Screen name="TripsTab" component={TripsScreen} options={{ tabBarLabel: t("trips") }} />
+      <Tab.Screen
+        name="MessagesTab"
+        component={InboxScreen}
+        options={{
+          tabBarLabel: t("messages"),
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+        }}
+      />
       <Tab.Screen name="AccountTab" component={AccountScreen} options={{ tabBarLabel: t("account") }} />
     </Tab.Navigator>
   );
@@ -141,6 +153,8 @@ function GuestTabs() {
 
 function HostTabs() {
   const { t } = useLocale();
+  const { data: unread } = useUnreadCount();
+  const unreadCount = unread?.total_unread ?? 0;
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -156,7 +170,14 @@ function HostTabs() {
       <Tab.Screen name="HostTodayTab" component={HostTodayScreen} options={{ tabBarLabel: t("hostToday") }} />
       <Tab.Screen name="HostCalendarTab" component={HostCalendarScreen} options={{ tabBarLabel: t("hostCalendar") }} />
       <Tab.Screen name="HostListingsTab" component={HostListingsScreen} options={{ tabBarLabel: t("hostListings") }} />
-      <Tab.Screen name="HostMessagesTab" component={HostMessagesScreen} options={{ tabBarLabel: t("hostMessages") }} />
+      <Tab.Screen
+        name="HostMessagesTab"
+        component={InboxScreen}
+        options={{
+          tabBarLabel: t("hostMessages"),
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+        }}
+      />
       <Tab.Screen name="HostAccountTab" component={HostProfileScreen} options={{ tabBarLabel: t("account") }} />
     </Tab.Navigator>
   );

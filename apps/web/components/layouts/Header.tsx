@@ -58,6 +58,15 @@ export function Header() {
           {t("becomeHost")}
         </Link>
       )}
+      {isAuthenticated && (
+        <Link
+          href={`/${locale}/messages`}
+          className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+          onClick={() => setMobileOpen(false)}
+        >
+          {t("messages")}
+        </Link>
+      )}
       {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
         <Link
           href={`/${locale}/host`}
@@ -207,6 +216,15 @@ export function Header() {
                 onClick={() => setMobileOpen(false)}
               >
                 {t("becomeHost")}
+              </Link>
+            )}
+            {isAuthenticated && (
+              <Link
+                href={`/${locale}/messages`}
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                onClick={() => setMobileOpen(false)}
+              >
+                {t("messages")}
               </Link>
             )}
             {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (

@@ -656,7 +656,8 @@
     "dashboard": "Dashboard",
     "properties": "Properties",
     "reservations": "Reservations",
-    "kyc": "Identity Verification"
+    "kyc": "Identity Verification",
+    "messages": "Messages"
   },
   "landing": {
     "trustVerified": "Verified Hosts",
@@ -665,5 +666,14 @@
     "trustPaymentDesc": "Bank transfer payments verified by our team before confirmation.",
     "trustSupport": "Local Support",
     "trustSupportDesc": "Arabic and English support available throughout your stay."
+  },
+  "messages": {
+    "inboxTitle": "Messages",
+    "conversation": "Conversation",
+    "empty": "No messages yet",
+    "loadError": "Could not load messages",
+    "backToInbox": "Back to messages",
+    "typeMessage": "Type a message...",
+    "send": "Send"
   }
 }

@@ -1068,6 +1068,10 @@ export interface components {
       status: string;
       /** Unread Count */
       unread_count: number;
+      /** Counterparty Name */
+      counterparty_name: string | null;
+      /** Unit Title */
+      unit_title: string | null;
       last_message: components["schemas"]["MessageResponse"] | null;
       /**
        * Created At
@@ -2870,10 +2874,6 @@ export interface components {
       proof_url: string | null;
       /** Proof Uploaded At */
       proof_uploaded_at: string | null;
-      /** Accommodation Amount Egp */
-      accommodation_amount_egp?: number | null;
-      /** Guest Service Fee Egp */
-      guest_service_fee_egp?: number | null;
       /**
        * Created At
        * Format: date-time

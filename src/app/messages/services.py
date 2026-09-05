@@ -13,7 +13,7 @@ from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.config import settings
-from app.listings.models import Unit
+from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 from app.shared.outbox import write_event
 
@@ -190,6 +190,34 @@ async def list_conversations(
     conversations = await messages_repository.list_user_conversations(
         session, user.id, limit, offset
     )
+
+    other_ids = {
+        p.user_id
+        for conversation in conversations
+        for p in conversation.participants
+        if p.user_id != user.id
+    }
+    names: dict[str, str | None] = {}
+    if other_ids:
+        name_rows = await session.execute(
+            select(User.id, User.display_name).where(User.id.in_(other_ids))
+        )
+        names = {row[0]: row[1] for row in name_rows.all()}
+
+    unit_ids = {c.unit_id for c in conversations if c.unit_id}
+    titles: dict[str, str] = {}
+    if unit_ids:
+        title_rows = await session.execute(
+            select(
+                UnitListing.unit_id,
+                UnitListing.title_ar,
+                UnitListing.title_en,
+            ).where(UnitListing.unit_id.in_(unit_ids))
+        )
+        titles = {
+            row[0]: (row[1] or row[2]) for row in title_rows.all() if row[1] or row[2]
+        }
+
     items: list[ConversationListItem] = []
     for conversation in conversations:
         participant = await messages_repository.get_participant(
@@ -202,6 +230,9 @@ async def list_conversations(
         last_message = None
         if conversation.messages:
             last_message = MessageResponse.model_validate(conversation.messages[-1])
+        other = next(
+            (p for p in conversation.participants if p.user_id != user.id), None
+        )
         items.append(
             ConversationListItem(
                 id=conversation.id,
@@ -210,6 +241,8 @@ async def list_conversations(
                 type=conversation.type,
                 status=conversation.status,
                 unread_count=unread_count,
+                counterparty_name=names.get(other.user_id) if other else None,
+                unit_title=titles.get(conversation.unit_id) if conversation.unit_id else None,
                 last_message=last_message,
                 created_at=conversation.created_at,
                 updated_at=conversation.updated_at,

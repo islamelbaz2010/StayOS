@@ -830,6 +830,8 @@ def _make_conversation_list_item() -> message_schemas.ConversationListItem:
         type="reservation",
         status="active",
         unread_count=0,
+        counterparty_name="Host One",
+        unit_title="Unit One",
         last_message=_make_message_response(),
         created_at=now,
         updated_at=now,
@@ -1134,9 +1136,16 @@ async def test_list_conversations(fake_session: AsyncMock, monkeypatch) -> None:
     monkeypatch.setattr(
         messages_repository, "count_unread_messages", AsyncMock(return_value=2)
     )
+    name_result = MagicMock()
+    name_result.all.return_value = [("host-1", "Host One")]
+    title_result = MagicMock()
+    title_result.all.return_value = [("unit-1", "شاليه", None)]
+    fake_session.execute = AsyncMock(side_effect=[name_result, title_result])
     result = await messages_services.list_conversations(fake_session, guest)
     assert len(result) == 1
     assert result[0].unread_count == 2
+    assert result[0].counterparty_name == "Host One"
+    assert result[0].unit_title == "شاليه"
 
 
 @pytest.mark.asyncio

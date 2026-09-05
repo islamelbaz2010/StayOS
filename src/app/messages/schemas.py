@@ -55,6 +55,8 @@ class ConversationListItem(BaseModel):
     type: str
     status: str
     unread_count: int
+    counterparty_name: str | None
+    unit_title: str | None
     last_message: MessageResponse | None
     created_at: datetime
     updated_at: datetime

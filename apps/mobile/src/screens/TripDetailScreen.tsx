@@ -139,6 +139,19 @@ export function TripDetailScreen() {
         </Section>
       )}
 
+      {/* Payment — once the host accepts, the guest must submit proof within
+          the payment deadline (V1 policy §1.2). */}
+      {(booking.status === "accepted" || booking.status === "confirmed") && (
+        <Pressable
+          style={styles.primaryButton}
+          onPress={() => navigation.navigate("Payment", { bookingId })}
+        >
+          <Text style={styles.primaryButtonText}>
+            {t(booking.status === "accepted" ? "payNow" : "payView")}
+          </Text>
+        </Pressable>
+      )}
+
       {/* Check-in / active stay / checkout actions */}
       {phase === "check_in_ready" && (
         <Pressable

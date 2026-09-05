@@ -102,7 +102,13 @@ export default function MyTripsPage() {
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Link
+                        href={`/${locale}/bookings/${booking.id}`}
+                        className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                      >
+                        {t("viewTrip")}
+                      </Link>
                       {booking.status === "accepted" && (
                         <Link
                           href={`/${locale}/checkout/${booking.id}`}

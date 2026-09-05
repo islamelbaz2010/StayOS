@@ -18,6 +18,7 @@ import { FavoritesScreen } from "./src/screens/FavoritesScreen";
 import { TripsScreen } from "./src/screens/TripsScreen";
 import { TripDetailScreen } from "./src/screens/TripDetailScreen";
 import { PaymentScreen } from "./src/screens/PaymentScreen";
+import { KycScreen } from "./src/screens/KycScreen";
 import { AccountScreen } from "./src/screens/AccountScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { BookingScreen } from "./src/screens/BookingScreen";
@@ -47,6 +48,7 @@ export type RootStackParamList = {
   Booking: { unitId: string; title: string; price: number; currency: string; maxGuests: number };
   TripDetail: { bookingId: string };
   Payment: { bookingId: string };
+  Kyc: undefined;
   Message: { bookingId: string };
   Login: undefined;
   Favorites: undefined;
@@ -220,6 +222,11 @@ function AppContent() {
           name="Payment"
           component={PaymentScreen}
           options={{ title: "Payment" }}
+        />
+        <Stack.Screen
+          name="Kyc"
+          component={KycScreen}
+          options={{ title: "Identity verification" }}
         />
         <Stack.Screen
           name="Message"

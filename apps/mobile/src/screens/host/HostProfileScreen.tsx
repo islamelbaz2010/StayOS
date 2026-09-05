@@ -117,6 +117,14 @@ export function HostProfileScreen() {
         <StatRow label={t("hostProfileListings")} value={`${profile.total_listings} (${profile.listed_listings} ${t("listingsListed").replace("{count} ", "")})`} />
         <StatRow label={t("hostProfileCoHostUnits")} value={String(profile.co_host_units)} />
         <StatRow label={t("hostProfileKyc")} value={profile.kyc_status} />
+        {profile.kyc_status !== "verified" && (
+          <Pressable
+            style={styles.linkButton}
+            onPress={() => navigation.navigate("Kyc")}
+          >
+            <Text style={styles.linkText}>{t("verifyIdentity")} →</Text>
+          </Pressable>
+        )}
       </View>
 
       {earnings && (

@@ -17,6 +17,8 @@ import type {
   HostReservationDetail,
   HostReservationSummary,
   HostTodayResponse,
+  KycInitiateResponse,
+  KycStatusResponse,
   Listing,
   ListingCreatePayload,
   ListingDetail,
@@ -402,6 +404,58 @@ export function useCheckOut() {
     onSuccess: (_data, bookingId) => {
       qc.invalidateQueries({ queryKey: ["bookings"] });
       qc.invalidateQueries({ queryKey: ["stay-info", bookingId] });
+    },
+  });
+}
+
+export function useKycStatus() {
+  return useQuery({
+    queryKey: ["kyc-status"],
+    queryFn: async () => {
+      const { data } = await api.get<KycStatusResponse>("/kyc/status");
+      return data;
+    },
+  });
+}
+
+export function useInitiateKyc() {
+  return useMutation({
+    mutationFn: async (payload: {
+      document_type: string;
+      document_number?: string;
+    }) => {
+      const { data } = await api.post<KycInitiateResponse>("/kyc/initiate", payload);
+      return data;
+    },
+  });
+}
+
+export function useSubmitKyc() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      const { data } = await api.post<{ document_id: string; status: string }>(
+        `/kyc/documents/${documentId}/submit`
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kyc-status"] });
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["host", "profile"] });
+    },
+  });
+}
+
+export function useUpgradeRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.patch<User>("/auth/me/role", { role: "host" });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["me"] });
     },
   });
 }

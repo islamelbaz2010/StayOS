@@ -1,8 +1,8 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMe } from "../lib/hooks";
+import { useMe, useUpgradeRole } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { api, clearTokens, getRefreshToken } from "../lib/api";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
@@ -16,6 +16,7 @@ export function AccountScreen() {
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
   const { data: user, isLoading } = useMe();
+  const upgradeRole = useUpgradeRole();
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -61,6 +62,40 @@ export function AccountScreen() {
           <Text style={styles.verifiedBadge}>✓ {t("verified")}</Text>
         )}
       </View>
+
+      {user.role === "guest" && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("hosting")}</Text>
+          {user.kyc_status !== "verified" ? (
+            <>
+              <Text style={styles.hintText}>{t("verifyIdentityHint")}</Text>
+              <Pressable
+                style={styles.linkButton}
+                onPress={() => navigation.navigate("Kyc")}
+              >
+                <Text style={styles.linkText}>{t("verifyIdentity")} →</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable
+              style={styles.linkButton}
+              onPress={async () => {
+                try {
+                  await upgradeRole.mutateAsync();
+                  Alert.alert("", t("becomeHostSuccess"));
+                } catch {
+                  Alert.alert("", t("becomeHostError"));
+                }
+              }}
+              disabled={upgradeRole.isPending}
+            >
+              <Text style={styles.linkText}>
+                {upgradeRole.isPending ? t("loading") : t("becomeHost")} →
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("language")}</Text>
@@ -141,6 +176,20 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.text,
     marginBottom: spacing.md,
+  },
+  hintText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    lineHeight: 20,
+  },
+  linkButton: {
+    paddingVertical: spacing.xs,
+  },
+  linkText: {
+    fontSize: fontSize.md,
+    color: colors.primary,
+    fontWeight: "600",
   },
   langRow: {
     flexDirection: "row",

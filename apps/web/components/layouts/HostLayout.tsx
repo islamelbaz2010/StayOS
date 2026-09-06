@@ -16,6 +16,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
   const navItems = [
     { label: t("dashboard"), href: `/${locale}/host` },
     { label: t("properties"), href: `/${locale}/host/listings` },
+    { label: t("calendar"), href: `/${locale}/host/calendar` },
     { label: t("reservations"), href: `/${locale}/host/bookings` },
     { label: t("earnings"), href: `/${locale}/host/earnings` },
     { label: t("messages"), href: `/${locale}/messages` },

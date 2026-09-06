@@ -12,16 +12,18 @@ function toISODate(d: Date): string {
   return d.toISOString().split("T")[0];
 }
 
-export function useHostCalendar(unitId: string, checkIn: string, checkOut: string) {
+export function useHostCalendar(unitId: string | undefined, checkIn: string, checkOut: string) {
+  const params: Record<string, string> = { check_in: checkIn, check_out: checkOut };
+  if (unitId) params.unit_id = unitId;
   return useQuery({
-    queryKey: ["host-calendar", unitId, checkIn, checkOut],
+    queryKey: ["host-calendar", unitId ?? "all", checkIn, checkOut],
     queryFn: async () => {
       const { data } = await api.get<HostCalendarResponse>("/host/calendar", {
-        params: { check_in: checkIn, check_out: checkOut, unit_id: unitId },
+        params,
       });
       return data;
     },
-    enabled: Boolean(unitId && checkIn && checkOut),
+    enabled: Boolean(checkIn && checkOut),
   });
 }
 

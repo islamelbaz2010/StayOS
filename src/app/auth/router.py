@@ -112,6 +112,28 @@ async def get_account(
     return auth_schemas.AccountResponse.model_validate(account)
 
 
+@router.get("/me/export", response_model=auth_schemas.UserExportResponse)
+async def export_my_data(
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.UserExportResponse:
+    try:
+        return await auth_services.export_user_data(session, user)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.delete("/me", response_model=auth_schemas.UserDeleteResponse)
+async def delete_my_account(
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.UserDeleteResponse:
+    try:
+        return await auth_services.delete_user_account(session, user)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
 @router.patch("/me/account", response_model=auth_schemas.AccountResponse)
 async def update_account(
     data: auth_schemas.AccountUpdate,

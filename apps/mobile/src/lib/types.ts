@@ -24,6 +24,7 @@ export interface Listing {
   cover_image?: string | null;
   average_rating?: number | null;
   review_count?: number;
+  available_for_dates?: boolean | null;
 }
 
 export interface ListingDetail extends Listing {

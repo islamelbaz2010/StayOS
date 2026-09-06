@@ -2600,6 +2600,8 @@ export interface components {
        * @default 0
        */
       review_count?: number;
+      /** Available For Dates */
+      available_for_dates?: boolean | null;
     };
     /** ListingUpdate */
     ListingUpdate: {

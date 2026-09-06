@@ -46,6 +46,11 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
             )}
           </>
         )}
+        {listing.available_for_dates && (
+          <View style={styles.availableBadge}>
+            <Text style={styles.availableText}>{t("availableForDates")}</Text>
+          </View>
+        )}
         {onToggleFavorite && (
           <Pressable
             style={styles.heartButton}
@@ -126,6 +131,20 @@ const styles = StyleSheet.create({
   heart: {
     fontSize: 20,
     color: colors.error,
+  },
+  availableBadge: {
+    position: "absolute",
+    top: spacing.sm,
+    left: spacing.sm,
+    backgroundColor: colors.success,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  availableText: {
+    fontSize: fontSize.xs,
+    fontWeight: "600",
+    color: colors.white,
   },
   info: {
     padding: spacing.md,

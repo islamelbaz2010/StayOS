@@ -341,7 +341,8 @@
       "flexible": "Full refund up to 24 hours before check-in",
       "moderate": "Full refund up to 5 days before check-in",
       "strict": "50% refund up to 1 week before check-in"
-    }
+    },
+    "availableForDates": "Available for your dates"
   },
   "trust": {
     "title": "Trust & Safety",

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useTranslations } from "next-intl";
 
-import { useUpdateBooking } from "@/lib/queries/bookings";
+import { useCheckIn, useCheckOut, useUpdateBooking } from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,8 @@ interface HostBookingActionsProps {
 export function HostBookingActions({ booking, onSuccess }: HostBookingActionsProps) {
   const t = useTranslations("hostBookings");
   const updateBooking = useUpdateBooking();
+  const checkIn = useCheckIn();
+  const checkOut = useCheckOut();
 
   const [rejectReason, setRejectReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
@@ -60,7 +62,40 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
 
   if (booking.status === "confirmed") {
     return (
-      <p className="text-sm font-medium text-green-700">{t("confirmedMessage")}</p>
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-green-700">{t("confirmedMessage")}</p>
+        <div className="flex flex-wrap gap-3">
+          {!booking.checked_in_at && (
+            <button
+              type="button"
+              onClick={() => checkIn.mutate(booking.id, { onSuccess })}
+              disabled={checkIn.isPending}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-semibold text-white transition",
+                checkIn.isPending ? "bg-neutral-400" : "bg-brand-600 hover:bg-brand-700"
+              )}
+            >
+              {checkIn.isPending ? t("processing") : t("checkIn")}
+            </button>
+          )}
+          {booking.checked_in_at && !booking.checked_out_at && (
+            <button
+              type="button"
+              onClick={() => checkOut.mutate(booking.id, { onSuccess })}
+              disabled={checkOut.isPending}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-semibold text-white transition",
+                checkOut.isPending ? "bg-neutral-400" : "bg-brand-600 hover:bg-brand-700"
+              )}
+            >
+              {checkOut.isPending ? t("processing") : t("checkOut")}
+            </button>
+          )}
+          {booking.checked_in_at && booking.checked_out_at && (
+            <p className="text-sm text-neutral-600">{t("stayCompleted")}</p>
+          )}
+        </div>
+      </div>
     );
   }
 

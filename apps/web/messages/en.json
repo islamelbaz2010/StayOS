@@ -465,7 +465,8 @@
       "cancelled": "Cancelled",
       "no_show": "No-show"
     },
-    "confirmedMessage": "Payment verified — booking confirmed."
+    "confirmedMessage": "Payment verified — booking confirmed.",
+    "stayCompleted": "Stay completed"
   },
   "availability": {
     "title": "Availability",

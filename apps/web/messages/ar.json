@@ -465,7 +465,8 @@
       "cancelled": "ملغى",
       "no_show": "لم يحضر"
     },
-    "confirmedMessage": "تم التحقق من الدفع — تم تأكيد الحجز."
+    "confirmedMessage": "تم التحقق من الدفع — تم تأكيد الحجز.",
+    "stayCompleted": "اكتملت الإقامة"
   },
   "availability": {
     "title": "التوفر",

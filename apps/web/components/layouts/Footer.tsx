@@ -56,6 +56,21 @@ export function Footer() {
               </li>
             </ul>
           </div>
+          <div>
+            <p className="text-sm font-semibold text-neutral-900">
+              {t("support")}
+            </p>
+            <ul className="mt-4 space-y-2">
+              <li>
+                <Link
+                  href={`/${locale}/support`}
+                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                >
+                  {t("support")}
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
         <div className="mt-8 border-t border-neutral-200 pt-8">
           <p className="text-xs text-neutral-400">

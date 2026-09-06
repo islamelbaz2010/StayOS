@@ -513,7 +513,15 @@
       "no_show": "لم يحضر"
     },
     "confirmedMessage": "تم التحقق من الدفع — تم تأكيد الحجز.",
-    "stayCompleted": "اكتملت الإقامة"
+    "stayCompleted": "اكتملت الإقامة",
+    "payment": "الدفع",
+    "paymentStatuses": {
+      "pending": "في انتظار الدفع",
+      "proof_uploaded": "تم رفع إثبات الدفع",
+      "verified": "تم التحقق من الدفع",
+      "rejected": "تم رفض إثبات الدفع",
+      "cancelled": "تم إلغاء الدفع"
+    }
   },
   "availability": {
     "title": "التوفر",
@@ -707,7 +715,11 @@
     "confirmReject": "تأكيد الرفض",
     "rejectReasonLabel": "سبب الرفض",
     "rejectReasonPlaceholder": "اشرح سبب رفض المستندات...",
-    "cancel": "إلغاء"
+    "cancel": "إلغاء",
+    "viewImages": "عرض الصور",
+    "viewFront": "الوجه الأمامي",
+    "viewBack": "الوجه الخلفي",
+    "viewSelfie": "صورة شخصية"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -875,7 +887,8 @@
     "description": "هل تحتاج إلى مساعدة في الحجز أو العقار أو الدفع؟ تواصل مع فريق دعم StayOS عبر واتساب.",
     "openWhatsApp": "الدردشة على واتساب",
     "notConfigured": "تفاصيل التواصل مع الدعم ستكون متاحة قريباً.",
-    "backToHome": "العودة للرئيسية"
+    "backToHome": "العودة للرئيسية",
+    "whatsappMessage": "مرحباً فريق دعم StayOS، أحتاج مساعدة في حجزي."
   },
   "footer": {
     "support": "الدعم"

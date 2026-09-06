@@ -513,7 +513,15 @@
       "no_show": "No-show"
     },
     "confirmedMessage": "Payment verified — booking confirmed.",
-    "stayCompleted": "Stay completed"
+    "stayCompleted": "Stay completed",
+    "payment": "Payment",
+    "paymentStatuses": {
+      "pending": "Payment pending",
+      "proof_uploaded": "Proof uploaded",
+      "verified": "Payment verified",
+      "rejected": "Proof rejected",
+      "cancelled": "Payment cancelled"
+    }
   },
   "availability": {
     "title": "Availability",
@@ -707,7 +715,11 @@
     "confirmReject": "Confirm rejection",
     "rejectReasonLabel": "Reason for rejection",
     "rejectReasonPlaceholder": "Explain why the documents were rejected...",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "viewImages": "View images",
+    "viewFront": "Front",
+    "viewBack": "Back",
+    "viewSelfie": "Selfie"
   },
   "profile": {
     "title": "Profile",
@@ -875,7 +887,8 @@
     "description": "Need help with a booking, listing, or payment? Reach out to StayOS support on WhatsApp.",
     "openWhatsApp": "Chat on WhatsApp",
     "notConfigured": "Our support contact details will be available shortly.",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "whatsappMessage": "Hello StayOS support, I need help with my booking."
   },
   "footer": {
     "support": "Support"

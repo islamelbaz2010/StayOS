@@ -88,6 +88,18 @@ async def process_kyc(
     return kyc_schemas.KycDocumentResponse.model_validate(document)
 
 
+@router.get("/documents/{document_id}/images", response_model=kyc_schemas.KycImageDownloadResponse)
+async def download_kyc_images(
+    document_id: str,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> kyc_schemas.KycImageDownloadResponse:
+    try:
+        return await kyc_services.get_kyc_document_image_downloads(session, document_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
 @router.post("/documents/{document_id}/approve", response_model=kyc_schemas.KycDocumentResponse)
 async def approve_kyc(
     document_id: str,

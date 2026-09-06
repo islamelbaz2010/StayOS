@@ -61,6 +61,12 @@ class KycApproveRequest(BaseModel):
     legal_name: str | None = None
 
 
+class KycImageDownloadResponse(BaseModel):
+    front_url: str | None = None
+    back_url: str | None = None
+    selfie_url: str | None = None
+
+
 class KycPendingListResponse(BaseModel):
     data: list[KycDocumentResponse]
     total: int

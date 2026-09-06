@@ -43,6 +43,29 @@ export interface KycPendingListResponse {
   total: number;
 }
 
+export interface KycImageDownload {
+  front_url: string | null;
+  back_url: string | null;
+  selfie_url: string | null;
+}
+
+export async function getKycDocumentImages(
+  documentId: string
+): Promise<KycImageDownload> {
+  const { data } = await api.get<KycImageDownload>(
+    `/kyc/documents/${documentId}/images`
+  );
+  return data;
+}
+
+export function useKycDocumentImages(documentId: string) {
+  return useQuery({
+    queryKey: ["kyc-document-images", documentId],
+    queryFn: () => getKycDocumentImages(documentId),
+    enabled: Boolean(documentId),
+  });
+}
+
 export function useKycStatus() {
   return useQuery({
     queryKey: ["kyc-status"],

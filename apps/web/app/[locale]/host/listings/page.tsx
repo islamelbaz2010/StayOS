@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useHostListings } from "@/lib/queries/hostListings";
+import {
+  useArchiveListing,
+  useHostListings,
+  usePublishListing,
+  useSubmitForReview,
+  useUnpublishListing,
+} from "@/lib/queries/hostListings";
+import type { HostListing } from "@/lib/queries/hostListings";
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-neutral-100 text-neutral-700",
@@ -94,49 +102,155 @@ export default function HostListingsPage() {
           {listings && listings.length > 0 && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {listings.map((listing) => (
-                <Link
-                  key={listing.id}
-                  href={`/host/listings/${listing.id}/edit`}
-                  className="group overflow-hidden rounded-xl bg-white shadow-card transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-                >
-                  <div className="relative aspect-video bg-neutral-200">
-                    {listing.cover_image ? (
-                      <img
-                        src={listing.cover_image}
-                        alt={listing.title}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-neutral-400">
-                        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
-                        </svg>
-                      </div>
-                    )}
-                    <span
-                      className={`absolute start-2 top-2 rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[listing.status] ?? "bg-neutral-100 text-neutral-700"}`}
-                    >
-                      {t(`status.${listing.status.toLowerCase()}`)}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="truncate font-semibold text-neutral-900 group-hover:text-brand-600">
-                      {listing.title}
-                    </h3>
-                    <p className="mt-1 truncate text-sm text-neutral-500">
-                      {listing.city}, {listing.governorate}
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-neutral-700">
-                      {listing.base_price_egp.toLocaleString()} {t("egp")}
-                      <span className="text-neutral-400"> / {t("night")}</span>
-                    </p>
-                  </div>
-                </Link>
+                <ListingCard key={listing.id} listing={listing} />
               ))}
             </div>
           )}
         </div>
       </HostLayout>
     </ProtectedRoute>
+  );
+}
+
+function ListingCard({ listing }: { listing: HostListing }) {
+  const t = useTranslations("hostListings");
+  const tc = useTranslations("common");
+  const { locale = "ar" } = useParams<{ locale: string }>();
+  const submit = useSubmitForReview();
+  const publish = usePublishListing();
+  const unpublish = useUnpublishListing();
+  const archive = useArchiveListing();
+
+  const status = listing.status;
+  const isDraft = status === "DRAFT";
+  const isRejected = status === "REJECTED";
+  const isListed = status === "LISTED";
+  const isUnlisted = status === "UNLISTED";
+  const isArchived = status === "ARCHIVED";
+  const canSubmit = isDraft || isRejected;
+  const canPublish = isUnlisted;
+  const canUnpublish = isListed;
+  const canArchive = !isArchived;
+
+  const anyLoading = submit.isPending || publish.isPending || unpublish.isPending || archive.isPending;
+
+  async function handleAction(mutate: (unitId: string) => Promise<unknown>, confirmKey: string, unitId: string) {
+    if (!window.confirm(t(confirmKey))) return;
+    try {
+      await mutate(unitId);
+    } catch {
+      window.alert(t("actionError"));
+    }
+  }
+
+  return (
+    <div className="group overflow-hidden rounded-xl bg-white shadow-card transition-shadow hover:shadow-lg">
+      <Link
+        href={`/${locale}/host/listings/${listing.id}/edit`}
+        className="block focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+      >
+        <div className="relative aspect-video bg-neutral-200">
+          {listing.cover_image ? (
+            <img
+              src={listing.cover_image}
+              alt={listing.title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-neutral-400">
+              <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
+              </svg>
+            </div>
+          )}
+          <span
+            className={`absolute start-2 top-2 rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[listing.status] ?? "bg-neutral-100 text-neutral-700"}`}
+          >
+            {t(`status.${listing.status.toLowerCase()}`)}
+          </span>
+        </div>
+      </Link>
+      <div className="p-4">
+        <Link
+          href={`/${locale}/host/listings/${listing.id}/edit`}
+          className="block truncate font-semibold text-neutral-900 hover:text-brand-600"
+        >
+          {listing.title}
+        </Link>
+        <p className="mt-1 truncate text-sm text-neutral-500">
+          {listing.city}, {listing.governorate}
+        </p>
+        <p className="mt-2 text-sm font-medium text-neutral-700">
+          {listing.base_price_egp.toLocaleString()} {t("egp")}
+          <span className="text-neutral-400"> / {t("night")}</span>
+        </p>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {canSubmit && (
+            <ActionButton
+              label={tc("submitForReview")}
+              onClick={() => handleAction(submit.mutateAsync, "submitConfirm", listing.id)}
+              loading={submit.isPending}
+              disabled={anyLoading}
+              variant="primary"
+            />
+          )}
+          {canPublish && (
+            <ActionButton
+              label={t("publish")}
+              onClick={() => handleAction(publish.mutateAsync, "publishConfirm", listing.id)}
+              loading={publish.isPending}
+              disabled={anyLoading}
+              variant="primary"
+            />
+          )}
+          {canUnpublish && (
+            <ActionButton
+              label={t("unpublish")}
+              onClick={() => handleAction(unpublish.mutateAsync, "unpublishConfirm", listing.id)}
+              loading={unpublish.isPending}
+              disabled={anyLoading}
+              variant="secondary"
+            />
+          )}
+          {canArchive && (
+            <ActionButton
+              label={t("archive")}
+              onClick={() => handleAction(archive.mutateAsync, "archiveConfirm", listing.id)}
+              loading={archive.isPending}
+              disabled={anyLoading}
+              variant="danger"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({
+  label,
+  onClick,
+  loading,
+  disabled,
+  variant,
+}: {
+  label: string;
+  onClick: () => void;
+  loading: boolean;
+  disabled: boolean;
+  variant: "primary" | "secondary" | "danger";
+}) {
+  const base = "rounded-lg px-3 py-1.5 text-xs font-semibold transition";
+  const styles =
+    variant === "primary"
+      ? "bg-brand-600 text-white hover:bg-brand-700 disabled:bg-neutral-400"
+      : variant === "danger"
+        ? "bg-danger-600 text-white hover:bg-danger-700 disabled:bg-neutral-400"
+        : "border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:text-neutral-400";
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={`${base} ${styles}`}>
+      {loading ? "..." : label}
+    </button>
   );
 }

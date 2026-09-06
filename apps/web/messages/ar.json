@@ -106,7 +106,16 @@
     "calendarDays": "أيام غير متاحة",
     "noBlockedDays": "لا توجد أيام محظورة أو محجوزة خلال هذه الفترة.",
     "coHostsTitle": "الشركاء",
-    "coHostUserIdPlaceholder": "معرف المستخدم"
+    "coHostUserIdPlaceholder": "معرف المستخدم",
+    "publish": "نشر",
+    "unpublish": "إيقاف النشر",
+    "archive": "أرشفة",
+    "submitForReview": "إرسال للمراجعة",
+    "submitConfirm": "هل تريد إرسال هذا العقار للمراجعة الإدارية؟",
+    "publishConfirm": "هل تريد نشر هذا العقار؟",
+    "unpublishConfirm": "هل تريد إيقاف نشر هذا العقار؟",
+    "archiveConfirm": "هل تريد أرشفة هذا العقار؟",
+    "actionError": "تعذّر تنفيذ الإجراء. يرجى المحاولة مرة أخرى."
   },
   "listingForm": {
     "createTitle": "إضافة عقار جديد",

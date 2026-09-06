@@ -106,7 +106,16 @@
     "calendarDays": "Non-available days",
     "noBlockedDays": "No blocked or booked days in this period.",
     "coHostsTitle": "Co-hosts",
-    "coHostUserIdPlaceholder": "user-uuid"
+    "coHostUserIdPlaceholder": "user-uuid",
+    "publish": "Publish",
+    "unpublish": "Unpublish",
+    "archive": "Archive",
+    "submitForReview": "Submit for review",
+    "submitConfirm": "Submit this listing for admin review?",
+    "publishConfirm": "Publish this listing?",
+    "unpublishConfirm": "Unpublish this listing?",
+    "archiveConfirm": "Archive this listing?",
+    "actionError": "Could not perform this action. Please try again."
   },
   "listingForm": {
     "createTitle": "Create New Listing",

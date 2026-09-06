@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 import { api, hasTokens } from "./api";
@@ -61,13 +61,23 @@ export interface SearchParams {
 }
 
 export function useSearchListings(params: SearchParams) {
-  return useQuery({
+  const limit = params.limit ?? 20;
+  const enabled = Object.values(params).some((v) => v !== undefined && v !== "");
+
+  return useInfiniteQuery<SearchResponse>({
     queryKey: ["search", params],
-    queryFn: async () => {
-      const { data } = await api.get<SearchResponse>("/listings", { params });
+    queryFn: async ({ pageParam = 0 }) => {
+      const { data } = await api.get<SearchResponse>("/listings", {
+        params: { ...params, limit, offset: pageParam },
+      });
       return data;
     },
-    enabled: Object.values(params).some((v) => v !== undefined && v !== ""),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.pagination.has_more
+        ? (lastPageParam as number) + limit
+        : undefined,
+    enabled,
   });
 }
 

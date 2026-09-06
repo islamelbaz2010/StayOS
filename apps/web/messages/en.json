@@ -343,7 +343,8 @@
       "moderate": "Full refund up to 5 days before check-in",
       "strict": "50% refund up to 1 week before check-in"
     },
-    "availableForDates": "Available for your dates"
+    "availableForDates": "Available for your dates",
+    "similarListings": "Similar listings"
   },
   "trust": {
     "title": "Trust & Safety",
@@ -866,5 +867,12 @@
   },
   "footer": {
     "support": "Support"
+  },
+  "publicHost": {
+    "title": "Host profile",
+    "joinedIn": "Joined in {date}",
+    "listings": "Listings by {name}",
+    "noListings": "No active listings from this host.",
+    "loadError": "Failed to load host profile."
   }
 }

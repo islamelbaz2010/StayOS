@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import type { ListingDetail } from "@/lib/queries/listings";
@@ -13,6 +15,9 @@ interface TrustSectionProps {
 
 export function TrustSection({ listing }: TrustSectionProps) {
   const t = useTranslations("trust");
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
+  const hostProfileHref = listing.hostId ? `/${locale}/hosts/${listing.hostId}` : undefined;
 
   const isHostVerified = listing.hostKycStatus === "verified";
   const joinedDate = listing.hostJoinedAt
@@ -79,9 +84,18 @@ export function TrustSection({ listing }: TrustSectionProps) {
 
         {listing.hostDisplayName && (
           <div className="border-t border-neutral-100 pt-4">
-            <p className="text-sm font-medium text-neutral-900">
-              {t("hostedBy", { name: listing.hostDisplayName })}
-            </p>
+            {hostProfileHref ? (
+              <Link
+                href={hostProfileHref}
+                className="text-sm font-medium text-brand-600 hover:underline"
+              >
+                {t("hostedBy", { name: listing.hostDisplayName })}
+              </Link>
+            ) : (
+              <p className="text-sm font-medium text-neutral-900">
+                {t("hostedBy", { name: listing.hostDisplayName })}
+              </p>
+            )}
             {joinedDate && (
               <p className="mt-0.5 text-sm text-neutral-500">
                 {t("joinedIn", { date: joinedDate })}

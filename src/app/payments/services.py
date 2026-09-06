@@ -33,25 +33,25 @@ _PROOF_UPLOAD_TTL_SECONDS = 900
 _PROOF_DOWNLOAD_TTL_SECONDS = 300
 
 
-def _manual_instructions_ar(account_number: str, vodafone_number: str) -> str:
+def _manual_instructions_ar() -> str:
     return (
         "لإتمام عملية الحجز، يرجى تحويل المبلغ المطلوب إلى الحساب التالي:\n"
-        "بنك مصر\n"
-        f"رقم الحساب: {account_number}\n"
-        "اسم الحساب: StayOS\n"
-        f"أو عبر فودافون كاش على الرقم: {vodafone_number}\n\n"
+        f"{settings.PAYMENT_BANK_NAME_AR}\n"
+        f"رقم الحساب: {settings.PAYMENT_BANK_ACCOUNT_NUMBER}\n"
+        f"اسم الحساب: {settings.PAYMENT_ACCOUNT_NAME}\n"
+        f"أو عبر فودافون كاش على الرقم: {settings.PAYMENT_VODAFONE_CASH_NUMBER}\n\n"
         "بعد التحويل، يرجى رفع إيصال الدفع (صورة أو PDF) من هذه الصفحة.\n"
         "سيتم مراجعة الدفع خلال 24 ساعة وتأكيد حجزك."
     )
 
 
-def _manual_instructions_en(account_number: str, vodafone_number: str) -> str:
+def _manual_instructions_en() -> str:
     return (
         "To complete your booking, please transfer the required amount to:\n"
-        "Bank of Egypt\n"
-        f"Account Number: {account_number}\n"
-        "Account Name: StayOS\n"
-        f"Or via Vodafone Cash to: {vodafone_number}\n\n"
+        f"{settings.PAYMENT_BANK_NAME_EN}\n"
+        f"Account Number: {settings.PAYMENT_BANK_ACCOUNT_NUMBER}\n"
+        f"Account Name: {settings.PAYMENT_ACCOUNT_NAME}\n"
+        f"Or via Vodafone Cash to: {settings.PAYMENT_VODAFONE_CASH_NUMBER}\n\n"
         "After transferring, please upload your payment receipt (image or PDF) from this page.\n"
         "Your payment will be reviewed within 24 hours and your booking confirmed."
     )
@@ -67,11 +67,9 @@ def _s3_client() -> Any:
 
 
 def _build_instructions(locale: str = "ar") -> str:
-    account_number = settings.PAYMENT_BANK_ACCOUNT_NUMBER
-    vodafone_number = settings.PAYMENT_VODAFONE_CASH_NUMBER
     if locale == "ar":
-        return _manual_instructions_ar(account_number, vodafone_number)
-    return _manual_instructions_en(account_number, vodafone_number)
+        return _manual_instructions_ar()
+    return _manual_instructions_en()
 
 
 def _generate_reference() -> str:
@@ -95,7 +93,7 @@ def _to_response(payment: Payment) -> PaymentResponse:
         payment_deadline_at=payment.payment_deadline_at,
         proof_rejection_count=payment.proof_rejection_count or 0,
         proof_s3_key=payment.proof_s3_key,
-        proof_url=payment.proof_url,
+        proof_url=None if payment.proof_s3_key else payment.proof_url,
         proof_uploaded_at=payment.proof_uploaded_at,
         verified_at=payment.verified_at,
         verified_by=payment.verified_by,
@@ -122,7 +120,7 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
         reference_number=payment.reference_number,
         payment_deadline_at=payment.payment_deadline_at,
         proof_rejection_count=payment.proof_rejection_count or 0,
-        proof_url=payment.proof_url,
+        proof_url=None if payment.proof_s3_key else payment.proof_url,
         proof_uploaded_at=payment.proof_uploaded_at,
         created_at=payment.created_at,
         updated_at=payment.updated_at,
@@ -430,12 +428,14 @@ async def upload_proof(
     _assert_resubmission_allowed(payment)
 
     now = datetime.now(UTC)
+    # P0-3: proof_url is intentionally not stored.  The private S3 key is the
+    # source of truth; authorized downloads use the presigned GET endpoint.
     updated = await payments_repository.update_payment(
         session,
         payment,
         status=PaymentStatus.PROOF_UPLOADED,
         proof_s3_key=s3_key,
-        proof_url=url,
+        proof_url=None,
         proof_uploaded_at=now,
         rejected_at=None,
         rejected_by=None,

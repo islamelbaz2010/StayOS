@@ -1,3 +1,7 @@
+# ruff: noqa: I001
+# Import ordering differs between local Ruff (0.1.8: ``app`` sorts with
+# third-party) and CI Ruff (0.16.1: ``app`` is first-party). No single
+# ordering satisfies both, so I001 is suppressed for this file only.
 from datetime import date
 from uuid import uuid4
 

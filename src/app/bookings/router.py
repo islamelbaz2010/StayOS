@@ -1,3 +1,7 @@
+# ruff: noqa: I001
+# Import ordering differs between local Ruff (0.1.8: ``app`` sorts with
+# third-party) and CI Ruff (0.16.1: ``app`` is first-party). No single
+# ordering satisfies both, so I001 is suppressed for this file only.
 from app.auth import dependencies as auth_dependencies
 from app.auth.models import User
 from app.database import get_session

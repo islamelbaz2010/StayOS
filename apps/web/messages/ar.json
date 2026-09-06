@@ -713,7 +713,8 @@
     "reservations": "الحجوزات",
     "kyc": "التحقق من الهوية",
     "messages": "الرسائل",
-    "earnings": "الأرباح"
+    "earnings": "الأرباح",
+    "profile": "الملف الشخصي"
   },
   "landing": {
     "trustVerified": "مضيفون موثقون",
@@ -782,5 +783,25 @@
       "unread_messages": "رسائل غير مقروءة",
       "incomplete_listings": "عقارات غير مكتملة"
     }
+  },
+  "hostProfile": {
+    "title": "ملف المضيف",
+    "loadError": "تعذّر تحميل الملف الشخصي.",
+    "displayName": "اسم العرض",
+    "email": "البريد الإلكتروني",
+    "noEmail": "لم يتم تعيين بريد إلكتروني",
+    "edit": "تعديل الملف الشخصي",
+    "saveError": "تعذّر حفظ الملف الشخصي. يرجى المحاولة مرة أخرى.",
+    "verifyIdentityPrompt": "تحقق من هويتك لبناء الثقة مع الضيوف.",
+    "verifyIdentity": "التحقق من الهوية",
+    "listingStats": "إحصائيات العقارات",
+    "totalListings": "إجمالي العقارات",
+    "listedListings": "المعروضة",
+    "coHostUnits": "عقارات الشريك",
+    "earnings": "الأرباح",
+    "totalRevenue": "الإيرادات",
+    "netEarnings": "صافي الأرباح",
+    "completedStays": "الإقامات المكتملة",
+    "viewEarnings": "عرض الأرباح"
   }
 }

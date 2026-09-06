@@ -344,6 +344,7 @@ async def test_upload_proof_success(fake_session: AsyncMock, monkeypatch) -> Non
         fake_session, guest, payment.id, "payments/xxx/proof_abc.jpg", "https://s3.example.com/payments/xxx/proof_abc.jpg"
     )
     assert result.status == PaymentStatus.PROOF_UPLOADED
+    assert result.proof_url is None
 
 
 @pytest.mark.asyncio

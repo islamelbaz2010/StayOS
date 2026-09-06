@@ -94,6 +94,18 @@ class Settings(BaseSettings):
     # hardcoded in app/payments/services.py verbatim (no behavior change) — they are
     # PLACEHOLDERS and must be overridden with StayOS's real account/number before
     # any real transaction; this session did not invent or source real values.
+    PAYMENT_BANK_NAME_AR: str = Field(
+        default="بنك مصر",
+        description="Guest-facing Arabic bank name for manual transfer instructions.",
+    )
+    PAYMENT_BANK_NAME_EN: str = Field(
+        default="Bank of Egypt",
+        description="Guest-facing English bank name for manual transfer instructions.",
+    )
+    PAYMENT_ACCOUNT_NAME: str = Field(
+        default="StayOS",
+        description="Guest-facing account holder name for manual transfer instructions.",
+    )
     PAYMENT_BANK_ACCOUNT_NUMBER: str = Field(
         default="1234567890123456",
         description="PLACEHOLDER — guest-facing bank account number for manual payment collection. Must be replaced with StayOS's real account before any real transaction.",

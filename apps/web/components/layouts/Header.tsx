@@ -42,7 +42,7 @@ export function Header() {
           </Link>
           <Link
             href={`/${locale}/host/kyc`}
-            className="text-sm font-medium text-brand-600 hover:text-brand-700"
+            className="text-sm font-medium text-accent-600 hover:text-accent-700"
             onClick={() => setMobileOpen(false)}
           >
             {t("becomeHost")}
@@ -52,7 +52,7 @@ export function Header() {
       {!isAuthenticated && (
         <Link
           href={`/${locale}/host/kyc`}
-          className="text-sm font-medium text-brand-600 hover:text-brand-700"
+          className="text-sm font-medium text-accent-600 hover:text-accent-700"
           onClick={() => setMobileOpen(false)}
         >
           {t("becomeHost")}
@@ -133,8 +133,8 @@ export function Header() {
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200 bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href={`/${locale}`} className="flex items-center gap-2">
-          <span className="text-lg font-bold tracking-tight text-neutral-900">
-            Stay<span className="text-brand-600">OS</span>
+          <span className="text-xl font-bold tracking-tight text-neutral-900">
+            Stay<span className="text-accent-500">OS</span>
           </span>
         </Link>
 

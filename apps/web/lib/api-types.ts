@@ -383,6 +383,14 @@ export interface paths {
     /** Get Payment For Booking */
     get: operations["get_payment_for_booking_api_v1_payments_booking__booking_id__get"];
   };
+  "/api/v1/payments/quote": {
+    /**
+     * Get Quote
+     * @description Public guest price quote — the same computation used to price the
+     * real payment, so the displayed total always matches the charge.
+     */
+    get: operations["get_quote_api_v1_payments_quote_get"];
+  };
   "/api/v1/payments/{payment_id}": {
     /** Get Payment Detail */
     get: operations["get_payment_detail_api_v1_payments__payment_id__get"];
@@ -772,6 +780,35 @@ export interface components {
        * @default 0
        */
       infants?: number;
+    };
+    /**
+     * BookingQuote
+     * @description Guest-facing price quote for a unit + date range.
+     *
+     * Computed by the same routine that prices the actual payment so the
+     * total a guest sees before booking always matches the amount charged.
+     */
+    BookingQuote: {
+      /** Unit Id */
+      unit_id: string;
+      /** Check In */
+      check_in: string;
+      /** Check Out */
+      check_out: string;
+      /** Nights */
+      nights: number;
+      /** Nightly Rate Egp */
+      nightly_rate_egp: number;
+      /** Accommodation Egp */
+      accommodation_egp: number;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp: number;
+      /** Service Fee Egp */
+      service_fee_egp: number;
+      /** Service Fee Waived */
+      service_fee_waived: boolean;
+      /** Total Egp */
+      total_egp: number;
     };
     /** BookingResponse */
     BookingResponse: {
@@ -6067,6 +6104,34 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Quote
+   * @description Public guest price quote — the same computation used to price the
+   * real payment, so the displayed total always matches the charge.
+   */
+  get_quote_api_v1_payments_quote_get: {
+    parameters: {
+      query: {
+        unit_id: string;
+        check_in: string;
+        check_out: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingQuote"];
         };
       };
       /** @description Validation Error */

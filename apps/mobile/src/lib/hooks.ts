@@ -473,6 +473,30 @@ export function useMe() {
   });
 }
 
+export function useBookingQuote(unitId: string, checkIn: string, checkOut: string) {
+  return useQuery({
+    queryKey: ["booking-quote", unitId, checkIn, checkOut],
+    queryFn: async () => {
+      const { data } = await api.get<{
+        unit_id: string;
+        check_in: string;
+        check_out: string;
+        nights: number;
+        nightly_rate_egp: number;
+        accommodation_egp: number;
+        cleaning_fee_egp: number;
+        service_fee_egp: number;
+        service_fee_waived: boolean;
+        total_egp: number;
+      }>("/payments/quote", {
+        params: { unit_id: unitId, check_in: checkIn, check_out: checkOut },
+      });
+      return data;
+    },
+    enabled: Boolean(unitId && checkIn && checkOut),
+  });
+}
+
 export function useConversations() {
   return useQuery({
     queryKey: ["conversations"],

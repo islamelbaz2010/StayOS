@@ -1392,3 +1392,118 @@ def test_payment_proof_bucket_prefers_dedicated_bucket(monkeypatch) -> None:
 
     monkeypatch.setattr(settings, "S3_PAYMENT_PROOF_BUCKET", "")
     assert settings.payment_proof_bucket == "stayos-listings"
+
+
+@pytest.mark.asyncio
+async def test_get_booking_quote_waived_alpha(fake_session: AsyncMock, monkeypatch) -> None:
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing = _make_listing(unit)
+
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.bookings.repository.count_global_completed_bookings",
+        AsyncMock(return_value=0),
+    )
+
+    quote = await payment_services.get_booking_quote(
+        fake_session, "unit-1", date(2026, 9, 10), date(2026, 9, 14)
+    )
+    assert quote.nights == 4
+    assert quote.nightly_rate_egp == 500
+    assert quote.accommodation_egp == 2000
+    assert quote.cleaning_fee_egp == 50
+    assert quote.service_fee_egp == 0
+    assert quote.service_fee_waived is True
+    assert quote.total_egp == 2050
+
+
+@pytest.mark.asyncio
+async def test_get_booking_quote_charged_after_threshold(fake_session: AsyncMock, monkeypatch) -> None:
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing = _make_listing(unit)
+
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.bookings.repository.count_global_completed_bookings",
+        AsyncMock(return_value=10),
+    )
+
+    quote = await payment_services.get_booking_quote(
+        fake_session, "unit-1", date(2026, 9, 10), date(2026, 9, 14)
+    )
+    assert quote.service_fee_egp == 82  # round(2050 * 0.04)
+    assert quote.service_fee_waived is False
+    assert quote.total_egp == 2132
+
+
+@pytest.mark.asyncio
+async def test_get_booking_quote_invalid_date_order(fake_session: AsyncMock) -> None:
+    with pytest.raises(ValidationError):
+        await payment_services.get_booking_quote(
+            fake_session, "unit-1", date(2026, 9, 14), date(2026, 9, 10)
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_booking_quote_unlisted_unit(fake_session: AsyncMock, monkeypatch) -> None:
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id, unit_id="unit-hidden")
+    unit.status = UnitStatus.DRAFT
+    unit.listing = _make_listing(unit)
+
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+
+    with pytest.raises(ValidationError):
+        await payment_services.get_booking_quote(
+            fake_session, "unit-hidden", date(2026, 9, 10), date(2026, 9, 14)
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_booking_quote_matches_payment_creation(fake_session: AsyncMock, monkeypatch) -> None:
+    """The quote total must equal the amount charged on payment creation."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing = _make_listing(unit)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host)
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_by_booking",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.bookings.repository.count_global_completed_bookings",
+        AsyncMock(return_value=10),
+    )
+
+    quote = await payment_services.get_booking_quote(
+        fake_session, unit.id, booking.check_in, booking.check_out
+    )
+    create_payment_mock = AsyncMock(return_value=payment)
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.create_payment",
+        create_payment_mock,
+    )
+    await payment_services.create_payment_for_booking(fake_session, booking, guest)
+    assert create_payment_mock.call_args.kwargs["amount_egp"] == quote.total_egp
+    assert create_payment_mock.call_args.kwargs["accommodation_amount_egp"] == (
+        quote.accommodation_egp + quote.cleaning_fee_egp
+    )
+    assert create_payment_mock.call_args.kwargs["guest_service_fee_egp"] == quote.service_fee_egp

@@ -8,6 +8,20 @@ export type BookingResponse = components["schemas"]["BookingResponse"];
 export type BookingUpdate = components["schemas"]["BookingUpdate"];
 export type BookingCancelRequest = components["schemas"]["BookingCancelRequest"];
 export type BookingCancellationPreview = components["schemas"]["BookingCancellationPreview"];
+export type BookingQuote = components["schemas"]["BookingQuote"];
+
+export function useBookingQuote(unitId: string, checkIn: string, checkOut: string) {
+  return useQuery({
+    queryKey: ["booking-quote", unitId, checkIn, checkOut],
+    queryFn: async () => {
+      const { data } = await api.get<BookingQuote>("/payments/quote", {
+        params: { unit_id: unitId, check_in: checkIn, check_out: checkOut },
+      });
+      return data;
+    },
+    enabled: Boolean(unitId && checkIn && checkOut),
+  });
+}
 
 export async function createBooking(payload: BookingCreate): Promise<BookingResponse> {
   const { data } = await api.post<BookingResponse>("/bookings", payload);

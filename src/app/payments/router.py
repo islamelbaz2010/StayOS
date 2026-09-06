@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,6 +9,7 @@ from app.database import get_session
 from app.shared.exceptions import StayOSError, to_http_exception
 
 from .schemas import (
+    BookingQuote,
     PaymentListItem,
     PaymentProofPresignRequest,
     PaymentProofPresignResponse,
@@ -15,6 +18,7 @@ from .schemas import (
     PaymentVerifyRequest,
 )
 from .services import (
+    get_booking_quote,
     get_payment,
     get_payment_by_booking,
     list_guest_payments,
@@ -36,6 +40,21 @@ async def get_payment_for_booking(
 ) -> PaymentResponse:
     try:
         return await get_payment_by_booking(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/quote", response_model=BookingQuote)
+async def get_quote(
+    unit_id: str,
+    check_in: date,
+    check_out: date,
+    session: AsyncSession = Depends(get_session),
+) -> BookingQuote:
+    """Public guest price quote — the same computation used to price the
+    real payment, so the displayed total always matches the charge."""
+    try:
+        return await get_booking_quote(session, unit_id, check_in, check_out)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

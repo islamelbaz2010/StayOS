@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import boto3
@@ -13,6 +13,7 @@ from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.config import settings
 from app.listings import repository as listings_repository
+from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 from app.shared.models import OutboxEvent
@@ -21,6 +22,7 @@ from . import repository as payments_repository
 from .constants import PaymentStatus
 from .models import Payment
 from .schemas import (
+    BookingQuote,
     PaymentListItem,
     PaymentProofPresignResponse,
     PaymentResponse,
@@ -174,6 +176,59 @@ async def _emit_outbox_event(
     await session.flush()
 
 
+async def get_booking_quote(
+    session: AsyncSession,
+    unit_id: str,
+    check_in: date,
+    check_out: date,
+) -> BookingQuote:
+    """Public price quote for a prospective booking — same math as payment
+    creation so the displayed total always matches the charged amount."""
+    if check_out <= check_in:
+        raise ValidationError("check_out must be after check_in")
+    unit, listing = await _fetch_unit_and_listing(session, unit_id)
+    if unit.status != UnitStatus.LISTED:
+        raise ValidationError("Unit is not available for booking")
+    nights = (check_out - check_in).days
+    return await compute_booking_quote(
+        session, unit_id, check_in.isoformat(), check_out.isoformat(), listing, nights
+    )
+
+
+async def compute_booking_quote(
+    session: AsyncSession,
+    unit_id: str,
+    check_in: str,
+    check_out: str,
+    listing: UnitListing,
+    nights: int,
+) -> BookingQuote:
+    """Single source of truth for guest pricing: nightly base + cleaning fee
+    + the V1 guest service fee (waived while the alpha free-booking
+    incentive still applies). Shared by the quote endpoint and payment
+    creation so clients never have to guess the total."""
+    accommodation_egp = listing.base_price_egp * nights
+    cleaning_fee_egp = listing.cleaning_fee_egp or 0
+    subtotal = accommodation_egp + cleaning_fee_egp
+
+    global_completed = await bookings_repository.count_global_completed_bookings(session)
+    waived = global_completed < settings.ALPHA_GUEST_FREE_BOOKINGS
+    service_fee_egp = 0 if waived else int(round(subtotal * settings.GUEST_SERVICE_FEE_PCT))
+
+    return BookingQuote(
+        unit_id=unit_id,
+        check_in=check_in,
+        check_out=check_out,
+        nights=nights,
+        nightly_rate_egp=listing.base_price_egp,
+        accommodation_egp=accommodation_egp,
+        cleaning_fee_egp=cleaning_fee_egp,
+        service_fee_egp=service_fee_egp,
+        service_fee_waived=waived,
+        total_egp=subtotal + service_fee_egp,
+    )
+
+
 async def create_payment_for_booking(
     session: AsyncSession,
     booking: Booking,
@@ -187,18 +242,17 @@ async def create_payment_for_booking(
     unit, listing = await _fetch_unit_and_listing(session, booking.unit_id)
 
     nights = (booking.check_out - booking.check_in).days
-    subtotal = listing.base_price_egp * nights
-    if listing.cleaning_fee_egp:
-        subtotal += listing.cleaning_fee_egp
-
-    from app.bookings import repository as bookings_repository
-
-    global_completed = await bookings_repository.count_global_completed_bookings(session)
-    if global_completed < settings.ALPHA_GUEST_FREE_BOOKINGS:
-        guest_fee = 0
-    else:
-        guest_fee = int(round(subtotal * settings.GUEST_SERVICE_FEE_PCT))
-    amount = subtotal + guest_fee
+    quote = await compute_booking_quote(
+        session,
+        booking.unit_id,
+        booking.check_in.isoformat(),
+        booking.check_out.isoformat(),
+        listing,
+        nights,
+    )
+    subtotal = quote.accommodation_egp + quote.cleaning_fee_egp
+    guest_fee = quote.service_fee_egp
+    amount = quote.total_egp
 
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()

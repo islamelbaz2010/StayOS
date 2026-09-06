@@ -16,7 +16,13 @@ import { clearSession, getSession, setSession } from "./storage";
 import type { TokenPair, User } from "./types";
 
 import type { ConfirmationResult } from "firebase/auth";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  OAuthProvider,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  signInWithPopup,
+} from "firebase/auth";
 
 interface AuthContextValue {
   user: User | null;
@@ -29,6 +35,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   sendOtp: (phone: string, buttonId: string) => Promise<ConfirmationResult>;
   confirmOtp: (confirmation: ConfirmationResult, code: string) => Promise<TokenPair>;
+  signInWithProvider: (provider: "google" | "apple") => Promise<TokenPair>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -115,6 +122,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [login]
   );
 
+  const signInWithProvider = useCallback(
+    async (provider: "google" | "apple") => {
+      if (!firebaseAuth) {
+        throw new Error("Firebase authentication is not configured");
+      }
+      const authProvider =
+        provider === "google"
+          ? new GoogleAuthProvider()
+          : new OAuthProvider("apple.com");
+      if (provider === "apple") {
+        authProvider.addScope("email");
+        authProvider.addScope("name");
+      }
+      const result = await signInWithPopup(firebaseAuth, authProvider);
+      const idToken = await result.user.getIdToken();
+      const { data } = await api.post<TokenPair>("/auth/firebase", {
+        id_token: idToken,
+      });
+      await login(data);
+      return data;
+    },
+    [login]
+  );
+
   const value = useMemo<AuthContextValue>(() => {
     return {
       user,
@@ -127,8 +158,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       sendOtp,
       confirmOtp,
+      signInWithProvider,
     };
-  }, [user, isLoading, login, logout, sendOtp, confirmOtp]);
+  }, [user, isLoading, login, logout, sendOtp, confirmOtp, signInWithProvider]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

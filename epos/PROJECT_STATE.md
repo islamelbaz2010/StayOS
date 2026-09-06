@@ -9,9 +9,10 @@
 
 ## Current Phase
 
-**Code-Complete Pre-Alpha — Closed Alpha Imminent**
+**Code-Complete Pre-Alpha — Engineering Authorized for Phase 1**
 **Status**: Engineering ~88–90% complete. Operational execution: 0%. No deployed environment. No real users.
-**Phase 0 Gate**: Still formally ACTIVE (10 transactions + 80 interviews not confirmed). In practice, the project has proceeded to full implementation.
+**Phase 0 Gate**: Commercial validation remains ACTIVE (10 transactions + 80 interviews not confirmed). `DECISION_LOG.md` **DEC-011** (Founder, 2026-07-30) superseded the Phase 1 code freeze; engineering implementation is authorized to proceed in parallel with commercial validation.
+**Mobile track**: Still blocked until `ADR-016` (mobile framework) is committed per `DECISION_LOG.md` DEC-014.
 
 ---
 
@@ -36,6 +37,7 @@
 
 ## What Is Permitted Now
 
+- Phase 1 `src/` application engineering (authorized by `DECISION_LOG.md` DEC-011)
 - Documentation and governance files
 - CI/CD workflows (`.github/workflows/`)
 - Python tooling scripts (`tools/`)
@@ -43,7 +45,7 @@
 - Infrastructure-as-code scaffolding (no execution)
 - Test fixtures and schema definitions (no live database)
 
-**What Is Blocked**: Production application code for Phase 1 features
+**What Is Blocked**: Commercial launch / public alpha until Phase 0 validation gate is cleared. Mobile engineering until `ADR-016` is committed.
 
 ---
 

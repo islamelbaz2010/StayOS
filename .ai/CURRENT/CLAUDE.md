@@ -31,10 +31,12 @@ Read in order:
 | Phase | Status | Code Allowed? |
 |-------|--------|--------------|
 | Phase -1 | ✅ Complete | Read-only |
-| Phase 0 | 🔴 Active | Tooling/docs/CI only — no app code |
-| Phase 1 | ⏳ Locked | Gated behind Phase 0 |
+| Phase 0 | 🔴 Active (commercial validation) | Tooling/docs/CI; Phase 1 `src/` app code authorized per `DECISION_LOG.md` **DEC-011** (Founder, 2026-07-30) |
+| Phase 1 | ⏳ Locked for commercial/public launch | Gated behind completed Phase 0 validations |
 
 **Phase 0 gate conditions**: [`docs/phase--1/reports/16_REQUIRED_VALIDATIONS.md`](docs/phase--1/reports/16_REQUIRED_VALIDATIONS.md)
+
+**DEC-011 note:** The prior "no Phase 1 application code" freeze is superseded. Engineering may proceed in parallel with Phase 0 commercial validation. Mobile engineering remains blocked until `ADR-016` is committed (`DECISION_LOG.md` DEC-014).
 
 ---
 
@@ -64,12 +66,13 @@ Full conflict register: [`TECH_STACK.md`](TECH_STACK.md)
 
 ## What Claude Code Must Not Do
 
-- Write `src/` application code for Phase 1 features before Phase 0 gates clear
 - Resolve the Paymob/Stripe conflict without explicit founder instruction
 - Delete or modify `docs/phase--1/*` (read-only historical record)
 - Treat `archive/` documents as authoritative
 - Add features not in [`docs/02_product/MVP_FREEZE.md`](docs/02_product/MVP_FREEZE.md)
 - Make architectural decisions not yet recorded in an ADR
+
+**Historical note:** Earlier language here prohibited `src/` application code until Phase 0 gates cleared. That prohibition is superseded by `DECISION_LOG.md` **DEC-011**; engineering is authorized to proceed in parallel with commercial validation.
 
 ---
 

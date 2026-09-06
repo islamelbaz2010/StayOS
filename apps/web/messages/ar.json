@@ -690,7 +690,8 @@
     "properties": "العقارات",
     "reservations": "الحجوزات",
     "kyc": "التحقق من الهوية",
-    "messages": "الرسائل"
+    "messages": "الرسائل",
+    "earnings": "الأرباح"
   },
   "landing": {
     "trustVerified": "مضيفون موثقون",
@@ -727,5 +728,20 @@
       "refund_pending": "استرداد معلّق",
       "refunded": "مُستردة"
     }
+  },
+  "hostEarnings": {
+    "title": "الأرباح",
+    "loadError": "تعذّر تحميل الأرباح.",
+    "noEarnings": "لا توجد أرباح بعد. بمجرد اكتمال إقامات الضيوف، ستظهر أرباحك هنا.",
+    "netEarnings": "صافي الأرباح",
+    "totalRevenue": "إجمالي الإيرادات",
+    "pendingVerification": "في انتظار التحقق",
+    "refundPending": "استرداد معلّق",
+    "totalBookings": "إجمالي الحجوزات",
+    "confirmedBookings": "حجوزات مؤكدة",
+    "completedStays": "إقامات مكتملة",
+    "perListing": "الأرباح لكل عقار",
+    "bookings": "حجوزات",
+    "disclaimer": "جميع المبالغ بالجنيه المصري وتقديرية. يتم معالجة المدفوعات المؤكدة وفقاً لشروط المضيف في StayOS."
   }
 }

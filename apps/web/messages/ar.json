@@ -343,7 +343,8 @@
       "moderate": "استرداد كامل حتى 5 أيام قبل الوصول",
       "strict": "استرداد 50% حتى أسبوع قبل الوصول"
     },
-    "availableForDates": "متاح للتواريخ المختارة"
+    "availableForDates": "متاح للتواريخ المختارة",
+    "similarListings": "إقامات مشابهة"
   },
   "trust": {
     "title": "الثقة والأمان",
@@ -866,5 +867,12 @@
   },
   "footer": {
     "support": "الدعم"
+  },
+  "publicHost": {
+    "title": "ملف المضيف",
+    "joinedIn": "انضم في {date}",
+    "listings": "عقارات {name}",
+    "noListings": "لا توجد عقارات نشطة لهذا المضيف.",
+    "loadError": "تعذّر تحميل ملف المضيف."
   }
 }

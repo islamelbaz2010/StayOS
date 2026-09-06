@@ -11,6 +11,7 @@ import { FavoriteButton } from "@/components/listings/FavoriteButton";
 import { Gallery } from "@/components/listings/Gallery";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
 import { ReviewsSection } from "@/components/listings/ReviewsSection";
+import { SimilarListingsSection } from "@/components/listings/SimilarListingsSection";
 import { TrustSection } from "@/components/listings/TrustSection";
 import { VerifiedBadge } from "@/components/listings/VerifiedBadge";
 import { RatingBadge } from "@/components/ui/RatingBadge";
@@ -286,6 +287,9 @@ export default function ListingDetailPage() {
                 </div>
               </aside>
             </div>
+
+            {/* Similar listings */}
+            <SimilarListingsSection unitId={unitId} />
 
             {/* Sticky mobile booking bar */}
             <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 bg-white px-4 py-3 shadow-lg lg:hidden">

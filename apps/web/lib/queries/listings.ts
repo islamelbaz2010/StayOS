@@ -21,6 +21,7 @@ type ApiSearchResult = components["schemas"]["ListingSearchResult"];
 type ApiListingResponse = components["schemas"]["ListingResponse"];
 
 export interface ListingDetail extends Listing {
+  hostId: string;
   description: string;
   amenities: string[];
   houseRules: string | null;
@@ -45,6 +46,7 @@ export interface ListingDetail extends Listing {
 function mapListingDetail(item: ApiListingResponse): ListingDetail {
   return {
     id: item.id,
+    hostId: item.host_id,
     title: item.title,
     description: item.description,
     city: item.city,
@@ -174,6 +176,46 @@ export function useListingPhotos(unitId: string) {
     queryFn: async () => {
       const { data } = await api.get<ListingPhoto[]>(`/listings/${unitId}/photos`);
       return data;
+    },
+    enabled: Boolean(unitId),
+  });
+}
+
+type ApiHostProfile = components["schemas"]["app__listings__schemas__HostProfileResponse"];
+
+export interface HostProfile {
+  id: string;
+  displayName: string | null;
+  kycStatus: string | null;
+  joinedAt: string | null;
+  listings: Listing[];
+}
+
+export function useHostProfile(hostId: string) {
+  return useQuery<HostProfile>({
+    queryKey: ["host-profile", hostId],
+    queryFn: async () => {
+      const { data } = await api.get<ApiHostProfile>(`/listings/profiles/host/${hostId}`);
+      return {
+        id: data.id,
+        displayName: data.display_name,
+        kycStatus: data.kyc_status,
+        joinedAt: data.joined_at,
+        listings: data.listings.map((item) => mapSearchResult(item as unknown as ApiSearchResult)),
+      };
+    },
+    enabled: Boolean(hostId),
+  });
+}
+
+export function useSimilarListings(unitId: string) {
+  return useQuery<Listing[]>({
+    queryKey: ["similar-listings", unitId],
+    queryFn: async () => {
+      const { data } = await api.get<unknown[]>(`/listings/${unitId}/similar`, {
+        params: { limit: 6 },
+      });
+      return data.map((item) => mapSearchResult(item as unknown as ApiSearchResult));
     },
     enabled: Boolean(unitId),
   });

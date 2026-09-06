@@ -690,7 +690,8 @@
     "properties": "Properties",
     "reservations": "Reservations",
     "kyc": "Identity Verification",
-    "messages": "Messages"
+    "messages": "Messages",
+    "earnings": "Earnings"
   },
   "landing": {
     "trustVerified": "Verified Hosts",
@@ -727,5 +728,20 @@
       "refund_pending": "Refund pending",
       "refunded": "Refunded"
     }
+  },
+  "hostEarnings": {
+    "title": "Earnings",
+    "loadError": "Could not load earnings.",
+    "noEarnings": "No earnings yet. Once guests complete stays, your earnings will appear here.",
+    "netEarnings": "Net earnings",
+    "totalRevenue": "Total revenue",
+    "pendingVerification": "Pending verification",
+    "refundPending": "Refund pending",
+    "totalBookings": "Total bookings",
+    "confirmedBookings": "Confirmed bookings",
+    "completedStays": "Completed stays",
+    "perListing": "Earnings per listing",
+    "bookings": "bookings",
+    "disclaimer": "All amounts are estimates in EGP. Verified payouts are processed according to the StayOS host terms."
   }
 }

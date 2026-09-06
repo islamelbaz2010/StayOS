@@ -266,7 +266,9 @@
       "halalCertified": "Halal certified",
       "mixed": "Mixed",
       "couplesWelcome": "Couples welcome"
-    }
+    },
+    "list": "List",
+    "map": "Map"
   },
   "favorites": {
     "title": "Favorites",

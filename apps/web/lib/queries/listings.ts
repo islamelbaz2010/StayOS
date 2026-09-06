@@ -100,6 +100,8 @@ function mapSearchResult(item: ApiSearchResult): Listing {
     averageRating: item.average_rating ?? null,
     reviewCount: item.review_count ?? 0,
     availableForDates: item.available_for_dates ?? null,
+    lat: item.lat,
+    lng: item.lng,
   };
 }
 

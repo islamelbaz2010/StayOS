@@ -12,13 +12,13 @@ import { formatDate } from "@/lib/utils";
 
 const CANCELLABLE_STATUSES = new Set(["requested", "accepted", "confirmed"]);
 
-const STATUS_STYLES: Record<string, string> = {
-  requested: "bg-amber-100 text-amber-800",
-  accepted: "bg-blue-100 text-blue-800",
-  confirmed: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-  cancelled: "bg-neutral-200 text-neutral-700",
-  no_show: "bg-neutral-200 text-neutral-700",
+const STATUS_VARIANTS: Record<string, string> = {
+  requested: "badge-warning",
+  accepted: "badge-accent",
+  confirmed: "badge-success",
+  rejected: "badge-danger",
+  cancelled: "badge-neutral",
+  no_show: "badge-neutral",
 };
 
 export default function MyTripsPage() {
@@ -32,7 +32,7 @@ export default function MyTripsPage() {
     <ProtectedRoute allowedRoles={["guest"]}>
       <GuestLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <h1 className="mb-6 text-2xl font-bold text-neutral-900">
+          <h1 className="mb-6 text-2xl font-bold text-brand-900">
             {t("title")}
           </h1>
 
@@ -43,17 +43,17 @@ export default function MyTripsPage() {
           )}
 
           {error && (
-            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
+            <div className="card p-8 text-center text-danger-600">
               {t("loadError")}
             </div>
           )}
 
           {bookings && bookings.length === 0 && (
-            <div className="rounded-xl bg-white p-12 text-center shadow-card">
+            <div className="card p-12 text-center">
               <p className="text-neutral-500">{t("noBookings")}</p>
               <Link
                 href={`/${locale}/search`}
-                className="mt-4 inline-block rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                className="btn-primary mt-4 inline-flex"
               >
                 {t("searchCta")}
               </Link>
@@ -65,21 +65,19 @@ export default function MyTripsPage() {
               {bookings.map((booking) => (
                 <div
                   key={booking.id}
-                  className="overflow-hidden rounded-xl bg-white shadow-card"
+                  className="card p-4 sm:p-5"
                 >
-                  <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-                            STATUS_STYLES[booking.status] ||
-                            "bg-neutral-100 text-neutral-700"
-                          }`}
-                        >
+                        <span className={STATUS_VARIANTS[booking.status] || "badge-neutral"}>
                           {t(`status.${booking.status}`)}
                         </span>
                         <span className="text-xs text-neutral-500">
-                          {formatDate(new Date(booking.requested_at), locale === "ar" ? "ar-EG" : "en-EG")}
+                          {formatDate(
+                            new Date(booking.requested_at),
+                            locale === "ar" ? "ar-EG" : "en-EG"
+                          )}
                         </span>
                       </div>
                       <div className="flex gap-4 text-sm text-neutral-600">
@@ -87,53 +85,47 @@ export default function MyTripsPage() {
                           <span className="text-neutral-400">
                             {t("checkIn")}:{" "}
                           </span>
-                          <span className="font-medium text-neutral-900">
-                            {formatDate(new Date(booking.check_in), locale === "ar" ? "ar-EG" : "en-EG")}
+                          <span className="font-medium text-brand-900">
+                            {formatDate(
+                              new Date(booking.check_in),
+                              locale === "ar" ? "ar-EG" : "en-EG"
+                            )}
                           </span>
                         </div>
                         <div>
                           <span className="text-neutral-400">
                             {t("checkOut")}:{" "}
                           </span>
-                          <span className="font-medium text-neutral-900">
-                            {formatDate(new Date(booking.check_out), locale === "ar" ? "ar-EG" : "en-EG")}
+                          <span className="font-medium text-brand-900">
+                            {formatDate(
+                              new Date(booking.check_out),
+                              locale === "ar" ? "ar-EG" : "en-EG"
+                            )}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <Link
                         href={`/${locale}/bookings/${booking.id}`}
-                        className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                        className="btn-secondary"
                       >
                         {t("viewTrip")}
                       </Link>
                       {booking.status === "accepted" && (
                         <Link
                           href={`/${locale}/checkout/${booking.id}`}
-                          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                          className="btn-primary"
                         >
                           {t("checkout")}
                         </Link>
                       )}
-                      {booking.status === "confirmed" && (
-                        <span className="rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
-                          {t("confirmed")}
-                        </span>
-                      )}
-                      {booking.status === "requested" && (
-                        <span className="text-sm text-neutral-500">
-                          {t("waitingHost")}
-                        </span>
-                      )}
-                      {booking.reject_reason && (
-                        <span className="text-sm text-danger-600">
-                          {booking.reject_reason}
-                        </span>
-                      )}
                       {CANCELLABLE_STATUSES.has(booking.status) && (
-                        <CancelBookingButton booking={booking} onCancelled={() => refetch()} />
+                        <CancelBookingButton
+                          booking={booking}
+                          onCancelled={() => refetch()}
+                        />
                       )}
                     </div>
                   </div>

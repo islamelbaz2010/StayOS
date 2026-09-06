@@ -181,18 +181,21 @@ export function BookingPanel({ listing }: BookingPanelProps) {
     blockedDatesInRange.length === 0;
 
   return (
-    <section
-      className="rounded-xl bg-white p-6 shadow-card"
-      aria-label={t("title")}
-    >
-      <h2 className="text-lg font-semibold text-neutral-900">{t("title")}</h2>
+    <section className="card p-5 sm:p-6" aria-label={t("title")}>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold text-brand-900">{t("title")}</h2>
+        <p className="text-sm text-neutral-500">
+          {formatMoney(listing.price, listing.currency)}{" "}
+          <span className="text-neutral-400">/ {t("perNight")}</span>
+        </p>
+      </div>
 
       {!isAuthLoading && !isAuthenticated && (
         <div className="mt-4 rounded-lg bg-neutral-50 p-4">
           <p className="text-sm text-neutral-700">{t("signInTitle")}</p>
           <Link
             href="/auth/login"
-            className="mt-2 inline-block text-sm font-medium text-brand-600 hover:text-brand-700"
+            className="mt-2 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
           >
             {t("signInButton")}
           </Link>
@@ -200,12 +203,12 @@ export function BookingPanel({ listing }: BookingPanelProps) {
       )}
 
       {!isAuthLoading && isAuthenticated && !isGuest && (
-        <p className="mt-4 text-sm text-red-600" role="alert">
+        <p className="mt-4 text-sm text-danger-600" role="alert">
           {t("guestsOnly")}
         </p>
       )}
 
-      <form className="mt-4 space-y-4" onSubmit={(e) => e.preventDefault()}>
+      <form className="mt-5 space-y-4" onSubmit={(e) => e.preventDefault()}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label
@@ -221,21 +224,16 @@ export function BookingPanel({ listing }: BookingPanelProps) {
               min={todayStr}
               onChange={(e) => setCheckIn(e.target.value)}
               className={cn(
-                "mt-1 w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500",
-                errors.checkIn
-                  ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                  : "border-neutral-300"
+                "input mt-1 text-sm",
+                errors.checkIn &&
+                  "border-danger-500 focus:border-danger-600 focus:ring-danger-500"
               )}
               aria-invalid={!!errors.checkIn}
               aria-errormessage={errors.checkIn ? "checkIn-error" : undefined}
               disabled={createBooking.isPending}
             />
             {errors.checkIn && (
-              <p
-                id="checkIn-error"
-                className="mt-1 text-sm text-red-600"
-                role="alert"
-              >
+              <p id="checkIn-error" className="mt-1 text-sm text-danger-600" role="alert">
                 {errors.checkIn}
               </p>
             )}
@@ -255,28 +253,21 @@ export function BookingPanel({ listing }: BookingPanelProps) {
               min={toInputDate(addDays(new Date(checkIn), 1))}
               onChange={(e) => setCheckOut(e.target.value)}
               className={cn(
-                "mt-1 w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500",
-                errors.checkOut
-                  ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                  : "border-neutral-300"
+                "input mt-1 text-sm",
+                errors.checkOut &&
+                  "border-danger-500 focus:border-danger-600 focus:ring-danger-500"
               )}
               aria-invalid={!!errors.checkOut}
-              aria-errormessage={
-                errors.checkOut ? "checkOut-error" : undefined
-              }
+              aria-errormessage={errors.checkOut ? "checkOut-error" : undefined}
               disabled={createBooking.isPending}
             />
             {errors.checkOut && (
-              <p
-                id="checkOut-error"
-                className="mt-1 text-sm text-red-600"
-                role="alert"
-              >
+              <p id="checkOut-error" className="mt-1 text-sm text-danger-600" role="alert">
                 {errors.checkOut}
               </p>
             )}
             {!errors.checkOut && nights > 0 && blockedDatesInRange.length > 0 && (
-              <p className="mt-1 text-sm text-red-600" role="alert">
+              <p className="mt-1 text-sm text-danger-600" role="alert">
                 {t("datesUnavailable")}
               </p>
             )}
@@ -305,10 +296,9 @@ export function BookingPanel({ listing }: BookingPanelProps) {
                   }))
                 }
                 className={cn(
-                  "mt-1 w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500",
-                  errors.adults || errors.guests
-                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                    : "border-neutral-300"
+                  "input mt-1 text-sm",
+                  (errors.adults || errors.guests) &&
+                    "border-danger-500 focus:border-danger-600 focus:ring-danger-500"
                 )}
                 aria-invalid={!!(errors.adults || errors.guests)}
                 aria-errormessage={
@@ -340,7 +330,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
                     children: Number(e.target.value),
                   }))
                 }
-                className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="input mt-1 text-sm"
                 disabled={createBooking.isPending}
               >
                 {Array.from({ length: 11 }).map((_, i) => (
@@ -367,7 +357,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
                     infants: Number(e.target.value),
                   }))
                 }
-                className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="input mt-1 text-sm"
                 disabled={createBooking.isPending}
               >
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -382,12 +372,12 @@ export function BookingPanel({ listing }: BookingPanelProps) {
           {(errors.adults || errors.guests) && (
             <div className="mt-2 space-y-1">
               {errors.adults && (
-                <p id="adults-error" className="text-sm text-red-600" role="alert">
+                <p id="adults-error" className="text-sm text-danger-600" role="alert">
                   {errors.adults}
                 </p>
               )}
               {errors.guests && (
-                <p id="guests-error" className="text-sm text-red-600" role="alert">
+                <p id="guests-error" className="text-sm text-danger-600" role="alert">
                   {errors.guests}
                 </p>
               )}
@@ -396,54 +386,58 @@ export function BookingPanel({ listing }: BookingPanelProps) {
         </div>
 
         <div className="rounded-lg bg-neutral-50 p-4">
-          <h3 className="text-sm font-semibold text-neutral-900">
+          <h3 className="text-sm font-semibold text-brand-900">
             {t("summary")}
           </h3>
 
           {nights > 0 ? (
             <div className="mt-3 space-y-2 text-sm text-neutral-700">
               <div className="flex justify-between">
-                <span>
+                <span className="text-neutral-600">
                   {formatMoney(listing.price, listing.currency)} × {nights} {t("nights")}
                 </span>
-                <span>{formatMoney(totalPrice, listing.currency)}</span>
+                <span className="font-medium text-brand-900">
+                  {formatMoney(totalPrice, listing.currency)}
+                </span>
               </div>
 
               {cleaningFee > 0 && (
                 <div className="flex justify-between">
-                  <span>{t("cleaningFee")}</span>
-                  <span>{formatMoney(cleaningFee, listing.currency)}</span>
+                  <span className="text-neutral-600">{t("cleaningFee")}</span>
+                  <span className="font-medium text-brand-900">
+                    {formatMoney(cleaningFee, listing.currency)}
+                  </span>
                 </div>
               )}
 
               <div className="flex justify-between">
-                <span>
+                <span className="text-neutral-600">
                   {t("serviceFee")}
                   {serviceFeeWaived && (
-                    <span className="ml-1 text-xs text-green-600">
+                    <span className="ms-1 text-xs text-success-600">
                       ({t("serviceFeeWaived")})
                     </span>
                   )}
                 </span>
-                <span>{formatMoney(serviceFee, listing.currency)}</span>
+                <span className="font-medium text-brand-900">
+                  {formatMoney(serviceFee, listing.currency)}
+                </span>
               </div>
 
               <div className="flex justify-between">
-                <span>{t("guests")}</span>
-                <span>{totalGuests}</span>
+                <span className="text-neutral-600">{t("guests")}</span>
+                <span className="font-medium text-brand-900">{totalGuests}</span>
               </div>
 
               <div className="border-t border-neutral-200 pt-2">
-                <div className="flex justify-between font-semibold text-neutral-900">
+                <div className="flex justify-between font-semibold text-brand-900">
                   <span>{t("total")}</span>
                   <span>{formatMoney(grandTotal, listing.currency)}</span>
                 </div>
               </div>
             </div>
           ) : (
-            <p className="mt-2 text-sm text-neutral-500">
-              {t("selectDates")}
-            </p>
+            <p className="mt-2 text-sm text-neutral-500">{t("selectDates")}</p>
           )}
         </div>
 
@@ -452,10 +446,10 @@ export function BookingPanel({ listing }: BookingPanelProps) {
           onClick={handleSubmit}
           disabled={!canSubmit || createBooking.isPending}
           className={cn(
-            "w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2",
+            "w-full rounded-md px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2",
             !canSubmit
-              ? "cursor-not-allowed bg-neutral-400"
-              : "bg-brand-600 hover:bg-brand-700"
+              ? "cursor-not-allowed bg-neutral-300 text-neutral-600"
+              : "btn-primary"
           )}
           aria-busy={createBooking.isPending}
         >
@@ -463,7 +457,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
         </button>
 
         {errors.submit && (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-danger-600" role="alert">
             {errors.submit}
           </p>
         )}

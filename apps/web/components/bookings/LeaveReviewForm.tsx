@@ -11,7 +11,11 @@ interface LeaveReviewFormProps {
   onSubmitted: () => void;
 }
 
-export function LeaveReviewForm({ bookingId, unitId, onSubmitted }: LeaveReviewFormProps) {
+export function LeaveReviewForm({
+  bookingId,
+  unitId,
+  onSubmitted,
+}: LeaveReviewFormProps) {
   const t = useTranslations("trips");
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(5);
@@ -24,7 +28,7 @@ export function LeaveReviewForm({ bookingId, unitId, onSubmitted }: LeaveReviewF
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50"
+        className="rounded-lg border border-accent-600 px-4 py-2 text-sm font-medium text-accent-600 transition hover:bg-accent-100"
       >
         {t("leaveReview")}
       </button>
@@ -48,18 +52,22 @@ export function LeaveReviewForm({ bookingId, unitId, onSubmitted }: LeaveReviewF
   }
 
   return (
-    <div className="mt-3 w-full rounded-lg border border-neutral-300 bg-neutral-50 p-4 sm:w-96">
-      <p className="text-sm font-medium text-neutral-900">{t("reviewTitle")}</p>
+    <div className="mt-3 w-full rounded-card border border-neutral-200 bg-surface-page p-4 sm:w-96">
+      <p className="text-sm font-medium text-brand-900">{t("reviewTitle")}</p>
 
-      <div className="mt-3 flex gap-1" role="radiogroup" aria-label={t("reviewRating")}>
+      <div
+        className="mt-3 flex gap-1"
+        role="radiogroup"
+        aria-label={t("reviewRating")}
+      >
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => setRating(value)}
             aria-label={`${value}`}
-            className={`text-2xl ${
-              value <= rating ? "text-amber-400" : "text-neutral-300"
+            className={`text-2xl transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 ${
+              value <= rating ? "text-warning-500" : "text-neutral-300"
             }`}
           >
             ★
@@ -67,19 +75,25 @@ export function LeaveReviewForm({ bookingId, unitId, onSubmitted }: LeaveReviewF
         ))}
       </div>
 
-      <label htmlFor={`review-comment-${bookingId}`} className="mt-3 block text-xs text-neutral-500">
+      <label
+        htmlFor={`review-comment-${bookingId}`}
+        className="mt-3 block text-xs font-medium text-neutral-500"
+      >
         {t("reviewCommentPlaceholder")}
       </label>
       <textarea
         id={`review-comment-${bookingId}`}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-neutral-300 p-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none"
+        className="input mt-1 min-h-[5rem] text-sm"
         rows={3}
       />
 
       {error && (
-        <p className="mt-2 rounded-lg bg-red-50 p-2 text-sm text-red-800" role="alert">
+        <p
+          className="mt-2 rounded-md bg-danger-50 p-2 text-sm text-danger-700"
+          role="alert"
+        >
           {error}
         </p>
       )}
@@ -89,14 +103,14 @@ export function LeaveReviewForm({ bookingId, unitId, onSubmitted }: LeaveReviewF
           type="button"
           onClick={handleSubmit}
           disabled={createReview.isPending}
-          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-400"
+          className="btn-primary rounded-lg px-4 py-2 text-sm"
         >
           {createReview.isPending ? t("reviewSubmitting") : t("reviewSubmit")}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-white"
+          className="btn-secondary rounded-lg px-4 py-2 text-sm"
         >
           {t("reviewCancel")}
         </button>

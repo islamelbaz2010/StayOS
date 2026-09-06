@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { useTranslations } from "next-intl";
 
-import { useCancelBooking, useCancellationPreview } from "@/lib/queries/bookings";
+import {
+  useCancelBooking,
+  useCancellationPreview,
+} from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
 
 interface CancelBookingButtonProps {
@@ -16,7 +19,10 @@ interface CancelBookingButtonProps {
  * confirms, then cancels through the real cancellation lifecycle (refund
  * calculation, payment settlement, host notification) — never a bare status
  * flip. */
-export function CancelBookingButton({ booking, onCancelled }: CancelBookingButtonProps) {
+export function CancelBookingButton({
+  booking,
+  onCancelled,
+}: CancelBookingButtonProps) {
   const t = useTranslations("trips");
   const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
@@ -37,7 +43,7 @@ export function CancelBookingButton({ booking, onCancelled }: CancelBookingButto
       setReason("");
       onCancelled();
     } catch {
-      setError(t("cancelError"));
+      setError(t("cancelError") ?? tc("error"));
     }
   }
 
@@ -46,7 +52,7 @@ export function CancelBookingButton({ booking, onCancelled }: CancelBookingButto
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+        className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:border-danger-300 hover:bg-danger-50 hover:text-danger-700"
       >
         {t("cancelBooking")}
       </button>
@@ -54,8 +60,8 @@ export function CancelBookingButton({ booking, onCancelled }: CancelBookingButto
   }
 
   return (
-    <div className="mt-3 w-full rounded-lg border border-neutral-300 bg-neutral-50 p-4 sm:w-96">
-      <p className="text-sm font-medium text-neutral-900">{t("cancelModalTitle")}</p>
+    <div className="mt-3 w-full rounded-card border border-neutral-200 bg-surface-page p-4 sm:w-96">
+      <p className="text-sm font-medium text-brand-900">{t("cancelModalTitle")}</p>
 
       {preview.isLoading && (
         <p className="mt-2 text-sm text-neutral-500">{tc("loading")}</p>
@@ -98,19 +104,25 @@ export function CancelBookingButton({ booking, onCancelled }: CancelBookingButto
         )}
 
       {error && (
-        <p className="mt-2 rounded-lg bg-red-50 p-2 text-sm text-red-800" role="alert">
+        <p
+          className="mt-2 rounded-md bg-danger-50 p-2 text-sm text-danger-700"
+          role="alert"
+        >
           {error}
         </p>
       )}
 
-      <label htmlFor={`cancel-reason-${booking.id}`} className="mt-3 block text-xs text-neutral-500">
+      <label
+        htmlFor={`cancel-reason-${booking.id}`}
+        className="mt-3 block text-xs font-medium text-neutral-500"
+      >
         {t("cancelReasonPlaceholder")}
       </label>
       <textarea
         id={`cancel-reason-${booking.id}`}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-neutral-300 p-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none"
+        className="input mt-1 min-h-[4rem] text-sm"
         rows={2}
       />
 
@@ -119,7 +131,7 @@ export function CancelBookingButton({ booking, onCancelled }: CancelBookingButto
           type="button"
           onClick={handleConfirm}
           disabled={cancelBooking.isPending || preview.isLoading}
-          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-400"
+          className="btn-danger rounded-lg px-4 py-2 text-sm"
         >
           {cancelBooking.isPending ? t("cancelSubmitting") : tc("confirm")}
         </button>
@@ -129,7 +141,7 @@ export function CancelBookingButton({ booking, onCancelled }: CancelBookingButto
             setOpen(false);
             setError(null);
           }}
-          className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-white"
+          className="btn-secondary rounded-lg px-4 py-2 text-sm"
         >
           {tc("back")}
         </button>

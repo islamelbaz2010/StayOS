@@ -13,12 +13,12 @@ import { formatDate } from "@/lib/utils";
 
 function StatusBadge({ status }: { status: string }) {
   const t = useTranslations("payment");
-  const styles: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-800",
-    proof_uploaded: "bg-blue-100 text-blue-800",
-    verified: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-800",
-    cancelled: "bg-neutral-200 text-neutral-700",
+  const variants: Record<string, string> = {
+    pending: "badge-warning",
+    proof_uploaded: "badge-info",
+    verified: "badge-success",
+    rejected: "badge-danger",
+    cancelled: "badge-neutral",
   };
   const labels: Record<string, string> = {
     pending: t("statusPending"),
@@ -28,27 +28,28 @@ function StatusBadge({ status }: { status: string }) {
     cancelled: t("statusCancelled"),
   };
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
-        styles[status] || styles.pending
-      }`}
-    >
+    <span className={variants[status] || variants.pending}>
       {labels[status] || status}
     </span>
   );
 }
 
-function CheckoutContent({ bookingId, locale }: { bookingId: string; locale: string }) {
+function CheckoutContent({
+  bookingId,
+  locale,
+}: {
+  bookingId: string;
+  locale: string;
+}) {
   const t = useTranslations("payment");
   const tc = useTranslations("common");
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { data: booking, isLoading: bookingLoading } = useBooking(bookingId);
-  const { data: payment, isLoading: paymentLoading } =
-    usePaymentByBooking(bookingId);
+  const { data: payment, isLoading: paymentLoading } = usePaymentByBooking(bookingId);
 
   if (bookingLoading || paymentLoading) {
     return (
-      <div className="rounded-xl bg-white p-8 text-center text-neutral-500 shadow-card">
+      <div className="card p-8 text-center text-neutral-500">
         {tc("loading")}
       </div>
     );
@@ -56,7 +57,7 @@ function CheckoutContent({ bookingId, locale }: { bookingId: string; locale: str
 
   if (!booking) {
     return (
-      <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
+      <div className="card p-8 text-center text-danger-600">
         {t("bookingNotFound")}
       </div>
     );
@@ -64,7 +65,7 @@ function CheckoutContent({ bookingId, locale }: { bookingId: string; locale: str
 
   if (!payment) {
     return (
-      <div className="rounded-xl bg-white p-8 text-center shadow-card">
+      <div className="card p-8 text-center">
         <p className="text-neutral-600">{t("noPaymentYet")}</p>
         <p className="mt-2 text-sm text-neutral-500">{t("noPaymentHint")}</p>
       </div>
@@ -76,78 +77,85 @@ function CheckoutContent({ bookingId, locale }: { bookingId: string; locale: str
 
   return (
     <div className="space-y-6">
-      {/* Status banner */}
-      <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-card">
-        <div>
-          <p className="text-sm text-neutral-500">{t("paymentStatus")}</p>
-          <StatusBadge status={payment.status} />
-        </div>
-        {payment.reject_reason && (
-          <div className="max-w-xs text-end">
-            <p className="text-sm font-medium text-danger-600">
-              {t("rejectReason")}
-            </p>
-            <p className="text-sm text-neutral-600">{payment.reject_reason}</p>
+      <div className="card p-5 sm:p-6">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm text-neutral-500">{t("paymentStatus")}</p>
+            <div className="mt-2">
+              <StatusBadge status={payment.status} />
+            </div>
           </div>
-        )}
+          {payment.reject_reason && (
+            <div className="max-w-sm rounded-md bg-danger-50 p-3">
+              <p className="text-sm font-medium text-danger-700">
+                {t("rejectReason")}
+              </p>
+              <p className="text-sm text-neutral-700">{payment.reject_reason}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {canUpload && payment.payment_deadline_at && (
-        <p className="rounded-xl bg-amber-50 p-4 text-sm font-medium text-amber-800 shadow-card">
-          {t("deadlineWarning", {
-            deadline: new Date(payment.payment_deadline_at).toLocaleString(dateLocale),
-          })}
-        </p>
+        <div className="card border-l-4 border-l-warning-500 bg-warning-50 p-5">
+          <p className="text-sm font-medium text-warning-700">
+            {t("deadlineWarning", {
+              deadline: new Date(payment.payment_deadline_at).toLocaleString(
+                dateLocale
+              ),
+            })}
+          </p>
+        </div>
       )}
 
       {canUpload && payment.proof_rejection_count > 0 && (
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm text-danger-600">
           {t("attemptsRemaining", {
             count: Math.max(0, 3 - payment.proof_rejection_count),
           })}
         </p>
       )}
 
-      {/* Booking summary */}
-      <div className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <div className="card p-5 sm:p-6">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("bookingSummary")}
         </h2>
-        <dl className="space-y-3">
+        <dl className="space-y-3 text-sm">
           <div className="flex justify-between">
             <dt className="text-neutral-600">{t("referenceNumber")}</dt>
-            <dd className="font-mono font-medium text-neutral-900">
+            <dd className="font-mono font-medium text-brand-900">
               {payment.reference_number}
             </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-neutral-600">{t("checkIn")}</dt>
-            <dd className="font-medium text-neutral-900">{formatDate(new Date(booking.check_in), dateLocale)}</dd>
+            <dd className="font-medium text-brand-900">
+              {formatDate(new Date(booking.check_in), dateLocale)}
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-neutral-600">{t("checkOut")}</dt>
-            <dd className="font-medium text-neutral-900">
+            <dd className="font-medium text-brand-900">
               {formatDate(new Date(booking.check_out), dateLocale)}
             </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-neutral-600">{t("nights")}</dt>
-            <dd className="font-medium text-neutral-900">{payment.nights}</dd>
+            <dd className="font-medium text-brand-900">{payment.nights}</dd>
           </div>
           <div className="flex justify-between border-t border-neutral-200 pt-3">
-            <dt className="text-lg font-bold text-neutral-900">
+            <dt className="text-base font-bold text-brand-900">
               {t("totalAmount")}
             </dt>
-            <dd className="text-lg font-bold text-brand-600">
+            <dd className="text-base font-bold text-accent-600">
               {payment.amount_egp.toLocaleString()} {t("egp")}
             </dd>
           </div>
         </dl>
       </div>
 
-      {/* Payment instructions */}
-      <div className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <div className="card p-5 sm:p-6">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("paymentInstructions")}
         </h2>
         <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-neutral-700">
@@ -155,34 +163,25 @@ function CheckoutContent({ bookingId, locale }: { bookingId: string; locale: str
         </pre>
       </div>
 
-      {/* Proof upload */}
-      <div className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <div className="card p-5 sm:p-6">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("uploadProofTitle")}
         </h2>
         <p className="mb-4 text-sm text-neutral-600">{t("uploadProofHint")}</p>
 
-        {payment.proof_url && (
-          <div className="mb-4 rounded-lg border border-neutral-200 p-3">
+        {payment.proof_s3_key && (
+          <div className="mb-4 rounded-md border border-neutral-200 bg-neutral-50 p-4">
             <p className="mb-2 text-sm font-medium text-neutral-700">
               {t("currentProof")}
             </p>
-            {payment.proof_url.endsWith(".pdf") ? (
-              <a
-                href={payment.proof_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-brand-600 hover:underline"
-              >
-                {t("viewPdf")}
-              </a>
-            ) : (
-              <img
-                src={payment.proof_url}
-                alt={t("proofImage")}
-                className="max-h-48 rounded-lg border border-neutral-200"
-              />
-            )}
+            <a
+              href={`/api/v1/payments/${payment.id}/proof/download`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold text-accent-600 hover:text-accent-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2"
+            >
+              {t("viewPdf")}
+            </a>
           </div>
         )}
 
@@ -209,18 +208,18 @@ export default function CheckoutPage() {
           <div className="mb-6 flex items-center gap-4">
             <Link
               href={`/${locale}`}
-              className="text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              className="text-sm text-neutral-500 hover:text-neutral-700"
             >
               {t("backHome")}
             </Link>
             <Link
               href={`/${locale}/bookings`}
-              className="text-sm text-neutral-500 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              className="text-sm text-neutral-500 hover:text-neutral-700"
             >
               {t("backToTrips")}
             </Link>
           </div>
-          <h1 className="mb-6 text-2xl font-bold text-neutral-900">
+          <h1 className="mb-6 text-2xl font-bold text-brand-900">
             {t("checkoutTitle")}
           </h1>
           <CheckoutContent bookingId={bookingId} locale={locale} />

@@ -31,12 +31,20 @@ export default function EditListingPage({
             <h1 className="text-2xl font-bold text-neutral-900">
               {t("editTitle")}
             </h1>
-            <Link
-              href={`/${locale}/host/listings/${unitId}/availability`}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
-            >
-              {th("availabilityTitle")}
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/${locale}/host/listings/${unitId}/availability`}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
+              >
+                {th("availabilityTitle")}
+              </Link>
+              <Link
+                href={`/${locale}/host/listings/${unitId}/co-hosts`}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
+              >
+                {th("coHostsTitle")}
+              </Link>
+            </div>
           </div>
 
           {isLoading && (

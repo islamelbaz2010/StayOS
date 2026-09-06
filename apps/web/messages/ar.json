@@ -104,7 +104,9 @@
     "addRule": "إضافة قاعدة",
     "ruleError": "تعذّر إضافة القاعدة. يرجى التحقق من التواريخ.",
     "calendarDays": "أيام غير متاحة",
-    "noBlockedDays": "لا توجد أيام محظورة أو محجوزة خلال هذه الفترة."
+    "noBlockedDays": "لا توجد أيام محظورة أو محجوزة خلال هذه الفترة.",
+    "coHostsTitle": "الشركاء",
+    "coHostUserIdPlaceholder": "معرف المستخدم"
   },
   "listingForm": {
     "createTitle": "إضافة عقار جديد",
@@ -803,5 +805,24 @@
     "netEarnings": "صافي الأرباح",
     "completedStays": "الإقامات المكتملة",
     "viewEarnings": "عرض الأرباح"
+  },
+  "coHosts": {
+    "loadError": "تعذّر تحميل الشركاء.",
+    "inviteCoHost": "دعوة شريك",
+    "hideInvite": "إخفاء النموذج",
+    "coHostUserId": "معرف المستخدم",
+    "coHostUserIdPlaceholder": "user-uuid",
+    "permissionScope": "نطاق الصلاحية",
+    "scopeFullAccess": "وصول كامل",
+    "scopeCalendarMessaging": "التقويم والرسائل",
+    "scopeCalendarOnly": "التقويم فقط",
+    "sendInvite": "إرسال دعوة",
+    "inviteError": "تعذّر دعوة الشريك. يرجى التحقق من معرف المستخدم والصلاحيات.",
+    "coHostsList": "الشركاء",
+    "noCoHosts": "لا يوجد شركاء لهذا العقار.",
+    "active": "نشط",
+    "remove": "إزالة",
+    "removeConfirm": "هل تريد إزالة هذا الشريك؟",
+    "loadErrorRetry": "إعادة المحاولة"
   }
 }

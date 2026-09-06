@@ -104,7 +104,9 @@
     "addRule": "Add rule",
     "ruleError": "Could not add the rule. Please check the dates.",
     "calendarDays": "Non-available days",
-    "noBlockedDays": "No blocked or booked days in this period."
+    "noBlockedDays": "No blocked or booked days in this period.",
+    "coHostsTitle": "Co-hosts",
+    "coHostUserIdPlaceholder": "user-uuid"
   },
   "listingForm": {
     "createTitle": "Create New Listing",
@@ -803,5 +805,24 @@
     "netEarnings": "Net earnings",
     "completedStays": "Completed stays",
     "viewEarnings": "View earnings"
+  },
+  "coHosts": {
+    "loadError": "Failed to load co-hosts.",
+    "inviteCoHost": "Invite co-host",
+    "hideInvite": "Hide form",
+    "coHostUserId": "User ID",
+    "coHostUserIdPlaceholder": "user-uuid",
+    "permissionScope": "Permission scope",
+    "scopeFullAccess": "Full access",
+    "scopeCalendarMessaging": "Calendar & messaging",
+    "scopeCalendarOnly": "Calendar only",
+    "sendInvite": "Send invite",
+    "inviteError": "Could not invite co-host. Please check the user ID and permissions.",
+    "coHostsList": "Co-hosts",
+    "noCoHosts": "No co-hosts for this listing.",
+    "active": "Active",
+    "remove": "Remove",
+    "removeConfirm": "Remove this co-host?",
+    "loadErrorRetry": "Retry"
   }
 }

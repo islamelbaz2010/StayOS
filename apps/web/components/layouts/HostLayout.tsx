@@ -20,6 +20,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
     { label: t("earnings"), href: `/${locale}/host/earnings` },
     { label: t("messages"), href: `/${locale}/messages` },
     { label: t("kyc"), href: `/${locale}/host/kyc` },
+    { label: t("profile"), href: `/${locale}/host/profile` },
   ];
 
   return (

@@ -713,7 +713,8 @@
     "reservations": "Reservations",
     "kyc": "Identity Verification",
     "messages": "Messages",
-    "earnings": "Earnings"
+    "earnings": "Earnings",
+    "profile": "Profile"
   },
   "landing": {
     "trustVerified": "Verified Hosts",
@@ -782,5 +783,25 @@
       "unread_messages": "Unread messages",
       "incomplete_listings": "Incomplete listings"
     }
+  },
+  "hostProfile": {
+    "title": "Host Profile",
+    "loadError": "Failed to load profile.",
+    "displayName": "Display name",
+    "email": "Email",
+    "noEmail": "No email set",
+    "edit": "Edit profile",
+    "saveError": "Could not save profile. Please try again.",
+    "verifyIdentityPrompt": "Verify your identity to build trust with guests.",
+    "verifyIdentity": "Verify identity",
+    "listingStats": "Listing stats",
+    "totalListings": "Total listings",
+    "listedListings": "Listed",
+    "coHostUnits": "Co-host units",
+    "earnings": "Earnings",
+    "totalRevenue": "Revenue",
+    "netEarnings": "Net earnings",
+    "completedStays": "Completed stays",
+    "viewEarnings": "View earnings"
   }
 }

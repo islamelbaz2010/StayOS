@@ -113,16 +113,26 @@ async def list_host_bookings(
     status: str | None = None,
     limit: int = 50,
     offset: int = 0,
+    unit_ids: list[str] | None = None,
 ) -> list[Booking]:
+    """List bookings for a host's units.
+
+    When ``unit_ids`` is provided (e.g. owned + co-hosted units from
+    ``host.permissions.get_managed_unit_ids``) the query scopes to those
+    units; otherwise it falls back to units owned by ``host_id``.
+    """
     stmt = (
         select(Booking)
         .options(selectinload(Booking.unit))
         .join(Unit, Booking.unit_id == Unit.id)
-        .where(Unit.host_id == host_id)
         .order_by(Booking.created_at.desc(), Booking.id.desc())
         .offset(offset)
         .limit(limit)
     )
+    if unit_ids is not None:
+        stmt = stmt.where(Booking.unit_id.in_(unit_ids))
+    else:
+        stmt = stmt.where(Unit.host_id == host_id)
     if status is not None:
         stmt = stmt.where(Booking.status == status)
     result = await session.execute(stmt)

@@ -441,3 +441,12 @@ class PhotoResponse(BaseModel):
     display_order: int
     is_cover: bool
     caption: str | None
+
+
+class PhotoOrderItem(BaseModel):
+    photo_id: str = Field(..., min_length=1, max_length=64)
+    display_order: int = Field(..., ge=0)
+
+
+class PhotoReorderRequest(BaseModel):
+    photo_orders: list[PhotoOrderItem] = Field(..., min_length=1, max_length=50)

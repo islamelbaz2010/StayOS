@@ -1,5 +1,6 @@
 "use client";
 
+import { AxiosError } from "axios";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -169,8 +170,11 @@ function ListingCard({ listing }: { listing: HostListing }) {
     if (!window.confirm(t(confirmKey))) return;
     try {
       await mutate(unitId);
-    } catch {
-      window.alert(t("actionError"));
+    } catch (err) {
+      const detail = (
+        err as AxiosError<{ error?: { message?: string } }>
+      )?.response?.data?.error?.message;
+      window.alert(detail || t("actionError"));
     }
   }
 

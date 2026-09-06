@@ -93,14 +93,26 @@ async def get_host_unit_ids(session: AsyncSession, host_id: str) -> list[str]:
 
 
 async def get_host_units_with_listings(
-    session: AsyncSession, host_id: str
+    session: AsyncSession,
+    host_id: str,
+    unit_ids: list[str] | None = None,
 ) -> list[Unit]:
-    result = await session.execute(
+    """Units manageable by the host.
+
+    When ``unit_ids`` is provided (owned + co-hosted units from
+    ``host.permissions.get_managed_unit_ids``) it scopes the query;
+    otherwise it falls back to units owned by ``host_id``.
+    """
+    stmt = (
         select(Unit)
         .options(selectinload(Unit.listing), selectinload(Unit.photos))
-        .where(Unit.host_id == host_id)
         .order_by(Unit.created_at.desc())
     )
+    if unit_ids is not None:
+        stmt = stmt.where(Unit.id.in_(unit_ids))
+    else:
+        stmt = stmt.where(Unit.host_id == host_id)
+    result = await session.execute(stmt)
     return list(result.scalars().all())
 
 
@@ -348,20 +360,27 @@ async def bulk_replace_calendar_rules(
 
 
 async def get_host_dashboard_stats(
-    session: AsyncSession, host_id: str
+    session: AsyncSession,
+    host_id: str,
+    unit_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     """Host dashboard stats from the LIVE bookings + payments path.
 
     Previously this used the legacy ``reservations`` architecture. It now
     queries ``booking.bookings`` and ``payment.payments`` directly so the
     host sees real operational data, not stale reservation records.
+
+    When ``unit_ids`` is provided (owned + co-hosted units) listing and
+    reservation counts cover all managed units. Revenue stays scoped to
+    ``Payment.host_id`` — co-hosts never see the owner's money.
     """
     from app.bookings.constants import BookingStatus
     from app.bookings.models import Booking
     from app.payments.constants import PaymentStatus
     from app.payments.models import Payment
 
-    unit_ids = await get_host_unit_ids(session, host_id)
+    if unit_ids is None:
+        unit_ids = await get_host_unit_ids(session, host_id)
     if not unit_ids:
         return {
             "total_listings": 0,
@@ -373,13 +392,13 @@ async def get_host_dashboard_stats(
         }
 
     total_listings = await session.scalar(
-        select(func.count(Unit.id)).where(Unit.host_id == host_id)
+        select(func.count(Unit.id)).where(Unit.id.in_(unit_ids))
     )
     total_listings = total_listings or 0
 
     listed_listings = await session.scalar(
         select(func.count(Unit.id)).where(
-            Unit.host_id == host_id, Unit.status == UnitStatus.LISTED
+            Unit.id.in_(unit_ids), Unit.status == UnitStatus.LISTED
         )
     )
     listed_listings = listed_listings or 0
@@ -450,15 +469,20 @@ async def get_host_reservation_calendar(
     unit_id: str | None,
     check_in: date,
     check_out: date,
+    unit_ids: list[str] | None = None,
 ) -> list[Any]:
     """Host reservation calendar from the LIVE bookings path.
 
     Previously this used the legacy ``reservations`` architecture. It now
     queries ``booking.bookings`` directly.
+
+    When ``unit_ids`` is provided (owned + co-hosted units) it scopes the
+    query; otherwise it falls back to units owned by ``host_id``.
     """
     from app.bookings.models import Booking
 
-    unit_ids = await get_host_unit_ids(session, host_id)
+    if unit_ids is None:
+        unit_ids = await get_host_unit_ids(session, host_id)
     if not unit_ids:
         return []
     if unit_id is not None and unit_id not in unit_ids:

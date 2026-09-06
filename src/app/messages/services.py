@@ -24,7 +24,7 @@ from .constants import (
     MessageStatus,
     ParticipantRole,
 )
-from .models import Conversation
+from .models import Conversation, ConversationParticipant
 from .schemas import (
     ConversationDetailResponse,
     ConversationListItem,
@@ -274,8 +274,23 @@ async def get_conversation_for_booking(
     is_guest = booking.guest_id == user.id
     is_host = booking.unit is not None and booking.unit.host_id == user.id
     is_admin = user.role == "admin"
+    is_messaging_cohost = False
     if not (is_guest or is_host or is_admin):
-        raise AuthorizationError("Not authorized to view this conversation")
+        if booking.unit is None:
+            raise NotFoundError("Unit not found")
+        # Co-hosts with a messaging-capable scope may join the booking
+        # conversation on the host's behalf.
+        from app.host.constants import CoHostPermissionScope
+        from app.host.permissions import get_unit_permission_scope
+
+        scope = await get_unit_permission_scope(session, user, booking.unit)
+        if scope in (
+            CoHostPermissionScope.FULL_ACCESS,
+            CoHostPermissionScope.CALENDAR_MESSAGING,
+        ):
+            is_messaging_cohost = True
+        else:
+            raise AuthorizationError("Not authorized to view this conversation")
 
     if booking.unit is None:
         raise NotFoundError("Unit not found")
@@ -283,6 +298,23 @@ async def get_conversation_for_booking(
     conversation = await messages_repository.get_or_create_conversation_for_booking(
         session, booking.id, booking.unit_id, booking.guest_id, booking.unit.host_id
     )
+
+    if is_messaging_cohost:
+        # Add the co-host as a host-side participant so send/read paths
+        # (which all gate on participant rows) work uniformly.
+        existing = await messages_repository.get_participant(
+            session, conversation.id, user.id
+        )
+        if existing is None:
+            participant = ConversationParticipant(
+                conversation_id=conversation.id,
+                user_id=user.id,
+                role=ParticipantRole.CO_HOST,
+            )
+            session.add(participant)
+            await session.flush()
+            conversation.participants.append(participant)
+
     return ConversationResponse(
         id=conversation.id,
         booking_id=conversation.booking_id,

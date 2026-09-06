@@ -108,6 +108,19 @@ async def assert_can_manage_calendar(
     await assert_can_access_unit(session, user, unit)
 
 
+async def assert_can_manage_bookings(
+    session: AsyncSession, user: User, unit: Unit
+) -> None:
+    """Owner, admin, or full_access co-host can act on bookings
+    (accept, reject, cancel, check-in, check-out)."""
+    scope = await assert_can_access_unit(session, user, unit)
+    if scope in ("owner", "admin", CoHostPermissionScope.FULL_ACCESS):
+        return
+    raise AuthorizationError(
+        "You do not have permission to manage bookings for this property"
+    )
+
+
 async def assert_can_message(
     session: AsyncSession, user: User, unit: Unit
 ) -> None:

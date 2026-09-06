@@ -15,6 +15,7 @@ from app.host.permissions import (
     assert_can_edit_listing,
     assert_can_manage_calendar,
     assert_owner_or_admin,
+    get_managed_unit_ids,
 )
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
@@ -45,6 +46,7 @@ from .schemas import (
     PaginationInfo,
     PhotoCreate,
     PhotoPresignResponse,
+    PhotoReorderRequest,
     PhotoResponse,
 )
 
@@ -240,7 +242,10 @@ async def get_host_listings(
     session: AsyncSession, user: User
 ) -> list[ListingResponse]:
     _assert_host(user)
-    units = await listings_repository.get_host_units_with_listings(session, user.id)
+    managed_unit_ids = await get_managed_unit_ids(session, user)
+    units = await listings_repository.get_host_units_with_listings(
+        session, user.id, unit_ids=managed_unit_ids
+    )
     results: list[ListingResponse] = []
     for unit in units:
         listing = unit.listing
@@ -270,6 +275,18 @@ async def submit_for_review(
         raise ValidationError("Title and description are required before submitting")
     if listing.base_price_egp < 100:
         raise ValidationError("Price must be at least 100 EGP")
+
+    # Enforce the listing-readiness checklist at the actual submission
+    # transition so incomplete listings cannot enter the review queue.
+    from app.host import services as host_services
+    from app.host.constants import ListingReadinessStatus
+
+    readiness = await host_services.compute_listing_readiness(session, unit, listing)
+    if readiness.status != ListingReadinessStatus.READY:
+        missing = ", ".join(readiness.missing_item_labels.values())
+        raise ValidationError(
+            f"Listing is not ready for review. Missing: {missing or 'required fields'}"
+        )
 
     unit = await listings_repository.set_unit_status(
         session, unit, UnitStatus.PENDING_VERIFICATION
@@ -822,7 +839,10 @@ async def get_host_dashboard(
     session: AsyncSession, user: User
 ) -> HostDashboardStats:
     _assert_host(user)
-    stats = await listings_repository.get_host_dashboard_stats(session, user.id)
+    managed_unit_ids = await get_managed_unit_ids(session, user)
+    stats = await listings_repository.get_host_dashboard_stats(
+        session, user.id, unit_ids=managed_unit_ids
+    )
     return HostDashboardStats(**stats)
 
 
@@ -839,8 +859,9 @@ async def get_host_reservation_calendar(
     if (check_out - check_in).days > 365:
         raise ValidationError("Date range cannot exceed 365 days")
 
+    managed_unit_ids = await get_managed_unit_ids(session, user)
     rows = await listings_repository.get_host_reservation_calendar(
-        session, user.id, unit_id, check_in, check_out
+        session, user.id, unit_id, check_in, check_out, unit_ids=managed_unit_ids
     )
     reservations = [
         HostReservationCalendarItem(
@@ -963,6 +984,38 @@ async def set_cover_photo(
     await listings_repository.set_listing_cover_photo(session, unit_id, photo_id)
     await session.refresh(photo)
     return _to_photo_response(photo)
+
+
+async def reorder_photos(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    request: PhotoReorderRequest,
+) -> list[PhotoResponse]:
+    """Update photo display order. Photo ordering is listing content, so it
+    uses the same permission as listing edits (owner/admin/full_access)."""
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    await assert_can_edit_listing(session, user, unit)
+
+    photos = await listings_repository.get_photos_by_unit(session, unit_id)
+    photos_by_id = {p.id: p for p in photos}
+
+    seen: set[str] = set()
+    for item in request.photo_orders:
+        if item.photo_id in seen:
+            raise ValidationError(f"Duplicate photo_id: {item.photo_id}")
+        seen.add(item.photo_id)
+        photo = photos_by_id.get(item.photo_id)
+        if photo is None:
+            raise NotFoundError("Photo not found")
+        photo.display_order = item.display_order
+        session.add(photo)
+    await session.flush()
+
+    photos.sort(key=lambda p: p.display_order)
+    return [_to_photo_response(p) for p in photos]
 
 
 async def delete_photo(

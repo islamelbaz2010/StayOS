@@ -28,6 +28,7 @@ from .schemas import (
     PhotoCreate,
     PhotoPresignRequest,
     PhotoPresignResponse,
+    PhotoReorderRequest,
     PhotoResponse,
 )
 from .services import (
@@ -53,6 +54,7 @@ from .services import (
     list_photos,
     publish_listing,
     reject_listing,
+    reorder_photos,
     search_listings,
     set_cover_photo,
     submit_for_review,
@@ -308,6 +310,19 @@ async def get_photos(
 ) -> list[PhotoResponse]:
     try:
         return await list_photos(session, unit_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.patch("/{unit_id}/photos/reorder", response_model=list[PhotoResponse])
+async def reorder_photos_endpoint(
+    unit_id: str,
+    request: PhotoReorderRequest,
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> list[PhotoResponse]:
+    try:
+        return await reorder_photos(session, user, unit_id, request)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

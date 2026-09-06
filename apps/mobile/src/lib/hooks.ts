@@ -293,6 +293,34 @@ export function useCancellationPreview(bookingId: string, enabled: boolean) {
   });
 }
 
+export function useHostBookingUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      bookingId,
+      status,
+      rejectReason,
+      cancelReason,
+    }: {
+      bookingId: string;
+      status: string;
+      rejectReason?: string;
+      cancelReason?: string;
+    }) => {
+      const payload: Record<string, unknown> = { status };
+      if (rejectReason) payload.reject_reason = rejectReason;
+      if (cancelReason) payload.cancel_reason = cancelReason;
+      const { data } = await api.patch<Booking>(`/bookings/${bookingId}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["host-reservation"] });
+      qc.invalidateQueries({ queryKey: ["host-today"] });
+    },
+  });
+}
+
 export function useCancelBooking() {
   const qc = useQueryClient();
   return useMutation({

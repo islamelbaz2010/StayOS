@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { ListingForm } from "@/components/listings/ListingForm";
 import { PhotoUpload } from "@/components/listings/PhotoUpload";
 import { useHostListing } from "@/lib/queries/hostListings";
@@ -21,56 +22,51 @@ export default function EditListingPage({
   const th = useTranslations("hostListings");
   const routeParams = useParams<{ locale: string }>();
   const locale = routeParams?.locale ?? "ar";
-  const { data: listing, isLoading, error } = useHostListing(unitId);
+  const { data: listing, isLoading, error, refetch } = useHostListing(unitId);
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
       <HostLayout>
-        <div className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl font-bold text-neutral-900">
-              {t("editTitle")}
-            </h1>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={`/${locale}/host/listings/${unitId}/availability`}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
-              >
-                {th("availabilityTitle")}
-              </Link>
-              <Link
-                href={`/${locale}/host/listings/${unitId}/co-hosts`}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
-              >
-                {th("coHostsTitle")}
-              </Link>
-            </div>
-          </div>
-
-          {isLoading && (
-            <div className="rounded-xl bg-white p-8 text-center text-neutral-500 shadow-card">
-              {tc("loading")}
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
-              {t("loadError")}
-            </div>
-          )}
-
-          {listing && (
-            <>
-              <ListingForm
-                existingListing={listing}
-                unitId={unitId}
-              />
-              <div className="rounded-xl bg-white p-6 shadow-card">
-                <PhotoUpload unitId={unitId} />
+        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <div className="space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
+                {t("editTitle")}
+              </h1>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/${locale}/host/listings/${unitId}/availability`}
+                  className="btn-secondary text-sm"
+                >
+                  {th("availabilityTitle")}
+                </Link>
+                <Link
+                  href={`/${locale}/host/listings/${unitId}/co-hosts`}
+                  className="btn-secondary text-sm"
+                >
+                  {th("coHostsTitle")}
+                </Link>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+
+            {isLoading && (
+              <div className="card p-8 text-center text-neutral-500">
+                {tc("loading")}
+              </div>
+            )}
+
+            {error && <ErrorState onRetry={() => refetch()} />}
+
+            {listing && (
+              <>
+                <ListingForm existingListing={listing} unitId={unitId} />
+                <div className="card p-5 sm:p-6">
+                  <PhotoUpload unitId={unitId} />
+                </div>
+              </>
+            )}
+          </div>
+        </section>
       </HostLayout>
     </ProtectedRoute>
   );

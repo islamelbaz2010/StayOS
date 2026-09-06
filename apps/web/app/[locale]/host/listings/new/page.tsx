@@ -12,12 +12,14 @@ export default function NewListingPage() {
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
       <HostLayout>
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-neutral-900">
-            {t("createTitle")}
-          </h1>
-          <ListingForm />
-        </div>
+        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
+              {t("createTitle")}
+            </h1>
+            <ListingForm />
+          </div>
+        </section>
       </HostLayout>
     </ProtectedRoute>
   );

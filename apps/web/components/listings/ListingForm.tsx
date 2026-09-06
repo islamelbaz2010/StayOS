@@ -286,16 +286,15 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
-  const inputClass =
-    "w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
+  const inputClass = "input text-sm";
   const labelClass = "block text-sm font-medium text-neutral-700 mb-1";
   const errorClass = "mt-1 text-xs text-danger-600";
 
   return (
     <div className="space-y-6">
       {/* Basic Info */}
-      <section className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.basic")}
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -382,8 +381,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Location */}
-      <section className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.location")}
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -475,8 +474,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Capacity */}
-      <section className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.capacity")}
         </h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -537,8 +536,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Amenities */}
-      <section className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.amenities")}
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
@@ -553,7 +552,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggleAmenity(amenity)}
-                  className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+                  className="h-4 w-4 rounded border-neutral-300 text-accent-600 focus:ring-accent-500"
                 />
                 <span className="text-neutral-700">
                   {t(`amenities.${amenity.toLowerCase()}`)}
@@ -565,8 +564,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Pricing */}
-      <section className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.pricing")}
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -627,8 +626,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Rules */}
-      <section className="rounded-xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 text-lg font-bold text-neutral-900">
+      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.rules")}
         </h2>
         <div className="space-y-4">
@@ -696,7 +695,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             type="button"
             onClick={handleSaveDraft}
             disabled={isLoading}
-            className="rounded-lg border border-neutral-300 px-6 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            className="btn-secondary text-sm disabled:opacity-50"
           >
             {isLoading ? tc("loading") : t("saveDraft")}
           </button>
@@ -704,7 +703,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             type="button"
             onClick={handleSubmitForReview}
             disabled={isLoading}
-            className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+            className="btn-primary text-sm disabled:opacity-50"
           >
             {isLoading ? tc("loading") : t("submitForReview")}
           </button>

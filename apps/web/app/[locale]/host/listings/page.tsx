@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   useArchiveListing,
@@ -29,22 +30,34 @@ const STATUS_COLORS: Record<string, string> = {
 export default function HostListingsPage() {
   const t = useTranslations("hostListings");
   const tc = useTranslations("common");
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
   const { data: listings, isLoading, error, refetch } = useHostListings();
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
       <HostLayout>
-        <div className="space-y-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl font-bold text-neutral-900">
+        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
               {t("title")}
             </h1>
             <Link
-              href="/host/listings/new"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+              href={`/${locale}/host/listings/new`}
+              className="btn-primary inline-flex items-center gap-2 text-sm"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4.5v15m7.5-7.5h-15"
+                />
               </svg>
               {t("createNew")}
             </Link>
@@ -53,7 +66,7 @@ export default function HostListingsPage() {
           {isLoading && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="overflow-hidden rounded-xl bg-white shadow-card">
+                <div key={i} className="card overflow-hidden">
                   <Skeleton className="aspect-video w-full rounded-none" />
                   <div className="space-y-3 p-4">
                     <Skeleton className="h-5 w-3/4" />
@@ -65,34 +78,45 @@ export default function HostListingsPage() {
             </div>
           )}
 
-          {error && (
-            <div className="rounded-xl bg-danger-50 p-8 text-center" role="alert">
-              <p className="text-danger-700">{t("loadError")}</p>
-              <button
-                type="button"
-                onClick={() => refetch()}
-                className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-              >
-                {tc("retry")}
-              </button>
-            </div>
-          )}
+          {error && <ErrorState onRetry={() => refetch()} />}
 
           {listings && listings.length === 0 && (
-            <div className="rounded-xl bg-white p-12 text-center shadow-card">
+            <div className="card p-12 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
-                <svg className="h-8 w-8 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
+                <svg
+                  className="h-8 w-8 text-neutral-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z"
+                  />
                 </svg>
               </div>
-              <p className="text-lg font-medium text-neutral-700">{t("noListings")}</p>
+              <p className="text-lg font-medium text-neutral-700">
+                {t("noListings")}
+              </p>
               <p className="mt-1 text-sm text-neutral-500">{t("noListingsHint")}</p>
               <Link
-                href="/host/listings/new"
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                href={`/${locale}/host/listings/new`}
+                className="btn-primary mt-6 inline-flex items-center gap-2 text-sm"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4.5v15m7.5-7.5h-15"
+                  />
                 </svg>
                 {t("createNew")}
               </Link>
@@ -106,7 +130,7 @@ export default function HostListingsPage() {
               ))}
             </div>
           )}
-        </div>
+        </section>
       </HostLayout>
     </ProtectedRoute>
   );
@@ -114,7 +138,6 @@ export default function HostListingsPage() {
 
 function ListingCard({ listing }: { listing: HostListing }) {
   const t = useTranslations("hostListings");
-  const tc = useTranslations("common");
   const { locale = "ar" } = useParams<{ locale: string }>();
   const submit = useSubmitForReview();
   const publish = usePublishListing();
@@ -132,9 +155,17 @@ function ListingCard({ listing }: { listing: HostListing }) {
   const canUnpublish = isListed;
   const canArchive = !isArchived;
 
-  const anyLoading = submit.isPending || publish.isPending || unpublish.isPending || archive.isPending;
+  const anyLoading =
+    submit.isPending ||
+    publish.isPending ||
+    unpublish.isPending ||
+    archive.isPending;
 
-  async function handleAction(mutate: (unitId: string) => Promise<unknown>, confirmKey: string, unitId: string) {
+  async function handleAction(
+    mutate: (unitId: string) => Promise<unknown>,
+    confirmKey: string,
+    unitId: string
+  ) {
     if (!window.confirm(t(confirmKey))) return;
     try {
       await mutate(unitId);
@@ -144,10 +175,10 @@ function ListingCard({ listing }: { listing: HostListing }) {
   }
 
   return (
-    <div className="group overflow-hidden rounded-xl bg-white shadow-card transition-shadow hover:shadow-lg">
+    <div className="card group overflow-hidden hover:shadow-card-hover">
       <Link
         href={`/${locale}/host/listings/${listing.id}/edit`}
-        className="block focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+        className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2"
       >
         <div className="relative aspect-video bg-neutral-200">
           {listing.cover_image ? (
@@ -158,8 +189,18 @@ function ListingCard({ listing }: { listing: HostListing }) {
             />
           ) : (
             <div className="flex h-full items-center justify-center text-neutral-400">
-              <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
+              <svg
+                className="h-12 w-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z"
+                />
               </svg>
             </div>
           )}
@@ -173,7 +214,7 @@ function ListingCard({ listing }: { listing: HostListing }) {
       <div className="p-4">
         <Link
           href={`/${locale}/host/listings/${listing.id}/edit`}
-          className="block truncate font-semibold text-neutral-900 hover:text-brand-600"
+          className="block truncate font-semibold text-brand-900 hover:text-accent-600"
         >
           {listing.title}
         </Link>
@@ -188,8 +229,10 @@ function ListingCard({ listing }: { listing: HostListing }) {
         <div className="mt-3 flex flex-wrap gap-2">
           {canSubmit && (
             <ActionButton
-              label={tc("submitForReview")}
-              onClick={() => handleAction(submit.mutateAsync, "submitConfirm", listing.id)}
+              label={t("submitForReview")}
+              onClick={() =>
+                handleAction(submit.mutateAsync, "submitConfirm", listing.id)
+              }
               loading={submit.isPending}
               disabled={anyLoading}
               variant="primary"
@@ -198,7 +241,9 @@ function ListingCard({ listing }: { listing: HostListing }) {
           {canPublish && (
             <ActionButton
               label={t("publish")}
-              onClick={() => handleAction(publish.mutateAsync, "publishConfirm", listing.id)}
+              onClick={() =>
+                handleAction(publish.mutateAsync, "publishConfirm", listing.id)
+              }
               loading={publish.isPending}
               disabled={anyLoading}
               variant="primary"
@@ -207,7 +252,9 @@ function ListingCard({ listing }: { listing: HostListing }) {
           {canUnpublish && (
             <ActionButton
               label={t("unpublish")}
-              onClick={() => handleAction(unpublish.mutateAsync, "unpublishConfirm", listing.id)}
+              onClick={() =>
+                handleAction(unpublish.mutateAsync, "unpublishConfirm", listing.id)
+              }
               loading={unpublish.isPending}
               disabled={anyLoading}
               variant="secondary"
@@ -216,7 +263,9 @@ function ListingCard({ listing }: { listing: HostListing }) {
           {canArchive && (
             <ActionButton
               label={t("archive")}
-              onClick={() => handleAction(archive.mutateAsync, "archiveConfirm", listing.id)}
+              onClick={() =>
+                handleAction(archive.mutateAsync, "archiveConfirm", listing.id)
+              }
               loading={archive.isPending}
               disabled={anyLoading}
               variant="danger"
@@ -241,15 +290,14 @@ function ActionButton({
   disabled: boolean;
   variant: "primary" | "secondary" | "danger";
 }) {
-  const base = "rounded-lg px-3 py-1.5 text-xs font-semibold transition";
-  const styles =
+  const base =
     variant === "primary"
-      ? "bg-brand-600 text-white hover:bg-brand-700 disabled:bg-neutral-400"
+      ? "btn-primary px-3 py-1.5 text-xs"
       : variant === "danger"
-        ? "bg-danger-600 text-white hover:bg-danger-700 disabled:bg-neutral-400"
-        : "border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:text-neutral-400";
+        ? "btn-danger px-3 py-1.5 text-xs"
+        : "btn-secondary px-3 py-1.5 text-xs";
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className={`${base} ${styles}`}>
+    <button type="button" onClick={onClick} disabled={disabled} className={base}>
       {loading ? "..." : label}
     </button>
   );

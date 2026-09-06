@@ -152,7 +152,7 @@ export function KycUpload() {
             type="button"
             onClick={handleBecomeHost}
             disabled={upgradeMutation.isPending}
-            className="mt-6 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+            className="btn-primary text-sm"
           >
             {upgradeMutation.isPending ? t("upgrading") : t("becomeHost")}
           </button>
@@ -291,7 +291,7 @@ function KycUploadForm({
           type="button"
           onClick={onSubmit}
           disabled={isSubmitting}
-          className="rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+          className="btn-primary text-sm"
         >
           {isSubmitting ? t("submitting") : t("submit")}
         </button>

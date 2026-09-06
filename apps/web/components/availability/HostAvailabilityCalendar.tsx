@@ -53,7 +53,9 @@ function getMonthDays(current: Date): Date[] {
   return days;
 }
 
-function groupContiguousDates(dates: string[]): { date_from: string; date_to: string }[] {
+function groupContiguousDates(
+  dates: string[]
+): { date_from: string; date_to: string }[] {
   if (dates.length === 0) return [];
   const sorted = [...dates].sort();
   const groups: { date_from: string; date_to: string }[] = [];
@@ -79,16 +81,18 @@ function groupContiguousDates(dates: string[]): { date_from: string; date_to: st
 
 const STATUS_COLORS: Record<string, string> = {
   available:
-    "bg-white text-neutral-900 hover:bg-neutral-50",
+    "bg-surface-card text-brand-900 hover:bg-neutral-50",
   blocked:
-    "bg-red-100 text-red-800 hover:bg-red-200",
+    "bg-danger-100 text-danger-700 hover:bg-danger-200",
   booked:
-    "bg-blue-100 text-blue-800 cursor-not-allowed",
+    "bg-accent-100 text-accent-700 cursor-not-allowed",
   hold:
-    "bg-yellow-100 text-yellow-800 cursor-not-allowed",
+    "bg-warning-100 text-warning-700 cursor-not-allowed",
 };
 
-export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarProps) {
+export function HostAvailabilityCalendar({
+  unitId,
+}: HostAvailabilityCalendarProps) {
   const t = useTranslations("availability");
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
@@ -118,7 +122,10 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
     const map: Record<string, { status: string; block_type: string | null }> = {};
     if (availability) {
       for (const day of availability.days) {
-        map[day.date] = { status: day.status, block_type: day.block_type ?? null };
+        map[day.date] = {
+          status: day.status,
+          block_type: day.block_type ?? null,
+        };
       }
     }
     return map;
@@ -152,10 +159,9 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
     setSuccess(null);
     setError(null);
 
-    const rules = groupContiguousDates(Array.from(selectedDates)).map((group) => ({
-      ...group,
-      status,
-    }));
+    const rules = groupContiguousDates(Array.from(selectedDates)).map(
+      (group) => ({ ...group, status })
+    );
 
     try {
       await updateAvailability.mutateAsync({ unitId, payload: { rules } });
@@ -177,9 +183,9 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
   const isPast = (date: Date) => date < new Date(today.toDateString());
 
   return (
-    <section className="rounded-xl bg-white p-6 shadow-card">
+    <section className="card p-5 sm:p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-neutral-900">
+        <h2 className="text-lg font-semibold text-brand-900">
           {formatMonthYear(currentMonth, t("locale"))}
         </h2>
         <div className="flex gap-2">
@@ -187,7 +193,7 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
             type="button"
             onClick={() => setCurrentMonth((m) => addMonths(m, -1))}
             disabled={isPending}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+            className="btn-secondary px-3 py-2 text-sm"
             aria-label={t("previousMonth")}
           >
             {t("previous")}
@@ -196,7 +202,7 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
             type="button"
             onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
             disabled={isPending}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+            className="btn-secondary px-3 py-2 text-sm"
             aria-label={t("nextMonth")}
           >
             {t("next")}
@@ -207,12 +213,12 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
       {isPending ? (
         <div className="py-12 text-center text-neutral-600">{t("loading")}</div>
       ) : isError ? (
-        <div className="py-12 text-center text-red-600" role="alert">
+        <div className="py-12 text-center text-danger-600" role="alert">
           {t("loadError")}
           <button
             type="button"
             onClick={() => refetch()}
-            className="ml-2 text-brand-600 hover:text-brand-700"
+            className="ms-2 font-medium text-accent-600 hover:text-accent-700"
           >
             {t("retry")}
           </button>
@@ -230,8 +236,12 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
           <div className="mt-2 grid grid-cols-7 gap-1">
             {monthDays.map((day) => {
               const dateStr = toInputDate(day);
-              const info = dayMap[dateStr] || { status: "available", block_type: null };
-              const occupied = ["booked", "hold"].includes(info.status) || isPast(day);
+              const info = dayMap[dateStr] || {
+                status: "available",
+                block_type: null,
+              };
+              const occupied =
+                ["booked", "hold"].includes(info.status) || isPast(day);
               const selected = selectedDates.has(dateStr);
 
               return (
@@ -242,21 +252,24 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
                   onClick={() => toggleDate(dateStr, occupied)}
                   className={`
                     relative aspect-square w-full rounded-lg border p-2 text-sm
-                    transition focus:outline-none focus:ring-2 focus:ring-brand-500
+                    transition focus:outline-none focus:ring-2 focus:ring-accent-500
                     ${STATUS_COLORS[info.status] || STATUS_COLORS.available}
                     ${
                       occupied
                         ? "cursor-not-allowed border-neutral-200 opacity-70"
                         : "border-neutral-300"
                     }
-                    ${selected ? "ring-2 ring-brand-600" : ""}
+                    ${selected ? "ring-2 ring-accent-500" : ""}
                   `}
                   aria-pressed={selected}
-                  aria-label={t("dayLabel", { date: dateStr, status: info.status })}
+                  aria-label={t("dayLabel", {
+                    date: dateStr,
+                    status: info.status,
+                  })}
                 >
                   <span className="block text-center">{day.getDate()}</span>
                   {selected && (
-                    <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-brand-600" />
+                    <span className="absolute end-1 top-1 h-2 w-2 rounded-full bg-accent-600" />
                   )}
                 </button>
               );
@@ -265,15 +278,15 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
 
           <div className="mt-4 flex flex-wrap gap-3 text-sm">
             <div className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full border border-neutral-300 bg-white" />
+              <span className="h-3 w-3 rounded-full border border-neutral-300 bg-surface-card" />
               <span>{t("available")}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-red-100" />
+              <span className="h-3 w-3 rounded-full bg-danger-100" />
               <span>{t("blocked")}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-blue-100" />
+              <span className="h-3 w-3 rounded-full bg-accent-100" />
               <span>{t("booked")}</span>
             </div>
           </div>
@@ -282,24 +295,32 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
             <button
               type="button"
               onClick={() => applyStatus("blocked")}
-              disabled={selectedDates.size === 0 || updateAvailability.isPending}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-neutral-400"
+              disabled={
+                selectedDates.size === 0 || updateAvailability.isPending
+              }
+              className="btn-danger text-sm"
             >
               {updateAvailability.isPending ? t("applying") : t("blockSelected")}
             </button>
             <button
               type="button"
               onClick={() => applyStatus("available")}
-              disabled={selectedDates.size === 0 || updateAvailability.isPending}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-neutral-400"
+              disabled={
+                selectedDates.size === 0 || updateAvailability.isPending
+              }
+              className="btn-primary text-sm"
             >
-              {updateAvailability.isPending ? t("applying") : t("unblockSelected")}
+              {updateAvailability.isPending
+                ? t("applying")
+                : t("unblockSelected")}
             </button>
             <button
               type="button"
               onClick={clearSelection}
-              disabled={selectedDates.size === 0 || updateAvailability.isPending}
-              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:text-neutral-400"
+              disabled={
+                selectedDates.size === 0 || updateAvailability.isPending
+              }
+              className="btn-secondary text-sm"
             >
               {t("clearSelection")}
             </button>
@@ -307,7 +328,7 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
 
           {success && (
             <p
-              className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-800"
+              className="mt-4 rounded-md bg-success-50 p-3 text-sm text-success-700"
               role="status"
             >
               {success}
@@ -316,7 +337,7 @@ export function HostAvailabilityCalendar({ unitId }: HostAvailabilityCalendarPro
 
           {error && (
             <p
-              className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800"
+              className="mt-4 rounded-md bg-danger-50 p-3 text-sm text-danger-700"
               role="alert"
             >
               {error}

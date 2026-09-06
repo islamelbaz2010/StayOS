@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useHostListingDetail } from "@/lib/queries/hostListings";
 import {
   useCoHosts,
@@ -47,7 +48,8 @@ export default function ListingCoHostsPage() {
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   const isOwner =
-    listing?.permission_scope === "owner" || listing?.permission_scope === "admin";
+    listing?.permission_scope === "owner" ||
+    listing?.permission_scope === "admin";
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -66,7 +68,11 @@ export default function ListingCoHostsPage() {
   }
 
   function handleScopeChange(coHostId: string, permissionScope: string) {
-    update.mutate({ unitId, coHostId, payload: { permission_scope: permissionScope } });
+    update.mutate({
+      unitId,
+      coHostId,
+      payload: { permission_scope: permissionScope },
+    });
   }
 
   async function handleRemove(coHostId: string) {
@@ -87,47 +93,51 @@ export default function ListingCoHostsPage() {
             <div>
               <Link
                 href={`/${locale}/host/listings`}
-                className="text-sm text-brand-600 hover:underline"
+                className="inline-flex items-center gap-1 text-sm font-medium text-accent-600 hover:text-accent-700"
               >
-                ← {th("backToListings")}
+                <svg
+                  className="h-4 w-4 rtl:rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 19.5L8.25 12l7.5-7.5"
+                  />
+                </svg>
+                {th("backToListings")}
               </Link>
-              <h1 className="mt-1 text-2xl font-bold text-neutral-900">
+              <h1 className="mt-1 text-2xl font-bold text-brand-900 sm:text-3xl">
                 {th("coHostsTitle")}
               </h1>
             </div>
             <Link
               href={`/${locale}/host/listings/${unitId}/edit`}
-              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+              className="btn-secondary text-sm"
             >
               {th("editListing")}
             </Link>
           </div>
 
           {isLoading && (
-            <div className="py-12 text-center text-neutral-500">{tc("loading")}</div>
-          )}
-
-          {isError && (
-            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
-              {t("loadError")}
-              <button
-                type="button"
-                onClick={() => refetch()}
-                className="ml-2 font-medium text-brand-600 hover:underline"
-              >
-                {tc("retry")}
-              </button>
+            <div className="py-12 text-center text-neutral-500">
+              {tc("loading")}
             </div>
           )}
+
+          {isError && <ErrorState onRetry={() => refetch()} />}
 
           {!isLoading && !isError && (
             <div className="space-y-6">
               {isOwner && (
-                <div className="rounded-xl bg-white p-6 shadow-card">
+                <div className="card p-5 sm:p-6">
                   <button
                     type="button"
                     onClick={() => setShowForm((s) => !s)}
-                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                    className="btn-primary text-sm"
                   >
                     {showForm ? t("hideInvite") : t("inviteCoHost")}
                   </button>
@@ -135,7 +145,10 @@ export default function ListingCoHostsPage() {
                   {showForm && (
                     <form onSubmit={handleInvite} className="mt-4 space-y-4">
                       <div>
-                        <label htmlFor="co-host-user-id" className="block text-sm font-medium text-neutral-700">
+                        <label
+                          htmlFor="co-host-user-id"
+                          className="block text-sm font-medium text-neutral-700"
+                        >
                           {t("coHostUserId")}
                         </label>
                         <input
@@ -144,11 +157,13 @@ export default function ListingCoHostsPage() {
                           onChange={(e) => setUserId(e.target.value)}
                           placeholder={t("coHostUserIdPlaceholder")}
                           required
-                          className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none sm:w-96"
+                          className="input mt-1 text-sm sm:w-96"
                         />
                       </div>
                       <div>
-                        <span className="block text-sm font-medium text-neutral-700">{t("permissionScope")}</span>
+                        <span className="block text-sm font-medium text-neutral-700">
+                          {t("permissionScope")}
+                        </span>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {SCOPE_OPTIONS.map((s) => (
                             <button
@@ -157,7 +172,7 @@ export default function ListingCoHostsPage() {
                               onClick={() => setScope(s.value)}
                               className={`rounded-full px-3 py-1 text-sm font-medium transition ${
                                 scope === s.value
-                                  ? "bg-brand-100 text-brand-800 ring-1 ring-brand-600"
+                                  ? "bg-accent-100 text-accent-700 ring-1 ring-accent-500"
                                   : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
                               }`}
                             >
@@ -170,40 +185,53 @@ export default function ListingCoHostsPage() {
                         <button
                           type="submit"
                           disabled={invite.isPending}
-                          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:bg-neutral-400"
+                          className="btn-primary text-sm"
                         >
                           {invite.isPending ? tc("loading") : t("sendInvite")}
                         </button>
                         <button
                           type="button"
                           onClick={() => setShowForm(false)}
-                          className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                          className="btn-secondary text-sm"
                         >
                           {tc("cancel")}
                         </button>
                       </div>
-                      {invite.isError && <p className="text-sm text-danger-600">{t("inviteError")}</p>}
+                      {invite.isError && (
+                        <p className="text-sm text-danger-600">
+                          {t("inviteError")}
+                        </p>
+                      )}
                     </form>
                   )}
                 </div>
               )}
 
-              <div className="rounded-xl bg-white p-6 shadow-card">
-                <h2 className="mb-4 text-lg font-semibold text-neutral-900">{t("coHostsList")}</h2>
+              <div className="card p-5 sm:p-6">
+                <h2 className="mb-4 text-lg font-semibold text-brand-900">
+                  {t("coHostsList")}
+                </h2>
                 {!coHosts || coHosts.length === 0 ? (
                   <p className="text-center text-neutral-500">{t("noCoHosts")}</p>
                 ) : (
                   <div className="divide-y divide-neutral-100">
                     {coHosts.map((coHost) => (
-                      <div key={coHost.id} className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div
+                        key={coHost.id}
+                        className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
+                      >
                         <div>
-                          <p className="font-medium text-neutral-900">
+                          <p className="font-medium text-brand-900">
                             {coHost.co_host_display_name || coHost.co_host_user_id}
                           </p>
                           {coHost.co_host_phone && (
-                            <p className="text-sm text-neutral-500">{coHost.co_host_phone}</p>
+                            <p className="text-sm text-neutral-500">
+                              {coHost.co_host_phone}
+                            </p>
                           )}
-                          <p className="text-xs text-neutral-400">{coHost.co_host_user_id}</p>
+                          <p className="text-xs text-neutral-400">
+                            {coHost.co_host_user_id}
+                          </p>
                         </div>
 
                         <div className="flex flex-col gap-2 sm:items-end">
@@ -212,8 +240,10 @@ export default function ListingCoHostsPage() {
                               <div className="flex items-center gap-2">
                                 <select
                                   value={coHost.permission_scope}
-                                  onChange={(e) => handleScopeChange(coHost.id, e.target.value)}
-                                  className="rounded-lg border border-neutral-300 px-2 py-1 text-sm text-neutral-700 focus:border-brand-500 focus:outline-none"
+                                  onChange={(e) =>
+                                    handleScopeChange(coHost.id, e.target.value)
+                                  }
+                                  className="input py-1.5 text-sm"
                                 >
                                   {SCOPE_OPTIONS.map((s) => (
                                     <option key={s.value} value={s.value}>
@@ -225,8 +255,10 @@ export default function ListingCoHostsPage() {
                                   <input
                                     type="checkbox"
                                     checked={coHost.is_active}
-                                    onChange={() => handleToggle(coHost.id, coHost.is_active)}
-                                    className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+                                    onChange={() =>
+                                      handleToggle(coHost.id, coHost.is_active)
+                                    }
+                                    className="h-4 w-4 rounded border-neutral-300 text-accent-600 focus:ring-accent-500"
                                   />
                                   {t("active")}
                                 </label>
@@ -237,12 +269,17 @@ export default function ListingCoHostsPage() {
                                 disabled={removingId === coHost.id}
                                 className="text-sm font-medium text-danger-600 hover:text-danger-700 disabled:text-neutral-400"
                               >
-                                {removingId === coHost.id ? tc("loading") : t("remove")}
+                                {removingId === coHost.id
+                                  ? tc("loading")
+                                  : t("remove")}
                               </button>
                             </>
                           ) : (
-                            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-700">
-                              {t(SCOPE_LABELS[coHost.permission_scope] ?? "scopeCalendarOnly")}
+                            <span className="badge-neutral">
+                              {t(
+                                SCOPE_LABELS[coHost.permission_scope] ??
+                                  "scopeCalendarOnly"
+                              )}
                             </span>
                           )}
                         </div>

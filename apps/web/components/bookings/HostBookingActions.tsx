@@ -4,7 +4,11 @@ import { useState } from "react";
 
 import { useTranslations } from "next-intl";
 
-import { useCheckIn, useCheckOut, useUpdateBooking } from "@/lib/queries/bookings";
+import {
+  useCheckIn,
+  useCheckOut,
+  useUpdateBooking,
+} from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +17,10 @@ interface HostBookingActionsProps {
   onSuccess: () => void;
 }
 
-export function HostBookingActions({ booking, onSuccess }: HostBookingActionsProps) {
+export function HostBookingActions({
+  booking,
+  onSuccess,
+}: HostBookingActionsProps) {
   const t = useTranslations("hostBookings");
   const updateBooking = useUpdateBooking();
   const checkIn = useCheckIn();
@@ -24,10 +31,16 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
   const [action, setAction] = useState<"accept" | "reject" | "cancel" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleAction(newStatus: "accepted" | "rejected" | "cancelled") {
+  async function handleAction(
+    newStatus: "accepted" | "rejected" | "cancelled"
+  ) {
     setError(null);
 
-    const payload: { status: typeof newStatus; reject_reason?: string; cancel_reason?: string } = {
+    const payload: {
+      status: typeof newStatus;
+      reject_reason?: string;
+      cancel_reason?: string;
+    } = {
       status: newStatus,
     };
 
@@ -45,7 +58,9 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
       setCancelReason("");
       onSuccess();
     } catch (err) {
-      const axiosError = err as { response?: { data?: { error?: { message?: string } } } };
+      const axiosError = err as {
+        response?: { data?: { error?: { message?: string } } };
+      };
       setError(axiosError.response?.data?.error?.message || t("updateError"));
     }
   }
@@ -56,14 +71,18 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
     booking.status === "no_show"
   ) {
     return (
-      <p className="text-sm text-neutral-500">{t("finalStatus", { status: booking.status })}</p>
+      <p className="text-sm text-neutral-500">
+        {t("finalStatus", { status: booking.status })}
+      </p>
     );
   }
 
   if (booking.status === "confirmed") {
     return (
       <div className="space-y-3">
-        <p className="text-sm font-medium text-green-700">{t("confirmedMessage")}</p>
+        <p className="text-sm font-medium text-success-700">
+          {t("confirmedMessage")}
+        </p>
         <div className="flex flex-wrap gap-3">
           {!booking.checked_in_at && (
             <button
@@ -71,8 +90,8 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
               onClick={() => checkIn.mutate(booking.id, { onSuccess })}
               disabled={checkIn.isPending}
               className={cn(
-                "rounded-lg px-4 py-2 text-sm font-semibold text-white transition",
-                checkIn.isPending ? "bg-neutral-400" : "bg-brand-600 hover:bg-brand-700"
+                "btn-primary text-sm",
+                checkIn.isPending && "opacity-60"
               )}
             >
               {checkIn.isPending ? t("processing") : t("checkIn")}
@@ -84,8 +103,8 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
               onClick={() => checkOut.mutate(booking.id, { onSuccess })}
               disabled={checkOut.isPending}
               className={cn(
-                "rounded-lg px-4 py-2 text-sm font-semibold text-white transition",
-                checkOut.isPending ? "bg-neutral-400" : "bg-brand-600 hover:bg-brand-700"
+                "btn-primary text-sm",
+                checkOut.isPending && "opacity-60"
               )}
             >
               {checkOut.isPending ? t("processing") : t("checkOut")}
@@ -102,7 +121,10 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
   return (
     <div className="mt-6 space-y-4">
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+        <p
+          className="rounded-md bg-danger-50 p-3 text-sm text-danger-700"
+          role="alert"
+        >
           {error}
         </p>
       )}
@@ -113,10 +135,7 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
             type="button"
             onClick={() => handleAction("accepted")}
             disabled={updateBooking.isPending}
-            className={cn(
-              "rounded-lg px-4 py-2 text-sm font-semibold text-white transition",
-              updateBooking.isPending ? "bg-neutral-400" : "bg-green-600 hover:bg-green-700"
-            )}
+            className="btn-primary text-sm"
           >
             {updateBooking.isPending ? t("processing") : t("accept")}
           </button>
@@ -124,7 +143,7 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
             type="button"
             onClick={() => setAction("reject")}
             disabled={updateBooking.isPending || action === "reject"}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-neutral-400"
+            className="btn-danger text-sm"
           >
             {t("reject")}
           </button>
@@ -132,7 +151,7 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
             type="button"
             onClick={() => setAction("cancel")}
             disabled={updateBooking.isPending || action === "cancel"}
-            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:text-neutral-400"
+            className="btn-secondary text-sm"
           >
             {t("cancel")}
           </button>
@@ -144,22 +163,25 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
           type="button"
           onClick={() => setAction("cancel")}
           disabled={updateBooking.isPending || action === "cancel"}
-          className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:text-neutral-400"
+          className="btn-secondary text-sm"
         >
           {t("cancel")}
         </button>
       )}
 
       {action === "reject" && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <label htmlFor="reject-reason" className="block text-sm font-medium text-red-900">
+        <div className="rounded-card border border-danger-200 bg-danger-50 p-4">
+          <label
+            htmlFor="reject-reason"
+            className="block text-sm font-medium text-danger-900"
+          >
             {t("rejectReason")}
           </label>
           <textarea
             id="reject-reason"
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-red-300 p-2 text-sm text-neutral-900 focus:border-red-500 focus:outline-none"
+            className="input mt-2 min-h-[5rem] border-danger-300 focus:border-danger-500 focus:ring-danger-500"
             rows={3}
           />
           <div className="mt-3 flex gap-2">
@@ -167,14 +189,17 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
               type="button"
               onClick={() => handleAction("rejected")}
               disabled={updateBooking.isPending}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              className="btn-danger text-sm"
             >
               {t("confirmReject")}
             </button>
             <button
               type="button"
-              onClick={() => { setAction(null); setRejectReason(""); }}
-              className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-900 hover:bg-red-100"
+              onClick={() => {
+                setAction(null);
+                setRejectReason("");
+              }}
+              className="btn-secondary text-sm"
             >
               {t("back")}
             </button>
@@ -183,15 +208,18 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
       )}
 
       {action === "cancel" && (
-        <div className="rounded-lg border border-neutral-300 bg-neutral-50 p-4">
-          <label htmlFor="cancel-reason" className="block text-sm font-medium text-neutral-900">
+        <div className="rounded-card border border-neutral-200 bg-neutral-50 p-4">
+          <label
+            htmlFor="cancel-reason"
+            className="block text-sm font-medium text-brand-900"
+          >
             {t("cancelReason")}
           </label>
           <textarea
             id="cancel-reason"
             value={cancelReason}
             onChange={(e) => setCancelReason(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-neutral-300 p-2 text-sm text-neutral-900 focus:border-brand-500 focus:outline-none"
+            className="input mt-2 min-h-[5rem]"
             rows={3}
           />
           <div className="mt-3 flex gap-2">
@@ -199,14 +227,17 @@ export function HostBookingActions({ booking, onSuccess }: HostBookingActionsPro
               type="button"
               onClick={() => handleAction("cancelled")}
               disabled={updateBooking.isPending}
-              className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
+              className="btn-primary text-sm"
             >
               {t("confirmCancel")}
             </button>
             <button
               type="button"
-              onClick={() => { setAction(null); setCancelReason(""); }}
-              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-white"
+              onClick={() => {
+                setAction(null);
+                setCancelReason("");
+              }}
+              className="btn-secondary text-sm"
             >
               {t("back")}
             </button>

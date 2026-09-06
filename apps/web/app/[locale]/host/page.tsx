@@ -6,19 +6,52 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useHostToday } from "@/lib/queries/hostToday";
 import type { HostTodayItem } from "@/lib/queries/hostToday";
 import { formatDate } from "@/lib/utils";
 
-const ITEM_STYLES: Record<string, { bg: string; border: string; text: string }> = {
-  check_in_today: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-800" },
-  check_out_today: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800" },
-  current_stay: { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-800" },
-  pending_request: { bg: "bg-red-50", border: "border-red-200", text: "text-red-800" },
-  upcoming_arrival: { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-800" },
-  upcoming_departure: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800" },
-  unread_message: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-800" },
-  incomplete_listing: { bg: "bg-neutral-50", border: "border-neutral-200", text: "text-neutral-700" },
+const ITEM_VARIANTS: Record<string, { border: string; bg: string; text: string }> = {
+  check_in_today: {
+    border: "border-s-success-500",
+    bg: "bg-success-50",
+    text: "text-success-700",
+  },
+  check_out_today: {
+    border: "border-s-warning-500",
+    bg: "bg-warning-50",
+    text: "text-warning-700",
+  },
+  current_stay: {
+    border: "border-s-accent-500",
+    bg: "bg-accent-100",
+    text: "text-accent-700",
+  },
+  pending_request: {
+    border: "border-s-danger-500",
+    bg: "bg-danger-50",
+    text: "text-danger-700",
+  },
+  upcoming_arrival: {
+    border: "border-s-info-500",
+    bg: "bg-info-50",
+    text: "text-info-700",
+  },
+  upcoming_departure: {
+    border: "border-s-warning-500",
+    bg: "bg-warning-50",
+    text: "text-warning-700",
+  },
+  unread_message: {
+    border: "border-s-info-500",
+    bg: "bg-info-50",
+    text: "text-info-700",
+  },
+  incomplete_listing: {
+    border: "border-s-neutral-300",
+    bg: "bg-neutral-50",
+    text: "text-neutral-700",
+  },
 };
 
 const SUMMARY_KEYS = [
@@ -43,7 +76,7 @@ export default function HostPage() {
     <ProtectedRoute allowedRoles={["host", "admin"]}>
       <HostLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <h1 className="mb-6 text-2xl font-bold text-neutral-900">
+          <h1 className="mb-6 text-2xl font-bold text-brand-900 sm:text-3xl">
             {t("title")}
           </h1>
 
@@ -53,18 +86,7 @@ export default function HostPage() {
             </div>
           )}
 
-          {isError && (
-            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
-              {t("loadError")}
-              <button
-                type="button"
-                onClick={() => refetch()}
-                className="ml-2 font-medium text-brand-600 hover:underline"
-              >
-                {tc("retry")}
-              </button>
-            </div>
-          )}
+          {isError && <ErrorState onRetry={() => refetch()} />}
 
           {!isLoading && !isError && (
             <div className="space-y-6">
@@ -78,8 +100,8 @@ export default function HostPage() {
                 ))}
               </div>
 
-              <div className="rounded-xl bg-white p-6 shadow-card">
-                <h2 className="mb-4 text-lg font-semibold text-neutral-900">
+              <div className="card p-5 sm:p-6">
+                <h2 className="mb-4 text-lg font-semibold text-brand-900">
                   {t("actionItems")}
                 </h2>
 
@@ -105,9 +127,9 @@ export default function HostPage() {
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-white p-5 shadow-card">
+    <div className="card p-5">
       <p className="text-sm text-neutral-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-neutral-900">{value}</p>
+      <p className="mt-1 text-2xl font-bold text-brand-900">{value}</p>
     </div>
   );
 }
@@ -121,17 +143,17 @@ function TodayItem({
   t: (key: string) => string;
 }) {
   const t = useTranslations("hostToday");
-  const style = ITEM_STYLES[item.item_type] ?? ITEM_STYLES.incomplete_listing;
+  const variant = ITEM_VARIANTS[item.item_type] ?? ITEM_VARIANTS.incomplete_listing;
   const dateLocale = locale === "ar" ? "ar-EG" : "en-GB";
   const href = actionHref(item, locale);
 
   return (
     <div
-      className={`rounded-lg border p-4 ${style.bg} ${style.border}`}
+      className={`rounded-card border border-neutral-200 p-4 ${variant.border} ${variant.bg} border-s-4`}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className={`font-semibold ${style.text}`}>{item.title}</p>
+          <p className={`font-semibold ${variant.text}`}>{item.title}</p>
           {item.subtitle && (
             <p className="text-sm text-neutral-600">{item.subtitle}</p>
           )}
@@ -139,7 +161,7 @@ function TodayItem({
             <p className="text-sm text-neutral-500">
               {item.check_in && (
                 <>
-                  {t("checkIn")}: {formatDate(new Date(item.check_in), dateLocale)} {" "}
+                  {t("checkIn")}: {formatDate(new Date(item.check_in), dateLocale)}{" "}
                 </>
               )}
               {item.check_out && (
@@ -153,7 +175,7 @@ function TodayItem({
         {href && (
           <Link
             href={href}
-            className="shrink-0 text-sm font-medium text-brand-600 hover:underline"
+            className="shrink-0 text-sm font-semibold text-accent-600 hover:text-accent-700"
           >
             {t("view")}
           </Link>

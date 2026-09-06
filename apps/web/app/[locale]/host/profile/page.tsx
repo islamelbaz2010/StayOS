@@ -7,8 +7,12 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useHostEarnings } from "@/lib/queries/hostEarnings";
-import { useHostProfile, useUpdateHostProfile } from "@/lib/queries/hostProfile";
+import {
+  useHostProfile,
+  useUpdateHostProfile,
+} from "@/lib/queries/hostProfile";
 
 const KYC_COLORS: Record<string, string> = {
   verified: "bg-success-100 text-success-700",
@@ -33,7 +37,9 @@ export default function HostProfilePage() {
     return (
       <ProtectedRoute allowedRoles={["host", "admin"]}>
         <HostLayout>
-          <div className="py-12 text-center text-neutral-500">{tc("loading")}</div>
+          <div className="py-12 text-center text-neutral-500">
+            {tc("loading")}
+          </div>
         </HostLayout>
       </ProtectedRoute>
     );
@@ -43,16 +49,9 @@ export default function HostProfilePage() {
     return (
       <ProtectedRoute allowedRoles={["host", "admin"]}>
         <HostLayout>
-          <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
-            {t("loadError")}
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="ml-2 font-medium text-brand-600 hover:underline"
-            >
-              {tc("retry")}
-            </button>
-          </div>
+          <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+            <ErrorState onRetry={() => refetch()} />
+          </section>
         </HostLayout>
       </ProtectedRoute>
     );
@@ -79,12 +78,13 @@ export default function HostProfilePage() {
       <HostLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl space-y-6">
-            <h1 className="text-2xl font-bold text-neutral-900">{t("title")}</h1>
+            <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
+              {t("title")}
+            </h1>
 
-            {/* Identity */}
-            <div className="rounded-xl bg-white p-6 shadow-card">
+            <div className="card p-5 sm:p-6">
               <div className="flex items-start gap-4">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-100 text-2xl font-bold text-brand-700">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent-100 text-2xl font-bold text-accent-700">
                   {(profile.display_name?.charAt(0) ?? "?").toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -97,18 +97,24 @@ export default function HostProfilePage() {
                       className="space-y-4"
                     >
                       <div>
-                        <label htmlFor="display-name" className="block text-sm font-medium text-neutral-700">
+                        <label
+                          htmlFor="display-name"
+                          className="block text-sm font-medium text-neutral-700"
+                        >
                           {t("displayName")}
                         </label>
                         <input
                           id="display-name"
                           value={displayName}
                           onChange={(e) => setDisplayName(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                          className="input mt-1 text-sm"
                         />
                       </div>
                       <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-neutral-700">
+                        <label
+                          htmlFor="email"
+                          className="block text-sm font-medium text-neutral-700"
+                        >
                           {t("email")}
                         </label>
                         <input
@@ -116,21 +122,21 @@ export default function HostProfilePage() {
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                          className="input mt-1 text-sm"
                         />
                       </div>
                       <div className="flex gap-2">
                         <button
                           type="submit"
                           disabled={updateProfile.isPending}
-                          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:bg-neutral-400"
+                          className="btn-primary text-sm"
                         >
                           {updateProfile.isPending ? tc("loading") : tc("save")}
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsEditing(false)}
-                          className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                          className="btn-secondary text-sm"
                         >
                           {tc("cancel")}
                         </button>
@@ -141,15 +147,19 @@ export default function HostProfilePage() {
                     </form>
                   ) : (
                     <>
-                      <h2 className="truncate text-lg font-semibold text-neutral-900">
+                      <h2 className="truncate text-lg font-semibold text-brand-900">
                         {profile.display_name || "—"}
                       </h2>
-                      <p className="text-sm text-neutral-500">{profile.phone_number || "—"}</p>
-                      <p className="mt-2 text-sm text-neutral-500">{profile.email || t("noEmail")}</p>
+                      <p className="text-sm text-neutral-500">
+                        {profile.phone_number || "—"}
+                      </p>
+                      <p className="mt-2 text-sm text-neutral-500">
+                        {profile.email || t("noEmail")}
+                      </p>
                       <button
                         type="button"
                         onClick={startEdit}
-                        className="mt-4 rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                        className="btn-secondary mt-4 text-sm"
                       >
                         {t("edit")}
                       </button>
@@ -166,11 +176,13 @@ export default function HostProfilePage() {
               </div>
 
               {kycStatus !== "verified" && (
-                <div className="mt-6 rounded-lg bg-neutral-50 p-4">
-                  <p className="text-sm text-neutral-700">{t("verifyIdentityPrompt")}</p>
+                <div className="mt-6 rounded-md bg-neutral-50 p-4">
+                  <p className="text-sm text-neutral-700">
+                    {t("verifyIdentityPrompt")}
+                  </p>
                   <Link
                     href={`/${locale}/host/kyc`}
-                    className="mt-3 inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                    className="btn-primary mt-3 inline-flex text-sm"
                   >
                     {t("verifyIdentity")}
                   </Link>
@@ -178,9 +190,10 @@ export default function HostProfilePage() {
               )}
             </div>
 
-            {/* Stats */}
-            <div className="rounded-xl bg-white p-6 shadow-card">
-              <h3 className="mb-4 text-base font-semibold text-neutral-900">{t("listingStats")}</h3>
+            <div className="card p-5 sm:p-6">
+              <h3 className="mb-4 text-base font-semibold text-brand-900">
+                {t("listingStats")}
+              </h3>
               <div className="grid gap-4 sm:grid-cols-3">
                 <Stat label={t("totalListings")} value={profile.total_listings} />
                 <Stat label={t("listedListings")} value={profile.listed_listings} />
@@ -188,10 +201,11 @@ export default function HostProfilePage() {
               </div>
             </div>
 
-            {/* Earnings */}
             {earnings && (
-              <div className="rounded-xl bg-white p-6 shadow-card">
-                <h3 className="mb-4 text-base font-semibold text-neutral-900">{t("earnings")}</h3>
+              <div className="card p-5 sm:p-6">
+                <h3 className="mb-4 text-base font-semibold text-brand-900">
+                  {t("earnings")}
+                </h3>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Stat label={t("totalRevenue")} value={`${earnings.total_revenue_egp}`} />
                   <Stat label={t("netEarnings")} value={`${earnings.net_earnings_egp}`} />
@@ -199,9 +213,9 @@ export default function HostProfilePage() {
                 </div>
                 <Link
                   href={`/${locale}/host/earnings`}
-                  className="mt-4 inline-block text-sm font-medium text-brand-600 hover:underline"
+                  className="mt-4 inline-block text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline"
                 >
-                  {t("viewEarnings")} →
+                  {t("viewEarnings")}
                 </Link>
               </div>
             )}
@@ -215,7 +229,7 @@ export default function HostProfilePage() {
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-lg bg-neutral-50 p-4">
-      <p className="text-2xl font-bold text-neutral-900">{value}</p>
+      <p className="text-2xl font-bold text-brand-900">{value}</p>
       <p className="text-xs text-neutral-500">{label}</p>
     </div>
   );

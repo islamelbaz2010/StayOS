@@ -159,14 +159,16 @@ export function HostBookingActions({
       )}
 
       {booking.status === "accepted" && (
-        <button
-          type="button"
-          onClick={() => setAction("cancel")}
-          disabled={updateBooking.isPending || action === "cancel"}
-          className="btn-secondary text-sm"
-        >
-          {t("cancel")}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setAction("cancel")}
+            disabled={updateBooking.isPending || action === "cancel"}
+            className="btn-secondary text-sm"
+          >
+            {t("cancel")}
+          </button>
+        </div>
       )}
 
       {action === "reject" && (

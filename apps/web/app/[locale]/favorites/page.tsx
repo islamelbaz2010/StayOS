@@ -12,10 +12,11 @@ import { useFavorites } from "@/lib/queries/favorites";
 
 export default function FavoritesPage() {
   const t = useTranslations("favorites");
+  const tc = useTranslations("common");
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
   const { isAuthenticated, isGuest, isLoading: isAuthLoading } = useAuth();
-  const { data, isPending } = useFavorites();
+  const { data, isPending, isError, refetch } = useFavorites();
 
   return (
     <GuestLayout>
@@ -32,6 +33,17 @@ export default function FavoritesPage() {
             >
               {t("signInTitle")}
             </Link>
+          </div>
+        ) : isError ? (
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+            <p className="text-lg font-medium text-neutral-700">{tc("error")}</p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="mt-4 inline-flex items-center justify-center rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
+            >
+              {tc("retry")}
+            </button>
           </div>
         ) : isPending ? (
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -2,9 +2,6 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.config import settings
@@ -22,6 +19,8 @@ from app.shared.exceptions import (
     ValidationError,
 )
 from app.shared.outbox import write_event
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import repository as bookings_repository
 from .constants import BookingStatus
@@ -440,6 +439,8 @@ async def _apply_cancellation(
     current_status = BookingStatus(booking.status)
     if current_status not in _CANCELLABLE_STATUSES:
         raise ValidationError(f"Cannot cancel a booking that is {current_status}")
+    if booking.checked_in_at is not None or booking.checked_out_at is not None:
+        raise ValidationError("Cannot cancel a booking after check-in or check-out")
 
     listing = await _listing_for_booking(session, booking)
     payment = await payments_repository.get_payment_by_booking(session, booking.id)
@@ -798,6 +799,11 @@ async def update_booking(
         # generic-update path can't bypass that.
         return await cancel_booking(session, user, booking_id, request.cancel_reason)
 
+    if request.status not in (BookingStatus.ACCEPTED, BookingStatus.REJECTED):
+        raise ValidationError(
+            "Only accept or reject can be performed through this endpoint"
+        )
+
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
 
     _assert_authorized_to_view(booking, user)
@@ -812,8 +818,6 @@ async def update_booking(
         update_fields["rejected_at"] = datetime.now(UTC)
         if request.reject_reason:
             update_fields["reject_reason"] = request.reject_reason
-    # BookingStatus.CANCELLED is handled by the early return above, via
-    # cancel_booking() — it can't reach this point.
 
     updated = await bookings_repository.update_booking(session, booking, **update_fields)
 
@@ -826,15 +830,6 @@ async def update_booking(
         guest = guest_result.scalar_one_or_none()
         if guest is not None:
             await payment_services.create_payment_for_booking(session, updated, guest)
-
-    if request.status == BookingStatus.CONFIRMED and updated.unit is not None:
-        listing = updated.unit.listing if updated.unit is not None else None
-        await messages_services.send_booking_confirmed(
-            session,
-            booking=updated,
-            listing=listing,
-            host_id=updated.unit.host_id,
-        )
 
     return _to_response(updated)
 

@@ -14,7 +14,23 @@ function formatDate(iso: string, locale: string): string {
 
 export function ReviewsSection({ unitId, locale }: { unitId: string; locale: string }) {
   const t = useTranslations("listing");
-  const { data, isPending } = useListingReviews(unitId);
+  const tc = useTranslations("common");
+  const { data, isPending, isError, refetch } = useListingReviews(unitId);
+
+  if (isError) {
+    return (
+      <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+        <p className="text-sm text-danger-600">{tc("error")}</p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="mt-2 text-sm font-semibold text-accent-600 hover:text-accent-700"
+        >
+          {tc("retry")}
+        </button>
+      </section>
+    );
+  }
 
   if (isPending) {
     return (

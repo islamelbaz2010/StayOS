@@ -78,6 +78,17 @@ export interface ListingCreateInput {
 }
 
 export interface ListingUpdateInput {
+  property_type?: string;
+  lat?: number;
+  lng?: number;
+  governorate?: string;
+  city?: string;
+  district?: string;
+  address?: string;
+  max_guests?: number;
+  bedrooms?: number;
+  beds?: number;
+  bathrooms?: number;
   title_ar?: string;
   title_en?: string;
   description_ar?: string;
@@ -88,8 +99,6 @@ export interface ListingUpdateInput {
   cleaning_fee_egp?: number;
   cancellation_policy?: string;
   category?: string;
-  address?: string;
-  beds?: number;
   weekend_mult?: number;
   peak_mult?: number;
   min_nights?: number;
@@ -210,6 +219,12 @@ export function useUpdateListing() {
       queryClient.invalidateQueries({ queryKey: ["host-listings"] });
       queryClient.invalidateQueries({
         queryKey: ["host-listing", variables.unitId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["host-listing-detail", variables.unitId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["listing", variables.unitId],
       });
     },
   });

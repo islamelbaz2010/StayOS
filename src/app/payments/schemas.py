@@ -92,6 +92,7 @@ class PaymentListItem(BaseModel):
     reference_number: str
     payment_deadline_at: datetime | None = None
     proof_rejection_count: int = 0
+    proof_s3_key: str | None = None
     proof_url: str | None
     proof_uploaded_at: datetime | None
     created_at: datetime

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import type { ListingDetail } from "@/lib/queries/listings";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -38,6 +38,7 @@ function addDays(date: Date, days: number): Date {
 
 export function BookingPanel({ listing }: BookingPanelProps) {
   const t = useTranslations("booking");
+  const locale = useLocale();
   const { isAuthenticated, isGuest, isLoading: isAuthLoading } = useAuth();
   const createBooking = useCreateBooking();
 
@@ -194,7 +195,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
         <div className="mt-4 rounded-lg bg-neutral-50 p-4">
           <p className="text-sm text-neutral-700">{t("signInTitle")}</p>
           <Link
-            href="/auth/login"
+            href={`/${locale}/auth/login`}
             className="mt-2 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
           >
             {t("signInButton")}

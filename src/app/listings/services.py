@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import boto3
+from geoalchemy2.elements import WKTElement
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -348,10 +349,31 @@ async def update_listing(
     if listing is None:
         raise NotFoundError("Listing not found")
 
-    if request.beds is not None:
-        unit.beds = request.beds
-    if request.address is not None:
-        unit.address = request.address
+    update_data = request.model_dump(exclude_unset=True)
+
+    unit_fields = {
+        "property_type",
+        "governorate",
+        "city",
+        "district",
+        "google_place_id",
+        "address",
+        "max_guests",
+        "bedrooms",
+        "beds",
+        "bathrooms",
+    }
+    for field in unit_fields:
+        if field in update_data:
+            setattr(unit, field, update_data[field])
+
+    if "lat" in update_data and "lng" in update_data:
+        unit.coordinates = WKTElement(
+            f"POINT({update_data['lng']} {update_data['lat']})", srid=4326
+        )
+    elif "lat" in update_data or "lng" in update_data:
+        raise ValidationError("Both lat and lng are required to update coordinates")
+
     session.add(unit)
 
     await listing_configuration.validate_listing_configuration(session, unit, request)

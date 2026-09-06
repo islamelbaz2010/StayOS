@@ -8,7 +8,10 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
 import { ProofUpload } from "@/components/payments/ProofUpload";
 import { useBooking } from "@/lib/queries/bookings";
-import { usePaymentByBooking } from "@/lib/queries/payments";
+import {
+  usePaymentByBooking,
+  usePaymentProofDownloadUrl,
+} from "@/lib/queries/payments";
 import { formatDate } from "@/lib/utils";
 
 function StatusBadge({ status }: { status: string }) {
@@ -44,13 +47,22 @@ function CheckoutContent({
   const t = useTranslations("payment");
   const tc = useTranslations("common");
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
-  const { data: booking, isLoading: bookingLoading } = useBooking(bookingId);
-  const { data: payment, isLoading: paymentLoading } = usePaymentByBooking(bookingId);
+  const { data: booking, isLoading: bookingLoading, isError: bookingError } = useBooking(bookingId);
+  const { data: payment, isLoading: paymentLoading, isError: paymentError } = usePaymentByBooking(bookingId);
+  const proofDownload = usePaymentProofDownloadUrl();
 
   if (bookingLoading || paymentLoading) {
     return (
       <div className="card p-8 text-center text-neutral-500">
         {tc("loading")}
+      </div>
+    );
+  }
+
+  if (bookingError || paymentError) {
+    return (
+      <div className="card p-8 text-center text-danger-600">
+        {t("loadError")}
       </div>
     );
   }
@@ -121,9 +133,9 @@ function CheckoutContent({
           {t("bookingSummary")}
         </h2>
         <dl className="space-y-3 text-sm">
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-4">
             <dt className="text-neutral-600">{t("referenceNumber")}</dt>
-            <dd className="font-mono font-medium text-brand-900">
+            <dd className="break-all font-mono font-medium text-brand-900">
               {payment.reference_number}
             </dd>
           </div>
@@ -174,14 +186,18 @@ function CheckoutContent({
             <p className="mb-2 text-sm font-medium text-neutral-700">
               {t("currentProof")}
             </p>
-            <a
-              href={`/api/v1/payments/${payment.id}/proof/download`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-semibold text-accent-600 hover:text-accent-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2"
+            <button
+              type="button"
+              disabled={proofDownload.isPending}
+              onClick={() =>
+                proofDownload.mutate(payment.id, {
+                  onSuccess: (url) => window.open(url, "_blank", "noopener,noreferrer"),
+                })
+              }
+              className="text-sm font-semibold text-accent-600 hover:text-accent-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 disabled:opacity-50"
             >
-              {t("viewPdf")}
-            </a>
+              {proofDownload.isPending ? tc("loading") : t("viewPdf")}
+            </button>
           </div>
         )}
 
@@ -205,7 +221,7 @@ export default function CheckoutPage() {
     <ProtectedRoute>
       <GuestLayout>
         <section className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-6 flex items-center gap-4">
+          <div className="mb-6 flex flex-wrap items-center gap-4">
             <Link
               href={`/${locale}`}
               className="text-sm text-neutral-500 hover:text-neutral-700"

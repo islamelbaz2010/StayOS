@@ -41,6 +41,7 @@ export interface PaymentListItem {
   method: string;
   amount_egp: number;
   reference_number: string;
+  proof_s3_key: string | null;
   proof_url: string | null;
   proof_uploaded_at: string | null;
   accommodation_amount_egp: number | null;
@@ -70,13 +71,35 @@ export interface PaymentRejectRequest {
   reject_reason?: string | null;
 }
 
+export interface PaymentProofDownloadResponse {
+  download_url: string;
+  expires_in: number;
+}
+
+export async function getPaymentProofDownloadUrl(
+  paymentId: string
+): Promise<string> {
+  const { data } = await api.get<PaymentProofDownloadResponse>(
+    `/payments/${paymentId}/proof/download`
+  );
+  return data.download_url;
+}
+
 export async function getPaymentByBooking(
   bookingId: string
-): Promise<PaymentResponse> {
-  const { data } = await api.get<PaymentResponse>(
-    `/payments/booking/${bookingId}`
-  );
-  return data;
+): Promise<PaymentResponse | null> {
+  try {
+    const { data } = await api.get<PaymentResponse>(
+      `/payments/booking/${bookingId}`
+    );
+    return data;
+  } catch (error) {
+    const axiosError = error as { response?: { status?: number } };
+    if (axiosError.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function getPayment(paymentId: string): Promise<PaymentResponse> {
@@ -237,5 +260,11 @@ export function useRejectPayment() {
         queryKey: ["payment-queue"],
       });
     },
+  });
+}
+
+export function usePaymentProofDownloadUrl() {
+  return useMutation({
+    mutationFn: getPaymentProofDownloadUrl,
   });
 }

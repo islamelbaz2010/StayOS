@@ -9,6 +9,7 @@ import {
   usePaymentQueue,
   useVerifyPayment,
   useRejectPayment,
+  usePaymentProofDownloadUrl,
   type PaymentListItem,
 } from "@/lib/queries/payments";
 
@@ -45,6 +46,8 @@ function PaymentCard({
   onReject: (id: string, reason: string) => void;
 }) {
   const t = useTranslations("payment");
+  const tc = useTranslations("common");
+  const proofDownload = usePaymentProofDownloadUrl();
   const [showReject, setShowReject] = useState(false);
   const [reason, setReason] = useState("");
 
@@ -80,24 +83,20 @@ function PaymentCard({
           )}
         </div>
 
-        {payment.proof_url && (
+        {payment.proof_s3_key && (
           <div className="shrink-0">
-            {payment.proof_url.endsWith(".pdf") ? (
-              <a
-                href={payment.proof_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline"
-              >
-                {t("viewPdf")}
-              </a>
-            ) : (
-              <img
-                src={payment.proof_url}
-                alt={t("proofImage")}
-                className="h-24 w-24 rounded-lg border border-neutral-200 object-cover"
-              />
-            )}
+            <button
+              type="button"
+              disabled={proofDownload.isPending}
+              onClick={() =>
+                proofDownload.mutate(payment.id, {
+                  onSuccess: (url) => window.open(url, "_blank", "noopener,noreferrer"),
+                })
+              }
+              className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline disabled:opacity-50"
+            >
+              {proofDownload.isPending ? tc("loading") : t("viewPdf")}
+            </button>
           </div>
         )}
       </div>

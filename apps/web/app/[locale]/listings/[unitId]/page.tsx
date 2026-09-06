@@ -115,14 +115,14 @@ export default function ListingDetailPage() {
         ) : isPending ? (
           <ListingDetailSkeleton />
         ) : listing ? (
-          <article className="mx-auto max-w-5xl">
+          <article className="mx-auto max-w-5xl pb-24 lg:pb-0">
             <div className="mb-6 sm:mb-8">
               <Gallery images={galleryImages} alt={listing.title} />
             </div>
 
             <header className="mb-6 sm:mb-8">
               <div className="flex items-start justify-between gap-4">
-                <h1 className="text-balance text-2xl font-bold text-brand-900 sm:text-3xl lg:text-4xl">
+                <h1 className="break-words text-balance text-2xl font-bold text-brand-900 sm:text-3xl lg:text-4xl">
                   {listing.title}
                 </h1>
                 <FavoriteButton

@@ -132,6 +132,16 @@ export function AccountScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t("support")}</Text>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("Support")}
+        >
+          <Text style={styles.linkText}>{t("contactSupport")} →</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.section}>
         <Pressable style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>{t("logout")}</Text>
         </Pressable>

@@ -16,5 +16,6 @@ declare const process: {
     EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?: string;
     EXPO_PUBLIC_DEV_GUEST_ID?: string;
     EXPO_PUBLIC_ENABLE_DEV_LOGIN?: string;
+    EXPO_PUBLIC_SUPPORT_WHATSAPP_NUMBER?: string;
   };
 };

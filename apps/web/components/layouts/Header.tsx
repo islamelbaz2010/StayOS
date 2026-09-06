@@ -119,6 +119,13 @@ export function Header() {
           {t("account")}
         </Link>
       )}
+      <Link
+        href={`/${locale}/support`}
+        className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+        onClick={() => setMobileOpen(false)}
+      >
+        {t("support")}
+      </Link>
     </>
   );
 
@@ -288,6 +295,13 @@ export function Header() {
                 {t("account")}
               </Link>
             )}
+            <Link
+              href={`/${locale}/support`}
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+              onClick={() => setMobileOpen(false)}
+            >
+              {t("support")}
+            </Link>
             {isAuthenticated && (
               <button
                 type="button"

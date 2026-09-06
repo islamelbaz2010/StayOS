@@ -40,6 +40,7 @@ import { HostListingPhotosScreen } from "./src/screens/host/HostListingPhotosScr
 import { HostListingAvailabilityScreen } from "./src/screens/host/HostListingAvailabilityScreen";
 import { HostListingCoHostsScreen } from "./src/screens/host/HostListingCoHostsScreen";
 import { HostCreateListingScreen } from "./src/screens/host/HostCreateListingScreen";
+import { SupportScreen } from "./src/screens/SupportScreen";
 
 export type RootStackParamList = {
   Home: { screen?: "TripsTab" } | undefined;
@@ -70,6 +71,8 @@ export type RootStackParamList = {
   HostListingAvailability: { unitId: string };
   HostListingCoHosts: { unitId: string };
   HostCreateListing: undefined;
+  // Shared
+  Support: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -305,6 +308,11 @@ function AppContent() {
           name="HostCreateListing"
           component={HostCreateListingScreen}
           options={{ title: "New listing" }}
+        />
+        <Stack.Screen
+          name="Support"
+          component={SupportScreen}
+          options={{ title: "Support" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

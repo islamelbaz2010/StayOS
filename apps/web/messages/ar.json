@@ -260,7 +260,13 @@
     "checkin": "تاريخ الوصول",
     "checkout": "تاريخ المغادرة",
     "featuredTitle": "إقامات مميزة",
-    "viewAll": "عرض الكل"
+    "viewAll": "عرض الكل",
+    "tags": {
+      "familyOnly": "عائلات فقط",
+      "halalCertified": "حلال",
+      "mixed": "مختلط",
+      "couplesWelcome": "مرحب بالأزواج"
+    }
   },
   "favorites": {
     "title": "المفضلة",

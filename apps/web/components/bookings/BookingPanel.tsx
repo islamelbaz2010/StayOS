@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 
 import type { ListingDetail } from "@/lib/queries/listings";
 import { useAuth } from "@/lib/auth/useAuth";
-import { useCreateBooking } from "@/lib/queries/bookings";
+import { useBookingQuote, useCreateBooking } from "@/lib/queries/bookings";
 import { useListingAvailability } from "@/lib/queries/listings";
 import { cn, formatMoney } from "@/lib/utils";
 
@@ -65,6 +65,11 @@ export function BookingPanel({ listing }: BookingPanelProps) {
   }, [checkIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: availability } = useListingAvailability(listing.id, checkIn, checkOut);
+  const { data: quote, isLoading: isQuoteLoading } = useBookingQuote(
+    listing.id,
+    checkIn,
+    checkOut
+  );
 
   const blockedDatesInRange = useMemo(() => {
     return (availability?.days ?? []).filter((day) => day.status !== "AVAILABLE");
@@ -80,10 +85,11 @@ export function BookingPanel({ listing }: BookingPanelProps) {
     return Math.max(0, diff);
   }, [checkIn, checkOut]);
 
-  const totalPrice = listing.price * nights;
-  const cleaningFee = listing.cleaningFee || 0;
-  const serviceFee = Math.round(totalPrice * 0.05);
-  const grandTotal = totalPrice + cleaningFee + serviceFee;
+  const totalPrice = quote?.accommodation_egp ?? listing.price * nights;
+  const cleaningFee = quote?.cleaning_fee_egp ?? listing.cleaningFee ?? 0;
+  const serviceFee = quote?.service_fee_egp ?? 0;
+  const serviceFeeWaived = quote?.service_fee_waived ?? false;
+  const grandTotal = quote?.total_egp ?? totalPrice + cleaningFee + serviceFee;
 
   function validate(): boolean {
     const nextErrors: Record<string, string> = {};
@@ -411,7 +417,14 @@ export function BookingPanel({ listing }: BookingPanelProps) {
               )}
 
               <div className="flex justify-between">
-                <span>{t("serviceFee")}</span>
+                <span>
+                  {t("serviceFee")}
+                  {serviceFeeWaived && (
+                    <span className="ml-1 text-xs text-green-600">
+                      ({t("serviceFeeWaived")})
+                    </span>
+                  )}
+                </span>
                 <span>{formatMoney(serviceFee, listing.currency)}</span>
               </div>
 

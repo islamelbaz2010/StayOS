@@ -4,7 +4,7 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
-import { useCreateBooking } from "../lib/hooks";
+import { useBookingQuote, useCreateBooking } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import type { RootStackParamList } from "../../App";
@@ -69,7 +69,14 @@ export function BookingScreen() {
   const nights = checkIn && checkOut
     ? Math.max(0, Math.ceil((checkOut.getTime() - checkIn.getTime()) / 86400000))
     : 0;
-  const subtotal = price * Math.max(0, nights);
+
+  const { data: quote, isLoading: isQuoteLoading, error: quoteError } = useBookingQuote(
+    unitId,
+    checkIn ? toISODate(checkIn) : "",
+    checkOut ? toISODate(checkOut) : ""
+  );
+
+  const quoteTotal = quote ? `${quote.total_egp} ${currency}` : null;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -169,7 +176,12 @@ export function BookingScreen() {
 
         {nights > 0 && (
           <Text style={styles.nightsText}>
-            {nights} {t("night")}
+            {nights} {t("nightsCount")}
+          </Text>
+        )}
+        {quoteError && (
+          <Text style={styles.errorText}>
+            {t("quoteError")}
           </Text>
         )}
       </View>
@@ -202,16 +214,44 @@ export function BookingScreen() {
       </View>
 
       <View style={styles.summary}>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryText}>
-            {price} {currency} × {Math.max(0, nights)} {t("night")}
-          </Text>
-          <Text style={styles.summaryValue}>{subtotal} {currency}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryTotal}>{t("total")}</Text>
-          <Text style={styles.summaryTotalValue}>{subtotal} {currency}</Text>
-        </View>
+        {isQuoteLoading ? (
+          <Text style={styles.summaryText}>{t("loading")}</Text>
+        ) : quote ? (
+          <>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryText}>
+                {price} {currency} × {quote.nights} {t("nightsCount")}
+              </Text>
+              <Text style={styles.summaryValue}>{quote.accommodation_egp} {currency}</Text>
+            </View>
+            {quote.cleaning_fee_egp > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryText}>{t("cleaningFee")}</Text>
+                <Text style={styles.summaryValue}>{quote.cleaning_fee_egp} {currency}</Text>
+              </View>
+            )}
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryText}>
+                {t("serviceFee")}
+                {quote.service_fee_waived && (
+                  <Text style={styles.waivedText}> ({t("serviceFeeWaived")})</Text>
+                )}
+              </Text>
+              <Text style={styles.summaryValue}>{quote.service_fee_egp} {currency}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryTotal}>{t("total")}</Text>
+              <Text style={styles.summaryTotalValue}>{quote.total_egp} {currency}</Text>
+            </View>
+          </>
+        ) : (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryText}>
+              {price} {currency} × {Math.max(0, nights)} {t("nightsCount")}
+            </Text>
+            <Text style={styles.summaryValue}>{price * Math.max(0, nights)} {currency}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.trustBox}>
@@ -384,6 +424,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text,
     fontWeight: "600",
+  },
+  waivedText: {
+    fontSize: fontSize.sm,
+    color: colors.success,
   },
   summaryTotal: {
     fontSize: fontSize.lg,

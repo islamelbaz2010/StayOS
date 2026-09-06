@@ -55,6 +55,24 @@ class PaymentResponse(BaseModel):
     updated_at: datetime
 
 
+class BookingQuote(BaseModel):
+    """Guest-facing price quote for a unit + date range.
+
+    Computed by the same routine that prices the actual payment so the
+    total a guest sees before booking always matches the amount charged."""
+
+    unit_id: str
+    check_in: str
+    check_out: str
+    nights: int
+    nightly_rate_egp: int
+    accommodation_egp: int
+    cleaning_fee_egp: int
+    service_fee_egp: int
+    service_fee_waived: bool
+    total_egp: int
+
+
 class PaymentListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

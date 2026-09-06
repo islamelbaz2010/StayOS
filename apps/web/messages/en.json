@@ -725,7 +725,8 @@
     "kyc": "Identity Verification",
     "messages": "Messages",
     "earnings": "Earnings",
-    "profile": "Profile"
+    "profile": "Profile",
+    "calendar": "Calendar"
   },
   "landing": {
     "trustVerified": "Verified Hosts",
@@ -833,5 +834,25 @@
     "remove": "Remove",
     "removeConfirm": "Remove this co-host?",
     "loadErrorRetry": "Retry"
+  },
+  "hostCalendar": {
+    "title": "Calendar",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "allListings": "All properties",
+    "available": "Available",
+    "booked": "Booked",
+    "blocked": "Blocked",
+    "loadError": "Failed to load calendar.",
+    "egp": "EGP",
+    "weekday": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    }
   }
 }

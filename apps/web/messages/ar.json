@@ -725,7 +725,8 @@
     "kyc": "التحقق من الهوية",
     "messages": "الرسائل",
     "earnings": "الأرباح",
-    "profile": "الملف الشخصي"
+    "profile": "الملف الشخصي",
+    "calendar": "التقويم"
   },
   "landing": {
     "trustVerified": "مضيفون موثقون",
@@ -833,5 +834,25 @@
     "remove": "إزالة",
     "removeConfirm": "هل تريد إزالة هذا الشريك؟",
     "loadErrorRetry": "إعادة المحاولة"
+  },
+  "hostCalendar": {
+    "title": "التقويم",
+    "previousMonth": "الشهر السابق",
+    "nextMonth": "الشهر التالي",
+    "allListings": "كل العقارات",
+    "available": "متاح",
+    "booked": "محجوز",
+    "blocked": "محظور",
+    "loadError": "تعذّر تحميل التقويم.",
+    "egp": "ج.م",
+    "weekday": {
+      "sun": "أحد",
+      "mon": "إثنين",
+      "tue": "ثلاثاء",
+      "wed": "أربعاء",
+      "thu": "خميس",
+      "fri": "جمعة",
+      "sat": "سبت"
+    }
   }
 }

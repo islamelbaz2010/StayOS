@@ -9,7 +9,7 @@ import { ListingCard } from "@/components/listings/ListingCard";
 import { ListingCardSkeleton } from "@/components/listings/ListingCardSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { SearchMap } from "@/components/search/SearchMap";
-import { useListings } from "@/lib/queries/listings";
+import { useSearchListings } from "@/lib/queries/listings";
 
 const CULTURAL_TAGS = [
   { value: "FAMILY_ONLY", key: "familyOnly" },
@@ -36,7 +36,6 @@ export default function SearchPage() {
       min_price: searchParams.get("min_price") || undefined,
       max_price: searchParams.get("max_price") || undefined,
       limit: searchParams.get("limit") || undefined,
-      offset: searchParams.get("offset") || undefined,
     }),
     [searchParams]
   );
@@ -63,8 +62,23 @@ export default function SearchPage() {
     router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
   };
 
-  const { data, isPending, isError, refetch } = useListings(filters);
+  const {
+    data,
+    isPending,
+    isError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useSearchListings(filters);
+
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
+
+  const allListings = useMemo(
+    () => data?.pages.flatMap((page) => page.listings) ?? [],
+    [data]
+  );
+  const total = data?.pages[0]?.total ?? 0;
 
   const goToListing = (unitId: string) => {
     router.push(`/${locale}/listings/${unitId}`);
@@ -77,9 +91,9 @@ export default function SearchPage() {
           <h1 className="text-2xl font-bold text-neutral-900 md:text-3xl">
             {t("search.title")}
           </h1>
-          {data && data.listings.length > 0 && (
+          {allListings.length > 0 && (
             <span className="text-sm text-neutral-500">
-              {t("search.resultsCount", { count: data.total })}
+              {t("search.resultsCount", { count: total })}
             </span>
           )}
         </div>
@@ -149,7 +163,7 @@ export default function SearchPage() {
               <ListingCardSkeleton key={index} />
             ))}
           </div>
-        ) : data?.listings.length === 0 ? (
+        ) : allListings.length === 0 ? (
           <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
               <svg className="h-8 w-8 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -163,16 +177,33 @@ export default function SearchPage() {
               {t("search.noResultsHint")}
             </p>
           </div>
-        ) : viewMode === "map" && data ? (
+        ) : viewMode === "map" ? (
           <div className="mt-6">
-            <SearchMap listings={data.listings} onSelect={goToListing} />
+            <SearchMap listings={allListings} onSelect={goToListing} />
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {data?.listings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
+          <>
+            <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {allListings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+
+            {hasNextPage && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isFetchingNextPage
+                    ? t("search.loadingMore")
+                    : t("search.loadMore")}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </GuestLayout>

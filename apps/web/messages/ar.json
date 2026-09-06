@@ -268,7 +268,9 @@
       "couplesWelcome": "مرحب بالأزواج"
     },
     "list": "قائمة",
-    "map": "خريطة"
+    "map": "خريطة",
+    "loadMore": "تحميل المزيد",
+    "loadingMore": "جارٍ تحميل المزيد..."
   },
   "favorites": {
     "title": "المفضلة",

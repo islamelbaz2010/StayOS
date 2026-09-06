@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Platform,
   Pressable,
@@ -88,8 +89,14 @@ export function SearchScreen() {
     limit: 20,
   };
 
-  const { data: searchResult, isLoading } = useSearchListings(params);
-  const listings = searchResult?.data || [];
+  const {
+    data: searchResult,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useSearchListings(params);
+  const listings = searchResult?.pages.flatMap((p) => p.data) ?? [];
 
   const selectSuggestion = (suggestion: LocationSuggestion) => {
     const name = locale === "ar" ? suggestion.canonical_name_ar : suggestion.canonical_name_en;
@@ -261,6 +268,19 @@ export function SearchScreen() {
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : null
+          }
         />
       )}
     </View>
@@ -358,6 +378,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.primary,
     fontWeight: "600",
+  },
+  footerLoader: {
+    padding: spacing.md,
+    alignItems: "center",
   },
   list: {
     padding: spacing.lg,

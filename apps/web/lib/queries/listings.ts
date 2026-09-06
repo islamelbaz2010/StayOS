@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 import type { components } from "@/lib/api-types";
@@ -132,6 +132,52 @@ export function useListings(filters: SearchFilters) {
         hasMore: data.pagination.has_more,
       };
     },
+  });
+}
+
+export interface SearchPageResult {
+  listings: Listing[];
+  total: number;
+  hasMore: boolean;
+  limit: number;
+  offset: number;
+}
+
+function buildSearchQueryParams(filters: SearchFilters) {
+  const queryParams: Record<string, string> = {};
+  if (filters.q) queryParams.q = filters.q;
+  if (filters.checkin) queryParams.check_in = filters.checkin;
+  if (filters.checkout) queryParams.check_out = filters.checkout;
+  if (filters.guests) queryParams.guests = filters.guests;
+  if (filters.property_type) queryParams.property_type = filters.property_type;
+  if (filters.cultural_tags) queryParams.cultural_tags = filters.cultural_tags;
+  if (filters.min_price) queryParams.min_price = filters.min_price;
+  if (filters.max_price) queryParams.max_price = filters.max_price;
+  return queryParams;
+}
+
+export function useSearchListings(filters: SearchFilters) {
+  const limit = parseInt(filters.limit ?? "12", 10);
+  const queryParams = buildSearchQueryParams(filters);
+
+  return useInfiniteQuery<SearchPageResult, Error, InfiniteData<SearchPageResult, number>>({
+    queryKey: ["search-listings", queryParams, limit],
+    queryFn: async ({ pageParam = 0 }) => {
+      const offset = pageParam as number;
+      const { data } = await api.get<ApiSearchResponse>("/listings", {
+        params: { ...queryParams, limit: String(limit), offset: String(offset) },
+      });
+      return {
+        listings: data.data.map(mapSearchResult),
+        total: data.pagination.total_count,
+        hasMore: data.pagination.has_more,
+        limit,
+        offset,
+      };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.offset + lastPage.limit : undefined,
   });
 }
 

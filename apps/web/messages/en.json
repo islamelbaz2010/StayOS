@@ -268,7 +268,9 @@
       "couplesWelcome": "Couples welcome"
     },
     "list": "List",
-    "map": "Map"
+    "map": "Map",
+    "loadMore": "Load more",
+    "loadingMore": "Loading more..."
   },
   "favorites": {
     "title": "Favorites",

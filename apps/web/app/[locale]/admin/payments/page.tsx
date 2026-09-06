@@ -15,11 +15,11 @@ import {
 function StatusBadge({ status }: { status: string }) {
   const t = useTranslations("payment");
   const styles: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-800",
-    proof_uploaded: "bg-blue-100 text-blue-800",
-    verified: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-800",
-    cancelled: "bg-neutral-200 text-neutral-700",
+    pending: "badge-warning",
+    proof_uploaded: "badge-info",
+    verified: "badge-success",
+    rejected: "badge-danger",
+    cancelled: "badge-neutral",
   };
   const labels: Record<string, string> = {
     pending: t("statusPending"),
@@ -29,11 +29,7 @@ function StatusBadge({ status }: { status: string }) {
     cancelled: t("statusCancelled"),
   };
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-        styles[status] || styles.pending
-      }`}
-    >
+    <span className={`${styles[status] ?? styles.pending}`}>
       {labels[status] || status}
     </span>
   );
@@ -61,11 +57,11 @@ function PaymentCard({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl bg-white shadow-card">
+    <div className="card overflow-hidden">
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
         <div className="flex-1 space-y-2">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-sm font-medium text-neutral-900">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-mono text-sm font-medium text-brand-900">
               {payment.reference_number}
             </span>
             <StatusBadge status={payment.status} />
@@ -91,7 +87,7 @@ function PaymentCard({
                 href={payment.proof_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-medium text-primary-600 hover:underline"
+                className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline"
               >
                 {t("viewPdf")}
               </a>
@@ -109,18 +105,18 @@ function PaymentCard({
       {payment.status === "proof_uploaded" && (
         <div className="border-t border-neutral-200 p-4">
           {!showReject ? (
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => onVerify(payment.id)}
-                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                className="btn-primary text-sm"
               >
                 {t("approve")}
               </button>
               <button
                 type="button"
                 onClick={() => setShowReject(true)}
-                className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                className="btn-danger text-sm"
               >
                 {t("reject")}
               </button>
@@ -138,15 +134,15 @@ function PaymentCard({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-neutral-300 p-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="input min-h-[5rem] text-sm"
                 placeholder={t("rejectReasonPlaceholder")}
               />
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={handleReject}
                   disabled={!reason.trim()}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                  className="btn-danger text-sm disabled:opacity-50"
                 >
                   {t("confirmReject")}
                 </button>
@@ -156,7 +152,7 @@ function PaymentCard({
                     setShowReject(false);
                     setReason("");
                   }}
-                  className="rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2"
+                  className="btn-secondary text-sm"
                 >
                   {t("cancel")}
                 </button>
@@ -179,25 +175,25 @@ export default function AdminPaymentQueuePage() {
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
       <HostLayout>
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-neutral-900">
+        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <h1 className="mb-6 text-2xl font-bold text-brand-900 sm:text-3xl">
             {t("queueTitle")}
           </h1>
 
           {isLoading && (
-            <div className="rounded-xl bg-white p-8 text-center text-neutral-500 shadow-card">
+            <div className="card p-8 text-center text-neutral-500">
               {tc("loading")}
             </div>
           )}
 
           {error && (
-            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
+            <div className="card p-8 text-center text-danger-600">
               {t("loadError")}
             </div>
           )}
 
           {payments && payments.length === 0 && (
-            <div className="rounded-xl bg-white p-12 text-center shadow-card">
+            <div className="card p-12 text-center">
               <p className="text-neutral-500">{t("noPendingPayments")}</p>
             </div>
           )}
@@ -219,7 +215,7 @@ export default function AdminPaymentQueuePage() {
               ))}
             </div>
           )}
-        </div>
+        </section>
       </HostLayout>
     </ProtectedRoute>
   );

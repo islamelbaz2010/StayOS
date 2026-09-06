@@ -17,16 +17,18 @@ export default function PhotosPage({
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
       <HostLayout>
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-neutral-900">
-              {t("pageTitle")}
-            </h1>
+        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-4xl">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
+                {t("pageTitle")}
+              </h1>
+            </div>
+            <div className="card p-5 sm:p-6">
+              <PhotoUpload unitId={unitId} />
+            </div>
           </div>
-          <div className="rounded-xl bg-white p-6 shadow-card">
-            <PhotoUpload unitId={unitId} />
-          </div>
-        </div>
+        </section>
       </HostLayout>
     </ProtectedRoute>
   );

@@ -6,13 +6,14 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useHostListings } from "@/lib/queries/hostListings";
 import { useHostCalendar } from "@/lib/queries/calendar";
 import type { components } from "@/lib/api-types";
 
 const STATUS_STYLES: Record<string, string> = {
   available: "bg-success-50 text-success-700",
-  booked: "bg-primary-500 text-white",
+  booked: "bg-brand-900 text-white",
   blocked: "bg-warning-100 text-warning-700",
   hold: "bg-neutral-100 text-neutral-600",
 };
@@ -103,26 +104,54 @@ export default function HostCalendarPage() {
       <HostLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl font-bold text-neutral-900">{t("title")}</h1>
+            <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
+              {t("title")}
+            </h1>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setCursor((c) => addDays(startOfMonth(c), -1))}
-                className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                className="btn-secondary px-3 py-2"
                 aria-label={t("previousMonth")}
               >
-                ‹
+                <svg
+                  className="h-4 w-4 rtl:rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 19.5L8.25 12l7.5-7.5"
+                  />
+                </svg>
               </button>
-              <span className="min-w-[140px] text-center text-lg font-semibold text-neutral-900">
+              <span className="min-w-[140px] text-center text-lg font-semibold text-brand-900">
                 {monthLabel}
               </span>
               <button
                 type="button"
-                onClick={() => setCursor((c) => addDays(addDays(endOfMonth(c), 1), 1))}
-                className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                onClick={() =>
+                  setCursor((c) => addDays(addDays(endOfMonth(c), 1), 1))
+                }
+                className="btn-secondary px-3 py-2"
                 aria-label={t("nextMonth")}
               >
-                ›
+                <svg
+                  className="h-4 w-4 rtl:rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                  />
+                </svg>
               </button>
             </div>
           </div>
@@ -134,8 +163,8 @@ export default function HostCalendarPage() {
                 onClick={() => setSelectedUnitId(null)}
                 className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition ${
                   selectedUnitId === null
-                    ? "bg-brand-600 text-white"
-                    : "bg-white text-neutral-700 hover:bg-neutral-100"
+                    ? "bg-brand-900 text-white"
+                    : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
                 }`}
               >
                 {t("allListings")}
@@ -147,8 +176,8 @@ export default function HostCalendarPage() {
                   onClick={() => setSelectedUnitId(l.id)}
                   className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition ${
                     selectedUnitId === l.id
-                      ? "bg-brand-600 text-white"
-                      : "bg-white text-neutral-700 hover:bg-neutral-100"
+                      ? "bg-brand-900 text-white"
+                      : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
                   }`}
                 >
                   {l.title}
@@ -159,25 +188,16 @@ export default function HostCalendarPage() {
 
           <div className="mb-6 grid gap-4 sm:grid-cols-3">
             <StatCard label={t("available")} value={stats.available} color="text-success-600" />
-            <StatCard label={t("booked")} value={stats.booked} color="text-primary-600" />
+            <StatCard label={t("booked")} value={stats.booked} color="text-brand-900" />
             <StatCard label={t("blocked")} value={stats.blocked} color="text-warning-600" />
           </div>
 
           {isLoading ? (
             <div className="py-12 text-center text-neutral-600">{tc("loading")}</div>
           ) : isError ? (
-            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
-              {t("loadError")}
-              <button
-                type="button"
-                onClick={() => refetch()}
-                className="ml-2 font-medium text-brand-600 hover:underline"
-              >
-                {tc("retry")}
-              </button>
-            </div>
+            <ErrorState onRetry={() => refetch()} />
           ) : (
-            <div className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+            <div className="card p-4 sm:p-6">
               <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-medium text-neutral-500">
                 {WEEKDAYS.map((d) => (
                   <div key={d}>{t(`weekday.${d}`)}</div>
@@ -220,23 +240,41 @@ function CalendarCell({
   return (
     <div
       className={`flex min-h-[80px] flex-col justify-between rounded-lg border p-1.5 text-xs transition ${
-        isToday ? "border-brand-400 ring-1 ring-brand-400" : "border-neutral-100"
+        isToday
+          ? "border-accent-400 ring-1 ring-accent-400"
+          : "border-neutral-100"
       } ${day ? statusStyle : "bg-white text-neutral-900"}`}
     >
-      <span className={`self-end font-semibold ${day ? "" : "text-neutral-500"}`}>{date.getDate()}</span>
+      <span className={`self-end font-semibold ${day ? "" : "text-neutral-500"}`}>
+        {date.getDate()}
+      </span>
       {day && (
         <div className="mt-1 min-w-0">
-          {day.guest_name && <p className="truncate font-medium">{day.guest_name}</p>}
-          {day.price_egp > 0 && <p className="truncate">{day.price_egp.toLocaleString()} {t("egp")}</p>}
+          {day.guest_name && (
+            <p className="truncate font-medium">{day.guest_name}</p>
+          )}
+          {day.price_egp > 0 && (
+            <p className="truncate">
+              {day.price_egp.toLocaleString()} {t("egp")}
+            </p>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+function StatCard({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
   return (
-    <div className="rounded-xl bg-white p-5 shadow-card">
+    <div className="card p-5">
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
       <p className="text-sm text-neutral-500">{label}</p>
     </div>

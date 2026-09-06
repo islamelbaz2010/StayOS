@@ -27,7 +27,7 @@ export default function HostAvailabilityPage() {
             <ListingDetailSkeleton />
           ) : (
             <article className="mx-auto max-w-4xl">
-              <h1 className="text-2xl font-bold text-neutral-900">
+              <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
                 {t("title")} — {data.title}
               </h1>
               <p className="mt-2 text-neutral-600">

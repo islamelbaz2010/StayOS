@@ -13,28 +13,35 @@ interface HostBookingListProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  requested: "bg-yellow-100 text-yellow-800",
-  accepted: "bg-green-100 text-green-800",
-  confirmed: "bg-emerald-100 text-emerald-800",
-  rejected: "bg-red-100 text-red-800",
-  cancelled: "bg-neutral-200 text-neutral-700",
-  no_show: "bg-neutral-200 text-neutral-700",
+  requested: "bg-warning-100 text-warning-700",
+  accepted: "bg-accent-100 text-accent-700",
+  confirmed: "bg-success-100 text-success-700",
+  rejected: "bg-danger-100 text-danger-700",
+  cancelled: "bg-neutral-100 text-neutral-700",
+  no_show: "bg-neutral-100 text-neutral-700",
 };
 
 function nights(checkIn: string, checkOut: string): number {
   const start = new Date(checkIn);
   const end = new Date(checkOut);
-  return Math.max(0, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  return Math.max(
+    0,
+    Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+  );
 }
 
-export function HostBookingList({ bookings, selectedId, onSelect }: HostBookingListProps) {
+export function HostBookingList({
+  bookings,
+  selectedId,
+  onSelect,
+}: HostBookingListProps) {
   const t = useTranslations("hostBookings");
   const params = useParams<{ locale: string }>();
   const dateLocale = params?.locale === "ar" ? "ar-EG" : "en-EG";
 
   if (bookings.length === 0) {
     return (
-      <div className="rounded-xl bg-white p-6 text-center text-neutral-600 shadow-card">
+      <div className="card p-6 text-center text-neutral-600">
         {t("noBookings")}
       </div>
     );
@@ -48,15 +55,20 @@ export function HostBookingList({ bookings, selectedId, onSelect }: HostBookingL
             type="button"
             onClick={() => onSelect(booking.id)}
             className={cn(
-              "w-full rounded-xl border p-4 text-start shadow-card transition",
+              "w-full rounded-card border p-4 text-start shadow-card transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2",
               selectedId === booking.id
-                ? "border-brand-500 ring-1 ring-brand-500"
-                : "border-transparent bg-white hover:bg-neutral-50"
+                ? "border-accent-500 ring-1 ring-accent-500 bg-surface-card"
+                : "border-transparent bg-surface-card hover:bg-neutral-50"
             )}
             aria-current={selectedId === booking.id ? "true" : undefined}
           >
             <div className="flex items-center justify-between">
-              <span className={cn("rounded-full px-2 py-1 text-xs font-semibold", STATUS_COLORS[booking.status] || "bg-neutral-100")}>
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                  STATUS_COLORS[booking.status] || "bg-neutral-100 text-neutral-700"
+                )}
+              >
                 {t(`status.${booking.status}`)}
               </span>
               <span className="text-sm text-neutral-500">
@@ -65,7 +77,8 @@ export function HostBookingList({ bookings, selectedId, onSelect }: HostBookingL
             </div>
 
             <p className="mt-2 text-sm text-neutral-700">
-              {formatDate(new Date(booking.check_in), dateLocale)} — {formatDate(new Date(booking.check_out), dateLocale)}
+              {formatDate(new Date(booking.check_in), dateLocale)} —{" "}
+              {formatDate(new Date(booking.check_out), dateLocale)}
             </p>
 
             <p className="mt-1 text-sm text-neutral-500">

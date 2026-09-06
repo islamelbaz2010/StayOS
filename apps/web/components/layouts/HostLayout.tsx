@@ -25,10 +25,10 @@ export function HostLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-surface-page">
       <Header />
       <div className="flex flex-1">
-        <aside className="hidden w-64 shrink-0 border-e border-neutral-200 bg-white md:block">
+        <aside className="hidden w-64 shrink-0 border-e border-neutral-200 bg-surface-card md:block">
           <nav className="p-4">
             <ul className="space-y-1">
               {navItems.map((item) => {
@@ -39,7 +39,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
                       href={item.href}
                       className={`block rounded-md px-3 py-2 text-sm font-medium transition ${
                         isActive
-                          ? "bg-brand-50 text-brand-700"
+                          ? "bg-accent-100 text-accent-700"
                           : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
                       }`}
                     >
@@ -51,8 +51,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
             </ul>
           </nav>
         </aside>
-        <main className="flex-1 bg-neutral-50 p-4 sm:p-6">
-          {/* Mobile horizontal nav */}
+        <main className="flex-1 p-4 sm:p-6">
           <nav className="mb-4 flex gap-2 overflow-x-auto md:hidden">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -62,8 +61,8 @@ export function HostLayout({ children }: { children: ReactNode }) {
                   href={item.href}
                   className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition ${
                     isActive
-                      ? "bg-brand-600 text-white"
-                      : "bg-white text-neutral-700 hover:bg-neutral-100"
+                      ? "bg-brand-900 text-white"
+                      : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
                   }`}
                 >
                   {item.label}

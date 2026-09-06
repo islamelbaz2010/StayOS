@@ -318,7 +318,7 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
                     ? "border-brand-500 ring-1 ring-brand-500"
                     : "border-neutral-200",
                   dragIndex === index && "opacity-50",
-                  dragOverIndex === index && dragIndex !== null && "border-brand-400 ring-2 ring-brand-300"
+                  dragOverIndex === index && dragIndex !== null && "border-accent-400 ring-2 ring-accent-400"
                 )}
               >
                 <div
@@ -331,7 +331,7 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
                     className="h-full w-full object-cover"
                   />
                   {photo.is_cover && (
-                    <span className="absolute start-2 top-2 rounded-md bg-brand-600 px-2 py-0.5 text-xs font-medium text-white">
+                    <span className="absolute start-2 top-2 rounded-md bg-accent-500 px-2 py-0.5 text-xs font-medium text-brand-900">
                       {t("cover")}
                     </span>
                   )}
@@ -345,7 +345,7 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
                       type="button"
                       onClick={() => handleSetCover(photo.id)}
                       disabled={setCoverMutation.isPending}
-                      className="rounded-md px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
+                      className="rounded-md px-2 py-1 text-xs font-medium text-accent-600 hover:bg-accent-100 disabled:opacity-50"
                     >
                       {t("setCover")}
                     </button>

@@ -19,7 +19,7 @@ export function Header() {
     <>
       <Link
         href={`/${locale}/search`}
-        className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+        className="text-sm font-medium text-neutral-700 hover:text-accent-600"
         onClick={() => setMobileOpen(false)}
       >
         {t("search")}
@@ -28,14 +28,14 @@ export function Header() {
         <>
           <Link
             href={`/${locale}/favorites`}
-            className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             onClick={() => setMobileOpen(false)}
           >
             {t("favorites")}
           </Link>
           <Link
             href={`/${locale}/bookings`}
-            className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             onClick={() => setMobileOpen(false)}
           >
             {t("trips")}
@@ -61,7 +61,7 @@ export function Header() {
       {isAuthenticated && (
         <Link
           href={`/${locale}/payments`}
-          className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+          className="text-sm font-medium text-neutral-700 hover:text-accent-600"
           onClick={() => setMobileOpen(false)}
         >
           {t("payments")}
@@ -70,7 +70,7 @@ export function Header() {
       {isAuthenticated && (
         <Link
           href={`/${locale}/messages`}
-          className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+          className="text-sm font-medium text-neutral-700 hover:text-accent-600"
           onClick={() => setMobileOpen(false)}
         >
           {t("messages")}
@@ -79,7 +79,7 @@ export function Header() {
       {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
         <Link
           href={`/${locale}/host`}
-          className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+          className="text-sm font-medium text-neutral-700 hover:text-accent-600"
           onClick={() => setMobileOpen(false)}
         >
           {t("host")}
@@ -89,21 +89,21 @@ export function Header() {
         <>
           <Link
             href={`/${locale}/admin/pending`}
-            className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             onClick={() => setMobileOpen(false)}
           >
             {t("admin")}
           </Link>
           <Link
             href={`/${locale}/admin/kyc`}
-            className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             onClick={() => setMobileOpen(false)}
           >
             {t("kycReview")}
           </Link>
           <Link
             href={`/${locale}/admin/import`}
-            className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             onClick={() => setMobileOpen(false)}
           >
             {t("bulkImport")}
@@ -113,7 +113,7 @@ export function Header() {
       {isAuthenticated && (
         <Link
           href={`/${locale}/profile`}
-          className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+          className="text-sm font-medium text-neutral-700 hover:text-accent-600"
           onClick={() => setMobileOpen(false)}
         >
           {t("account")}
@@ -121,7 +121,7 @@ export function Header() {
       )}
       <Link
         href={`/${locale}/support`}
-        className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+        className="text-sm font-medium text-neutral-700 hover:text-accent-600"
         onClick={() => setMobileOpen(false)}
       >
         {t("support")}
@@ -218,7 +218,7 @@ export function Header() {
                 </Link>
                 <Link
                   href={`/${locale}/host/kyc`}
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-brand-600 hover:bg-neutral-100"
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                   onClick={() => setMobileOpen(false)}
                 >
                   {t("becomeHost")}
@@ -228,7 +228,7 @@ export function Header() {
             {!isAuthenticated && (
               <Link
                 href={`/${locale}/host/kyc`}
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-brand-600 hover:bg-neutral-100"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >
                 {t("becomeHost")}

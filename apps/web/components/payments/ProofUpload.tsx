@@ -65,19 +65,17 @@ export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
           throw new Error(`S3 upload failed: ${putResponse.status}`);
         }
 
-        const proofUrl = presignRes.upload_url.split("?")[0];
-
         await uploadMutation.mutateAsync({
           paymentId,
-          payload: { s3_key: presignRes.proof_key, url: proofUrl },
+          payload: { s3_key: presignRes.proof_key },
         });
       } catch {
-        setError(t("uploadFailed"));
+        setError(t("uploadFailed") ?? tc("error"));
       } finally {
         setIsUploading(false);
       }
     },
-    [paymentId, presignMutation, uploadMutation, t]
+    [paymentId, presignMutation, uploadMutation, t, tc]
   );
 
   const handleDrop = useCallback(
@@ -106,7 +104,7 @@ export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
         className={`relative rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
           disabled || isUploading
             ? "border-neutral-200 bg-neutral-50"
-            : "border-neutral-300 bg-neutral-50 hover:border-primary-400 hover:bg-primary-50"
+            : "border-neutral-300 bg-neutral-50 hover:border-accent-400 hover:bg-accent-100"
         }`}
       >
         <input
@@ -122,7 +120,7 @@ export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isUploading}
-          className="text-sm font-medium text-primary-600 hover:text-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          className="text-sm font-medium text-accent-600 hover:text-accent-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
         >
           {isUploading ? t("uploading") : t("selectProof")}
         </button>

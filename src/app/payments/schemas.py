@@ -13,6 +13,11 @@ class PaymentProofPresignResponse(BaseModel):
     proof_key: str
 
 
+class PaymentProofDownloadResponse(BaseModel):
+    download_url: str
+    expires_in: int
+
+
 class PaymentProofUpload(BaseModel):
     s3_key: str
     # Kept optional for older clients; the server treats the s3_key as the

@@ -442,10 +442,51 @@ def test_require_kyc_verified_rejects_unverified(auth_client: TestClient, monkey
     assert response.status_code == 422
 
 
+def test_delete_me_account_blocks_active_booking(
+    auth_client: TestClient, fake_session: AsyncMock
+) -> None:
+    user = _make_user()
+    fake_session.get.return_value = user
+    result = _make_session_result()
+    result.scalars.return_value.first.return_value = MagicMock()
+    fake_session.execute.return_value = result
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.delete(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422
+    assert user.is_active is True
+
+
+def test_delete_me_account_blocks_listed_unit(
+    auth_client: TestClient, fake_session: AsyncMock
+) -> None:
+    user = _make_user()
+    fake_session.get.return_value = user
+    result = _make_session_result()
+    result.scalars.return_value.first = MagicMock(side_effect=[None, MagicMock()])
+    fake_session.execute.return_value = result
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.delete(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422
+    assert user.is_active is True
+
+
 def _make_session_result() -> MagicMock:
-    """Return a MagicMock that mimics session.execute().scalars().all() -> []."""
+    """Return a MagicMock that mimics session.execute().scalars() results."""
     result = MagicMock()
-    result.scalars.return_value = MagicMock(all=MagicMock(return_value=[]))
+    result.scalars.return_value = MagicMock(
+        all=MagicMock(return_value=[]),
+        first=MagicMock(return_value=None),
+    )
     result.scalar_one_or_none.return_value = None
     return result
 

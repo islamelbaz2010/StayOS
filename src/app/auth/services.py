@@ -29,10 +29,13 @@ from app.auth.schemas import (
     UserDeleteResponse,
     UserExportResponse,
 )
+from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.config import settings
 from app.favorites.models import UserFavorite
 from app.kyc.models import KycDocument
+from app.listings.cohost_models import UnitCoHost
+from app.listings.constants import UnitStatus
 from app.listings.models import Unit
 from app.messages.models import Message
 from app.notifications.models import Notification
@@ -781,6 +784,43 @@ async def delete_user_account(
     untouched because no retention period has been decided.
     """
     now = datetime.now(UTC)
+
+    # Safety guard: do not allow account deletion while the user has an active
+    # reservation or a publicly listed unit.  This is a technical boundary, not
+    # a product rule; the privacy policy has not defined the exact treatment.
+    active_booking = (
+        await session.execute(
+            select(Booking).where(
+                Booking.guest_id == user.id,
+                Booking.status.in_(
+                    [BookingStatus.REQUESTED, BookingStatus.ACCEPTED, BookingStatus.CONFIRMED]
+                ),
+            )
+        )
+    ).scalars().first()
+    if active_booking is not None:
+        raise ValidationError("Cannot delete account with active bookings")
+
+    listed_unit = (
+        await session.execute(
+            select(Unit).where(
+                Unit.host_id == user.id,
+                Unit.status == UnitStatus.LISTED,
+            )
+        )
+    ).scalars().first()
+    if listed_unit is not None:
+        raise ValidationError("Cannot delete account with active listings")
+
+    # Deactivate co-host delegations for this user; the owner record is unaffected.
+    co_hosts = (
+        await session.execute(
+            select(UnitCoHost).where(UnitCoHost.co_host_user_id == user.id)
+        )
+    ).scalars().all()
+    for co_host in co_hosts:
+        co_host.is_active = False
+        session.add(co_host)
 
     # Revoke all refresh tokens.
     refresh_tokens = (

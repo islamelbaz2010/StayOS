@@ -1381,17 +1381,21 @@ async def test_upload_proof_blocked_after_resubmission_window(
         )
 
 
-def test_payment_proof_bucket_prefers_dedicated_bucket(monkeypatch) -> None:
-    """P0-3: payment proofs must not go to the public listing-photo bucket
-    when a dedicated private bucket is configured."""
+def test_payment_proof_bucket_uses_private_bucket(monkeypatch) -> None:
+    """P0-3: payment proofs must be stored in a dedicated private bucket."""
     from app.config import settings
 
     monkeypatch.setattr(settings, "S3_PAYMENT_PROOF_BUCKET", "stayos-proofs")
     monkeypatch.setattr(settings, "S3_LISTINGS_BUCKET", "stayos-listings")
     assert settings.payment_proof_bucket == "stayos-proofs"
 
+
+def test_payment_proof_bucket_requires_private_config(monkeypatch) -> None:
+    from app.config import settings
+
     monkeypatch.setattr(settings, "S3_PAYMENT_PROOF_BUCKET", "")
-    assert settings.payment_proof_bucket == "stayos-listings"
+    with pytest.raises(ValueError):
+        _ = settings.payment_proof_bucket
 
 
 @pytest.mark.asyncio
@@ -1507,3 +1511,85 @@ async def test_get_booking_quote_matches_payment_creation(fake_session: AsyncMoc
         quote.accommodation_egp + quote.cleaning_fee_egp
     )
     assert create_payment_mock.call_args.kwargs["guest_service_fee_egp"] == quote.service_fee_egp
+
+
+@pytest.mark.asyncio
+async def test_presign_proof_download_guest_success(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host)
+    payment.proof_s3_key = "payments/payment-1/proof.jpg"
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+
+    mock_client = MagicMock()
+    mock_client.generate_presigned_url.return_value = "https://s3.example.com/download"
+    monkeypatch.setattr("app.payments.services._s3_client", lambda: mock_client)
+
+    result = await payment_services.presign_proof_download(fake_session, guest, payment.id)
+    assert result.download_url == "https://s3.example.com/download"
+    assert result.expires_in == 300
+    assert mock_client.generate_presigned_url.call_args.kwargs["Params"]["Key"] == payment.proof_s3_key
+
+
+@pytest.mark.asyncio
+async def test_presign_proof_download_host_success(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host)
+    payment.proof_s3_key = "payments/payment-1/proof.jpg"
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+
+    mock_client = MagicMock()
+    mock_client.generate_presigned_url.return_value = "https://s3.example.com/download"
+    monkeypatch.setattr("app.payments.services._s3_client", lambda: mock_client)
+
+    result = await payment_services.presign_proof_download(fake_session, host, payment.id)
+    assert result.download_url == "https://s3.example.com/download"
+
+
+@pytest.mark.asyncio
+async def test_presign_proof_download_unauthorized_other_host(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    other_host = _make_user(user_id="host-2", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host)
+    payment.proof_s3_key = "payments/payment-1/proof.jpg"
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+
+    with pytest.raises(AuthorizationError):
+        await payment_services.presign_proof_download(fake_session, other_host, payment.id)
+
+
+@pytest.mark.asyncio
+async def test_presign_proof_download_not_uploaded_raises(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host)
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+
+    with pytest.raises(NotFoundError):
+        await payment_services.presign_proof_download(fake_session, guest, payment.id)

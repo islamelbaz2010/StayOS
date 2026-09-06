@@ -24,11 +24,13 @@ from .models import Payment
 from .schemas import (
     BookingQuote,
     PaymentListItem,
+    PaymentProofDownloadResponse,
     PaymentProofPresignResponse,
     PaymentResponse,
 )
 
 _PROOF_UPLOAD_TTL_SECONDS = 900
+_PROOF_DOWNLOAD_TTL_SECONDS = 300
 
 
 def _manual_instructions_ar(account_number: str, vodafone_number: str) -> str:
@@ -355,6 +357,35 @@ async def presign_proof_upload(
     )
 
     return PaymentProofPresignResponse(upload_url=upload_url, proof_key=proof_key)
+
+
+async def presign_proof_download(
+    session: AsyncSession,
+    user: User,
+    payment_id: str,
+) -> PaymentProofDownloadResponse:
+    payment = await payments_repository.get_payment_or_raise(session, payment_id)
+    if payment.guest_id != user.id and user.role != UserRole.ADMIN:
+        if payment.host_id != user.id:
+            raise AuthorizationError("Not authorized to view this payment proof")
+
+    if not payment.proof_s3_key:
+        raise NotFoundError("Payment proof not uploaded")
+
+    client = _s3_client()
+    download_url = client.generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": settings.payment_proof_bucket,
+            "Key": payment.proof_s3_key,
+        },
+        ExpiresIn=_PROOF_DOWNLOAD_TTL_SECONDS,
+    )
+
+    return PaymentProofDownloadResponse(
+        download_url=download_url,
+        expires_in=_PROOF_DOWNLOAD_TTL_SECONDS,
+    )
 
 
 def _assert_resubmission_allowed(payment: Payment) -> None:

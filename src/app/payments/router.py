@@ -11,6 +11,7 @@ from app.shared.exceptions import StayOSError, to_http_exception
 from .schemas import (
     BookingQuote,
     PaymentListItem,
+    PaymentProofDownloadResponse,
     PaymentProofPresignRequest,
     PaymentProofPresignResponse,
     PaymentProofUpload,
@@ -23,6 +24,7 @@ from .services import (
     get_payment_by_booking,
     list_guest_payments,
     list_pending_payments,
+    presign_proof_download,
     presign_proof_upload,
     reject_payment,
     upload_proof,
@@ -108,6 +110,18 @@ async def submit_proof(
 ) -> PaymentResponse:
     try:
         return await upload_proof(session, user, payment_id, request.s3_key, request.url)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/{payment_id}/proof/download", response_model=PaymentProofDownloadResponse)
+async def download_proof(
+    payment_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> PaymentProofDownloadResponse:
+    try:
+        return await presign_proof_download(session, user, payment_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

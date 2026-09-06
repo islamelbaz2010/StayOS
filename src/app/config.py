@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     S3_LISTINGS_BUCKET: str = Field(default="", description="S3 bucket for listing photos")
     S3_PAYMENT_PROOF_BUCKET: str = Field(
         default="",
-        description="Private S3 bucket for payment proof uploads (P0-3: payment proofs can contain bank details and must not share the public listing-photo bucket). Falls back to S3_LISTINGS_BUCKET when unset so dev/test environments keep working.",
+        description="Private S3 bucket for payment proof uploads. Payment proofs can contain bank details and must not share the public listing-photo bucket (P0-3).",
     )
     S3_KYC_BUCKET: str = Field(default="", description="S3 bucket for KYC documents")
     AWS_REGION: str = Field(default="", description="AWS region")
@@ -143,7 +143,12 @@ class Settings(BaseSettings):
 
     @property
     def payment_proof_bucket(self) -> str:
-        return self.S3_PAYMENT_PROOF_BUCKET or self.S3_LISTINGS_BUCKET
+        if not self.S3_PAYMENT_PROOF_BUCKET:
+            raise ValueError(
+                "S3_PAYMENT_PROOF_BUCKET is not configured. "
+                "Payment proofs must be stored in a dedicated private S3 bucket (P0-3)."
+            )
+        return self.S3_PAYMENT_PROOF_BUCKET
 
     @property
     def cors_origins_list(self) -> list[str]:

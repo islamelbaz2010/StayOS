@@ -408,10 +408,12 @@ async def search_listings(
         _to_search_result(unit, listing, lat, lng, hosts_map.get(unit.host_id))
         for unit, listing, lat, lng in rows
     ]
+    has_search_dates = filters.check_in is not None and filters.check_out is not None
     for item, (unit, _, _, _) in zip(data, rows, strict=True):
         avg_rating, review_count = ratings_map.get(unit.id, (None, 0))
         item["average_rating"] = avg_rating
         item["review_count"] = review_count
+        item["available_for_dates"] = has_search_dates if has_search_dates else None
     has_more = offset + len(data) < total
     next_cursor = (
         ListingSearchFilters.encode_cursor(offset + filters.limit)

@@ -26,6 +26,7 @@ export interface Listing {
   amenities?: string[];
   averageRating?: number | null;
   reviewCount?: number;
+  availableForDates?: boolean | null;
 }
 
 interface ListingCardProps {
@@ -65,8 +66,16 @@ export function ListingCard({ listing, className }: ListingCardProps) {
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <FavoriteButton unitId={listing.id} className="absolute end-2 top-2" />
+          {listing.availableForDates && (
+            <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-success-100 px-2 py-0.5 text-xs font-medium text-success-700 shadow-sm">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {t("availableForDates")}
+            </span>
+          )}
           {isVerified && (
-            <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-success-700 shadow-sm backdrop-blur-sm">
+            <span className={`absolute start-2 ${listing.availableForDates ? "top-8" : "top-2"} inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-success-700 shadow-sm backdrop-blur-sm`}>
               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>

@@ -212,6 +212,7 @@ class ListingSearchResult(BaseModel):
     cover_image: str | None = None
     average_rating: float | None = None
     review_count: int = 0
+    available_for_dates: bool | None = None
 
 
 class PaginationInfo(BaseModel):

@@ -1,19 +1,28 @@
 "use client";
 
 import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { GuestLayout } from "@/components/layouts";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ListingCardSkeleton } from "@/components/listings/ListingCardSkeleton";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useListings } from "@/lib/queries/listings";
+
+const CULTURAL_TAGS = [
+  { value: "FAMILY_ONLY", key: "familyOnly" },
+  { value: "HALAL_CERTIFIED", key: "halalCertified" },
+  { value: "MIXED", key: "mixed" },
+  { value: "COUPLES_WELCOME", key: "couplesWelcome" },
+];
 
 export default function SearchPage() {
   const t = useTranslations();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
 
   const filters = useMemo(
     () => ({
@@ -22,6 +31,7 @@ export default function SearchPage() {
       checkout: searchParams.get("checkout") || undefined,
       guests: searchParams.get("guests") || undefined,
       property_type: searchParams.get("property_type") || undefined,
+      cultural_tags: searchParams.get("cultural_tags") || undefined,
       min_price: searchParams.get("min_price") || undefined,
       max_price: searchParams.get("max_price") || undefined,
       limit: searchParams.get("limit") || undefined,
@@ -29,6 +39,28 @@ export default function SearchPage() {
     }),
     [searchParams]
   );
+
+  const selectedTags = useMemo(() => {
+    return filters.cultural_tags ? filters.cultural_tags.split(",") : [];
+  }, [filters.cultural_tags]);
+
+  const toggleTag = (tag: string) => {
+    const next = new Set(selectedTags);
+    if (next.has(tag)) {
+      next.delete(tag);
+    } else {
+      next.add(tag);
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (next.size > 0) {
+      nextParams.set("cultural_tags", Array.from(next).join(","));
+    } else {
+      nextParams.delete("cultural_tags");
+    }
+
+    router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
+  };
 
   const { data, isPending, isError, refetch } = useListings(filters);
 
@@ -44,6 +76,30 @@ export default function SearchPage() {
               {t("search.resultsCount", { count: data.total })}
             </span>
           )}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {CULTURAL_TAGS.map((tag) => {
+            const selected = selectedTags.includes(tag.value);
+            return (
+              <button
+                key={tag.value}
+                type="button"
+                onClick={() => toggleTag(tag.value)}
+                className={`
+                  rounded-full border px-4 py-2 text-sm font-medium transition
+                  ${
+                    selected
+                      ? "border-brand-600 bg-brand-600 text-white"
+                      : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
+                  }
+                `}
+                aria-pressed={selected}
+              >
+                {t(`search.tags.${tag.key}`)}
+              </button>
+            );
+          })}
         </div>
 
         {isError ? (

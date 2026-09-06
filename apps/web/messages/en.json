@@ -260,7 +260,13 @@
     "checkin": "Check-in",
     "checkout": "Check-out",
     "featuredTitle": "Featured stays",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "tags": {
+      "familyOnly": "Family only",
+      "halalCertified": "Halal certified",
+      "mixed": "Mixed",
+      "couplesWelcome": "Couples welcome"
+    }
   },
   "favorites": {
     "title": "Favorites",

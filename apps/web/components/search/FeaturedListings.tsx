@@ -43,7 +43,7 @@ export function FeaturedListings() {
           <div className="flex items-center gap-3">
             <Link
               href={`/${locale}/search`}
-              className="text-sm font-medium text-brand-600 hover:text-brand-700"
+              className="text-sm font-medium text-accent-600 hover:text-accent-700"
             >
               {t("viewAll")}
             </Link>

@@ -127,7 +127,7 @@ export function ListingCard({ listing, className }: ListingCardProps) {
             )}
           </div>
 
-          <p className="mt-3 text-lg font-bold text-brand-600">
+          <p className="mt-3 text-lg font-bold text-brand-900">
             {formatMoney(listing.price, listing.currency || "EGP")}{" "}
             <span className="text-sm font-normal text-neutral-600">
               {t("perNight")}

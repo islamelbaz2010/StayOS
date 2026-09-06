@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -16,15 +18,26 @@ export default function EditListingPage({
   const { unitId } = params;
   const t = useTranslations("listingForm");
   const tc = useTranslations("common");
+  const th = useTranslations("hostListings");
+  const routeParams = useParams<{ locale: string }>();
+  const locale = routeParams?.locale ?? "ar";
   const { data: listing, isLoading, error } = useHostListing(unitId);
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
       <HostLayout>
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-neutral-900">
-            {t("editTitle")}
-          </h1>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-2xl font-bold text-neutral-900">
+              {t("editTitle")}
+            </h1>
+            <Link
+              href={`/${locale}/host/listings/${unitId}/availability`}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              {th("availabilityTitle")}
+            </Link>
+          </div>
 
           {isLoading && (
             <div className="rounded-xl bg-white p-8 text-center text-neutral-500 shadow-card">

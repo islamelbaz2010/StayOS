@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
+import type { components } from "@/lib/api-types";
 
 export interface HostListing {
   id: string;
@@ -109,6 +110,21 @@ export async function getHostListings(): Promise<HostListing[]> {
 export async function getHostListing(unitId: string): Promise<HostListing> {
   const { data } = await api.get<HostListing>(`/listings/host/${unitId}`);
   return data;
+}
+
+export type HostListingDetail = components["schemas"]["HostListingDetail"];
+
+export async function getHostListingDetail(unitId: string): Promise<HostListingDetail> {
+  const { data } = await api.get<HostListingDetail>(`/host/listings/${unitId}`);
+  return data;
+}
+
+export function useHostListingDetail(unitId: string) {
+  return useQuery({
+    queryKey: ["host-listing-detail", unitId],
+    queryFn: () => getHostListingDetail(unitId),
+    enabled: Boolean(unitId),
+  });
 }
 
 export async function createListing(

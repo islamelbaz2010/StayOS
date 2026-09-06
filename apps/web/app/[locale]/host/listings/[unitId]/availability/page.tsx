@@ -1,0 +1,282 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { HostLayout } from "@/components/layouts";
+import { useDefaultHostCalendarRange, useCreateCalendarRule } from "@/lib/queries/calendar";
+import { useHostListingDetail } from "@/lib/queries/hostListings";
+import type { components } from "@/lib/api-types";
+
+const BLOCK_TYPES = [
+  { value: "manual", labelKey: "blockManual" },
+  { value: "cleaning", labelKey: "blockCleaning" },
+  { value: "maintenance", labelKey: "blockMaintenance" },
+];
+
+const DAY_STATUS_STYLES: Record<string, string> = {
+  booked: "bg-primary-100 text-primary-800",
+  blocked: "bg-warning-100 text-warning-800",
+  available: "bg-success-100 text-success-800",
+};
+
+export default function ListingAvailabilityPage() {
+  const t = useTranslations("hostListings");
+  const tc = useTranslations("common");
+  const params = useParams<{ locale: string; unitId: string }>();
+  const locale = params.locale ?? "ar";
+  const unitId = params.unitId;
+
+  const { data: listing, isLoading: listingLoading, error: listingError } = useHostListingDetail(unitId);
+  const listingTitle =
+    locale === "ar" ? listing?.title_ar : listing?.title_en || listing?.title_ar;
+  const { data: calendar, isLoading: calLoading, isError: calError, refetch } = useDefaultHostCalendarRange(unitId);
+  const createRule = useCreateCalendarRule();
+
+  const [showForm, setShowForm] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [blockType, setBlockType] = useState("manual");
+  const [priceOverride, setPriceOverride] = useState("");
+
+  const canManage =
+    listing?.permission_scope === "owner" ||
+    listing?.permission_scope === "admin" ||
+    listing?.permission_scope === "full_access" ||
+    listing?.permission_scope === "calendar_messaging" ||
+    listing?.permission_scope === "calendar_only";
+
+  const days = calendar?.days ?? [];
+  const bookedDays = days.filter((d) => d.status === "booked");
+  const blockedDays = days.filter((d) => d.status === "blocked");
+  const availableDays = days.filter((d) => d.status === "available");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!dateFrom || !dateTo) return;
+    await createRule.mutateAsync({
+      unitId,
+      payload: {
+        date_from: dateFrom,
+        date_to: dateTo,
+        status: "blocked",
+        block_type: blockType,
+        price_override: priceOverride ? Number(priceOverride) : null,
+      },
+    });
+    setShowForm(false);
+    setDateFrom("");
+    setDateTo("");
+    setPriceOverride("");
+    setBlockType("manual");
+  }
+
+  return (
+    <ProtectedRoute allowedRoles={["host", "admin"]}>
+      <HostLayout>
+        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Link
+                href={`/${locale}/host/listings`}
+                className="text-sm text-brand-600 hover:underline"
+              >
+                ← {t("backToListings")}
+              </Link>
+              <h1 className="mt-1 text-2xl font-bold text-neutral-900">
+                {listingTitle ?? t("availabilityTitle")}
+              </h1>
+            </div>
+            <Link
+              href={`/${locale}/host/listings/${unitId}/edit`}
+              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+            >
+              {t("editListing")}
+            </Link>
+          </div>
+
+          {listingLoading || calLoading ? (
+            <div className="py-12 text-center text-neutral-600">{tc("loading")}</div>
+          ) : listingError || calError ? (
+            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
+              {t("availabilityLoadError")}
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="ml-2 font-medium text-brand-600 hover:underline"
+              >
+                {tc("retry")}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <StatCard label={t("calendarAvailable")} value={availableDays.length} color="text-success-600" />
+                <StatCard label={t("calendarBooked")} value={bookedDays.length} color="text-primary-600" />
+                <StatCard label={t("calendarBlocked")} value={blockedDays.length} color="text-warning-600" />
+              </div>
+
+              {canManage && (
+                <div className="rounded-xl bg-white p-6 shadow-card">
+                  <button
+                    type="button"
+                    onClick={() => setShowForm((s) => !s)}
+                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                  >
+                    {showForm ? t("hideBlockForm") : t("blockDates")}
+                  </button>
+
+                  {showForm && (
+                    <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label htmlFor="date-from" className="block text-sm font-medium text-neutral-700">
+                            {t("dateFrom")}
+                          </label>
+                          <input
+                            id="date-from"
+                            type="date"
+                            value={dateFrom}
+                            min={toISODate(new Date())}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            required
+                            className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="date-to" className="block text-sm font-medium text-neutral-700">
+                            {t("dateTo")}
+                          </label>
+                          <input
+                            id="date-to"
+                            type="date"
+                            value={dateTo}
+                            min={dateFrom || toISODate(new Date())}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            required
+                            className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="block text-sm font-medium text-neutral-700">{t("blockType")}</span>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {BLOCK_TYPES.map((bt) => (
+                            <button
+                              key={bt.value}
+                              type="button"
+                              onClick={() => setBlockType(bt.value)}
+                              className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+                                blockType === bt.value
+                                  ? "bg-brand-100 text-brand-800 ring-1 ring-brand-600"
+                                  : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+                              }`}
+                            >
+                              {t(bt.labelKey)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="price-override" className="block text-sm font-medium text-neutral-700">
+                          {t("priceOverride")}
+                        </label>
+                        <input
+                          id="price-override"
+                          type="number"
+                          min={0}
+                          value={priceOverride}
+                          onChange={(e) => setPriceOverride(e.target.value)}
+                          placeholder={t("priceOverridePlaceholder")}
+                          className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none sm:w-48"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={createRule.isPending}
+                          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:bg-neutral-400"
+                        >
+                          {createRule.isPending ? tc("loading") : t("addRule")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowForm(false)}
+                          className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                        >
+                          {tc("cancel")}
+                        </button>
+                      </div>
+
+                      {createRule.isError && (
+                        <p className="text-sm text-danger-600">{t("ruleError")}</p>
+                      )}
+                    </form>
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-xl bg-white p-6 shadow-card">
+                <h2 className="mb-4 text-lg font-semibold text-neutral-900">{t("calendarDays")}</h2>
+                {days.filter((d) => d.status !== "available").length === 0 ? (
+                  <p className="text-center text-neutral-500">{t("noBlockedDays")}</p>
+                ) : (
+                  <div className="divide-y divide-neutral-100">
+                    {days
+                      .filter((d) => d.status !== "available")
+                      .map((day) => (
+                        <DayRow key={day.date} day={day} t={t} />
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      </HostLayout>
+    </ProtectedRoute>
+  );
+}
+
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="rounded-xl bg-white p-5 shadow-card">
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      <p className="text-sm text-neutral-500">{label}</p>
+    </div>
+  );
+}
+
+function DayRow({
+  day,
+  t,
+}: {
+  day: components["schemas"]["HostCalendarDay"];
+  t: (key: string) => string;
+}) {
+  const statusStyle = DAY_STATUS_STYLES[day.status] ?? DAY_STATUS_STYLES.available;
+  return (
+    <div className="flex items-center justify-between py-3">
+      <div className="flex items-center gap-3">
+        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle}`}>
+          {day.status === "booked" ? t("calendarBooked") : t("calendarBlocked")}
+        </span>
+        <span className="text-sm font-medium text-neutral-900">{day.date}</span>
+      </div>
+      <div className="text-right text-sm text-neutral-600">
+        {day.guest_name && <span>{day.guest_name}</span>}
+        {day.price_egp > 0 && <span className="ml-2">{day.price_egp} {t("egp")}</span>}
+      </div>
+    </div>
+  );
+}
+
+function toISODate(d: Date): string {
+  return d.toISOString().split("T")[0];
+}

@@ -743,5 +743,22 @@
     "perListing": "الأرباح لكل عقار",
     "bookings": "حجوزات",
     "disclaimer": "جميع المبالغ بالجنيه المصري وتقديرية. يتم معالجة المدفوعات المؤكدة وفقاً لشروط المضيف في StayOS."
+  },
+  "hostToday": {
+    "title": "اليوم",
+    "loadError": "تعذّر تحميل لوحة المعلومات.",
+    "empty": "لا يوجد ما يتطلب اهتمامك الآن.",
+    "actionItems": "ما يتطلب اهتمامك",
+    "view": "عرض",
+    "checkIn": "تسجيل الوصول",
+    "checkOut": "تسجيل المغادرة",
+    "summary": {
+      "check_ins_today": "تسجيلات وصول اليوم",
+      "check_outs_today": "تسجيلات مغادرة اليوم",
+      "current_stays": "إقامات حالية",
+      "pending_requests": "طلبات معلّقة",
+      "unread_messages": "رسائل غير مقروءة",
+      "incomplete_listings": "عقارات غير مكتملة"
+    }
   }
 }

@@ -743,5 +743,22 @@
     "perListing": "Earnings per listing",
     "bookings": "bookings",
     "disclaimer": "All amounts are estimates in EGP. Verified payouts are processed according to the StayOS host terms."
+  },
+  "hostToday": {
+    "title": "Today",
+    "loadError": "Could not load your dashboard.",
+    "empty": "Nothing needs your attention right now.",
+    "actionItems": "What needs your attention",
+    "view": "View",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "summary": {
+      "check_ins_today": "Check-ins today",
+      "check_outs_today": "Check-outs today",
+      "current_stays": "Current stays",
+      "pending_requests": "Pending requests",
+      "unread_messages": "Unread messages",
+      "incomplete_listings": "Incomplete listings"
+    }
   }
 }

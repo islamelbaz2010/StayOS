@@ -1,140 +1,177 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
-import { useAuth } from "@/lib/auth/useAuth";
-import { useKycStatus } from "@/lib/queries/kyc";
+import { useHostToday } from "@/lib/queries/hostToday";
+import type { HostTodayItem } from "@/lib/queries/hostToday";
+import { formatDate } from "@/lib/utils";
+
+const ITEM_STYLES: Record<string, { bg: string; border: string; text: string }> = {
+  check_in_today: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-800" },
+  check_out_today: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800" },
+  current_stay: { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-800" },
+  pending_request: { bg: "bg-red-50", border: "border-red-200", text: "text-red-800" },
+  upcoming_arrival: { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-800" },
+  upcoming_departure: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800" },
+  unread_message: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-800" },
+  incomplete_listing: { bg: "bg-neutral-50", border: "border-neutral-200", text: "text-neutral-700" },
+};
+
+const SUMMARY_KEYS = [
+  "check_ins_today",
+  "check_outs_today",
+  "current_stays",
+  "pending_requests",
+  "unread_messages",
+  "incomplete_listings",
+] as const;
 
 export default function HostPage() {
-  const t = useTranslations("host");
-  const { user } = useAuth();
-  const { data: kycStatus } = useKycStatus();
+  const t = useTranslations("hostToday");
+  const tc = useTranslations("common");
+  const { data, isLoading, isError, refetch } = useHostToday();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
 
-  const kycStatusValue = kycStatus?.kyc_status ?? user?.kyc_status ?? "unverified";
-
-  const kycBadgeColor: Record<string, string> = {
-    unverified: "bg-neutral-100 text-neutral-600",
-    pending: "bg-warning-100 text-warning-700",
-    verified: "bg-success-100 text-success-700",
-    rejected: "bg-danger-100 text-danger-700",
-  };
+  const summary = data?.summary ?? {};
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
       <HostLayout>
-        <div className="space-y-6">
-          <div className="rounded-xl bg-white p-8 shadow-card">
-            <h1 className="text-2xl font-bold text-neutral-900">
-              {t("title")}
-            </h1>
-            <p className="mt-2 text-neutral-600">
-              {user?.display_name || user?.phone_number || user?.email}
-            </p>
-          </div>
+        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          <h1 className="mb-6 text-2xl font-bold text-neutral-900">
+            {t("title")}
+          </h1>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Link
-              href="/host/listings"
-              className="group rounded-xl bg-white p-6 shadow-card transition-shadow hover:shadow-lg"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-neutral-900 group-hover:text-brand-600">
-                    {t("manageListings")}
-                  </h3>
-                  <p className="text-sm text-neutral-500">
-                    {t("manageListingsDesc")}
-                  </p>
-                </div>
-              </div>
-            </Link>
+          {isLoading && (
+            <div className="py-12 text-center text-neutral-600">
+              {tc("loading")}
+            </div>
+          )}
 
-            {user?.role === "admin" && (
-              <Link
-                href="/admin/pending"
-                className="group rounded-xl bg-white p-6 shadow-card transition-shadow hover:shadow-lg"
+          {isError && (
+            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
+              {t("loadError")}
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="ml-2 font-medium text-brand-600 hover:underline"
               >
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-warning-50 text-warning-600">
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.5}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-neutral-900 group-hover:text-warning-600">
-                      {t("pendingReview")}
-                    </h3>
-                    <p className="text-sm text-neutral-500">
-                      {t("pendingReviewDesc")}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            )}
+                {tc("retry")}
+              </button>
+            </div>
+          )}
 
-            <Link
-              href="/host/kyc"
-              className="group rounded-xl bg-white p-6 shadow-card transition-shadow hover:shadow-lg"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A9.716 9.716 0 0112 2.25c2.26 0 4.358.807 6 2.146v18.126A9.716 9.716 0 0112 20.25c-2.26 0-4.358-.807-6-2.146V4.396z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-neutral-900 group-hover:text-brand-600">
-                    {t("kycVerification")}
-                  </h3>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${kycBadgeColor[kycStatusValue] ?? kycBadgeColor.unverified}`}>
-                      {t(`kycStatus.${kycStatusValue}`)}
-                    </span>
-                  </div>
-                </div>
+          {!isLoading && !isError && (
+            <div className="space-y-6">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {SUMMARY_KEYS.map((key) => (
+                  <SummaryCard
+                    key={key}
+                    label={t(`summary.${key}`)}
+                    value={summary[key] ?? 0}
+                  />
+                ))}
               </div>
-            </Link>
-          </div>
-        </div>
+
+              <div className="rounded-xl bg-white p-6 shadow-card">
+                <h2 className="mb-4 text-lg font-semibold text-neutral-900">
+                  {t("actionItems")}
+                </h2>
+
+                {data?.items && data.items.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.items.map((item, idx) => (
+                      <TodayItem key={idx} item={item} locale={locale} t={t} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-neutral-500">
+                    {t("empty")}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
       </HostLayout>
     </ProtectedRoute>
   );
+}
+
+function SummaryCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl bg-white p-5 shadow-card">
+      <p className="text-sm text-neutral-500">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-neutral-900">{value}</p>
+    </div>
+  );
+}
+
+function TodayItem({
+  item,
+  locale,
+}: {
+  item: HostTodayItem;
+  locale: string;
+  t: (key: string) => string;
+}) {
+  const t = useTranslations("hostToday");
+  const style = ITEM_STYLES[item.item_type] ?? ITEM_STYLES.incomplete_listing;
+  const dateLocale = locale === "ar" ? "ar-EG" : "en-GB";
+  const href = actionHref(item, locale);
+
+  return (
+    <div
+      className={`rounded-lg border p-4 ${style.bg} ${style.border}`}
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className={`font-semibold ${style.text}`}>{item.title}</p>
+          {item.subtitle && (
+            <p className="text-sm text-neutral-600">{item.subtitle}</p>
+          )}
+          {(item.check_in || item.check_out) && (
+            <p className="text-sm text-neutral-500">
+              {item.check_in && (
+                <>
+                  {t("checkIn")}: {formatDate(new Date(item.check_in), dateLocale)} {" "}
+                </>
+              )}
+              {item.check_out && (
+                <>
+                  {t("checkOut")}: {formatDate(new Date(item.check_out), dateLocale)}
+                </>
+              )}
+            </p>
+          )}
+        </div>
+        {href && (
+          <Link
+            href={href}
+            className="shrink-0 text-sm font-medium text-brand-600 hover:underline"
+          >
+            {t("view")}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function actionHref(item: HostTodayItem, locale: string): string | null {
+  if (item.item_type === "incomplete_listing") {
+    return `/${locale}/host/listings`;
+  }
+  if (item.item_type === "unread_message") {
+    return `/${locale}/messages`;
+  }
+  if (item.booking_id) {
+    return `/${locale}/host/bookings`;
+  }
+  return null;
 }

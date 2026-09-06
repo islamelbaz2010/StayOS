@@ -30,7 +30,8 @@
     "becomeHost": "أصبح مضيفاً",
     "kycReview": "مراجعة الهويات",
     "profile": "الملف الشخصي",
-    "bulkImport": "استيراد بالجملة"
+    "bulkImport": "استيراد بالجملة",
+    "payments": "المدفوعات"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -707,5 +708,24 @@
     "backToInbox": "العودة إلى الرسائل",
     "typeMessage": "اكتب رسالة...",
     "send": "إرسال"
+  },
+  "payments": {
+    "title": "مدفوعاتي",
+    "empty": "لا توجد مدفوعات بعد.",
+    "loadError": "تعذّر تحميل مدفوعاتك.",
+    "reference": "المرجع",
+    "deadline": "ادفع قبل",
+    "viewBooking": "عرض الحجز",
+    "payNow": "ادفع الآن",
+    "rejectedProofs": "إيصالات مرفوضة: {count}",
+    "status": {
+      "pending": "معلّقة",
+      "proof_uploaded": "تم رفع الإيصال",
+      "verified": "مؤكدة",
+      "rejected": "مرفوضة",
+      "cancelled": "ملغاة",
+      "refund_pending": "استرداد معلّق",
+      "refunded": "مُستردة"
+    }
   }
 }

@@ -168,6 +168,24 @@ export interface Payment {
   updated_at: string;
 }
 
+export interface PaymentListItem {
+  id: string;
+  booking_id: string;
+  guest_id: string;
+  host_id: string;
+  unit_id: string;
+  status: PaymentStatus;
+  method: string;
+  amount_egp: number;
+  reference_number: string;
+  payment_deadline_at: string | null;
+  proof_rejection_count: number;
+  proof_url: string | null;
+  proof_uploaded_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PaymentProofPresignResponse {
   upload_url: string;
   proof_key: string;

@@ -65,6 +65,18 @@ export function AccountScreen() {
 
       {user.role === "guest" && (
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("account")}</Text>
+          <Pressable
+            style={styles.linkButton}
+            onPress={() => navigation.navigate("Payments")}
+          >
+            <Text style={styles.linkText}>{t("myPayments")} →</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {user.role === "guest" && (
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("hosting")}</Text>
           {user.kyc_status !== "verified" ? (
             <>

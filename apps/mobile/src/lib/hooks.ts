@@ -29,6 +29,7 @@ import type {
   Message,
   MessageTemplate,
   Payment,
+  PaymentListItem,
   PaymentProofPresignResponse,
   PhotoCreatePayload,
   PhotoPresignResponse,
@@ -470,6 +471,17 @@ export function useMe() {
     },
     enabled: hasTokens(),
     retry: false,
+  });
+}
+
+export function usePayments() {
+  return useQuery({
+    queryKey: ["payments"],
+    queryFn: async () => {
+      const { data } = await api.get<PaymentListItem[]>("/payments");
+      return data;
+    },
+    enabled: hasTokens(),
   });
 }
 

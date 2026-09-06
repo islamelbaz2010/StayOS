@@ -60,6 +60,15 @@ export function Header() {
       )}
       {isAuthenticated && (
         <Link
+          href={`/${locale}/payments`}
+          className="text-sm font-medium text-neutral-700 hover:text-brand-600"
+          onClick={() => setMobileOpen(false)}
+        >
+          {t("payments")}
+        </Link>
+      )}
+      {isAuthenticated && (
+        <Link
           href={`/${locale}/messages`}
           className="text-sm font-medium text-neutral-700 hover:text-brand-600"
           onClick={() => setMobileOpen(false)}
@@ -216,6 +225,15 @@ export function Header() {
                 onClick={() => setMobileOpen(false)}
               >
                 {t("becomeHost")}
+              </Link>
+            )}
+            {isAuthenticated && (
+              <Link
+                href={`/${locale}/payments`}
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                onClick={() => setMobileOpen(false)}
+              >
+                {t("payments")}
               </Link>
             )}
             {isAuthenticated && (

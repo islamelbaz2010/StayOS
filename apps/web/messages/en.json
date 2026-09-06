@@ -30,7 +30,8 @@
     "becomeHost": "Become a host",
     "kycReview": "KYC Review",
     "profile": "Profile",
-    "bulkImport": "Bulk Import"
+    "bulkImport": "Bulk Import",
+    "payments": "Payments"
   },
   "auth": {
     "signIn": "Sign in",
@@ -707,5 +708,24 @@
     "backToInbox": "Back to messages",
     "typeMessage": "Type a message...",
     "send": "Send"
+  },
+  "payments": {
+    "title": "My payments",
+    "empty": "No payments yet.",
+    "loadError": "Could not load your payments.",
+    "reference": "Reference",
+    "deadline": "Pay by",
+    "viewBooking": "View booking",
+    "payNow": "Pay now",
+    "rejectedProofs": "Rejected proofs: {count}",
+    "status": {
+      "pending": "Pending",
+      "proof_uploaded": "Proof uploaded",
+      "verified": "Verified",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled",
+      "refund_pending": "Refund pending",
+      "refunded": "Refunded"
+    }
   }
 }

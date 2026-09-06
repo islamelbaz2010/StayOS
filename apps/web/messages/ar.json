@@ -51,7 +51,9 @@
     "otpSent": "تم إرسال رمز التحقق إلى {phone}",
     "invalidOtp": "الرمز غير صحيح",
     "continueWithGoogle": "المتابعة مع جوجل",
-    "continueWithApple": "المتابعة مع آبل"
+    "continueWithApple": "المتابعة مع آبل",
+    "or": "أو",
+    "socialSignInFailed": "فشل تسجيل الدخول. حاول مرة أخرى."
   },
   "host": {
     "title": "منطقة المضيف",

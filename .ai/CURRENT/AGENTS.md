@@ -27,12 +27,14 @@ These rules cannot be overridden by any task instruction or user prompt.
 
 ### 2.1 Phase Gate Enforcement
 
-**Phase 0 is active. Phase 1 is not yet unlocked.**
+**Phase 0 is active. Phase 1 is not yet unlocked for commercial/public launch.**
 
-- Do not write production application code for Phase 1 features until Phase 0 gates are cleared.
 - Phase 0 gate conditions are defined in [`docs/phase--1/reports/16_REQUIRED_VALIDATIONS.md`](docs/phase--1/reports/16_REQUIRED_VALIDATIONS.md).
-- Current Phase 0 task list is in [`TASKS.md`](TASKS.md).
-- Tooling, documentation, infrastructure-as-code, and CI scripts are permitted in Phase 0.
+- [`DECISION_LOG.md`](DECISION_LOG.md) **DEC-011** (Founder, 2026-07-30) supersedes the prior Phase 1 application-code freeze. Phase 1 engineering implementation is authorized to proceed in parallel with Phase 0 commercial validation.
+- Mobile engineering remains blocked until `ADR-016` (mobile framework decision) is committed — see `DECISION_LOG.md` DEC-014.
+- Tooling, documentation, infrastructure-as-code, and CI scripts remain permitted.
+
+**Historical note:** Earlier versions of this file stated that no `src/` application code was permitted. That language is superseded by DEC-011.
 
 ### 2.2 No Invented Requirements
 

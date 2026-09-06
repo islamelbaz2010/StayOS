@@ -51,7 +51,9 @@
     "otpSent": "Verification code sent to {phone}",
     "invalidOtp": "Invalid code",
     "continueWithGoogle": "Continue with Google",
-    "continueWithApple": "Continue with Apple"
+    "continueWithApple": "Continue with Apple",
+    "or": "or",
+    "socialSignInFailed": "Social sign-in failed. Please try again."
   },
   "host": {
     "title": "Host area",

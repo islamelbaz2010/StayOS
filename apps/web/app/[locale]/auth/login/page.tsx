@@ -20,7 +20,7 @@ export default function LoginPage() {
   const params = useParams<{ locale: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { sendOtp, confirmOtp, isLoading, isFirebaseConfigured } = useAuth();
+  const { sendOtp, confirmOtp, signInWithProvider, isLoading, isFirebaseConfigured } = useAuth();
 
   const locale = params?.locale ?? "ar";
   const redirect = searchParams.get("redirect") || `/${locale}`;
@@ -32,6 +32,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [devLoading, setDevLoading] = useState<string | null>(null);
+  const [socialLoading, setSocialLoading] = useState<"google" | "apple" | null>(null);
 
   async function handleDevLogin(userId: string) {
     setDevLoading(userId);
@@ -92,6 +93,19 @@ export default function LoginPage() {
     }
   }
 
+  async function handleSocialSignIn(provider: "google" | "apple") {
+    setSocialLoading(provider);
+    setError(null);
+    try {
+      await signInWithProvider(provider);
+      router.push(redirect);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("socialSignInFailed"));
+    } finally {
+      setSocialLoading(null);
+    }
+  }
+
   if (isLoading) {
     return (
       <AuthLayout>
@@ -110,6 +124,31 @@ export default function LoginPage() {
           {t("otpSendFailed")}
         </p>
       )}
+
+      <div className="mt-6 space-y-3">
+        <button
+          type="button"
+          onClick={() => handleSocialSignIn("google")}
+          disabled={socialLoading !== null || !isFirebaseConfigured}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 font-semibold text-neutral-800 transition hover:bg-neutral-50 disabled:opacity-60"
+        >
+          {socialLoading === "google" ? t("signingIn") : t("continueWithGoogle")}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSocialSignIn("apple")}
+          disabled={socialLoading !== null || !isFirebaseConfigured}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 font-semibold text-neutral-800 transition hover:bg-neutral-50 disabled:opacity-60"
+        >
+          {socialLoading === "apple" ? t("signingIn") : t("continueWithApple")}
+        </button>
+      </div>
+
+      <div className="relative my-6 flex items-center">
+        <div className="grow border-t border-neutral-200" />
+        <span className="mx-4 text-sm text-neutral-500">{t("or")}</span>
+        <div className="grow border-t border-neutral-200" />
+      </div>
 
       {step === "phone" ? (
         <form onSubmit={handleSend} className="mt-6 space-y-4">

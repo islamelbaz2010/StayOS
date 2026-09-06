@@ -228,6 +228,54 @@ export function useSubmitForReview() {
   });
 }
 
+export async function publishListing(unitId: string): Promise<HostListing> {
+  const { data } = await api.post<HostListing>(`/listings/${unitId}/publish`);
+  return data;
+}
+
+export async function unpublishListing(unitId: string): Promise<HostListing> {
+  const { data } = await api.post<HostListing>(`/listings/${unitId}/unpublish`);
+  return data;
+}
+
+export async function archiveListing(unitId: string): Promise<HostListing> {
+  const { data } = await api.post<HostListing>(`/listings/${unitId}/archive`);
+  return data;
+}
+
+export function usePublishListing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: publishListing,
+    onSuccess: (_data, unitId) => {
+      queryClient.invalidateQueries({ queryKey: ["host-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["host-listing", unitId] });
+    },
+  });
+}
+
+export function useUnpublishListing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: unpublishListing,
+    onSuccess: (_data, unitId) => {
+      queryClient.invalidateQueries({ queryKey: ["host-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["host-listing", unitId] });
+    },
+  });
+}
+
+export function useArchiveListing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: archiveListing,
+    onSuccess: (_data, unitId) => {
+      queryClient.invalidateQueries({ queryKey: ["host-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["host-listing", unitId] });
+    },
+  });
+}
+
 export function usePendingListings() {
   return useQuery({
     queryKey: ["admin-pending-listings"],

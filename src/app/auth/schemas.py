@@ -53,6 +53,15 @@ class AccountResponse(BaseModel):
     updated_at: datetime
 
 
+class UserExportResponse(BaseModel):
+    export: dict[str, Any]
+
+
+class UserDeleteResponse(BaseModel):
+    status: str = "deleted"
+    deleted_at: datetime
+
+
 class TokenPair(BaseModel):
     access_token: str
     refresh_token: str

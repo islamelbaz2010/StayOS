@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import logging
 import uuid
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
@@ -11,11 +12,12 @@ from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 from jose import JWTError
 from jose import jwt as jose_jwt
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import repository as auth_repository
 from app.auth.constants import KycStatus, UserRole
-from app.auth.models import Account, User
+from app.auth.models import Account, DeviceToken, RefreshToken, User
 from app.auth.schemas import (
     AccountUpdate,
     FirebaseAuthRequest,
@@ -24,8 +26,18 @@ from app.auth.schemas import (
     OtpVerifyRequest,
     TokenPair,
     UserCreate,
+    UserDeleteResponse,
+    UserExportResponse,
 )
+from app.bookings.models import Booking
 from app.config import settings
+from app.favorites.models import UserFavorite
+from app.kyc.models import KycDocument
+from app.listings.models import Unit
+from app.messages.models import Message
+from app.notifications.models import Notification
+from app.payments.models import Payment
+from app.reviews.models import Review
 from app.shared import redis as redis_state
 from app.shared.exceptions import AuthenticationError, StayOSError, ValidationError
 
@@ -555,6 +567,274 @@ async def update_account(
         return account
 
     return await auth_repository.update_account(session, account, **update_data)
+
+
+async def export_user_data(
+    session: AsyncSession, user: User
+) -> UserExportResponse:
+    """Return a privacy-safe, scoped export of the authenticated user's data.
+
+    The export intentionally omits other users' PII, internal security records
+    (refresh-token hashes, raw device tokens), and S3 presigned URLs. File
+    content is represented by S3 keys only; the authoritative privacy policy
+    has not yet defined a data-retention/access window for S3 content.
+    """
+    account = await auth_repository.get_account_by_user_id(session, user.id)
+
+    bookings = (
+        await session.execute(
+            select(Booking)
+            .where(or_(Booking.guest_id == user.id, Booking.unit_id.in_(
+                select(Unit.id).where(Unit.host_id == user.id)
+            )))
+            .order_by(Booking.created_at)
+        )
+    ).scalars().all()
+
+    payments = (
+        await session.execute(
+            select(Payment).where(
+                or_(Payment.guest_id == user.id, Payment.host_id == user.id)
+            ).order_by(Payment.created_at)
+        )
+    ).scalars().all()
+
+    listings = (
+        await session.execute(
+            select(Unit).where(Unit.host_id == user.id).order_by(Unit.created_at)
+        )
+    ).scalars().all()
+
+    favorites = (
+        await session.execute(
+            select(UserFavorite).where(UserFavorite.user_id == user.id)
+        )
+    ).scalars().all()
+
+    messages = (
+        await session.execute(
+            select(Message).where(Message.sender_id == user.id).order_by(Message.created_at)
+        )
+    ).scalars().all()
+
+    reviews = (
+        await session.execute(
+            select(Review).where(Review.guest_id == user.id).order_by(Review.created_at)
+        )
+    ).scalars().all()
+
+    kyc_docs = (
+        await session.execute(
+            select(KycDocument).where(KycDocument.user_id == user.id)
+        )
+    ).scalars().all()
+
+    recipients = [r for r in (user.phone_number, user.email) if r]
+    notifications: Sequence[Notification] = []
+    if recipients:
+        notifications = (
+            await session.execute(
+                select(Notification).where(Notification.recipient.in_(recipients))
+                .order_by(Notification.created_at)
+            )
+        ).scalars().all()
+
+    device_tokens = (
+        await session.execute(
+            select(DeviceToken).where(DeviceToken.user_id == user.id)
+        )
+    ).scalars().all()
+
+    def _booking_dict(b: Booking) -> dict[str, Any]:
+        return {
+            "id": b.id,
+            "status": b.status,
+            "check_in": str(b.check_in) if b.check_in else None,
+            "check_out": str(b.check_out) if b.check_out else None,
+            "adults": b.adults,
+            "children": b.children,
+            "infants": b.infants,
+            "requested_at": b.requested_at.isoformat() if b.requested_at else None,
+            "accepted_at": b.accepted_at.isoformat() if b.accepted_at else None,
+            "rejected_at": b.rejected_at.isoformat() if b.rejected_at else None,
+            "cancelled_at": b.cancelled_at.isoformat() if b.cancelled_at else None,
+            "checked_in_at": b.checked_in_at.isoformat() if b.checked_in_at else None,
+            "checked_out_at": b.checked_out_at.isoformat() if b.checked_out_at else None,
+            "cancel_reason": b.cancel_reason,
+            "created_at": b.created_at.isoformat() if b.created_at else None,
+        }
+
+    def _payment_dict(p: Payment) -> dict[str, Any]:
+        return {
+            "id": p.id,
+            "booking_id": p.booking_id,
+            "status": p.status,
+            "method": p.method,
+            "amount_egp": p.amount_egp,
+            "accommodation_amount_egp": p.accommodation_amount_egp,
+            "guest_service_fee_egp": p.guest_service_fee_egp,
+            "nights": p.nights,
+            "reference_number": p.reference_number,
+            "payment_deadline_at": p.payment_deadline_at.isoformat() if p.payment_deadline_at else None,
+            "proof_rejection_count": p.proof_rejection_count,
+            "proof_uploaded_at": p.proof_uploaded_at.isoformat() if p.proof_uploaded_at else None,
+            "verified_at": p.verified_at.isoformat() if p.verified_at else None,
+            "rejected_at": p.rejected_at.isoformat() if p.rejected_at else None,
+            "refund_amount_egp": p.refund_amount_egp,
+            "refunded_at": p.refunded_at.isoformat() if p.refunded_at else None,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+            # S3 keys are included so the user knows what was stored, not presigned URLs.
+            "proof_s3_key": p.proof_s3_key,
+        }
+
+    def _listing_dict(u: Unit) -> dict[str, Any]:
+        title = u.listing.title_ar if u.listing else None
+        return {
+            "id": u.id,
+            "status": u.status,
+            "property_type": u.property_type,
+            "governorate": u.governorate,
+            "city": u.city,
+            "district": u.district,
+            "title_ar": title,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+        }
+
+    def _message_dict(m: Message) -> dict[str, Any]:
+        return {
+            "id": m.id,
+            "conversation_id": m.conversation_id,
+            "content": m.content,
+            "status": m.status,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+
+    def _kyc_dict(d: KycDocument) -> dict[str, Any]:
+        return {
+            "id": d.id,
+            "document_type": d.document_type,
+            "document_number": d.document_number,
+            "status": d.status,
+            "legal_name": d.legal_name,
+            "verified_at": d.verified_at.isoformat() if d.verified_at else None,
+            "rejected_at": d.rejected_at.isoformat() if d.rejected_at else None,
+            "rejection_reason": d.rejection_reason,
+            "created_at": d.created_at.isoformat() if d.created_at else None,
+            "front_image_key": d.front_image_key,
+            "back_image_key": d.back_image_key,
+            "selfie_image_key": d.selfie_image_key,
+        }
+
+    export: dict[str, Any] = {
+        "profile": {
+            "id": user.id,
+            "display_name": user.display_name,
+            "locale": user.locale,
+            "role": user.role,
+            "kyc_status": user.kyc_status,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+            # Phone/email/Firebase are omitted from the user-facing JSON to avoid
+            # leaking them in a self-service export; the user already knows these.
+        },
+        "account": {
+            "id": account.id if account else None,
+            "date_of_birth": str(account.date_of_birth) if account and account.date_of_birth else None,
+            "created_at": account.created_at.isoformat() if account else None,
+            # Legal name, national ID, tax ID and address are PII; the policy does
+            # not define whether these must be downloadable, so they are omitted.
+        },
+        "kyc_documents": [_kyc_dict(d) for d in kyc_docs],
+        "listings": [_listing_dict(u) for u in listings],
+        "bookings": [_booking_dict(b) for b in bookings],
+        "payments": [_payment_dict(p) for p in payments],
+        "favorites": [
+            {"id": f.id, "unit_id": f.unit_id, "created_at": f.created_at.isoformat() if f.created_at else None}
+            for f in favorites
+        ],
+        "messages_sent": [_message_dict(m) for m in messages],
+        "reviews": [
+            {"id": r.id, "booking_id": r.booking_id, "unit_id": r.unit_id, "rating": r.rating, "comment": r.comment, "created_at": r.created_at.isoformat() if r.created_at else None}
+            for r in reviews
+        ],
+        "notifications": [
+            {"id": n.id, "event_type": n.event_type, "channel": n.channel, "recipient": n.recipient, "status": n.status, "sent_at": n.sent_at.isoformat() if n.sent_at else None, "created_at": n.created_at.isoformat() if n.created_at else None}
+            for n in notifications
+        ],
+        "device_tokens": [
+            {"id": t.id, "platform": t.platform, "app_version": t.app_version, "is_active": t.is_active, "last_used_at": t.last_used_at.isoformat() if t.last_used_at else None}
+            for t in device_tokens
+        ],
+    }
+
+    return UserExportResponse(export=export)
+
+
+async def delete_user_account(
+    session: AsyncSession, user: User
+) -> UserDeleteResponse:
+    """Anonymize the user record and revoke sessions.
+
+    This is a soft deletion that preserves financial/audit continuity.
+    Bookings, payments, listings and KYC records are intentionally left
+    untouched because no retention period has been decided.
+    """
+    now = datetime.now(UTC)
+
+    # Revoke all refresh tokens.
+    refresh_tokens = (
+        await session.execute(
+            select(RefreshToken).where(RefreshToken.user_id == user.id)
+        )
+    ).scalars().all()
+    for token in refresh_tokens:
+        token.revoked_at = now
+        session.add(token)
+
+    # Remove push notification tokens.
+    device_tokens = (
+        await session.execute(
+            select(DeviceToken).where(DeviceToken.user_id == user.id)
+        )
+    ).scalars().all()
+    for dt in device_tokens:
+        await session.delete(dt)
+
+    # Anonymize account PII.
+    account = await auth_repository.get_account_by_user_id(session, user.id)
+    if account is not None:
+        await auth_repository.update_account(
+            session,
+            account,
+            legal_name=None,
+            national_id=None,
+            tax_id=None,
+            address=None,
+            date_of_birth=None,
+        )
+
+    # Anonymize the user record.  The user id, role and timestamps are retained
+    # for record continuity; phone/email/Firebase/display_name are removed and
+    # login is disabled via is_active=False.
+    await auth_repository.update_user(
+        session,
+        user,
+        phone_number=None,
+        email=None,
+        firebase_uid=None,
+        display_name="Deleted user",
+        is_active=False,
+        updated_at=now,
+    )
+
+    # Sync Redis refresh cache for any tokens not loaded above.
+    if redis_state.redis_client is not None:
+        # We cannot enumerate all Redis refresh keys by user; revoked tokens in
+        # the DB will be rejected by verify_refresh_token before token reuse.
+        pass
+
+    return UserDeleteResponse(status="deleted", deleted_at=now)
 
 
 async def create_user_manual(session: AsyncSession, data: UserCreate) -> User:

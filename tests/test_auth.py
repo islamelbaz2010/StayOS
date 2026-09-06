@@ -440,3 +440,51 @@ def test_require_kyc_verified_rejects_unverified(auth_client: TestClient, monkey
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 422
+
+
+def _make_session_result() -> MagicMock:
+    """Return a MagicMock that mimics session.execute().scalars().all() -> []."""
+    result = MagicMock()
+    result.scalars.return_value = MagicMock(all=MagicMock(return_value=[]))
+    result.scalar_one_or_none.return_value = None
+    return result
+
+
+def test_get_me_export(auth_client: TestClient, fake_session: AsyncMock) -> None:
+    user = _make_user()
+    fake_session.get.return_value = user
+    fake_session.execute.return_value = _make_session_result()
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.get(
+        "/api/v1/auth/me/export",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["export"]["profile"]["id"] == user.id
+    assert body["export"]["profile"]["role"] == user.role
+    assert "listings" in body["export"]
+    assert "bookings" in body["export"]
+    assert "payments" in body["export"]
+
+
+def test_delete_me_account(auth_client: TestClient, fake_session: AsyncMock) -> None:
+    user = _make_user()
+    fake_session.get.return_value = user
+    fake_session.execute.return_value = _make_session_result()
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.delete(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "deleted"
+    assert user.is_active is False
+    assert user.phone_number is None
+    assert user.email is None
+    assert user.display_name == "Deleted user"

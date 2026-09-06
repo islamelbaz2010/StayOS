@@ -27,6 +27,8 @@ export interface Listing {
   averageRating?: number | null;
   reviewCount?: number;
   availableForDates?: boolean | null;
+  lat?: number;
+  lng?: number;
 }
 
 interface ListingCardProps {

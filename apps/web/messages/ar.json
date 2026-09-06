@@ -266,7 +266,9 @@
       "halalCertified": "حلال",
       "mixed": "مختلط",
       "couplesWelcome": "مرحب بالأزواج"
-    }
+    },
+    "list": "قائمة",
+    "map": "خريطة"
   },
   "favorites": {
     "title": "المفضلة",

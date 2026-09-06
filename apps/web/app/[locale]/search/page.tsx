@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -8,6 +8,7 @@ import { GuestLayout } from "@/components/layouts";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ListingCardSkeleton } from "@/components/listings/ListingCardSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { SearchMap } from "@/components/search/SearchMap";
 import { useListings } from "@/lib/queries/listings";
 
 const CULTURAL_TAGS = [
@@ -63,6 +64,11 @@ export default function SearchPage() {
   };
 
   const { data, isPending, isError, refetch } = useListings(filters);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+
+  const goToListing = (unitId: string) => {
+    router.push(`/${locale}/listings/${unitId}`);
+  };
 
   return (
     <GuestLayout>
@@ -102,6 +108,39 @@ export default function SearchPage() {
           })}
         </div>
 
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            className={`
+              rounded-lg px-3 py-1.5 text-sm font-medium transition
+              ${
+                viewMode === "list"
+                  ? "bg-brand-600 text-white"
+                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+              }
+            `}
+            aria-pressed={viewMode === "list"}
+          >
+            {t("search.list")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("map")}
+            className={`
+              rounded-lg px-3 py-1.5 text-sm font-medium transition
+              ${
+                viewMode === "map"
+                  ? "bg-brand-600 text-white"
+                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+              }
+            `}
+            aria-pressed={viewMode === "map"}
+          >
+            {t("search.map")}
+          </button>
+        </div>
+
         {isError ? (
           <ErrorState onRetry={() => refetch()} />
         ) : isPending ? (
@@ -123,6 +162,10 @@ export default function SearchPage() {
             <p className="mt-1 text-sm text-neutral-500">
               {t("search.noResultsHint")}
             </p>
+          </div>
+        ) : viewMode === "map" && data ? (
+          <div className="mt-6">
+            <SearchMap listings={data.listings} onSelect={goToListing} />
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

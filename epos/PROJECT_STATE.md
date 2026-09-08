@@ -231,3 +231,26 @@ Read `epos/NEXT_SPRINT.md` for the prioritized work queue.
 4. Phase 0 gate conditions (10 real transactions + 80 customer interviews) still unconfirmed.
 
 **Next Required Action:** Founder provides real collection account and legal entity details; engineering can then finalize payment instructions and proceed to transaction #1.
+
+---
+
+## Implementation Update — 2026-09-08 (Governance Reconciliation)
+
+**Current Stage:** Deployment, infrastructure and payment assumptions reconciled against the actual project stage.
+
+**Authoritative Founder Clarification:**
+- AWS production infrastructure is **NOT PROVISIONED**. `infra/terraform/` is the planned/declarative architecture, not deployed infrastructure.
+- The `.github/workflows/deploy-prod.yml` workflow (post-PR #42) is the **future AWS production pipeline**. It is intentionally not expected to run successfully until AWS infrastructure is provisioned later.
+- The legacy Vercel project "web" is **LEGACY / NON-CURRENT**.
+- Sentry is **LEGACY / NON-CURRENT** for StayOS production.
+- Payments are **INTENTIONALLY DEFERRED**; no live payment provider is activated. Paymob is a **FUTURE COMMERCIAL / PAYMENT-PROVIDER DISCUSSION**, not a current integration.
+- The existing manual alpha payment capability is retained.
+
+**Revised Open Items (supersedes stale lines above where noted):**
+1. ~~Payment processor conflict (Paymob vs Stripe)~~ — **superseded**: V1 model decided (manual for alpha, Paymob targeted for future scale); Stripe not being activated; Paymob not yet integrated.
+2. ~~AWS production blocked by missing secrets~~ — **superseded/deferred**: AWS production infrastructure is intentionally not provisioned. No AWS secrets should be requested at this stage.
+3. Real bank/Vodafone Cash account needed to replace the placeholder in payment instructions — remains the P0 commercial action for transaction #1.
+4. Legal entity/registration details needed before a publishable Terms of Service.
+5. CBE PSP licensing, PDPL/KYC licensing, platform-role characterization — remain `LEGAL COUNSEL REQUIRED`.
+
+**Next Required Action:** Continue product engineering and commercial validation. Do not provision AWS, add production AWS secrets, or activate payments until the product and commercial path are ready.

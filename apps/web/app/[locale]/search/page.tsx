@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -8,8 +9,12 @@ import { GuestLayout } from "@/components/layouts";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ListingCardSkeleton } from "@/components/listings/ListingCardSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { SearchMap } from "@/components/search/SearchMap";
 import { useSearchListings } from "@/lib/queries/listings";
+
+const SearchMap = dynamic(
+  () => import("@/components/search/SearchMap").then((mod) => mod.SearchMap),
+  { ssr: false }
+);
 
 const PROPERTY_TYPES = [
   "APARTMENT",

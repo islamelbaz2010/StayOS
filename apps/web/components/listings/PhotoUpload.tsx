@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
@@ -39,7 +40,9 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDragDrop, setIsDragDrop] = useState(false);
 
+  const queryClient = useQueryClient();
   const { data: photos = [], isLoading } = usePhotos(unitId);
+  const [reorderError, setReorderError] = useState(false);
   const presignMutation = usePresignPhoto();
   const createPhotoMutation = useCreatePhoto();
   const setCoverMutation = useSetCoverPhoto();
@@ -53,8 +56,10 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
       await api.patch(`/listings/${unitId}/photos/reorder`, {
         photo_orders: reordered.map((p, i) => ({ photo_id: p.id, display_order: i })),
       });
+      setReorderError(false);
+      queryClient.invalidateQueries({ queryKey: ["photos", unitId] });
     } catch {
-      // silently fail reorder — photos still work, order will revert on refresh
+      setReorderError(true);
     }
   };
 
@@ -255,7 +260,7 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
                     </div>
                   )}
                   {item.status === "success" && (
-                    <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-success-500">
+                    <div className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-success-500">
                       <svg
                         className="h-4 w-4 text-white"
                         fill="none"
@@ -294,6 +299,11 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
             {t("gallery")}
           </h3>
           <p className="text-xs text-neutral-500">{t("dragHint")}</p>
+          {reorderError && (
+            <p className="mt-1 text-xs text-danger-600" role="alert">
+              {t("reorderError")}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {photos.map((photo, index) => (
               <div

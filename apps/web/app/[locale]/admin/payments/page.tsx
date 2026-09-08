@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -9,6 +10,7 @@ import {
   usePaymentQueue,
   useVerifyPayment,
   useRejectPayment,
+  usePaymentProofDownloadUrl,
   type PaymentListItem,
 } from "@/lib/queries/payments";
 
@@ -39,12 +41,20 @@ function PaymentCard({
   payment,
   onVerify,
   onReject,
+  isVerifying,
+  isRejecting,
 }: {
   payment: PaymentListItem;
   onVerify: (id: string) => void;
   onReject: (id: string, reason: string) => void;
+  isVerifying: boolean;
+  isRejecting: boolean;
 }) {
   const t = useTranslations("payment");
+  const tc = useTranslations("common");
+  const { locale = "ar" } = useParams<{ locale: string }>();
+  const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
+  const proofDownload = usePaymentProofDownloadUrl();
   const [showReject, setShowReject] = useState(false);
   const [reason, setReason] = useState("");
 
@@ -67,7 +77,7 @@ function PaymentCard({
             <StatusBadge status={payment.status} />
           </div>
           <p className="text-sm text-neutral-600">
-            {t("amount")}: {payment.amount_egp.toLocaleString()} {t("egp")}
+            {t("amount")}: {payment.amount_egp.toLocaleString(dateLocale)} {t("egp")}
           </p>
           <p className="text-xs text-neutral-500">
             {t("bookingId")}: {payment.booking_id}
@@ -75,29 +85,25 @@ function PaymentCard({
           {payment.proof_uploaded_at && (
             <p className="text-xs text-neutral-500">
               {t("proofUploaded")}:{" "}
-              {new Date(payment.proof_uploaded_at).toLocaleString()}
+              {new Date(payment.proof_uploaded_at).toLocaleString(dateLocale)}
             </p>
           )}
         </div>
 
-        {payment.proof_url && (
+        {payment.proof_s3_key && (
           <div className="shrink-0">
-            {payment.proof_url.endsWith(".pdf") ? (
-              <a
-                href={payment.proof_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline"
-              >
-                {t("viewPdf")}
-              </a>
-            ) : (
-              <img
-                src={payment.proof_url}
-                alt={t("proofImage")}
-                className="h-24 w-24 rounded-lg border border-neutral-200 object-cover"
-              />
-            )}
+            <button
+              type="button"
+              disabled={proofDownload.isPending}
+              onClick={() =>
+                proofDownload.mutate(payment.id, {
+                  onSuccess: (url) => window.open(url, "_blank", "noopener,noreferrer"),
+                })
+              }
+              className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline disabled:opacity-50"
+            >
+              {proofDownload.isPending ? tc("loading") : t("viewPdf")}
+            </button>
           </div>
         )}
       </div>
@@ -108,15 +114,21 @@ function PaymentCard({
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => onVerify(payment.id)}
-                className="btn-primary text-sm"
+                onClick={() => {
+                  if (window.confirm(t("confirmVerify"))) {
+                    onVerify(payment.id);
+                  }
+                }}
+                disabled={isVerifying || isRejecting}
+                className="btn-primary text-sm disabled:opacity-50"
               >
-                {t("approve")}
+                {isVerifying ? tc("loading") : t("approve")}
               </button>
               <button
                 type="button"
                 onClick={() => setShowReject(true)}
-                className="btn-danger text-sm"
+                disabled={isVerifying || isRejecting}
+                className="btn-danger text-sm disabled:opacity-50"
               >
                 {t("reject")}
               </button>
@@ -141,7 +153,7 @@ function PaymentCard({
                 <button
                   type="button"
                   onClick={handleReject}
-                  disabled={!reason.trim()}
+                  disabled={!reason.trim() || isRejecting}
                   className="btn-danger text-sm disabled:opacity-50"
                 >
                   {t("confirmReject")}
@@ -168,7 +180,7 @@ function PaymentCard({
 export default function AdminPaymentQueuePage() {
   const t = useTranslations("payment");
   const tc = useTranslations("common");
-  const { data: payments, isLoading, error } = usePaymentQueue();
+  const { data: payments, isLoading, error, refetch } = usePaymentQueue();
   const verifyMutation = useVerifyPayment();
   const rejectMutation = useRejectPayment();
 
@@ -187,8 +199,15 @@ export default function AdminPaymentQueuePage() {
           )}
 
           {error && (
-            <div className="card p-8 text-center text-danger-600">
-              {t("loadError")}
+            <div className="card p-8 text-center">
+              <p className="text-danger-600">{t("loadError")}</p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-3 text-sm font-semibold text-accent-600 hover:text-accent-700"
+              >
+                {tc("retry")}
+              </button>
             </div>
           )}
 
@@ -211,6 +230,8 @@ export default function AdminPaymentQueuePage() {
                       rejectReason: reason,
                     })
                   }
+                  isVerifying={verifyMutation.isPending}
+                  isRejecting={rejectMutation.isPending}
                 />
               ))}
             </div>

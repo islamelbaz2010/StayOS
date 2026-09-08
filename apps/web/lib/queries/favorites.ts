@@ -11,6 +11,7 @@ interface FavoriteListingRow {
   title_ar?: string | null;
   city: string;
   governorate: string;
+  country?: string | null;
   price: number;
   currency: string;
   max_guests: number;
@@ -33,7 +34,7 @@ function mapFavorite(item: FavoriteListingRow): Listing {
     title: item.title,
     city: item.city,
     governorate: item.governorate,
-    country: "Egypt",
+    country: item.country ?? "Egypt",
     propertyType: "",
     price: item.price,
     currency: item.currency,

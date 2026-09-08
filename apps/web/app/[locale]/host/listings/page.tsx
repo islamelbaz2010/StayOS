@@ -1,5 +1,6 @@
 "use client";
 
+import { AxiosError } from "axios";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -145,15 +146,21 @@ function ListingCard({ listing }: { listing: HostListing }) {
   const archive = useArchiveListing();
 
   const status = listing.status;
+  // Owner-only lifecycle actions (submit/publish/unpublish/archive) are
+  // restricted server-side to owner/admin; hide them for co-hosts.
+  const canManageLifecycle =
+    listing.permission_scope == null ||
+    listing.permission_scope === "owner" ||
+    listing.permission_scope === "admin";
   const isDraft = status === "DRAFT";
   const isRejected = status === "REJECTED";
   const isListed = status === "LISTED";
   const isUnlisted = status === "UNLISTED";
   const isArchived = status === "ARCHIVED";
-  const canSubmit = isDraft || isRejected;
-  const canPublish = isUnlisted;
-  const canUnpublish = isListed;
-  const canArchive = !isArchived;
+  const canSubmit = canManageLifecycle && (isDraft || isRejected);
+  const canPublish = canManageLifecycle && isUnlisted;
+  const canUnpublish = canManageLifecycle && isListed;
+  const canArchive = canManageLifecycle && !isArchived;
 
   const anyLoading =
     submit.isPending ||
@@ -169,8 +176,11 @@ function ListingCard({ listing }: { listing: HostListing }) {
     if (!window.confirm(t(confirmKey))) return;
     try {
       await mutate(unitId);
-    } catch {
-      window.alert(t("actionError"));
+    } catch (err) {
+      const detail = (
+        err as AxiosError<{ error?: { message?: string } }>
+      )?.response?.data?.error?.message;
+      window.alert(detail || t("actionError"));
     }
   }
 
@@ -222,9 +232,17 @@ function ListingCard({ listing }: { listing: HostListing }) {
           {listing.city}, {listing.governorate}
         </p>
         <p className="mt-2 text-sm font-medium text-neutral-700">
-          {listing.base_price_egp.toLocaleString()} {t("egp")}
+          {listing.base_price_egp.toLocaleString(locale === "ar" ? "ar-EG" : "en-EG")}{" "}
+          {t("egp")}
           <span className="text-neutral-400"> / {t("night")}</span>
         </p>
+
+        {isRejected && listing.rejection_reason && (
+          <p className="mt-2 rounded-md bg-danger-50 p-2 text-xs text-danger-700">
+            <span className="font-semibold">{t("rejectionReason")}: </span>
+            {listing.rejection_reason}
+          </p>
+        )}
 
         <div className="mt-3 flex flex-wrap gap-2">
           {canSubmit && (

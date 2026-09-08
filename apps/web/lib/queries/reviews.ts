@@ -73,6 +73,7 @@ export function useCreateReview() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["listing-reviews", variables.unitId] });
+      queryClient.invalidateQueries({ queryKey: ["listing", variables.unitId] });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
     },
   });

@@ -74,6 +74,18 @@ class ListingCreate(BaseModel):
 
 
 class ListingUpdate(BaseModel):
+    property_type: str | None = Field(None, min_length=1, max_length=50)
+    lat: float | None = Field(None, ge=-90, le=90)
+    lng: float | None = Field(None, ge=-180, le=180)
+    governorate: str | None = Field(None, min_length=1, max_length=100)
+    city: str | None = Field(None, min_length=1, max_length=100)
+    district: str | None = Field(None, max_length=100)
+    google_place_id: str | None = Field(None, max_length=255)
+    address: str | None = Field(None, max_length=500)
+    max_guests: int | None = Field(None, ge=1, le=50)
+    bedrooms: int | None = Field(None, ge=0)
+    beds: int | None = Field(None, ge=0)
+    bathrooms: int | None = Field(None, ge=1)
     title_ar: str | None = Field(None, min_length=1, max_length=255)
     title_en: str | None = Field(None, max_length=255)
     description_ar: str | None = Field(None, min_length=1)
@@ -84,8 +96,6 @@ class ListingUpdate(BaseModel):
     cleaning_fee_egp: int | None = Field(None, ge=0)
     cancellation_policy: str | None = Field(None, min_length=1, max_length=50)
     category: str | None = Field(None, min_length=1, max_length=50)
-    address: str | None = Field(None, max_length=500)
-    beds: int | None = Field(None, ge=0)
     weekend_mult: float | None = Field(None, ge=0.0)
     peak_mult: float | None = Field(None, ge=0.0)
     min_nights: int | None = Field(None, ge=1)
@@ -121,7 +131,7 @@ class ListingUpdate(BaseModel):
             return [item.upper() for item in v]
         return v
 
-    @field_validator("category", "cancellation_policy", mode="before")
+    @field_validator("property_type", "category", "cancellation_policy", mode="before")
     @classmethod
     def uppercase_update_strings(cls, v: str | None) -> str | None:
         if isinstance(v, str):
@@ -185,6 +195,10 @@ class ListingResponse(BaseModel):
     cover_image: str | None = None
     average_rating: float | None = None
     review_count: int = 0
+    # Host-facing context — populated only when the caller is a host/admin
+    # viewing their own managed inventory.
+    permission_scope: str | None = None
+    rejection_reason: str | None = None
 
 
 class ListingSearchResult(BaseModel):
@@ -213,6 +227,10 @@ class ListingSearchResult(BaseModel):
     average_rating: float | None = None
     review_count: int = 0
     available_for_dates: bool | None = None
+
+
+class ListingRejectRequest(BaseModel):
+    reason: str | None = Field(None, max_length=500)
 
 
 class PaginationInfo(BaseModel):
@@ -431,3 +449,12 @@ class PhotoResponse(BaseModel):
     display_order: int
     is_cover: bool
     caption: str | None
+
+
+class PhotoOrderItem(BaseModel):
+    photo_id: str = Field(..., min_length=1, max_length=64)
+    display_order: int = Field(..., ge=0)
+
+
+class PhotoReorderRequest(BaseModel):
+    photo_orders: list[PhotoOrderItem] = Field(..., min_length=1, max_length=50)

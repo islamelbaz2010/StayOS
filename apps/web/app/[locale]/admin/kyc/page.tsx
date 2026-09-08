@@ -1,14 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { HostLayout } from "@/components/layouts";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { useApproveKyc, usePendingKyc, useRejectKyc } from "@/lib/queries/kyc";
+import {
+  useApproveKyc,
+  useKycDocumentImages,
+  usePendingKyc,
+  useRejectKyc,
+  type KycImageDownload,
+} from "@/lib/queries/kyc";
 
 export default function AdminKycPage() {
   const t = useTranslations("adminKyc");
+  const { locale = "ar" } = useParams<{ locale: string }>();
   const { data, isPending, isError, refetch } = usePendingKyc();
   const approveMutation = useApproveKyc();
   const rejectMutation = useRejectKyc();
@@ -94,7 +102,7 @@ export default function AdminKycPage() {
                         )}
                         <p className="text-xs text-neutral-400">
                           {t("submittedAt")}:{" "}
-                          {new Date(doc.updated_at).toLocaleString()}
+                          {new Date(doc.updated_at).toLocaleString(locale === "ar" ? "ar-EG" : "en-EG")}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -116,6 +124,7 @@ export default function AdminKycPage() {
                         </button>
                       </div>
                     </div>
+                    <KycDocumentImages documentId={doc.id} />
                   </div>
                 ))}
               </div>
@@ -170,5 +179,45 @@ export default function AdminKycPage() {
         </section>
       </HostLayout>
     </ProtectedRoute>
+  );
+}
+
+function KycDocumentImages({ documentId }: { documentId: string }) {
+  const t = useTranslations("adminKyc");
+  const tc = useTranslations("common");
+  const { data, isPending, isError } = useKycDocumentImages(documentId);
+
+  if (isPending) {
+    return <p className="text-xs text-neutral-500">{tc("loading")}</p>;
+  }
+  if (isError || !data) {
+    return null;
+  }
+
+  const images: { label: string; url: string | null }[] = [
+    { label: t("viewFront"), url: data.front_url },
+    { label: t("viewBack"), url: data.back_url },
+    { label: t("viewSelfie"), url: data.selfie_url },
+  ];
+
+  const visible = images.filter((i) => i.url);
+  if (visible.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {visible.map((image) => (
+        <a
+          key={image.label}
+          href={image.url || undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
+        >
+          {image.label}
+        </a>
+      ))}
+    </div>
   );
 }

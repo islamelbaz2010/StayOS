@@ -51,7 +51,7 @@ export function FeaturedListings() {
               <button
                 type="button"
                 onClick={() => scrollRail("start")}
-                aria-label="Scroll back"
+                aria-label={t("scrollBack")}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm transition hover:bg-neutral-100"
               >
                 <svg className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -61,7 +61,7 @@ export function FeaturedListings() {
               <button
                 type="button"
                 onClick={() => scrollRail("end")}
-                aria-label="Scroll forward"
+                aria-label={t("scrollForward")}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm transition hover:bg-neutral-100"
               >
                 <svg className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

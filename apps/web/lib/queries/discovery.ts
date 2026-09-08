@@ -215,6 +215,8 @@ export function useImportCandidate() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["discovery-candidates"] });
       queryClient.invalidateQueries({ queryKey: ["discovery-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-pending-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["host-listings"] });
     },
   });
 }

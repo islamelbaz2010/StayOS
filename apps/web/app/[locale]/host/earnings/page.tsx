@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
@@ -18,6 +18,8 @@ interface PerUnitItem {
 export default function HostEarningsPage() {
   const t = useTranslations("hostEarnings");
   const tc = useTranslations("common");
+  const locale = useLocale();
+  const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { data, isLoading, isError, refetch } = useHostEarnings();
 
   const hasEarnings =
@@ -46,20 +48,20 @@ export default function HostEarningsPage() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <StatCard
                   label={t("netEarnings")}
-                  value={formatMoney(data.net_earnings_egp, "EGP")}
+                  value={formatMoney(data.net_earnings_egp, "EGP", moneyLocale)}
                   highlight
                 />
                 <StatCard
                   label={t("totalRevenue")}
-                  value={formatMoney(data.total_revenue_egp, "EGP")}
+                  value={formatMoney(data.total_revenue_egp, "EGP", moneyLocale)}
                 />
                 <StatCard
                   label={t("pendingVerification")}
-                  value={formatMoney(data.pending_verification_egp, "EGP")}
+                  value={formatMoney(data.pending_verification_egp, "EGP", moneyLocale)}
                 />
                 <StatCard
                   label={t("refundPending")}
-                  value={formatMoney(data.refund_pending_egp, "EGP")}
+                  value={formatMoney(data.refund_pending_egp, "EGP", moneyLocale)}
                 />
                 <StatCard
                   label={t("totalBookings")}
@@ -94,7 +96,7 @@ export default function HostEarningsPage() {
                             {unit.booking_count} {t("bookings")}
                           </span>
                           <span className="font-semibold text-brand-900">
-                            {formatMoney(unit.revenue_egp, "EGP")}
+                            {formatMoney(unit.revenue_egp, "EGP", moneyLocale)}
                           </span>
                         </div>
                       </div>

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 
 import type { BookingResponse } from "@/lib/queries/bookings";
+import { usePaymentByBooking, type PaymentResponse } from "@/lib/queries/payments";
 import { formatDate } from "@/lib/utils";
 
 import { HostBookingActions } from "./HostBookingActions";
@@ -22,6 +23,14 @@ const STATUS_COLORS: Record<string, string> = {
   no_show: "bg-neutral-100 text-neutral-700",
 };
 
+const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  pending: "bg-warning-100 text-warning-700",
+  proof_uploaded: "bg-accent-100 text-accent-700",
+  verified: "bg-success-100 text-success-700",
+  rejected: "bg-danger-100 text-danger-700",
+  cancelled: "bg-neutral-100 text-neutral-700",
+};
+
 function nights(checkIn: string, checkOut: string): number {
   const start = new Date(checkIn);
   const end = new Date(checkOut);
@@ -31,6 +40,16 @@ function nights(checkIn: string, checkOut: string): number {
   );
 }
 
+function paymentStatusLabel(
+  status: string,
+  t: (key: string) => string
+): string {
+  const key = `paymentStatuses.${status.toLowerCase()}`;
+  const translated = t(key);
+  // next-intl returns the key when a message is missing; fall back to the raw status.
+  return translated === key ? status.toUpperCase() : translated;
+}
+
 export function HostBookingDetail({
   booking,
   onActionSuccess,
@@ -38,6 +57,7 @@ export function HostBookingDetail({
   const t = useTranslations("hostBookings");
   const params = useParams<{ locale: string }>();
   const dateLocale = params?.locale === "ar" ? "ar-EG" : "en-EG";
+  const { data: payment } = usePaymentByBooking(booking.id);
 
   return (
     <section className="card p-5 sm:p-6" aria-label={t("detailTitle")}>
@@ -84,6 +104,21 @@ export function HostBookingDetail({
             })}
           </dd>
         </div>
+        {payment && (
+          <div className="sm:col-span-2">
+            <dt className="text-sm text-neutral-500">{t("payment")}</dt>
+            <dd className="mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  PAYMENT_STATUS_COLORS[payment.status.toLowerCase()] ||
+                  "bg-neutral-100 text-neutral-700"
+                }`}
+              >
+                {paymentStatusLabel(payment.status, t)}
+              </span>
+            </dd>
+          </div>
+        )}
       </dl>
 
       {(booking.reject_reason || booking.cancel_reason) && (

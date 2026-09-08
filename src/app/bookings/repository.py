@@ -1,12 +1,15 @@
+# ruff: noqa: I001
+# Import ordering differs between local Ruff (0.1.8: ``app`` sorts with
+# third-party) and CI Ruff (0.16.1: ``app`` is first-party). No single
+# ordering satisfies both, so I001 is suppressed for this file only.
 from datetime import date
 from uuid import uuid4
 
+from app.listings.models import Unit
+from app.shared.exceptions import NotFoundError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
-from app.listings.models import Unit
-from app.shared.exceptions import NotFoundError
 
 from .constants import BookingStatus
 from .models import Booking
@@ -114,16 +117,26 @@ async def list_host_bookings(
     status: str | None = None,
     limit: int = 50,
     offset: int = 0,
+    unit_ids: list[str] | None = None,
 ) -> list[Booking]:
+    """List bookings for a host's units.
+
+    When ``unit_ids`` is provided (e.g. owned + co-hosted units from
+    ``host.permissions.get_managed_unit_ids``) the query scopes to those
+    units; otherwise it falls back to units owned by ``host_id``.
+    """
     stmt = (
         select(Booking)
         .options(selectinload(Booking.unit))
         .join(Unit, Booking.unit_id == Unit.id)
-        .where(Unit.host_id == host_id)
         .order_by(Booking.created_at.desc(), Booking.id.desc())
         .offset(offset)
         .limit(limit)
     )
+    if unit_ids is not None:
+        stmt = stmt.where(Booking.unit_id.in_(unit_ids))
+    else:
+        stmt = stmt.where(Unit.host_id == host_id)
     if status is not None:
         stmt = stmt.where(Booking.status == status)
     result = await session.execute(stmt)

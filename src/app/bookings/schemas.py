@@ -83,6 +83,8 @@ class BookingResponse(BaseModel):
     cancel_reason: str | None
     created_at: datetime
     updated_at: datetime
+    # Host-facing context — populated when the viewer manages the unit.
+    permission_scope: str | None = None
 
 
 class StayHostInfo(BaseModel):

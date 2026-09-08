@@ -12,10 +12,11 @@ import { useFavorites } from "@/lib/queries/favorites";
 
 export default function FavoritesPage() {
   const t = useTranslations("favorites");
+  const tc = useTranslations("common");
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
   const { isAuthenticated, isGuest, isLoading: isAuthLoading } = useAuth();
-  const { data, isPending } = useFavorites();
+  const { data, isPending, isError, refetch } = useFavorites();
 
   return (
     <GuestLayout>
@@ -23,15 +24,30 @@ export default function FavoritesPage() {
         <h1 className="text-2xl font-bold text-neutral-900 md:text-3xl">{t("title")}</h1>
         <p className="mt-1 text-sm text-neutral-500">{t("subtitle")}</p>
 
-        {!isAuthLoading && (!isAuthenticated || !isGuest) ? (
+        {!isAuthLoading && !isAuthenticated ? (
           <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
             <p className="text-lg font-medium text-neutral-700">{t("signInTitle")}</p>
             <Link
-              href={`/${locale}/auth/login`}
+              href={`/${locale}/auth/login?redirect=${encodeURIComponent(`/${locale}/favorites`)}`}
               className="mt-4 inline-flex items-center justify-center rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
             >
               {t("signInTitle")}
             </Link>
+          </div>
+        ) : !isAuthLoading && !isGuest ? (
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+            <p className="text-lg font-medium text-neutral-700">{t("guestsOnly")}</p>
+          </div>
+        ) : isError ? (
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+            <p className="text-lg font-medium text-neutral-700">{tc("error")}</p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="mt-4 inline-flex items-center justify-center rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
+            >
+              {tc("retry")}
+            </button>
           </div>
         ) : isPending ? (
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

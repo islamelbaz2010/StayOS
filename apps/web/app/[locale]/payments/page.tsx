@@ -42,8 +42,15 @@ export default function PaymentsPage() {
           )}
 
           {error && (
-            <div className="rounded-xl bg-white p-8 text-center text-danger-600 shadow-card">
-              {t("loadError")}
+            <div className="rounded-xl bg-white p-8 text-center shadow-card">
+              <p className="text-danger-600">{t("loadError")}</p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-3 text-sm font-semibold text-accent-600 hover:text-accent-700"
+              >
+                {tc("retry")}
+              </button>
             </div>
           )}
 
@@ -66,7 +73,7 @@ export default function PaymentsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <p className="font-semibold text-neutral-900">
-                        {formatMoney(payment.amount_egp, "EGP")}
+                        {formatMoney(payment.amount_egp, "EGP", dateLocale)}
                       </p>
                       <p className="text-sm text-neutral-500">
                         {t("reference")}: {payment.reference_number}

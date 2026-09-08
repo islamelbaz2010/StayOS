@@ -6,10 +6,9 @@ import { useTranslations } from "next-intl";
 import { Header } from "@/components/layouts/Header";
 import { Footer } from "@/components/layouts/Footer";
 
-function supportWhatsAppLink(phone: string): string {
+function supportWhatsAppLink(phone: string, message: string): string {
   const cleaned = phone.replace(/\D/g, "");
-  const message = encodeURIComponent("Hello StayOS support");
-  return `https://wa.me/${cleaned}?text=${message}`;
+  return `https://wa.me/${cleaned}?text=${encodeURIComponent(message)}`;
 }
 
 export default function SupportPage() {
@@ -27,7 +26,7 @@ export default function SupportPage() {
 
           {phone ? (
             <a
-              href={supportWhatsAppLink(phone)}
+              href={supportWhatsAppLink(phone, t("whatsappMessage"))}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-success-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-success-700"

@@ -11,6 +11,15 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { SearchMap } from "@/components/search/SearchMap";
 import { useSearchListings } from "@/lib/queries/listings";
 
+const PROPERTY_TYPES = [
+  "APARTMENT",
+  "VILLA",
+  "CHALET",
+  "STUDIO",
+  "HOTEL_ROOM",
+  "RESORT_UNIT",
+];
+
 const CULTURAL_TAGS = [
   { value: "FAMILY_ONLY", key: "familyOnly" },
   { value: "HALAL_CERTIFIED", key: "halalCertified" },
@@ -61,6 +70,22 @@ export default function SearchPage() {
 
     router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
   };
+
+  const updateParam = (key: string, value: string) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (value) {
+      nextParams.set(key, value);
+    } else {
+      nextParams.delete(key);
+    }
+    router.push(`/${locale}/search?${nextParams.toString()}`, {
+      scroll: false,
+    });
+  };
+
+  const hasActiveFilters = Boolean(
+    filters.property_type || filters.min_price || filters.max_price
+  );
 
   const {
     data,
@@ -120,6 +145,81 @@ export default function SearchPage() {
               </button>
             );
           })}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl bg-white p-4 shadow-card">
+          <div className="min-w-36 flex-1 sm:flex-none">
+            <label
+              htmlFor="filter-property-type"
+              className="block text-xs font-medium text-neutral-500"
+            >
+              {t("search.propertyType")}
+            </label>
+            <select
+              id="filter-property-type"
+              value={filters.property_type ?? ""}
+              onChange={(e) => updateParam("property_type", e.target.value)}
+              className="input mt-1 w-full text-sm"
+            >
+              <option value="">{t("search.anyType")}</option>
+              {PROPERTY_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {t(`search.types.${type}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-28">
+            <label
+              htmlFor="filter-min-price"
+              className="block text-xs font-medium text-neutral-500"
+            >
+              {t("search.minPrice")}
+            </label>
+            <input
+              id="filter-min-price"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              value={filters.min_price ?? ""}
+              onChange={(e) => updateParam("min_price", e.target.value)}
+              className="input mt-1 w-full text-sm"
+            />
+          </div>
+          <div className="w-28">
+            <label
+              htmlFor="filter-max-price"
+              className="block text-xs font-medium text-neutral-500"
+            >
+              {t("search.maxPrice")}
+            </label>
+            <input
+              id="filter-max-price"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              value={filters.max_price ?? ""}
+              onChange={(e) => updateParam("max_price", e.target.value)}
+              className="input mt-1 w-full text-sm"
+            />
+          </div>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={() => {
+                const nextParams = new URLSearchParams(searchParams.toString());
+                nextParams.delete("property_type");
+                nextParams.delete("min_price");
+                nextParams.delete("max_price");
+                router.push(`/${locale}/search?${nextParams.toString()}`, {
+                  scroll: false,
+                });
+              }}
+              className="text-sm font-semibold text-accent-600 hover:text-accent-700"
+            >
+              {t("search.clearFilters")}
+            </button>
+          )}
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2">

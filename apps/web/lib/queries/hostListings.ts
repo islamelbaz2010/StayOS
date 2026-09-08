@@ -41,6 +41,8 @@ export interface HostListing {
   check_in_instructions: string | null;
   policies: string | null;
   cover_image: string | null;
+  permission_scope?: string | null;
+  rejection_reason?: string | null;
 }
 
 export interface ListingCreateInput {
@@ -78,6 +80,17 @@ export interface ListingCreateInput {
 }
 
 export interface ListingUpdateInput {
+  property_type?: string;
+  lat?: number;
+  lng?: number;
+  governorate?: string;
+  city?: string;
+  district?: string;
+  address?: string;
+  max_guests?: number;
+  bedrooms?: number;
+  beds?: number;
+  bathrooms?: number;
   title_ar?: string;
   title_en?: string;
   description_ar?: string;
@@ -88,8 +101,6 @@ export interface ListingUpdateInput {
   cleaning_fee_egp?: number;
   cancellation_policy?: string;
   category?: string;
-  address?: string;
-  beds?: number;
   weekend_mult?: number;
   peak_mult?: number;
   min_nights?: number;
@@ -164,9 +175,13 @@ export async function approveListing(unitId: string): Promise<HostListing> {
   return data;
 }
 
-export async function rejectListing(unitId: string): Promise<HostListing> {
+export async function rejectListing(
+  unitId: string,
+  reason?: string
+): Promise<HostListing> {
   const { data } = await api.post<HostListing>(
-    `/listings/admin/${unitId}/reject`
+    `/listings/admin/${unitId}/reject`,
+    { reason: reason || null }
   );
   return data;
 }
@@ -211,6 +226,12 @@ export function useUpdateListing() {
       queryClient.invalidateQueries({
         queryKey: ["host-listing", variables.unitId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["host-listing-detail", variables.unitId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["listing", variables.unitId],
+      });
     },
   });
 }
@@ -223,6 +244,9 @@ export function useSubmitForReview() {
       queryClient.invalidateQueries({ queryKey: ["host-listings"] });
       queryClient.invalidateQueries({
         queryKey: ["host-listing", unitId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["host-listing-detail", unitId],
       });
     },
   });
@@ -296,7 +320,13 @@ export function useApproveListing() {
 export function useRejectListing() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: rejectListing,
+    mutationFn: ({
+      unitId,
+      reason,
+    }: {
+      unitId: string;
+      reason?: string;
+    }) => rejectListing(unitId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-pending-listings"] });
     },

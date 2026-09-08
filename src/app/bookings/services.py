@@ -1,13 +1,17 @@
+# ruff: noqa: I001
+# Import ordering differs between local Ruff (0.1.8: treats ``app`` as
+# third-party, ``app`` sorts before ``sqlalchemy``) and CI Ruff (0.16.1:
+# treats ``app`` as first-party). No single ordering satisfies both, so
+# I001 is suppressed for this file only.
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.config import settings
+from app.host import permissions as host_permissions
+from app.host.constants import CoHostPermissionScope
 from app.listings import repository as listings_repository
 from app.listings.constants import CancellationPolicy, UnitStatus
 from app.listings.models import Unit
@@ -22,6 +26,8 @@ from app.shared.exceptions import (
     ValidationError,
 )
 from app.shared.outbox import write_event
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import repository as bookings_repository
 from .constants import BookingStatus
@@ -98,7 +104,9 @@ def _arrival_info_eligible(booking: Booking, listing: Any | None = None) -> bool
     return datetime.now(UTC) >= check_in_start - timedelta(hours=release_hours)
 
 
-def _to_response(booking: Booking) -> BookingResponse:
+def _to_response(
+    booking: Booking, permission_scope: str | None = None
+) -> BookingResponse:
     host_id: str | None = None
     if booking.unit is not None:
         host_id = booking.unit.host_id
@@ -125,6 +133,7 @@ def _to_response(booking: Booking) -> BookingResponse:
         cancel_reason=booking.cancel_reason,
         created_at=booking.created_at,
         updated_at=booking.updated_at,
+        permission_scope=permission_scope,
     )
 
 
@@ -163,12 +172,34 @@ async def _assert_no_conflicts(
         raise ConflictError("Requested dates are not available")
 
 
-def _assert_authorized_to_view(booking: Booking, user: User) -> None:
+# Co-host scopes allowed to act on bookings (accept/reject/cancel/check-in/
+# check-out). ``full_access`` is the only co-host scope that covers
+# reservation operations; calendar-only and calendar+messaging co-hosts can
+# view bookings but cannot act on them.
+_BOOKING_MANAGE_SCOPES = ("owner", "admin", CoHostPermissionScope.FULL_ACCESS)
+
+
+async def _unit_permission_scope(
+    session: AsyncSession, booking: Booking, user: User
+) -> str | None:
+    """Delegate to the host permission source of truth (owner / admin /
+    active co-host scope / None)."""
+    if booking.unit is None:
+        return None
+    scope = await host_permissions.get_unit_permission_scope(
+        session, user, booking.unit
+    )
+    return scope if isinstance(scope, str) else None
+
+
+async def _assert_authorized_to_view(
+    session: AsyncSession, booking: Booking, user: User
+) -> None:
     if booking.guest_id == user.id:
         return
     if user.role == UserRole.ADMIN:
         return
-    if booking.unit is not None and booking.unit.host_id == user.id:
+    if await _unit_permission_scope(session, booking, user) is not None:
         return
     raise AuthorizationError("Not authorized to view this booking")
 
@@ -197,37 +228,41 @@ def _assert_status_transition(current: BookingStatus, new: BookingStatus) -> Non
         )
 
 
-def _assert_authorized_to_update(
-    booking: Booking, user: User, new_status: BookingStatus
+async def _assert_authorized_to_update(
+    session: AsyncSession, booking: Booking, user: User, new_status: BookingStatus
 ) -> None:
-    is_admin = user.role == UserRole.ADMIN
-    is_host = booking.unit is not None and booking.unit.host_id == user.id
+    scope = await _unit_permission_scope(session, booking, user)
+    can_manage = scope in _BOOKING_MANAGE_SCOPES
     is_guest = booking.guest_id == user.id
 
     if new_status in (BookingStatus.ACCEPTED, BookingStatus.REJECTED):
-        if not (is_host or is_admin):
+        if not can_manage:
             raise AuthorizationError(
                 "Only the host or an admin can accept or reject a booking"
             )
 
     if new_status == BookingStatus.CANCELLED:
-        if not (is_guest or is_host or is_admin):
+        if not (is_guest or can_manage):
             raise AuthorizationError(
                 "Only the guest, host, or an admin can cancel a booking"
             )
 
 
-def _cancellation_actor(booking: Booking, user: User) -> str:
+async def _cancellation_actor(
+    session: AsyncSession, booking: Booking, user: User
+) -> str:
     """Determine who is cancelling, from the booking's point of view.
 
     Also doubles as the authorization check: raises if `user` has no
-    standing to touch this booking at all.
+    standing to touch this booking at all. A full-access co-host acts on
+    the host's behalf, so the actor is recorded as ``host``.
     """
     if booking.guest_id == user.id:
         return "guest"
-    if booking.unit is not None and booking.unit.host_id == user.id:
+    scope = await _unit_permission_scope(session, booking, user)
+    if scope in ("owner", CoHostPermissionScope.FULL_ACCESS):
         return "host"
-    if user.role == UserRole.ADMIN:
+    if scope == "admin":
         return "admin"
     raise AuthorizationError("Only the guest, host, or an admin can cancel a booking")
 
@@ -389,7 +424,7 @@ async def preview_booking_cancellation(
 ) -> BookingCancellationPreview:
     """Let the caller see the financial consequence before confirming."""
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    cancelled_by = _cancellation_actor(booking, user)
+    cancelled_by = await _cancellation_actor(session, booking, user)
 
     current_status = BookingStatus(booking.status)
     listing = await _listing_for_booking(session, booking)
@@ -440,6 +475,8 @@ async def _apply_cancellation(
     current_status = BookingStatus(booking.status)
     if current_status not in _CANCELLABLE_STATUSES:
         raise ValidationError(f"Cannot cancel a booking that is {current_status}")
+    if booking.checked_in_at is not None or booking.checked_out_at is not None:
+        raise ValidationError("Cannot cancel a booking after check-in or check-out")
 
     listing = await _listing_for_booking(session, booking)
     payment = await payments_repository.get_payment_by_booking(session, booking.id)
@@ -504,7 +541,7 @@ async def cancel_booking(
     financial outcome so notifications/finance can act on it.
     """
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    cancelled_by = _cancellation_actor(booking, user)
+    cancelled_by = await _cancellation_actor(session, booking, user)
     updated = await _apply_cancellation(
         session,
         booking,
@@ -598,7 +635,7 @@ async def check_in_booking(session: AsyncSession, user: User, booking_id: str) -
     drives the Mobile stay-phase UI and unlocks nothing financial.
     """
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    _cancellation_actor(booking, user)  # authorization only; raises if unrelated
+    await _cancellation_actor(session, booking, user)  # authorization only; raises if unrelated
 
     if BookingStatus(booking.status) != BookingStatus.CONFIRMED:
         raise ValidationError("Booking must be confirmed before check-in")
@@ -636,7 +673,7 @@ async def check_out_booking(session: AsyncSession, user: User, booking_id: str) 
     unlocks review eligibility and the checked-out Trip UI state.
     """
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    _cancellation_actor(booking, user)
+    await _cancellation_actor(session, booking, user)
 
     if BookingStatus(booking.status) != BookingStatus.CONFIRMED:
         raise ValidationError("Booking must be confirmed to check out")
@@ -671,7 +708,7 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
     arrival info + review eligibility, for the Mobile Trip detail screen.
     """
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    _assert_authorized_to_view(booking, user)
+    await _assert_authorized_to_view(session, booking, user)
 
     unit = await listings_repository.get_unit_with_listing(session, booking.unit_id)
     listing = unit.listing if unit is not None else None
@@ -784,8 +821,11 @@ async def get_booking(
     session: AsyncSession, user: User, booking_id: str
 ) -> BookingResponse:
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    _assert_authorized_to_view(booking, user)
-    return _to_response(booking)
+    await _assert_authorized_to_view(session, booking, user)
+    scope: str | None = None
+    if user.role in (UserRole.HOST, UserRole.ADMIN) and booking.guest_id != user.id:
+        scope = await _unit_permission_scope(session, booking, user)
+    return _to_response(booking, permission_scope=scope)
 
 
 async def update_booking(
@@ -798,10 +838,15 @@ async def update_booking(
         # generic-update path can't bypass that.
         return await cancel_booking(session, user, booking_id, request.cancel_reason)
 
+    if request.status not in (BookingStatus.ACCEPTED, BookingStatus.REJECTED):
+        raise ValidationError(
+            "Only accept or reject can be performed through this endpoint"
+        )
+
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
 
-    _assert_authorized_to_view(booking, user)
-    _assert_authorized_to_update(booking, user, request.status)
+    await _assert_authorized_to_view(session, booking, user)
+    await _assert_authorized_to_update(session, booking, user, request.status)
     _assert_status_transition(BookingStatus(booking.status), request.status)
 
     update_fields: dict[str, object] = {"status": str(request.status)}
@@ -812,8 +857,6 @@ async def update_booking(
         update_fields["rejected_at"] = datetime.now(UTC)
         if request.reject_reason:
             update_fields["reject_reason"] = request.reject_reason
-    # BookingStatus.CANCELLED is handled by the early return above, via
-    # cancel_booking() — it can't reach this point.
 
     updated = await bookings_repository.update_booking(session, booking, **update_fields)
 
@@ -826,15 +869,6 @@ async def update_booking(
         guest = guest_result.scalar_one_or_none()
         if guest is not None:
             await payment_services.create_payment_for_booking(session, updated, guest)
-
-    if request.status == BookingStatus.CONFIRMED and updated.unit is not None:
-        listing = updated.unit.listing if updated.unit is not None else None
-        await messages_services.send_booking_confirmed(
-            session,
-            booking=updated,
-            listing=listing,
-            host_id=updated.unit.host_id,
-        )
 
     return _to_response(updated)
 
@@ -849,10 +883,20 @@ async def list_host_bookings(
     if user.role not in (UserRole.HOST, UserRole.ADMIN):
         raise AuthorizationError("Only hosts can view their bookings")
 
+    unit_ids = await host_permissions.get_managed_unit_ids(session, user)
+    if not unit_ids:
+        return []
     bookings = await bookings_repository.list_host_bookings(
-        session, user.id, status=status, limit=limit, offset=offset
+        session, user.id, status=status, limit=limit, offset=offset,
+        unit_ids=unit_ids,
     )
-    return [_to_response(booking) for booking in bookings]
+    scope_map = await host_permissions.get_unit_permission_scopes(
+        session, user, unit_ids
+    )
+    return [
+        _to_response(booking, permission_scope=scope_map.get(booking.unit_id))
+        for booking in bookings
+    ]
 
 
 async def list_guest_bookings(

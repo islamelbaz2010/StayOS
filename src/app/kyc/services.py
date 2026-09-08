@@ -9,11 +9,13 @@ from app.auth import repository as auth_repository
 from app.auth.models import User
 from app.config import settings
 from app.kyc import repository as kyc_repository
+from app.kyc import schemas as kyc_schemas
 from app.kyc.models import KycDocument
 from app.kyc.schemas import KycInitiateRequest, KycInitiateResponse, KycUploadUrls
-from app.shared.exceptions import ValidationError
+from app.shared.exceptions import NotFoundError, ValidationError
 
 _UPLOAD_TTL_SECONDS = 900
+_DOWNLOAD_TTL_SECONDS = 900
 
 
 def _s3_client() -> Any:
@@ -56,6 +58,15 @@ def _generate_presigned_put_url(bucket: str, key: str) -> str:
     )
 
 
+def _generate_presigned_get_url(bucket: str, key: str) -> str:
+    client = _s3_client()
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket, "Key": key},
+        ExpiresIn=_DOWNLOAD_TTL_SECONDS,
+    )
+
+
 async def initiate_kyc_document(
     session: AsyncSession,
     user: User,
@@ -90,6 +101,26 @@ async def initiate_kyc_document(
         document_id=document.id,
         upload_urls=KycUploadUrls(front=front_url, back=back_url, selfie=selfie_url),
         expires_at=expires_at,
+    )
+
+
+async def get_kyc_document_image_downloads(
+    session: AsyncSession,
+    document_id: str,
+) -> kyc_schemas.KycImageDownloadResponse:
+    document = await kyc_repository.get_kyc_document_by_id(session, document_id)
+    if document is None:
+        raise NotFoundError("KYC document not found")
+
+    def url(key: str | None) -> str | None:
+        if not key:
+            return None
+        return _generate_presigned_get_url(settings.S3_KYC_BUCKET, key)
+
+    return kyc_schemas.KycImageDownloadResponse(
+        front_url=url(document.front_image_key),
+        back_url=url(document.back_image_key),
+        selfie_url=url(document.selfie_image_key),
     )
 
 

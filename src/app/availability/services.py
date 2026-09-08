@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.bookings.models import Booking
+from app.host.permissions import assert_can_manage_calendar
 from app.listings import repository as listings_repository
 from app.listings.constants import CalendarBlockType, CalendarStatus
 from app.listings.models import CalendarRule, Unit
@@ -36,11 +37,11 @@ async def _get_unit_or_raise(
     return unit
 
 
-async def _assert_unit_ownership(user: User, unit: Unit) -> None:
-    if user.role == UserRole.ADMIN:
-        return
-    if unit.host_id != user.id:
-        raise AuthorizationError("Only the listing owner can manage its availability")
+async def _assert_unit_ownership(
+    session: AsyncSession, user: User, unit: Unit
+) -> None:
+    """Owner, admin, and all co-host scopes may manage calendar/availability."""
+    await assert_can_manage_calendar(session, user, unit)
 
 
 def _assert_date_range(check_in: date, check_out: date) -> None:
@@ -128,7 +129,7 @@ async def get_availability(
     _assert_date_range(check_in, check_out)
 
     unit = await _get_unit_or_raise(session, unit_id)
-    await _assert_unit_ownership(user, unit)
+    await _assert_unit_ownership(session, user, unit)
 
     rules = await availability_repository.get_calendar_rules_for_unit(
         session, unit_id, check_in, check_out
@@ -243,7 +244,7 @@ async def update_availability(
     _validate_rules(request)
 
     unit = await _get_unit_or_raise(session, unit_id)
-    await _assert_unit_ownership(user, unit)
+    await _assert_unit_ownership(session, user, unit)
 
     # Determine the full date range covered by the request to load existing data.
     date_min = min(r.date_from for r in request.rules)

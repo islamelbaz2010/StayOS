@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 import type { ListingDetail } from "@/lib/queries/listings";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -38,8 +39,11 @@ function addDays(date: Date, days: number): Date {
 
 export function BookingPanel({ listing }: BookingPanelProps) {
   const t = useTranslations("booking");
+  const locale = useLocale();
   const { isAuthenticated, isGuest, isLoading: isAuthLoading } = useAuth();
+  const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const createBooking = useCreateBooking();
+  const pathname = usePathname();
 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toInputDate(today), [today]);
@@ -185,7 +189,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-semibold text-brand-900">{t("title")}</h2>
         <p className="text-sm text-neutral-500">
-          {formatMoney(listing.price, listing.currency)}{" "}
+          {formatMoney(listing.price, listing.currency, moneyLocale)}{" "}
           <span className="text-neutral-400">/ {t("perNight")}</span>
         </p>
       </div>
@@ -194,7 +198,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
         <div className="mt-4 rounded-lg bg-neutral-50 p-4">
           <p className="text-sm text-neutral-700">{t("signInTitle")}</p>
           <Link
-            href="/auth/login"
+            href={`/${locale}/auth/login?redirect=${encodeURIComponent(pathname || `/${locale}`)}`}
             className="mt-2 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
           >
             {t("signInButton")}
@@ -394,10 +398,10 @@ export function BookingPanel({ listing }: BookingPanelProps) {
             <div className="mt-3 space-y-2 text-sm text-neutral-700">
               <div className="flex justify-between">
                 <span className="text-neutral-600">
-                  {formatMoney(listing.price, listing.currency)} × {nights} {t("nights")}
+                  {formatMoney(listing.price, listing.currency, moneyLocale)} × {nights} {t("nights")}
                 </span>
                 <span className="font-medium text-brand-900">
-                  {formatMoney(totalPrice, listing.currency)}
+                  {formatMoney(totalPrice, listing.currency, moneyLocale)}
                 </span>
               </div>
 
@@ -405,7 +409,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
                 <div className="flex justify-between">
                   <span className="text-neutral-600">{t("cleaningFee")}</span>
                   <span className="font-medium text-brand-900">
-                    {formatMoney(cleaningFee, listing.currency)}
+                    {formatMoney(cleaningFee, listing.currency, moneyLocale)}
                   </span>
                 </div>
               )}
@@ -420,7 +424,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
                   )}
                 </span>
                 <span className="font-medium text-brand-900">
-                  {formatMoney(serviceFee, listing.currency)}
+                  {formatMoney(serviceFee, listing.currency, moneyLocale)}
                 </span>
               </div>
 
@@ -432,7 +436,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
               <div className="border-t border-neutral-200 pt-2">
                 <div className="flex justify-between font-semibold text-brand-900">
                   <span>{t("total")}</span>
-                  <span>{formatMoney(grandTotal, listing.currency)}</span>
+                  <span>{formatMoney(grandTotal, listing.currency, moneyLocale)}</span>
                 </div>
               </div>
             </div>

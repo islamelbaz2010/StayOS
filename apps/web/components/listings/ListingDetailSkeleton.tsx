@@ -1,8 +1,13 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export function ListingDetailSkeleton() {
+  const t = useTranslations("common");
   return (
-    <article className="container mx-auto px-4 py-8 sm:px-6 lg:px-8" aria-label="Loading listing details">
+    <article className="container mx-auto px-4 py-8 sm:px-6 lg:px-8" aria-label={t("loadingListingDetails")}>
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-neutral-100">
         <Skeleton className="h-full w-full rounded-none" />
       </div>

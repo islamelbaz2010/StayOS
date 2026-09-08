@@ -662,6 +662,10 @@ async def test_get_availability_raises_when_not_owner(
         "app.availability.services.listings_repository.get_unit_with_listing",
         AsyncMock(return_value=unit),
     )
+    # No co-host row exists for this user on this unit.
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    fake_session.execute = AsyncMock(return_value=mock_result)
     with pytest.raises(AuthorizationError):
         await availability_services.get_availability(
             fake_session, host, "unit-1", date(2026, 8, 1), date(2026, 8, 6)

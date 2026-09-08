@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import boto3
+from geoalchemy2.elements import WKTElement
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -14,6 +15,8 @@ from app.host.permissions import (
     assert_can_edit_listing,
     assert_can_manage_calendar,
     assert_owner_or_admin,
+    get_managed_unit_ids,
+    get_unit_permission_scopes,
 )
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
@@ -44,6 +47,7 @@ from .schemas import (
     PaginationInfo,
     PhotoCreate,
     PhotoPresignResponse,
+    PhotoReorderRequest,
     PhotoResponse,
 )
 
@@ -73,7 +77,7 @@ def _cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
 
 def _to_listing_response(
     unit: Unit, listing: UnitListing, lat: float, lng: float,
-    host: User | None = None,
+    host: User | None = None, permission_scope: str | None = None,
 ) -> ListingResponse:
     return ListingResponse(
         id=unit.id,
@@ -119,6 +123,10 @@ def _to_listing_response(
         min_nights=listing.min_nights,
         max_nights=listing.max_nights,
         cover_image=_cover_image_url(unit, listing),
+        permission_scope=permission_scope,
+        rejection_reason=unit.rejection_reason
+        if isinstance(unit.rejection_reason, str)
+        else None,
     )
 
 
@@ -239,14 +247,24 @@ async def get_host_listings(
     session: AsyncSession, user: User
 ) -> list[ListingResponse]:
     _assert_host(user)
-    units = await listings_repository.get_host_units_with_listings(session, user.id)
+    managed_unit_ids = await get_managed_unit_ids(session, user)
+    units = await listings_repository.get_host_units_with_listings(
+        session, user.id, unit_ids=managed_unit_ids
+    )
+    scope_map = await get_unit_permission_scopes(
+        session, user, [unit.id for unit in units]
+    )
     results: list[ListingResponse] = []
     for unit in units:
         listing = unit.listing
         if listing is None:
             continue
         lat, lng = await _fetch_coordinates(session, unit)
-        results.append(_to_listing_response(unit, listing, lat, lng))
+        results.append(
+            _to_listing_response(
+                unit, listing, lat, lng, permission_scope=scope_map.get(unit.id)
+            )
+        )
     return results
 
 
@@ -270,6 +288,19 @@ async def submit_for_review(
     if listing.base_price_egp < 100:
         raise ValidationError("Price must be at least 100 EGP")
 
+    # Enforce the listing-readiness checklist at the actual submission
+    # transition so incomplete listings cannot enter the review queue.
+    from app.host import services as host_services
+    from app.host.constants import ListingReadinessStatus
+
+    readiness = await host_services.compute_listing_readiness(session, unit, listing)
+    if readiness.status != ListingReadinessStatus.READY:
+        missing = ", ".join(readiness.missing_item_labels.values())
+        raise ValidationError(
+            f"Listing is not ready for review. Missing: {missing or 'required fields'}"
+        )
+
+    unit.rejection_reason = None
     unit = await listings_repository.set_unit_status(
         session, unit, UnitStatus.PENDING_VERIFICATION
     )
@@ -318,7 +349,7 @@ async def approve_listing(
 
 
 async def reject_listing(
-    session: AsyncSession, user: User, unit_id: str
+    session: AsyncSession, user: User, unit_id: str, reason: str | None = None
 ) -> ListingResponse:
     if user.role != UserRole.ADMIN:
         raise AuthorizationError("Only admins can reject listings")
@@ -328,6 +359,7 @@ async def reject_listing(
     if unit.status != UnitStatus.PENDING_VERIFICATION:
         raise ValidationError("Only pending listings can be rejected")
 
+    unit.rejection_reason = reason or None
     unit = await listings_repository.set_unit_status(session, unit, UnitStatus.REJECTED)
     listing = unit.listing
     if listing is None:
@@ -348,10 +380,31 @@ async def update_listing(
     if listing is None:
         raise NotFoundError("Listing not found")
 
-    if request.beds is not None:
-        unit.beds = request.beds
-    if request.address is not None:
-        unit.address = request.address
+    update_data = request.model_dump(exclude_unset=True)
+
+    unit_fields = {
+        "property_type",
+        "governorate",
+        "city",
+        "district",
+        "google_place_id",
+        "address",
+        "max_guests",
+        "bedrooms",
+        "beds",
+        "bathrooms",
+    }
+    for field in unit_fields:
+        if field in update_data:
+            setattr(unit, field, update_data[field])
+
+    if "lat" in update_data and "lng" in update_data:
+        unit.coordinates = WKTElement(
+            f"POINT({update_data['lng']} {update_data['lat']})", srid=4326
+        )
+    elif "lat" in update_data or "lng" in update_data:
+        raise ValidationError("Both lat and lng are required to update coordinates")
+
     session.add(unit)
 
     await listing_configuration.validate_listing_configuration(session, unit, request)
@@ -800,7 +853,10 @@ async def get_host_dashboard(
     session: AsyncSession, user: User
 ) -> HostDashboardStats:
     _assert_host(user)
-    stats = await listings_repository.get_host_dashboard_stats(session, user.id)
+    managed_unit_ids = await get_managed_unit_ids(session, user)
+    stats = await listings_repository.get_host_dashboard_stats(
+        session, user.id, unit_ids=managed_unit_ids
+    )
     return HostDashboardStats(**stats)
 
 
@@ -817,8 +873,9 @@ async def get_host_reservation_calendar(
     if (check_out - check_in).days > 365:
         raise ValidationError("Date range cannot exceed 365 days")
 
+    managed_unit_ids = await get_managed_unit_ids(session, user)
     rows = await listings_repository.get_host_reservation_calendar(
-        session, user.id, unit_id, check_in, check_out
+        session, user.id, unit_id, check_in, check_out, unit_ids=managed_unit_ids
     )
     reservations = [
         HostReservationCalendarItem(
@@ -941,6 +998,38 @@ async def set_cover_photo(
     await listings_repository.set_listing_cover_photo(session, unit_id, photo_id)
     await session.refresh(photo)
     return _to_photo_response(photo)
+
+
+async def reorder_photos(
+    session: AsyncSession,
+    user: User,
+    unit_id: str,
+    request: PhotoReorderRequest,
+) -> list[PhotoResponse]:
+    """Update photo display order. Photo ordering is listing content, so it
+    uses the same permission as listing edits (owner/admin/full_access)."""
+    unit = await listings_repository.get_unit_with_listing(session, unit_id)
+    if unit is None:
+        raise NotFoundError("Listing not found")
+    await assert_can_edit_listing(session, user, unit)
+
+    photos = await listings_repository.get_photos_by_unit(session, unit_id)
+    photos_by_id = {p.id: p for p in photos}
+
+    seen: set[str] = set()
+    for item in request.photo_orders:
+        if item.photo_id in seen:
+            raise ValidationError(f"Duplicate photo_id: {item.photo_id}")
+        seen.add(item.photo_id)
+        photo = photos_by_id.get(item.photo_id)
+        if photo is None:
+            raise NotFoundError("Photo not found")
+        photo.display_order = item.display_order
+        session.add(photo)
+    await session.flush()
+
+    photos.sort(key=lambda p: p.display_order)
+    return [_to_photo_response(p) for p in photos]
 
 
 async def delete_photo(

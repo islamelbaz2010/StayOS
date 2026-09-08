@@ -210,3 +210,4 @@ class HostListingDetail(BaseModel):
     photos: list[HostListingPhoto] = Field(default_factory=list)
     readiness: ListingReadinessResponse | None = None
     permission_scope: str = "owner"
+    rejection_reason: str | None = None

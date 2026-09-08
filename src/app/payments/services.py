@@ -120,6 +120,7 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
         reference_number=payment.reference_number,
         payment_deadline_at=payment.payment_deadline_at,
         proof_rejection_count=payment.proof_rejection_count or 0,
+        proof_s3_key=payment.proof_s3_key,
         proof_url=None if payment.proof_s3_key else payment.proof_url,
         proof_uploaded_at=payment.proof_uploaded_at,
         created_at=payment.created_at,

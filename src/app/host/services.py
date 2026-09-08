@@ -436,7 +436,7 @@ async def get_host_reservation_detail(
             _refund_policy_label,
         )
         try:
-            cancelled_by = _cancellation_actor(booking, user)
+            cancelled_by = await _cancellation_actor(session, booking, user)
             current_payment = await payments_repository.get_payment_by_booking(session, booking.id)
             listing = await _listing_for_booking(session, booking)
             refund_amount, total_paid, service_fee_retained = _evaluate_cancellation_refund(
@@ -963,6 +963,9 @@ async def get_host_listing_detail(
         photos=photo_list,
         readiness=readiness,
         permission_scope=scope,
+        rejection_reason=unit.rejection_reason
+        if isinstance(unit.rejection_reason, str)
+        else None,
     )
 
 

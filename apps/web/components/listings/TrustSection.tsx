@@ -21,7 +21,7 @@ export function TrustSection({ listing }: TrustSectionProps) {
 
   const isHostVerified = listing.hostKycStatus === "verified";
   const joinedDate = listing.hostJoinedAt
-    ? formatDate(new Date(listing.hostJoinedAt))
+    ? formatDate(new Date(listing.hostJoinedAt), locale === "ar" ? "ar-EG" : "en-EG")
     : null;
 
   return (

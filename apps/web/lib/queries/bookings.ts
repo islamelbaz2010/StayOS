@@ -60,8 +60,18 @@ export async function updateBooking(
 }
 
 export function useCreateBooking() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createBooking,
+    onSuccess: (booking) => {
+      queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["booking-quote", booking.unit_id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["listing-availability", booking.unit_id],
+      });
+    },
   });
 }
 

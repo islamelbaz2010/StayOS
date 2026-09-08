@@ -175,6 +175,17 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   };
 
   const buildUpdatePayload = (): ListingUpdateInput => ({
+    property_type: form.property_type,
+    lat: form.lat,
+    lng: form.lng,
+    governorate: form.governorate,
+    city: form.city,
+    district: form.district || undefined,
+    address: form.address || undefined,
+    max_guests: form.max_guests,
+    bedrooms: form.bedrooms,
+    beds: form.beds,
+    bathrooms: form.bathrooms,
     title_ar: form.title_ar,
     title_en: form.title_en || undefined,
     description_ar: form.description_ar,
@@ -185,11 +196,15 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     cleaning_fee_egp: form.cleaning_fee_egp,
     cancellation_policy: form.cancellation_policy,
     category: form.category,
-    address: form.address || undefined,
-    beds: form.beds,
+    weekend_mult: form.weekend_mult,
+    peak_mult: form.peak_mult,
+    min_nights: form.min_nights,
+    max_nights: form.max_nights,
     house_rules: form.house_rules || undefined,
     check_in_instructions: form.check_in_instructions || undefined,
     policies: form.policies || undefined,
+    country: form.country,
+    currency: form.currency,
   });
 
   const handleSaveDraft = async () => {

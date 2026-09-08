@@ -19,11 +19,12 @@ export default function AdminPendingListingsPage() {
   const tc = useTranslations("common");
   const tl = useTranslations("listing");
   const { locale = "ar" } = useParams<{ locale: string }>();
-  const { data: listings, isLoading, error } = usePendingListings();
+  const { data: listings, isLoading, error, refetch } = usePendingListings();
   const approveMutation = useApproveListing();
   const rejectMutation = useRejectListing();
   const [selected, setSelected] = useState<HostListing | null>(null);
   const [rejectTarget, setRejectTarget] = useState<HostListing | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
@@ -39,7 +40,7 @@ export default function AdminPendingListingsPage() {
                   href={`/${locale}/admin/discovery`}
                   className="btn-secondary text-sm"
                 >
-                  Supply Discovery
+                  {t("discovery")}
                 </Link>
                 <Link
                   href={`/${locale}/admin/payments`}
@@ -57,8 +58,15 @@ export default function AdminPendingListingsPage() {
             )}
 
             {error && (
-              <div className="card p-8 text-center text-danger-600">
-                {t("loadError")}
+              <div className="card p-8 text-center">
+                <p className="text-danger-600">{t("loadError")}</p>
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="mt-3 text-sm font-semibold text-accent-600 hover:text-accent-700"
+                >
+                  {tc("retry")}
+                </button>
               </div>
             )}
 
@@ -132,7 +140,7 @@ export default function AdminPendingListingsPage() {
                             {t("bathrooms")}: {listing.bathrooms}
                           </span>
                           <span className="rounded bg-neutral-100 px-2 py-0.5">
-                            {listing.base_price_egp.toLocaleString()} {t("egp")}
+                            {listing.base_price_egp.toLocaleString(locale === "ar" ? "ar-EG" : "en-EG")} {t("egp")}
                           </span>
                         </div>
                       </div>
@@ -268,7 +276,7 @@ export default function AdminPendingListingsPage() {
                         {t("price")}:
                       </span>{" "}
                       <span className="text-neutral-600">
-                        {selected.base_price_egp.toLocaleString()} {t("egp")}
+                        {selected.base_price_egp.toLocaleString(locale === "ar" ? "ar-EG" : "en-EG")} {t("egp")}
                       </span>
                     </div>
                     <div>
@@ -276,7 +284,7 @@ export default function AdminPendingListingsPage() {
                         {t("cleaningFee")}:
                       </span>{" "}
                       <span className="text-neutral-600">
-                        {selected.cleaning_fee_egp.toLocaleString()} {t("egp")}
+                        {selected.cleaning_fee_egp.toLocaleString(locale === "ar" ? "ar-EG" : "en-EG")} {t("egp")}
                       </span>
                     </div>
                     <div>
@@ -344,10 +352,7 @@ export default function AdminPendingListingsPage() {
                   <div className="mt-6 flex justify-end gap-3">
                     <button
                       type="button"
-                      onClick={() => {
-                        rejectMutation.mutate(selected.id);
-                        setSelected(null);
-                      }}
+                      onClick={() => setRejectTarget(selected)}
                       disabled={rejectMutation.isPending}
                       className="btn-danger text-sm disabled:opacity-50"
                     >
@@ -385,10 +390,20 @@ export default function AdminPendingListingsPage() {
                   <p className="mt-2 text-sm text-neutral-600">
                     {t("confirmRejectMessage")}
                   </p>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder={t("rejectReasonPlaceholder")}
+                    rows={3}
+                    className="input mt-3 w-full text-sm"
+                  />
                   <div className="mt-6 flex justify-end gap-3">
                     <button
                       type="button"
-                      onClick={() => setRejectTarget(null)}
+                      onClick={() => {
+                        setRejectTarget(null);
+                        setRejectReason("");
+                      }}
                       className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                     >
                       {tc("cancel")}
@@ -396,8 +411,13 @@ export default function AdminPendingListingsPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        rejectMutation.mutate(rejectTarget.id);
+                        rejectMutation.mutate({
+                          unitId: rejectTarget.id,
+                          reason: rejectReason || undefined,
+                        });
                         setRejectTarget(null);
+                        setRejectReason("");
+                        setSelected(null);
                       }}
                       disabled={rejectMutation.isPending}
                       className="btn-danger text-sm disabled:opacity-50"

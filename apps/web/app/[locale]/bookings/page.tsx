@@ -43,8 +43,15 @@ export default function MyTripsPage() {
           )}
 
           {error && (
-            <div className="card p-8 text-center text-danger-600">
-              {t("loadError")}
+            <div className="card p-8 text-center">
+              <p className="text-danger-600">{t("loadError")}</p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-3 text-sm font-semibold text-accent-600 hover:text-accent-700"
+              >
+                {tc("retry")}
+              </button>
             </div>
           )}
 

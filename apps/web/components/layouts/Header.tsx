@@ -108,6 +108,20 @@ export function Header() {
           >
             {t("bulkImport")}
           </Link>
+          <Link
+            href={`/${locale}/admin/payments`}
+            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
+            onClick={() => setMobileOpen(false)}
+          >
+            {t("paymentQueue")}
+          </Link>
+          <Link
+            href={`/${locale}/admin/discovery`}
+            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
+            onClick={() => setMobileOpen(false)}
+          >
+            {t("discovery")}
+          </Link>
         </>
       )}
       {isAuthenticated && (
@@ -172,7 +186,7 @@ export function Header() {
           <button
             type="button"
             className="inline-flex items-center justify-center rounded-md p-2 text-neutral-700 hover:bg-neutral-100 md:hidden"
-            aria-label="Toggle menu"
+            aria-label={t("toggleMenu")}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((prev) => !prev)}
           >

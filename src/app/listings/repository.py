@@ -179,6 +179,19 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
         )
         stmt = stmt.where(~blocked)
 
+        # Also exclude units with active bookings for the requested interval.
+        # Cancelled/rejected bookings no longer occupy inventory.
+        from app.bookings.models import Booking
+        from app.bookings.constants import BookingStatus
+
+        booking_exists = exists().where(
+            Booking.unit_id == Unit.id,
+            Booking.status.notin_([BookingStatus.CANCELLED, BookingStatus.REJECTED]),
+            Booking.check_in < filters.check_out,
+            Booking.check_out > filters.check_in,
+        )
+        stmt = stmt.where(~booking_exists)
+
     if filters.min_price is not None:
         stmt = stmt.where(UnitListing.base_price_egp >= filters.min_price)
     if filters.max_price is not None:
@@ -510,6 +523,17 @@ async def get_host_reservation_calendar(
         )
     )
     return list(result.all())
+
+
+async def lock_unit_for_booking(session: AsyncSession, unit_id: str) -> None:
+    """Acquire a row lock on the unit to serialize concurrent booking attempts.
+
+    This is a lightweight transaction-scoped lock; it does not create or
+    validate the unit, which the caller must already have fetched.
+    """
+    await session.execute(
+        select(Unit).where(Unit.id == unit_id).with_for_update()
+    )
 
 
 async def create_photo(

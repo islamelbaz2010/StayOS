@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
+from app.bookings import repository as bookings_repository
 from app.config import settings
 from app.host.permissions import (
     assert_can_edit_listing,
@@ -617,14 +618,40 @@ async def get_availability(
     rules = await listings_repository.get_calendar_rules_in_range(
         session, unit_id, check_in, check_out
     )
+    active_bookings = await bookings_repository.list_overlapping_bookings(
+        session, unit_id, check_in, check_out
+    )
+
+    non_available_rules = [r for r in rules if r.status != CalendarStatus.AVAILABLE]
+    available_rules = [r for r in rules if r.status == CalendarStatus.AVAILABLE]
 
     days: list[CalendarDay] = []
     current = check_in
     while current < check_out:
-        rule = pricing.find_rule_for_day(rules, current)
-        status = str(rule.status) if rule else str(CalendarStatus.AVAILABLE)
-        block_type = rule.block_type if rule else None
-        price = pricing.get_day_price(listing, rule, current)
+        status = str(CalendarStatus.AVAILABLE)
+        block_type: str | None = None
+        available_rule = pricing.find_rule_for_day(available_rules, current)
+        price = pricing.get_day_price(listing, available_rule, current)
+
+        for booking in active_bookings:
+            if booking.check_in <= current < booking.check_out:
+                status = str(CalendarStatus.BOOKED)
+                block_type = None
+                price = 0
+                break
+
+        if status == str(CalendarStatus.AVAILABLE):
+            for rule in non_available_rules:
+                if rule.date_from <= current < rule.date_to:
+                    status = str(rule.status)
+                    block_type = (
+                        rule.block_type
+                        if rule.status == CalendarStatus.BLOCKED
+                        else None
+                    )
+                    price = 0
+                    break
+
         days.append(
             CalendarDay(
                 date=current, status=status, block_type=block_type, price_egp=price

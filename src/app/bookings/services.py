@@ -13,8 +13,8 @@ from app.config import settings
 from app.host import permissions as host_permissions
 from app.host.constants import CoHostPermissionScope
 from app.listings import repository as listings_repository
-from app.listings.constants import CancellationPolicy, UnitStatus
-from app.listings.models import Unit
+from app.listings.constants import CalendarStatus, CancellationPolicy, UnitStatus
+from app.listings.models import Unit, UnitListing
 from app.messages import services as messages_services
 from app.payments import repository as payments_repository
 from app.payments.constants import PaymentStatus
@@ -150,6 +150,14 @@ def _assert_booking_dates(check_in: date, check_out: date) -> None:
         raise ValidationError("check_out must be after check_in")
 
 
+def _assert_booking_nights(check_in: date, check_out: date, listing: UnitListing) -> None:
+    nights = (check_out - check_in).days
+    if nights < listing.min_nights or nights > listing.max_nights:
+        raise ValidationError(
+            f"Stay must be between {listing.min_nights} and {listing.max_nights} nights"
+        )
+
+
 def _assert_guest_capacity(unit: Unit, request: BookingCreate) -> None:
     total_guests = request.adults + request.children + request.infants
     if total_guests > unit.max_guests:
@@ -170,6 +178,18 @@ async def _assert_no_conflicts(
     )
     if overlaps:
         raise ConflictError("Requested dates are not available")
+
+    # Respect host calendar blocks and legacy reservation calendar rules.
+    rules = await listings_repository.get_calendar_rules_in_range(
+        session, unit_id, check_in, check_out
+    )
+    for rule in rules:
+        if rule.status in (
+            CalendarStatus.BLOCKED,
+            CalendarStatus.BOOKED,
+            CalendarStatus.HOLD,
+        ):
+            raise ConflictError("Requested dates are not available")
 
 
 # Co-host scopes allowed to act on bookings (accept/reject/cancel/check-in/
@@ -784,12 +804,16 @@ async def create_booking(
     _assert_booking_dates(request.check_in, request.check_out)
 
     unit = await listings_repository.get_unit_with_listing(session, request.unit_id)
-    if unit is None:
+    if unit is None or unit.listing is None:
         raise NotFoundError("Unit not found")
     if unit.status != UnitStatus.LISTED:
         raise ValidationError("Unit is not available for booking")
 
+    _assert_booking_nights(request.check_in, request.check_out, unit.listing)
     _assert_guest_capacity(unit, request)
+
+    # Serialize concurrent booking attempts for this unit before the conflict check.
+    await listings_repository.lock_unit_for_booking(session, request.unit_id)
     await _assert_no_conflicts(session, request.unit_id, request.check_in, request.check_out)
 
     booking = await bookings_repository.create_booking(

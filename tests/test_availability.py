@@ -143,7 +143,7 @@ async def test_get_availability_success(fake_session: AsyncMock, monkeypatch) ->
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
@@ -180,7 +180,7 @@ async def test_get_availability_shows_blocked_rule(
         AsyncMock(return_value=[rule]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
@@ -218,7 +218,7 @@ async def test_get_availability_shows_accepted_booking(
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[booking]),
     )
     monkeypatch.setattr(
@@ -256,7 +256,7 @@ async def test_update_availability_blocks_dates(
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
@@ -311,7 +311,7 @@ async def test_update_availability_rejects_overlapping_accepted_booking(
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[booking]),
     )
     monkeypatch.setattr(
@@ -361,7 +361,7 @@ async def test_update_availability_rejects_unblocking_confirmed_reservation(
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
@@ -528,11 +528,11 @@ async def test_get_calendar_rules_for_unit(fake_session: AsyncMock, monkeypatch)
 
 
 @pytest.mark.asyncio
-async def test_get_accepted_bookings_for_unit(fake_session: AsyncMock) -> None:
+async def test_get_active_bookings_for_unit(fake_session: AsyncMock) -> None:
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = []
     fake_session.execute = AsyncMock(return_value=mock_result)
-    result = await availability_repository.get_accepted_bookings_for_unit(
+    result = await availability_repository.get_active_bookings_for_unit(
         fake_session, "unit-1", date(2026, 8, 1), date(2026, 8, 5)
     )
     assert result == []
@@ -639,7 +639,7 @@ async def test_get_availability_admin_can_view_any_unit(
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
@@ -702,7 +702,7 @@ async def test_get_availability_includes_occupied_calendar_rules_and_reservation
         AsyncMock(return_value=[reserved_rule, booked_rule]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
@@ -752,7 +752,7 @@ async def test_update_availability_converts_available_rule(
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
@@ -807,7 +807,7 @@ async def test_update_availability_ignores_blocked_calendar_rule_overlap(
         AsyncMock(return_value=[blocked_rule]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
@@ -857,7 +857,7 @@ async def test_update_availability_rejects_booked_calendar_rule_overlap(
         AsyncMock(return_value=[booked_rule]),
     )
     monkeypatch.setattr(
-        "app.availability.services.availability_repository.get_accepted_bookings_for_unit",
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(

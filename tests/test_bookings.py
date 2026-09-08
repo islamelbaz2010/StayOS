@@ -17,8 +17,8 @@ from app.bookings.schemas import BookingCreate, BookingResponse, BookingUpdate
 from app.config import settings
 from app.database import get_session
 from app.listings import repository as listings_repository
-from app.listings.constants import UnitStatus
-from app.listings.models import Unit, UnitListing
+from app.listings.constants import CalendarStatus, UnitStatus
+from app.listings.models import CalendarRule, Unit, UnitListing
 from app.main import app
 from app.payments import repository as payments_repository
 from app.payments.constants import PaymentStatus
@@ -59,7 +59,7 @@ def _make_unit(
     status: UnitStatus = UnitStatus.LISTED,
     max_guests: int = 4,
 ) -> Unit:
-    return Unit(
+    unit = Unit(
         id=unit_id,
         host_id=host_id,
         property_type="APARTMENT",
@@ -73,6 +73,8 @@ def _make_unit(
         bedrooms=2,
         bathrooms=1,
     )
+    unit.listing = _make_listing(unit_id=unit_id)
+    return unit
 
 
 def _make_booking(
@@ -115,6 +117,8 @@ def _make_listing(unit_id: str = "unit-1") -> UnitListing:
         check_in_instructions="Lockbox code: 4821.",
         base_price_egp=1000,
         cancellation_policy="FLEXIBLE",
+        min_nights=1,
+        max_nights=30,
     )
 
 
@@ -1590,3 +1594,141 @@ async def test_preview_exposes_policy_and_retained_fee(
     assert preview.cancellation_policy == "FLEXIBLE"
     assert preview.refund_amount_egp == 3000
     assert preview.service_fee_retained_egp == 120
+
+
+# --- Alpha-1 booking-aware availability / calendar integrity tests -----------
+
+
+@pytest.mark.asyncio
+async def test_create_booking_rejects_blocked_calendar_rule(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Host BLOCKED rules must stop a booking at the API/service layer."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    blocked_rule = CalendarRule(
+        id=str(uuid.uuid4()),
+        unit_id=unit.id,
+        date_from=_FUTURE_1,
+        date_to=_FUTURE_2,
+        status=CalendarStatus.BLOCKED,
+        block_type="manual",
+    )
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "list_overlapping_bookings",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        listings_repository,
+        "get_calendar_rules_in_range",
+        AsyncMock(return_value=[blocked_rule]),
+    )
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_1,
+        check_out=_FUTURE_2,
+        adults=2,
+    )
+    with pytest.raises(ConflictError):
+        await booking_services.create_booking(fake_session, guest, request)
+
+
+@pytest.mark.asyncio
+async def test_create_booking_rejects_min_nights(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Backend must enforce listing min_nights."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing.min_nights = 5
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_1,
+        check_out=_FUTURE_1 + timedelta(days=3),
+        adults=2,
+    )
+    with pytest.raises(ValidationError):
+        await booking_services.create_booking(fake_session, guest, request)
+
+
+@pytest.mark.asyncio
+async def test_create_booking_rejects_max_nights(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Backend must enforce listing max_nights."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing.max_nights = 5
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_1,
+        check_out=_FUTURE_1 + timedelta(days=7),
+        adults=2,
+    )
+    with pytest.raises(ValidationError):
+        await booking_services.create_booking(fake_session, guest, request)
+
+
+@pytest.mark.asyncio
+async def test_create_booking_locks_unit_and_rejects_conflicting_booking(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Concurrency protection is invoked before the conflict check."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    other = _make_user(user_id="other-guest")
+    existing = _make_booking(unit, other, check_in=_FUTURE_1, check_out=_FUTURE_2)
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "list_overlapping_bookings",
+        AsyncMock(return_value=[existing]),
+    )
+    lock_mock = AsyncMock()
+    monkeypatch.setattr(
+        listings_repository,
+        "lock_unit_for_booking",
+        lock_mock,
+    )
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_1,
+        check_out=_FUTURE_2,
+        adults=2,
+    )
+    with pytest.raises(ConflictError):
+        await booking_services.create_booking(fake_session, guest, request)
+
+    lock_mock.assert_awaited_once_with(fake_session, unit.id)

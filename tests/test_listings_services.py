@@ -7,6 +7,8 @@ from geoalchemy2.elements import WKTElement
 
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
+from app.bookings.constants import BookingStatus
+from app.bookings.models import Booking
 from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import CalendarRule, Unit, UnitListing, UnitPhoto
 from app.listings.schemas import (
@@ -617,3 +619,50 @@ async def test_approve_listing_pending_to_listed(fake_session: AsyncMock, monkey
     admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
     result = await approve_listing(fake_session, admin, "unit-1")
     assert result.status == UnitStatus.LISTED
+
+
+@pytest.mark.asyncio
+async def test_get_availability_shows_active_request_as_booked(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A REQUESTED booking must still render its dates unavailable to guests."""
+    from app import listings
+
+    unit = _make_unit()
+    now = datetime.now(UTC)
+    requested_booking = Booking(
+        id=str(uuid.uuid4()),
+        unit_id=unit.id,
+        guest_id="guest-1",
+        status=str(BookingStatus.REQUESTED),
+        check_in=date(2026, 8, 2),
+        check_out=date(2026, 8, 4),
+        adults=2,
+        children=0,
+        infants=0,
+        requested_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    monkeypatch.setattr(
+        listings.repository,
+        "get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        listings.services,
+        "bookings_repository",
+        MagicMock(list_overlapping_bookings=AsyncMock(return_value=[requested_booking])),
+    )
+
+    result = await get_availability(
+        fake_session, "unit-1", date(2026, 8, 1), date(2026, 8, 6)
+    )
+    assert result.days[0].status == str(CalendarStatus.AVAILABLE)
+    assert result.days[1].status == str(CalendarStatus.BOOKED)
+    assert result.days[2].status == str(CalendarStatus.BOOKED)
+    assert result.days[3].status == str(CalendarStatus.AVAILABLE)

@@ -69,7 +69,7 @@ def _build_day_statuses(
     check_in: date,
     check_out: date,
     rules: list[CalendarRule],
-    accepted_bookings: list[Booking],
+    active_bookings: list[Booking],
     confirmed_reservations: list[Reservation],
 ) -> list[AvailabilityDay]:
     # Index occupied date ranges for fast lookup.
@@ -85,7 +85,7 @@ def _build_day_statuses(
                 (rule.date_from, rule.date_to, str(rule.status), rule.block_type)
             )
 
-    for booking in accepted_bookings:
+    for booking in active_bookings:
         occupied_ranges.append(
             (booking.check_in, booking.check_out, CalendarStatus.BOOKED, None)
         )
@@ -134,7 +134,7 @@ async def get_availability(
     rules = await availability_repository.get_calendar_rules_for_unit(
         session, unit_id, check_in, check_out
     )
-    accepted_bookings = await availability_repository.get_accepted_bookings_for_unit(
+    active_bookings = await availability_repository.get_active_bookings_for_unit(
         session, unit_id, check_in, check_out
     )
     confirmed_reservations = await availability_repository.get_confirmed_reservations_for_unit(
@@ -142,7 +142,7 @@ async def get_availability(
     )
 
     days = _build_day_statuses(
-        check_in, check_out, rules, accepted_bookings, confirmed_reservations
+        check_in, check_out, rules, active_bookings, confirmed_reservations
     )
 
     return AvailabilityResponse(
@@ -183,7 +183,7 @@ def _rule_to_calendar_tuple(rule: AvailabilityRule) -> tuple[date, date, str, st
 def _validate_rules_against_occupancy(
     rules: list[AvailabilityRule],
     calendar_rules: list[CalendarRule],
-    accepted_bookings: list[Booking],
+    active_bookings: list[Booking],
     confirmed_reservations: list[Reservation],
 ) -> None:
     for rule in rules:
@@ -209,8 +209,8 @@ def _validate_rules_against_occupancy(
                     f"Cannot {action} dates that are already occupied by a booking or reservation"
                 )
 
-        # Check against accepted bookings.
-        for booking in accepted_bookings:
+        # Check against active bookings (requested/accepted/confirmed/etc.).
+        for booking in active_bookings:
             if _overlaps(
                 rule.date_from,
                 rule.date_to,
@@ -218,7 +218,7 @@ def _validate_rules_against_occupancy(
                 booking.check_out,
             ):
                 raise ConflictError(
-                    f"Cannot {rule.status.value} dates that overlap an accepted booking"
+                    f"Cannot {rule.status.value} dates that overlap an active booking"
                 )
 
         # Check against confirmed reservations.
@@ -253,7 +253,7 @@ async def update_availability(
     calendar_rules = await availability_repository.get_calendar_rules_for_unit(
         session, unit_id, date_min, date_max
     )
-    accepted_bookings = await availability_repository.get_accepted_bookings_for_unit(
+    active_bookings = await availability_repository.get_active_bookings_for_unit(
         session, unit_id, date_min, date_max
     )
     confirmed_reservations = await availability_repository.get_confirmed_reservations_for_unit(
@@ -261,7 +261,7 @@ async def update_availability(
     )
 
     _validate_rules_against_occupancy(
-        request.rules, calendar_rules, accepted_bookings, confirmed_reservations
+        request.rules, calendar_rules, active_bookings, confirmed_reservations
     )
 
     bulk_rules = [_rule_to_calendar_tuple(rule) for rule in request.rules]

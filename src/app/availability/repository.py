@@ -22,17 +22,23 @@ async def get_calendar_rules_for_unit(
     )
 
 
-async def get_accepted_bookings_for_unit(
+async def get_active_bookings_for_unit(
     session: AsyncSession,
     unit_id: str,
     check_in: date,
     check_out: date,
 ) -> list[Booking]:
+    """All bookings that currently occupy the unit's inventory.
+
+    Cancelled and rejected bookings no longer hold inventory; every other
+    status (requested, accepted, confirmed, completed, no-show) is treated as
+    active for calendar/availability purposes.
+    """
     result = await session.execute(
         select(Booking)
         .where(
             Booking.unit_id == unit_id,
-            Booking.status == BookingStatus.ACCEPTED,
+            Booking.status.notin_([BookingStatus.CANCELLED, BookingStatus.REJECTED]),
             Booking.check_in < check_out,
             Booking.check_out > check_in,
         )

@@ -41,6 +41,8 @@ export interface HostListing {
   check_in_instructions: string | null;
   policies: string | null;
   cover_image: string | null;
+  permission_scope?: string | null;
+  rejection_reason?: string | null;
 }
 
 export interface ListingCreateInput {
@@ -173,9 +175,13 @@ export async function approveListing(unitId: string): Promise<HostListing> {
   return data;
 }
 
-export async function rejectListing(unitId: string): Promise<HostListing> {
+export async function rejectListing(
+  unitId: string,
+  reason?: string
+): Promise<HostListing> {
   const { data } = await api.post<HostListing>(
-    `/listings/admin/${unitId}/reject`
+    `/listings/admin/${unitId}/reject`,
+    { reason: reason || null }
   );
   return data;
 }
@@ -238,6 +244,9 @@ export function useSubmitForReview() {
       queryClient.invalidateQueries({ queryKey: ["host-listings"] });
       queryClient.invalidateQueries({
         queryKey: ["host-listing", unitId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["host-listing-detail", unitId],
       });
     },
   });
@@ -311,7 +320,13 @@ export function useApproveListing() {
 export function useRejectListing() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: rejectListing,
+    mutationFn: ({
+      unitId,
+      reason,
+    }: {
+      unitId: string;
+      reason?: string;
+    }) => rejectListing(unitId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-pending-listings"] });
     },

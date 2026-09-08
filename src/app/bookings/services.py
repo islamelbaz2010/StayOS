@@ -104,7 +104,9 @@ def _arrival_info_eligible(booking: Booking, listing: Any | None = None) -> bool
     return datetime.now(UTC) >= check_in_start - timedelta(hours=release_hours)
 
 
-def _to_response(booking: Booking) -> BookingResponse:
+def _to_response(
+    booking: Booking, permission_scope: str | None = None
+) -> BookingResponse:
     host_id: str | None = None
     if booking.unit is not None:
         host_id = booking.unit.host_id
@@ -131,6 +133,7 @@ def _to_response(booking: Booking) -> BookingResponse:
         cancel_reason=booking.cancel_reason,
         created_at=booking.created_at,
         updated_at=booking.updated_at,
+        permission_scope=permission_scope,
     )
 
 
@@ -819,7 +822,10 @@ async def get_booking(
 ) -> BookingResponse:
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
     await _assert_authorized_to_view(session, booking, user)
-    return _to_response(booking)
+    scope: str | None = None
+    if user.role in (UserRole.HOST, UserRole.ADMIN) and booking.guest_id != user.id:
+        scope = await _unit_permission_scope(session, booking, user)
+    return _to_response(booking, permission_scope=scope)
 
 
 async def update_booking(
@@ -884,7 +890,13 @@ async def list_host_bookings(
         session, user.id, status=status, limit=limit, offset=offset,
         unit_ids=unit_ids,
     )
-    return [_to_response(booking) for booking in bookings]
+    scope_map = await host_permissions.get_unit_permission_scopes(
+        session, user, unit_ids
+    )
+    return [
+        _to_response(booking, permission_scope=scope_map.get(booking.unit_id))
+        for booking in bookings
+    ]
 
 
 async def list_guest_bookings(

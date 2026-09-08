@@ -78,6 +78,7 @@ async def get_user_favorites(
             "title_ar": listing.title_ar,
             "city": unit.city,
             "governorate": unit.governorate,
+            "country": listing.country,
             "price": listing.base_price_egp,
             "currency": listing.currency,
             "lat": float(lat),

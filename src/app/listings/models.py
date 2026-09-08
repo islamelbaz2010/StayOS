@@ -42,6 +42,7 @@ class Unit(UUIDMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=UnitStatus.PENDING_VERIFICATION
     )
+    rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     coordinates: Mapped[Any] = mapped_column(
         Geometry("POINT", srid=4326, spatial_index=True), nullable=False
     )

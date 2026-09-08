@@ -47,8 +47,18 @@ function CheckoutContent({
   const t = useTranslations("payment");
   const tc = useTranslations("common");
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
-  const { data: booking, isLoading: bookingLoading, isError: bookingError } = useBooking(bookingId);
-  const { data: payment, isLoading: paymentLoading, isError: paymentError } = usePaymentByBooking(bookingId);
+  const {
+    data: booking,
+    isLoading: bookingLoading,
+    error: bookingQueryError,
+    refetch: refetchBooking,
+  } = useBooking(bookingId);
+  const {
+    data: payment,
+    isLoading: paymentLoading,
+    isError: paymentError,
+    refetch: refetchPayment,
+  } = usePaymentByBooking(bookingId);
   const proofDownload = usePaymentProofDownloadUrl();
 
   if (bookingLoading || paymentLoading) {
@@ -59,10 +69,38 @@ function CheckoutContent({
     );
   }
 
-  if (bookingError || paymentError) {
+  const bookingNotFound =
+    (bookingQueryError as { response?: { status?: number } } | null)?.response
+      ?.status === 404;
+
+  if (bookingNotFound) {
     return (
-      <div className="card p-8 text-center text-danger-600">
-        {t("loadError")}
+      <div className="card p-8 text-center">
+        <p className="text-danger-600">{t("bookingNotFound")}</p>
+        <Link
+          href={`/${locale}/bookings`}
+          className="mt-3 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
+        >
+          {t("backToTrips")}
+        </Link>
+      </div>
+    );
+  }
+
+  if (bookingQueryError || paymentError) {
+    return (
+      <div className="card p-8 text-center">
+        <p className="text-danger-600">{t("loadError")}</p>
+        <button
+          type="button"
+          onClick={() => {
+            refetchBooking();
+            refetchPayment();
+          }}
+          className="mt-3 text-sm font-semibold text-accent-600 hover:text-accent-700"
+        >
+          {tc("retry")}
+        </button>
       </div>
     );
   }
@@ -109,7 +147,7 @@ function CheckoutContent({
       </div>
 
       {canUpload && payment.payment_deadline_at && (
-        <div className="card border-l-4 border-l-warning-500 bg-warning-50 p-5">
+        <div className="card border-s-4 border-s-warning-500 bg-warning-50 p-5">
           <p className="text-sm font-medium text-warning-700">
             {t("deadlineWarning", {
               deadline: new Date(payment.payment_deadline_at).toLocaleString(
@@ -160,7 +198,7 @@ function CheckoutContent({
               {t("totalAmount")}
             </dt>
             <dd className="text-base font-bold text-accent-600">
-              {payment.amount_egp.toLocaleString()} {t("egp")}
+              {payment.amount_egp.toLocaleString(dateLocale)} {t("egp")}
             </dd>
           </div>
         </dl>

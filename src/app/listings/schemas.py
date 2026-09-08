@@ -195,6 +195,10 @@ class ListingResponse(BaseModel):
     cover_image: str | None = None
     average_rating: float | None = None
     review_count: int = 0
+    # Host-facing context — populated only when the caller is a host/admin
+    # viewing their own managed inventory.
+    permission_scope: str | None = None
+    rejection_reason: str | None = None
 
 
 class ListingSearchResult(BaseModel):
@@ -223,6 +227,10 @@ class ListingSearchResult(BaseModel):
     average_rating: float | None = None
     review_count: int = 0
     available_for_dates: bool | None = None
+
+
+class ListingRejectRequest(BaseModel):
+    reason: str | None = Field(None, max_length=500)
 
 
 class PaginationInfo(BaseModel):

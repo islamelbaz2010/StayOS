@@ -21,6 +21,7 @@ from .schemas import (
     HostProfileResponse,
     HostReservationCalendarResponse,
     ListingCreate,
+    ListingRejectRequest,
     ListingResponse,
     ListingSearchFilters,
     ListingSearchResponse,
@@ -215,11 +216,14 @@ async def post_approve_listing(
 @router.post("/admin/{unit_id}/reject", response_model=ListingResponse)
 async def post_reject_listing(
     unit_id: str,
+    payload: ListingRejectRequest | None = None,
     user: User = Depends(auth_dependencies.require_role("admin")),
     session: AsyncSession = Depends(get_session),
 ) -> ListingResponse:
     try:
-        return await reject_listing(session, user, unit_id)
+        return await reject_listing(
+            session, user, unit_id, reason=payload.reason if payload else None
+        )
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

@@ -31,6 +31,25 @@ export function HostBookingActions({
   const [action, setAction] = useState<"accept" | "reject" | "cancel" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Accept/reject/cancel/check-in/check-out are restricted server-side to
+  // owner/admin/full_access; hide them for limited co-host scopes.
+  const canManageBookings =
+    booking.permission_scope == null ||
+    ["owner", "admin", "full_access"].includes(booking.permission_scope);
+
+  if (!canManageBookings) {
+    return (
+      <p className="text-sm text-neutral-500">{t("readOnlyScope")}</p>
+    );
+  }
+
+  const onActionError = (err: unknown) => {
+    const axiosError = err as {
+      response?: { data?: { error?: { message?: string } } };
+    };
+    setError(axiosError.response?.data?.error?.message || t("updateError"));
+  };
+
   async function handleAction(
     newStatus: "accepted" | "rejected" | "cancelled"
   ) {
@@ -84,10 +103,24 @@ export function HostBookingActions({
           {t("confirmedMessage")}
         </p>
         <div className="flex flex-wrap gap-3">
+          {error && (
+            <p
+              className="rounded-md bg-danger-50 p-3 text-sm text-danger-700"
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
           {!booking.checked_in_at && (
             <button
               type="button"
-              onClick={() => checkIn.mutate(booking.id, { onSuccess })}
+              onClick={() => {
+                setError(null);
+                checkIn.mutate(booking.id, {
+                  onSuccess,
+                  onError: onActionError,
+                });
+              }}
               disabled={checkIn.isPending}
               className={cn(
                 "btn-primary text-sm",
@@ -100,7 +133,13 @@ export function HostBookingActions({
           {booking.checked_in_at && !booking.checked_out_at && (
             <button
               type="button"
-              onClick={() => checkOut.mutate(booking.id, { onSuccess })}
+              onClick={() => {
+                setError(null);
+                checkOut.mutate(booking.id, {
+                  onSuccess,
+                  onError: onActionError,
+                });
+              }}
               disabled={checkOut.isPending}
               className={cn(
                 "btn-primary text-sm",

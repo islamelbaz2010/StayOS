@@ -147,15 +147,31 @@ function TodayItem({
   const dateLocale = locale === "ar" ? "ar-EG" : "en-GB";
   const href = actionHref(item, locale);
 
+  // The backend returns English-composed title/subtitle strings; localize
+  // the title from item_type + guest_name and only render subtitles that
+  // are unit titles (not English status sentences).
+  const itemTitle =
+    item.item_type === "unread_message"
+      ? t("items.unreadMessage")
+      : item.item_type === "incomplete_listing"
+        ? t("items.incompleteListing")
+        : item.guest_name && t.has(`items.${item.item_type}`)
+          ? t(`items.${item.item_type}`, { name: item.guest_name })
+          : item.title;
+  const itemSubtitle =
+    item.item_type === "incomplete_listing"
+      ? t("items.incompleteListingSubtitle")
+      : item.subtitle;
+
   return (
     <div
       className={`rounded-card border border-neutral-200 p-4 ${variant.border} ${variant.bg} border-s-4`}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className={`font-semibold ${variant.text}`}>{item.title}</p>
-          {item.subtitle && (
-            <p className="text-sm text-neutral-600">{item.subtitle}</p>
+          <p className={`font-semibold ${variant.text}`}>{itemTitle}</p>
+          {itemSubtitle && (
+            <p className="text-sm text-neutral-600">{itemSubtitle}</p>
           )}
           {(item.check_in || item.check_out) && (
             <p className="text-sm text-neutral-500">

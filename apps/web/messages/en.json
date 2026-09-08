@@ -14,7 +14,9 @@
     "clear": "Clear",
     "viewAll": "View all",
     "required": "Required",
-    "optional": "Optional"
+    "optional": "Optional",
+    "loadingListing": "Loading listing",
+    "loadingListingDetails": "Loading listing details"
   },
   "nav": {
     "home": "Home",
@@ -32,7 +34,11 @@
     "profile": "Profile",
     "bulkImport": "Bulk Import",
     "payments": "Payments",
-    "support": "Support"
+    "support": "Support",
+    "rights": "All rights reserved.",
+    "toggleMenu": "Toggle menu",
+    "paymentQueue": "Payment Queue",
+    "discovery": "Supply Discovery"
   },
   "auth": {
     "signIn": "Sign in",
@@ -53,7 +59,9 @@
     "continueWithGoogle": "Continue with Google",
     "continueWithApple": "Continue with Apple",
     "or": "or",
-    "socialSignInFailed": "Social sign-in failed. Please try again."
+    "socialSignInFailed": "Social sign-in failed. Please try again.",
+    "devLogin": "Dev Login",
+    "loginAs": "Login as {label}"
   },
   "host": {
     "title": "Host area",
@@ -118,7 +126,12 @@
     "publishConfirm": "Publish this listing?",
     "unpublishConfirm": "Unpublish this listing?",
     "archiveConfirm": "Archive this listing?",
-    "actionError": "Could not perform this action. Please try again."
+    "actionError": "Could not perform this action. Please try again.",
+    "rejectionReason": "Rejection reason",
+    "readinessTitle": "Listing readiness",
+    "readinessMissing": "Missing before review: {items}",
+    "readOnlyScope": "You can view this listing but your co-host scope does not allow editing it.",
+    "notEditable": "This listing is read-only for your role."
   },
   "listingForm": {
     "createTitle": "Create New Listing",
@@ -239,7 +252,9 @@
     "description": "Description",
     "amenities": "Amenities",
     "houseRules": "House Rules",
-    "egp": "EGP"
+    "egp": "EGP",
+    "discovery": "Supply Discovery",
+    "rejectReasonPlaceholder": "Reason for rejection (shared with the host)"
   },
   "search": {
     "title": "Search",
@@ -272,7 +287,24 @@
     "list": "List",
     "map": "Map",
     "loadMore": "Load more",
-    "loadingMore": "Loading more..."
+    "loadingMore": "Loading more...",
+    "filters": "Filters",
+    "propertyType": "Property type",
+    "anyType": "Any type",
+    "minPrice": "Min price",
+    "maxPrice": "Max price",
+    "guestsMin": "Guests",
+    "clearFilters": "Clear filters",
+    "types": {
+      "APARTMENT": "Apartment",
+      "VILLA": "Villa",
+      "CHALET": "Chalet",
+      "STUDIO": "Studio",
+      "HOTEL_ROOM": "Hotel room",
+      "RESORT_UNIT": "Resort unit"
+    },
+    "scrollBack": "Scroll back",
+    "scrollForward": "Scroll forward"
   },
   "favorites": {
     "title": "Favorites",
@@ -280,7 +312,8 @@
     "emptyTitle": "No favorites yet",
     "emptySubtitle": "Tap the heart icon on a listing to save it here.",
     "signInTitle": "Sign in to see your favorites",
-    "browseListings": "Browse listings"
+    "browseListings": "Browse listings",
+    "guestsOnly": "Favorites are available for guest accounts."
   },
   "listing": {
     "perNight": "per night",
@@ -436,7 +469,11 @@
       "cancelled": "Cancelled",
       "rejected": "Rejected",
       "no_show": "No-show"
-    }
+    },
+    "terminalReasonTitle": "Booking ended",
+    "cancelReasonLabel": "Cancellation reason",
+    "rejectReasonLabel": "Rejection reason",
+    "actionError": "We couldn't complete this action. Please try again."
   },
   "booking": {
     "title": "Request to book",
@@ -521,7 +558,8 @@
       "verified": "Payment verified",
       "rejected": "Proof rejected",
       "cancelled": "Payment cancelled"
-    }
+    },
+    "readOnlyScope": "Your co-host scope does not allow managing this reservation."
   },
   "availability": {
     "title": "Availability",
@@ -562,7 +600,9 @@
     "generic": "An unexpected error occurred. Please try again.",
     "notFound": "Page not found",
     "unauthorized": "Sign in to access this page",
-    "networkError": "Connection error. Check your internet."
+    "networkError": "Connection error. Check your internet.",
+    "tryAgain": "Try again",
+    "goHome": "Go home"
   },
   "photos": {
     "pageTitle": "Manage Photos",
@@ -585,7 +625,8 @@
     "retry": "Retry",
     "invalidType": "Unsupported file type. Use JPG, PNG, or WebP.",
     "fileTooLarge": "File too large. Maximum 10MB.",
-    "uploadFailed": "Upload failed. Try again."
+    "uploadFailed": "Upload failed. Try again.",
+    "reorderError": "Couldn't save the new order. Try again."
   },
   "payment": {
     "checkoutTitle": "Complete your payment",
@@ -634,7 +675,8 @@
     "confirmReject": "Confirm rejection",
     "cancel": "Cancel",
     "noPendingPayments": "No payments awaiting verification",
-    "loadError": "Failed to load payments"
+    "loadError": "Failed to load payments",
+    "confirmVerify": "Verify this payment proof and confirm the booking?"
   },
   "kyc": {
     "pageTitle": "Identity Verification",
@@ -821,6 +863,17 @@
       "pending_requests": "Pending requests",
       "unread_messages": "Unread messages",
       "incomplete_listings": "Incomplete listings"
+    },
+    "items": {
+      "check_in_today": "Check-in: {name}",
+      "check_out_today": "Check-out: {name}",
+      "current_stay": "Staying: {name}",
+      "pending_request": "Booking request: {name}",
+      "upcoming_arrival": "Arriving soon: {name}",
+      "upcoming_departure": "Departing soon: {name}",
+      "unread_message": "You have unread messages",
+      "incomplete_listing": "Listing incomplete",
+      "incompleteListingSubtitle": "Some items need attention before review."
     }
   },
   "hostProfile": {
@@ -899,5 +952,116 @@
     "listings": "Listings by {name}",
     "noListings": "No active listings from this host.",
     "loadError": "Failed to load host profile."
+  },
+  "adminDiscovery": {
+    "title": "Supply Discovery",
+    "triggerRun": "Trigger Run",
+    "running": "Running...",
+    "statsTotal": "Total",
+    "statsUnique": "Unique",
+    "statsQualified": "Qualified",
+    "statsSupplyLeads": "Supply Leads",
+    "statsContactable": "Contactable",
+    "statsImported": "Imported",
+    "statusManual": "manual",
+    "allStatus": "All Status",
+    "allSources": "All Sources",
+    "allTypes": "All Types",
+    "allDuplicates": "All Duplicates",
+    "filterCity": "Filter by city...",
+    "noCandidates": "No discovery candidates found.",
+    "loadError": "Failed to load discovery candidates.",
+    "untitled": "Untitled",
+    "supply": "Supply",
+    "place": "Place",
+    "notAvailable": "Not available",
+    "review": "Review",
+    "showingOf": "Showing {from}–{to} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "viewSource": "View source",
+    "imageAlt": "Image {n}",
+    "qualification": "Qualification",
+    "completeness": "Completeness",
+    "sourceConfidence": "Source Confidence",
+    "candidateType": "Candidate Type",
+    "supplyLead": "Supply Lead",
+    "city": "City",
+    "zone": "Zone",
+    "propertyType": "Property Type",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "guestCapacity": "Guest Capacity",
+    "nightlyPrice": "Nightly Price",
+    "coordinates": "Coordinates",
+    "contact": "Contact",
+    "duplicate": "Duplicate",
+    "unique": "Unique",
+    "description": "Description",
+    "amenities": "Amenities",
+    "notes": "Notes",
+    "qualify": "Qualify",
+    "markProspect": "Mark as Prospect",
+    "markContacted": "Mark Contacted",
+    "ownerInterested": "Owner Interested",
+    "readyForImport": "Ready for Import",
+    "importToStayOS": "Import to StayOS",
+    "reject": "Reject",
+    "importTitle": "Import Candidate",
+    "importDescription": "This will create a new listing in PENDING_VERIFICATION status via the existing import pipeline.",
+    "hostName": "Host Name",
+    "hostNamePlaceholder": "Owner name",
+    "hostPhone": "Host Phone",
+    "hostEmail": "Host Email",
+    "nightlyPriceEgp": "Nightly Price (EGP)",
+    "pricePlaceholder": "Required — min 100",
+    "noPriceWarning": "Candidate has no price — enter one to import.",
+    "confirmImport": "Confirm Import",
+    "importing": "Importing...",
+    "importFailed": "Import failed. Please try again.",
+    "runFailed": "Discovery run failed. Please try again.",
+    "source": "Source",
+    "runSource": "Run source",
+    "leadType": "Lead Type",
+    "type": "Type",
+    "price": "Price",
+    "score": "Score",
+    "status": "Status",
+    "actions": "Actions",
+    "colTitle": "Title",
+    "statuses": {
+      "DISCOVERED": "Discovered",
+      "QUALIFIED": "Qualified",
+      "PROSPECT": "Prospect",
+      "CONTACTED": "Contacted",
+      "OWNER_INTERESTED": "Owner Interested",
+      "READY_FOR_IMPORT": "Ready for Import",
+      "IMPORTED": "Imported",
+      "REJECTED": "Rejected",
+      "DUPLICATE": "Duplicate"
+    },
+    "sorts": {
+      "newest": "Newest",
+      "highest_score": "Highest Score",
+      "best_completeness": "Best Completeness",
+      "source": "Source",
+      "city": "City"
+    },
+    "duplicates": {
+      "UNIQUE": "Unique",
+      "POSSIBLE_DUPLICATE": "Possible Duplicate",
+      "CONFIRMED_DUPLICATE": "Confirmed Duplicate"
+    },
+    "candidateTypes": {
+      "PLACE": "Place",
+      "SUPPLY_LEAD": "Supply Lead"
+    }
+  },
+  "gallery": {
+    "label": "Gallery",
+    "close": "Close gallery",
+    "previous": "Previous image",
+    "next": "Next image",
+    "viewImage": "View image {n}"
   }
 }

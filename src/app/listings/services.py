@@ -16,6 +16,7 @@ from app.host.permissions import (
     assert_can_manage_calendar,
     assert_owner_or_admin,
     get_managed_unit_ids,
+    get_unit_permission_scopes,
 )
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
@@ -76,7 +77,7 @@ def _cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
 
 def _to_listing_response(
     unit: Unit, listing: UnitListing, lat: float, lng: float,
-    host: User | None = None,
+    host: User | None = None, permission_scope: str | None = None,
 ) -> ListingResponse:
     return ListingResponse(
         id=unit.id,
@@ -122,6 +123,10 @@ def _to_listing_response(
         min_nights=listing.min_nights,
         max_nights=listing.max_nights,
         cover_image=_cover_image_url(unit, listing),
+        permission_scope=permission_scope,
+        rejection_reason=unit.rejection_reason
+        if isinstance(unit.rejection_reason, str)
+        else None,
     )
 
 
@@ -246,13 +251,20 @@ async def get_host_listings(
     units = await listings_repository.get_host_units_with_listings(
         session, user.id, unit_ids=managed_unit_ids
     )
+    scope_map = await get_unit_permission_scopes(
+        session, user, [unit.id for unit in units]
+    )
     results: list[ListingResponse] = []
     for unit in units:
         listing = unit.listing
         if listing is None:
             continue
         lat, lng = await _fetch_coordinates(session, unit)
-        results.append(_to_listing_response(unit, listing, lat, lng))
+        results.append(
+            _to_listing_response(
+                unit, listing, lat, lng, permission_scope=scope_map.get(unit.id)
+            )
+        )
     return results
 
 
@@ -288,6 +300,7 @@ async def submit_for_review(
             f"Listing is not ready for review. Missing: {missing or 'required fields'}"
         )
 
+    unit.rejection_reason = None
     unit = await listings_repository.set_unit_status(
         session, unit, UnitStatus.PENDING_VERIFICATION
     )
@@ -336,7 +349,7 @@ async def approve_listing(
 
 
 async def reject_listing(
-    session: AsyncSession, user: User, unit_id: str
+    session: AsyncSession, user: User, unit_id: str, reason: str | None = None
 ) -> ListingResponse:
     if user.role != UserRole.ADMIN:
         raise AuthorizationError("Only admins can reject listings")
@@ -346,6 +359,7 @@ async def reject_listing(
     if unit.status != UnitStatus.PENDING_VERIFICATION:
         raise ValidationError("Only pending listings can be rejected")
 
+    unit.rejection_reason = reason or None
     unit = await listings_repository.set_unit_status(session, unit, UnitStatus.REJECTED)
     listing = unit.listing
     if listing is None:

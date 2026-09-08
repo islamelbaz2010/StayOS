@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ interface GalleryProps {
 }
 
 export function Gallery({ images, alt }: GalleryProps) {
+  const t = useTranslations("gallery");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -177,12 +179,13 @@ function FullscreenGallery({
   onNext,
   onSelect,
 }: FullscreenGalleryProps) {
+  const t = useTranslations("gallery");
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col bg-black/90"
       role="dialog"
       aria-modal="true"
-      aria-label="Gallery"
+      aria-label={t("label")}
       onClick={onClose}
     >
       <div className="flex items-center justify-between p-4">
@@ -193,7 +196,7 @@ function FullscreenGallery({
           type="button"
           onClick={onClose}
           className="rounded-full p-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white"
-          aria-label="Close gallery"
+          aria-label={t("close")}
         >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -206,7 +209,7 @@ function FullscreenGallery({
           type="button"
           onClick={onPrev}
           className="absolute start-2 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white"
-          aria-label="Previous image"
+          aria-label={t("previous")}
         >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -230,7 +233,7 @@ function FullscreenGallery({
           type="button"
           onClick={onNext}
           className="absolute end-2 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white"
-          aria-label="Next image"
+          aria-label={t("next")}
         >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -254,7 +257,7 @@ function FullscreenGallery({
                   ? "border-brand-500"
                   : "border-transparent opacity-60 hover:opacity-100"
               )}
-              aria-label={`View image ${i + 1}`}
+              aria-label={t("viewImage", { n: i + 1 })}
             >
               <Image src={img} alt="" fill sizes="64px" className="object-cover" />
             </button>

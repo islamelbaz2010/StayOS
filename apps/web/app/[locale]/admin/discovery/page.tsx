@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -28,29 +29,35 @@ const STATUS_COLORS: Record<string, string> = {
   IMPORTED: "badge-success",
 };
 
-const STATUS_OPTIONS = [
-  { value: "", label: "All Status" },
-  { value: "DISCOVERED", label: "Discovered" },
-  { value: "QUALIFIED", label: "Qualified" },
-  { value: "PROSPECT", label: "Prospect" },
-  { value: "CONTACTED", label: "Contacted" },
-  { value: "OWNER_INTERESTED", label: "Owner Interested" },
-  { value: "READY_FOR_IMPORT", label: "Ready for Import" },
-  { value: "IMPORTED", label: "Imported" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "DUPLICATE", label: "Duplicate" },
+const STATUS_VALUES = [
+  "DISCOVERED",
+  "QUALIFIED",
+  "PROSPECT",
+  "CONTACTED",
+  "OWNER_INTERESTED",
+  "READY_FOR_IMPORT",
+  "IMPORTED",
+  "REJECTED",
+  "DUPLICATE",
 ];
 
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "highest_score", label: "Highest Score" },
-  { value: "best_completeness", label: "Best Completeness" },
-  { value: "source", label: "Source" },
-  { value: "city", label: "City" },
+const SORT_VALUES = [
+  "newest",
+  "highest_score",
+  "best_completeness",
+  "source",
+  "city",
 ];
+
+const DUPLICATE_VALUES = ["UNIQUE", "POSSIBLE_DUPLICATE", "CONFIRMED_DUPLICATE"];
 
 export default function AdminDiscoveryPage() {
   const t = useTranslations("common");
+  const td = useTranslations("adminDiscovery");
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
+  const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
+
   const [filters, setFilters] = useState<CandidateFilters>({
     limit: 20,
     offset: 0,
@@ -65,16 +72,29 @@ export default function AdminDiscoveryPage() {
     price: "",
   });
   const [showImportModal, setShowImportModal] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [runSource, setRunSource] = useState("");
 
   const { data: stats } = useDiscoveryStats();
   const { data: sources } = useDiscoverySources();
-  const { data: candidateData, isLoading } = useDiscoveryCandidates(filters);
+  const {
+    data: candidateData,
+    isLoading,
+    isError,
+    refetch,
+  } = useDiscoveryCandidates(filters);
   const statusMutation = useUpdateCandidateStatus();
   const importMutation = useImportCandidate();
   const runMutation = useTriggerDiscoveryRun();
 
   const candidates = candidateData?.data ?? [];
   const pagination = candidateData?.pagination;
+
+  const enabledSources = useMemo(
+    () => (sources ?? []).filter((s) => s.status === "ENABLED"),
+    [sources]
+  );
+  const effectiveRunSource = runSource || enabledSources[0]?.source || "";
 
   const handleFilterChange = useCallback(
     (key: keyof CandidateFilters, value: string) => {
@@ -95,6 +115,7 @@ export default function AdminDiscoveryPage() {
 
   const handleImport = useCallback(async () => {
     if (!selected) return;
+    setImportError(null);
     try {
       const overrides: Record<string, unknown> = {};
       if (importHost.price) {
@@ -110,10 +131,13 @@ export default function AdminDiscoveryPage() {
       });
       setShowImportModal(false);
       setSelected(null);
-    } catch {
-      // error handled by mutation
+    } catch (err) {
+      const detail = (
+        err as { response?: { data?: { error?: { message?: string } } } }
+      )?.response?.data?.error?.message;
+      setImportError(detail || td("importFailed"));
     }
-  }, [selected, importHost, importMutation]);
+  }, [selected, importHost, importMutation, td]);
 
   const scoreColor = useMemo(
     () => (score: number) => {
@@ -125,6 +149,11 @@ export default function AdminDiscoveryPage() {
     []
   );
 
+  const statusLabel = (status: string) =>
+    td.has(`statuses.${status}`)
+      ? td(`statuses.${status}`)
+      : status.replace(/_/g, " ").toLowerCase();
+
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
       <HostLayout>
@@ -132,30 +161,61 @@ export default function AdminDiscoveryPage() {
           <div className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
-                Supply Discovery
+                {td("title")}
               </h1>
-              <button
-                type="button"
-                onClick={() => runMutation.mutate({ source: "airbnb" })}
-                disabled={runMutation.isPending}
-                className="btn-primary text-sm disabled:opacity-50"
-              >
-                {runMutation.isPending ? "Running..." : "Trigger Run"}
-              </button>
+              <div className="flex items-center gap-2">
+                <label htmlFor="run-source" className="sr-only">
+                  {td("runSource")}
+                </label>
+                <select
+                  id="run-source"
+                  value={effectiveRunSource}
+                  onChange={(e) => setRunSource(e.target.value)}
+                  className="input text-sm"
+                  disabled={enabledSources.length === 0}
+                >
+                  {enabledSources.length === 0 && (
+                    <option value="">{td("allSources")}</option>
+                  )}
+                  {enabledSources.map((s) => (
+                    <option key={s.source} value={s.source}>
+                      {s.source}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() =>
+                    runMutation.mutate({
+                      source: effectiveRunSource || undefined,
+                    })
+                  }
+                  disabled={runMutation.isPending || !effectiveRunSource}
+                  className="btn-primary text-sm disabled:opacity-50"
+                >
+                  {runMutation.isPending ? td("running") : td("triggerRun")}
+                </button>
+              </div>
             </div>
+
+            {runMutation.isError && (
+              <p className="text-sm text-danger-600" role="alert">
+                {td("runFailed")}
+              </p>
+            )}
 
             {/* Stats */}
             {stats && (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-                <StatCard label="Total" value={stats.total_candidates} />
-                <StatCard label="Unique" value={stats.unique_candidates} />
-                <StatCard label="Qualified" value={stats.qualified_candidates} />
+                <StatCard label={td("statsTotal")} value={stats.total_candidates} />
+                <StatCard label={td("statsUnique")} value={stats.unique_candidates} />
+                <StatCard label={td("statsQualified")} value={stats.qualified_candidates} />
                 <StatCard
-                  label="Supply Leads"
+                  label={td("statsSupplyLeads")}
                   value={stats.by_candidate_type?.SUPPLY_LEAD ?? 0}
                 />
-                <StatCard label="Contactable" value={stats.contactable_candidates ?? 0} />
-                <StatCard label="Imported" value={stats.imported} />
+                <StatCard label={td("statsContactable")} value={stats.contactable_candidates ?? 0} />
+                <StatCard label={td("statsImported")} value={stats.imported} />
               </div>
             )}
 
@@ -174,7 +234,10 @@ export default function AdminDiscoveryPage() {
                     }`}
                   >
                     {s.source} (
-                    {s.status === "MANUAL_SOURCE" ? "manual" : s.status.toLowerCase()})
+                    {s.status === "MANUAL_SOURCE"
+                      ? td("statusManual")
+                      : s.status.toLowerCase()}
+                    )
                   </span>
                 ))}
               </div>
@@ -186,10 +249,12 @@ export default function AdminDiscoveryPage() {
                 value={filters.status ?? ""}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
                 className="input text-sm"
+                aria-label={td("status")}
               >
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                <option value="">{td("allStatus")}</option>
+                {STATUS_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {statusLabel(value)}
                   </option>
                 ))}
               </select>
@@ -198,8 +263,9 @@ export default function AdminDiscoveryPage() {
                 value={filters.source ?? ""}
                 onChange={(e) => handleFilterChange("source", e.target.value)}
                 className="input text-sm"
+                aria-label={td("source")}
               >
-                <option value="">All Sources</option>
+                <option value="">{td("allSources")}</option>
                 {(sources ?? []).map((s) => (
                   <option key={s.source} value={s.source}>
                     {s.source}
@@ -211,17 +277,18 @@ export default function AdminDiscoveryPage() {
                 value={filters.sort_by ?? "newest"}
                 onChange={(e) => handleFilterChange("sort_by", e.target.value)}
                 className="input text-sm"
+                aria-label={td("title")}
               >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                {SORT_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {td(`sorts.${value}`)}
                   </option>
                 ))}
               </select>
 
               <input
                 type="text"
-                placeholder="Filter by city..."
+                placeholder={td("filterCity")}
                 value={filters.city ?? ""}
                 onChange={(e) => handleFilterChange("city", e.target.value)}
                 className="input text-sm"
@@ -233,10 +300,13 @@ export default function AdminDiscoveryPage() {
                   handleFilterChange("candidate_type", e.target.value)
                 }
                 className="input text-sm"
+                aria-label={td("candidateType")}
               >
-                <option value="">All Types</option>
-                <option value="PLACE">Place</option>
-                <option value="SUPPLY_LEAD">Supply Lead</option>
+                <option value="">{td("allTypes")}</option>
+                <option value="PLACE">{td("candidateTypes.PLACE")}</option>
+                <option value="SUPPLY_LEAD">
+                  {td("candidateTypes.SUPPLY_LEAD")}
+                </option>
               </select>
 
               <select
@@ -245,11 +315,14 @@ export default function AdminDiscoveryPage() {
                   handleFilterChange("duplicate_status", e.target.value)
                 }
                 className="input text-sm"
+                aria-label={td("duplicate")}
               >
-                <option value="">All Duplicates</option>
-                <option value="UNIQUE">Unique</option>
-                <option value="POSSIBLE_DUPLICATE">Possible Duplicate</option>
-                <option value="CONFIRMED_DUPLICATE">Confirmed Duplicate</option>
+                <option value="">{td("allDuplicates")}</option>
+                {DUPLICATE_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {td(`duplicates.${value}`)}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -260,46 +333,59 @@ export default function AdminDiscoveryPage() {
               </div>
             )}
 
-            {!isLoading && candidates.length === 0 && (
-              <div className="card p-12 text-center">
-                <p className="text-neutral-500">No discovery candidates found.</p>
+            {isError && (
+              <div className="card p-8 text-center">
+                <p className="text-danger-600">{td("loadError")}</p>
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="mt-3 text-sm font-semibold text-accent-600 hover:text-accent-700"
+                >
+                  {t("retry")}
+                </button>
               </div>
             )}
 
-            {!isLoading && candidates.length > 0 && (
+            {!isLoading && !isError && candidates.length === 0 && (
+              <div className="card p-12 text-center">
+                <p className="text-neutral-500">{td("noCandidates")}</p>
+              </div>
+            )}
+
+            {!isLoading && !isError && candidates.length > 0 && (
               <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-200 bg-surface-card">
                 <table className="min-w-full divide-y divide-neutral-200">
                   <thead className="bg-neutral-50">
                     <tr>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Title
+                        {td("colTitle")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Source
+                        {td("source")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Lead Type
+                        {td("leadType")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        City
+                        {td("city")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Type
+                        {td("type")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Price
+                        {td("price")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Score
+                        {td("score")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Contact
+                        {td("contact")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Status
+                        {td("status")}
                       </th>
                       <th className="px-4 py-3 text-start text-xs font-semibold uppercase text-neutral-500">
-                        Actions
+                        {td("actions")}
                       </th>
                     </tr>
                   </thead>
@@ -307,7 +393,7 @@ export default function AdminDiscoveryPage() {
                     {candidates.map((c) => (
                       <tr key={c.id} className="hover:bg-neutral-50">
                         <td className="max-w-xs truncate px-4 py-3 text-sm font-medium text-brand-900">
-                          {c.title || c.raw_title || "Untitled"}
+                          {c.title || c.raw_title || td("untitled")}
                         </td>
                         <td className="px-4 py-3 text-sm text-neutral-600">
                           {c.source}
@@ -321,8 +407,8 @@ export default function AdminDiscoveryPage() {
                             }`}
                           >
                             {c.candidate_type === "SUPPLY_LEAD"
-                              ? "Supply"
-                              : "Place"}
+                              ? td("supply")
+                              : td("place")}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-neutral-600">
@@ -333,7 +419,7 @@ export default function AdminDiscoveryPage() {
                         </td>
                         <td className="px-4 py-3 text-sm text-neutral-600">
                           {c.nightly_price
-                            ? `${c.nightly_price.toLocaleString()} ${c.currency || "EGP"}`
+                            ? `${c.nightly_price.toLocaleString(dateLocale)} ${c.currency || "EGP"}`
                             : "—"}
                         </td>
                         <td className="px-4 py-3 text-sm">
@@ -351,7 +437,9 @@ export default function AdminDiscoveryPage() {
                               {c.contact_type}
                             </span>
                           ) : (
-                            <span className="text-xs text-neutral-400">N/A</span>
+                            <span className="text-xs text-neutral-400">
+                              {td("notAvailable")}
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -361,7 +449,7 @@ export default function AdminDiscoveryPage() {
                               "bg-neutral-100 text-neutral-600"
                             }`}
                           >
-                            {c.status.replace(/_/g, " ").toLowerCase()}
+                            {statusLabel(c.status)}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -370,7 +458,7 @@ export default function AdminDiscoveryPage() {
                             onClick={() => setSelected(c)}
                             className="rounded-md border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
                           >
-                            Review
+                            {td("review")}
                           </button>
                         </td>
                       </tr>
@@ -384,12 +472,14 @@ export default function AdminDiscoveryPage() {
             {pagination && pagination.total > (filters.limit ?? 20) && (
               <div className="flex items-center justify-between">
                 <p className="text-sm text-neutral-500">
-                  Showing {(filters.offset ?? 0) + 1}–
-                  {Math.min(
-                    (filters.offset ?? 0) + (filters.limit ?? 20),
-                    pagination.total
-                  )}{" "}
-                  of {pagination.total}
+                  {td("showingOf", {
+                    from: (filters.offset ?? 0) + 1,
+                    to: Math.min(
+                      (filters.offset ?? 0) + (filters.limit ?? 20),
+                      pagination.total
+                    ),
+                    total: pagination.total,
+                  })}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -406,7 +496,7 @@ export default function AdminDiscoveryPage() {
                     }
                     className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
                   >
-                    Previous
+                    {td("previous")}
                   </button>
                   <button
                     type="button"
@@ -419,7 +509,7 @@ export default function AdminDiscoveryPage() {
                     }
                     className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
                   >
-                    Next
+                    {td("next")}
                   </button>
                 </div>
               </div>
@@ -438,7 +528,7 @@ export default function AdminDiscoveryPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h2 className="text-xl font-bold text-brand-900">
-                        {selected.title || selected.raw_title || "Untitled"}
+                        {selected.title || selected.raw_title || td("untitled")}
                       </h2>
                       <a
                         href={selected.source_url}
@@ -446,13 +536,14 @@ export default function AdminDiscoveryPage() {
                         rel="noopener noreferrer"
                         className="text-sm text-accent-600 hover:text-accent-700 hover:underline"
                       >
-                        View source
+                        {td("viewSource")}
                       </a>
                     </div>
                     <button
                       type="button"
                       onClick={() => setSelected(null)}
                       className="text-neutral-400 hover:text-neutral-600"
+                      aria-label={t("close")}
                     >
                       <svg
                         className="h-6 w-6"
@@ -477,7 +568,7 @@ export default function AdminDiscoveryPage() {
                         <img
                           key={i}
                           src={url}
-                          alt={`Image ${i + 1}`}
+                          alt={td("imageAlt", { n: i + 1 })}
                           className="h-24 w-32 shrink-0 rounded-lg object-cover"
                         />
                       ))}
@@ -487,15 +578,15 @@ export default function AdminDiscoveryPage() {
                   {/* Scores */}
                   <div className="mt-4 grid grid-cols-3 gap-3">
                     <ScoreCard
-                      label="Qualification"
+                      label={td("qualification")}
                       value={selected.qualification_score}
                     />
                     <ScoreCard
-                      label="Completeness"
+                      label={td("completeness")}
                       value={selected.data_completeness_score}
                     />
                     <ScoreCard
-                      label="Source Confidence"
+                      label={td("sourceConfidence")}
                       value={selected.source_confidence * 100}
                     />
                   </div>
@@ -503,41 +594,41 @@ export default function AdminDiscoveryPage() {
                   {/* Details */}
                   <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                     <DetailRow
-                      label="Candidate Type"
+                      label={td("candidateType")}
                       value={
                         selected.candidate_type === "SUPPLY_LEAD"
-                          ? "Supply Lead"
-                          : "Place"
+                          ? td("supplyLead")
+                          : td("place")
                       }
                     />
-                    <DetailRow label="City" value={selected.city} />
-                    <DetailRow label="Zone" value={selected.zone} />
+                    <DetailRow label={td("city")} value={selected.city} />
+                    <DetailRow label={td("zone")} value={selected.zone} />
                     <DetailRow
-                      label="Property Type"
+                      label={td("propertyType")}
                       value={selected.property_type}
                     />
                     <DetailRow
-                      label="Bedrooms"
+                      label={td("bedrooms")}
                       value={selected.bedrooms?.toString()}
                     />
                     <DetailRow
-                      label="Bathrooms"
+                      label={td("bathrooms")}
                       value={selected.bathrooms?.toString()}
                     />
                     <DetailRow
-                      label="Guest Capacity"
+                      label={td("guestCapacity")}
                       value={selected.guest_capacity?.toString()}
                     />
                     <DetailRow
-                      label="Nightly Price"
+                      label={td("nightlyPrice")}
                       value={
                         selected.nightly_price
-                          ? `${selected.nightly_price.toLocaleString()} ${selected.currency || "EGP"}`
+                          ? `${selected.nightly_price.toLocaleString(dateLocale)} ${selected.currency || "EGP"}`
                           : null
                       }
                     />
                     <DetailRow
-                      label="Coordinates"
+                      label={td("coordinates")}
                       value={
                         selected.latitude && selected.longitude
                           ? `${selected.latitude.toFixed(4)}, ${selected.longitude.toFixed(4)}`
@@ -545,19 +636,19 @@ export default function AdminDiscoveryPage() {
                       }
                     />
                     <DetailRow
-                      label="Contact"
+                      label={td("contact")}
                       value={
                         selected.contact_status === "AVAILABLE"
                           ? `${selected.contact_type}: ${selected.contact_value}`
-                          : "Not available"
+                          : td("notAvailable")
                       }
                     />
                     <DetailRow
-                      label="Duplicate"
+                      label={td("duplicate")}
                       value={
                         selected.duplicate_status === "UNIQUE"
-                          ? "Unique"
-                          : `${selected.duplicate_status} (${(
+                          ? td("unique")
+                          : `${statusLabel(selected.duplicate_status)} (${(
                               selected.duplicate_confidence * 100
                             ).toFixed(0)}%)`
                       }
@@ -567,7 +658,7 @@ export default function AdminDiscoveryPage() {
                   {selected.description && (
                     <div className="mt-4">
                       <span className="font-medium text-neutral-700">
-                        Description:
+                        {td("description")}:
                       </span>
                       <p className="mt-1 text-sm text-neutral-600">
                         {selected.description}
@@ -578,7 +669,7 @@ export default function AdminDiscoveryPage() {
                   {selected.amenities.length > 0 && (
                     <div className="mt-4">
                       <span className="font-medium text-neutral-700">
-                        Amenities:
+                        {td("amenities")}:
                       </span>
                       <div className="mt-1 flex flex-wrap gap-2">
                         {selected.amenities.map((a) => (
@@ -596,7 +687,7 @@ export default function AdminDiscoveryPage() {
                   {selected.notes && (
                     <div className="mt-4 rounded-lg bg-neutral-50 p-3">
                       <span className="font-medium text-neutral-700">
-                        Notes:
+                        {td("notes")}:
                       </span>
                       <p className="mt-1 text-sm text-neutral-600">
                         {selected.notes}
@@ -615,7 +706,7 @@ export default function AdminDiscoveryPage() {
                         disabled={statusMutation.isPending}
                         className="btn-primary text-sm disabled:opacity-50"
                       >
-                        Qualify
+                        {td("qualify")}
                       </button>
                     )}
                     {selected.status === "QUALIFIED" && (
@@ -627,7 +718,7 @@ export default function AdminDiscoveryPage() {
                         disabled={statusMutation.isPending}
                         className="btn-primary text-sm disabled:opacity-50"
                       >
-                        Mark as Prospect
+                        {td("markProspect")}
                       </button>
                     )}
                     {selected.status === "PROSPECT" && (
@@ -639,7 +730,7 @@ export default function AdminDiscoveryPage() {
                         disabled={statusMutation.isPending}
                         className="btn-primary text-sm disabled:opacity-50"
                       >
-                        Mark Contacted
+                        {td("markContacted")}
                       </button>
                     )}
                     {selected.status === "CONTACTED" && (
@@ -651,7 +742,7 @@ export default function AdminDiscoveryPage() {
                         disabled={statusMutation.isPending}
                         className="btn-primary text-sm disabled:opacity-50"
                       >
-                        Owner Interested
+                        {td("ownerInterested")}
                       </button>
                     )}
                     {selected.status === "OWNER_INTERESTED" && (
@@ -663,7 +754,7 @@ export default function AdminDiscoveryPage() {
                         disabled={statusMutation.isPending}
                         className="btn-primary text-sm disabled:opacity-50"
                       >
-                        Ready for Import
+                        {td("readyForImport")}
                       </button>
                     )}
                     {(selected.status === "READY_FOR_IMPORT" ||
@@ -673,6 +764,7 @@ export default function AdminDiscoveryPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          setImportError(null);
                           setImportHost({
                             host_name: "",
                             host_phone:
@@ -692,7 +784,7 @@ export default function AdminDiscoveryPage() {
                         disabled={importMutation.isPending}
                         className="btn-primary text-sm disabled:opacity-50"
                       >
-                        Import to StayOS
+                        {td("importToStayOS")}
                       </button>
                     )}
                     <button
@@ -703,7 +795,7 @@ export default function AdminDiscoveryPage() {
                       disabled={statusMutation.isPending}
                       className="btn-danger text-sm disabled:opacity-50"
                     >
-                      Reject
+                      {td("reject")}
                     </button>
                   </div>
                 </div>
@@ -721,16 +813,15 @@ export default function AdminDiscoveryPage() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <h3 className="text-lg font-bold text-brand-900">
-                    Import Candidate
+                    {td("importTitle")}
                   </h3>
                   <p className="mt-2 text-sm text-neutral-600">
-                    This will create a new listing in PENDING_VERIFICATION
-                    status via the existing import pipeline.
+                    {td("importDescription")}
                   </p>
                   <div className="mt-4 space-y-3">
                     <div>
                       <label className="text-sm font-medium text-neutral-700">
-                        Host Name
+                        {td("hostName")}
                       </label>
                       <input
                         type="text"
@@ -742,12 +833,12 @@ export default function AdminDiscoveryPage() {
                           }))
                         }
                         className="input mt-1 text-sm"
-                        placeholder="Owner name"
+                        placeholder={td("hostNamePlaceholder")}
                       />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-neutral-700">
-                        Host Phone
+                        {td("hostPhone")}
                       </label>
                       <input
                         type="text"
@@ -764,7 +855,7 @@ export default function AdminDiscoveryPage() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-neutral-700">
-                        Host Email
+                        {td("hostEmail")}
                       </label>
                       <input
                         type="text"
@@ -781,7 +872,7 @@ export default function AdminDiscoveryPage() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-neutral-700">
-                        Nightly Price (EGP)
+                        {td("nightlyPriceEgp")}
                       </label>
                       <input
                         type="number"
@@ -793,23 +884,28 @@ export default function AdminDiscoveryPage() {
                           }))
                         }
                         className="input mt-1 text-sm"
-                        placeholder="Required — min 100"
+                        placeholder={td("pricePlaceholder")}
                         min={100}
                       />
                       {(!selected.nightly_price || selected.nightly_price < 100) && (
                         <p className="mt-1 text-xs text-warning-600">
-                          Candidate has no price — enter one to import.
+                          {td("noPriceWarning")}
                         </p>
                       )}
                     </div>
                   </div>
+                  {importError && (
+                    <p className="mt-3 text-sm text-danger-600" role="alert">
+                      {importError}
+                    </p>
+                  )}
                   <div className="mt-6 flex justify-end gap-3">
                     <button
                       type="button"
                       onClick={() => setShowImportModal(false)}
                       className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                     >
-                      Cancel
+                      {t("cancel")}
                     </button>
                     <button
                       type="button"
@@ -817,7 +913,9 @@ export default function AdminDiscoveryPage() {
                       disabled={importMutation.isPending}
                       className="btn-primary text-sm disabled:opacity-50"
                     >
-                      {importMutation.isPending ? "Importing..." : "Confirm Import"}
+                      {importMutation.isPending
+                        ? td("importing")
+                        : td("confirmImport")}
                     </button>
                   </div>
                 </div>

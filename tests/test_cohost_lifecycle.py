@@ -404,6 +404,11 @@ async def test_list_host_bookings_scoped_to_managed_units(
         AsyncMock(return_value=["unit-owned", "unit-cohosted"]),
     )
     monkeypatch.setattr(bookings_repository, "list_host_bookings", list_mock)
+    monkeypatch.setattr(
+        host_permissions,
+        "get_unit_permission_scopes",
+        AsyncMock(return_value={"unit-owned": "owner"}),
+    )
 
     result = await booking_services.list_host_bookings(fake_session, cohost)
     assert result == []

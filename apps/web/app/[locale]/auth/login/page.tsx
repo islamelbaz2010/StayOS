@@ -17,6 +17,7 @@ const DEV_USERS = [
 
 export default function LoginPage() {
   const t = useTranslations("auth");
+  const tc = useTranslations("common");
   const params = useParams<{ locale: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -234,7 +235,7 @@ export default function LoginPage() {
       {!isFirebaseConfigured && (
         <div className="mt-6 border-t border-neutral-200 pt-6">
           <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-neutral-500">
-            Dev Login
+            {t("devLogin")}
           </p>
           <div className="flex flex-col gap-2">
             {DEV_USERS.map((u) => (
@@ -245,7 +246,7 @@ export default function LoginPage() {
                 onClick={() => handleDevLogin(u.id)}
                 className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-center text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-60"
               >
-                {devLoading === u.id ? "Loading..." : `Login as ${u.label}`}
+                {devLoading === u.id ? tc("loading") : t("loginAs", { label: u.label })}
               </button>
             ))}
           </div>

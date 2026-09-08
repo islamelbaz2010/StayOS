@@ -1,10 +1,15 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export function ListingCardSkeleton() {
+  const t = useTranslations("common");
   return (
     <div
       className="overflow-hidden rounded-card bg-white shadow-card"
-      aria-label="Loading listing"
+      aria-label={t("loadingListing")}
     >
       <div className="relative aspect-[4/3] w-full bg-neutral-100">
         <Skeleton className="h-full w-full rounded-none" />

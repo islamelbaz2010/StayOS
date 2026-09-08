@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
@@ -79,12 +79,17 @@ export function usePreviewImport() {
 }
 
 export function useConfirmImport() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (rows: ImportRowData[]) => {
       const { data } = await api.post<ImportSummaryResponse>("/import/confirm", {
         rows,
       });
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-pending-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["host-listings"] });
     },
   });
 }

@@ -23,6 +23,7 @@ function ThreadContent({ conversationId, locale }: { conversationId: string; loc
   const send = useSendMessage(conversationId);
   const markRead = useMarkRead(conversationId);
   const [input, setInput] = useState("");
+  const [sendError, setSendError] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,10 +39,12 @@ function ThreadContent({ conversationId, locale }: { conversationId: string; loc
     const text = input.trim();
     if (!text || send.isPending) return;
     try {
+      setSendError(false);
       setInput("");
       await send.mutateAsync(text);
     } catch {
       setInput(text);
+      setSendError(true);
     }
   };
 
@@ -108,6 +111,14 @@ function ThreadContent({ conversationId, locale }: { conversationId: string; loc
           <div ref={bottomRef} />
         </div>
 
+        {sendError && (
+          <p
+            className="border-t border-neutral-200 px-4 pt-3 text-sm text-danger-600"
+            role="alert"
+          >
+            {tc("error")}
+          </p>
+        )}
         <div className="flex items-end gap-2 border-t border-neutral-200 p-4">
           <textarea
             value={input}

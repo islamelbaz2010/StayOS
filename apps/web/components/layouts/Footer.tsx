@@ -74,7 +74,7 @@ export function Footer() {
         </div>
         <div className="mt-8 border-t border-neutral-200 pt-8">
           <p className="text-xs text-neutral-400">
-            © {new Date().getFullYear()} StayOS. All rights reserved.
+            © {new Date().getFullYear()} StayOS. {t("rights")}
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { HostLayout } from "@/components/layouts";
@@ -15,6 +16,7 @@ import {
 
 export default function AdminKycPage() {
   const t = useTranslations("adminKyc");
+  const { locale = "ar" } = useParams<{ locale: string }>();
   const { data, isPending, isError, refetch } = usePendingKyc();
   const approveMutation = useApproveKyc();
   const rejectMutation = useRejectKyc();
@@ -100,7 +102,7 @@ export default function AdminKycPage() {
                         )}
                         <p className="text-xs text-neutral-400">
                           {t("submittedAt")}:{" "}
-                          {new Date(doc.updated_at).toLocaleString()}
+                          {new Date(doc.updated_at).toLocaleString(locale === "ar" ? "ar-EG" : "en-EG")}
                         </p>
                       </div>
                       <div className="flex gap-2">

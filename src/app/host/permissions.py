@@ -74,6 +74,38 @@ async def get_unit_permission_scope(
     return row
 
 
+async def get_unit_permission_scopes(
+    session: AsyncSession, user: User, unit_ids: list[str]
+) -> dict[str, str]:
+    """Batch version of ``get_unit_permission_scope``.
+
+    Returns a mapping of unit_id -> scope for every unit the user can
+    access. Units the user cannot access are simply absent from the map.
+    """
+    if not unit_ids:
+        return {}
+    scopes: dict[str, str] = {}
+    if user.role == UserRole.ADMIN:
+        return {unit_id: "admin" for unit_id in unit_ids}
+    owned_result = await session.execute(
+        select(Unit.id).where(Unit.id.in_(unit_ids), Unit.host_id == user.id)
+    )
+    for row in owned_result.all():
+        scopes[row[0]] = "owner"
+    remaining = [uid for uid in unit_ids if uid not in scopes]
+    if remaining:
+        cohost_result = await session.execute(
+            select(UnitCoHost.unit_id, UnitCoHost.permission_scope).where(
+                UnitCoHost.unit_id.in_(remaining),
+                UnitCoHost.co_host_user_id == user.id,
+                UnitCoHost.is_active.is_(True),
+            )
+        )
+        for unit_id, scope in cohost_result.all():
+            scopes[unit_id] = scope
+    return scopes
+
+
 async def assert_can_access_unit(
     session: AsyncSession, user: User, unit: Unit
 ) -> str:

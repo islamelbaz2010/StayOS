@@ -69,7 +69,10 @@ export default function HostProfilePage() {
                     {host.joinedAt && (
                       <p className="mt-1 text-sm text-neutral-500">
                         {t("joinedIn", {
-                          date: formatDate(new Date(host.joinedAt)),
+                          date: formatDate(
+                            new Date(host.joinedAt),
+                            params?.locale === "ar" ? "ar-EG" : "en-EG"
+                          ),
                         })}
                       </p>
                     )}

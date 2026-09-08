@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -50,6 +52,7 @@ function TripContent({
   const tc = useTranslations("common");
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
 
+  const [actionError, setActionError] = useState<string | null>(null);
   const { data: stay, isLoading, error, refetch } = useStayInfo(bookingId);
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
@@ -86,6 +89,7 @@ function TripContent({
 
   const { booking, property, host, arrival, review_eligible: reviewEligible } = stay;
   const phase = booking.stay_phase;
+  const terminalReason = booking.cancel_reason || booking.reject_reason;
   const isTerminal =
     phase === "cancelled" || phase === "rejected" || phase === "no_show";
   const canCheckIn = phase === "check_in_ready";
@@ -121,6 +125,22 @@ function TripContent({
           </div>
         </div>
       </div>
+
+      {isTerminal && terminalReason && (
+        <div className="card border-s-4 border-s-danger-500 p-5 sm:p-6">
+          <h3 className="mb-2 text-lg font-bold text-brand-900">
+            {t("terminalReasonTitle")}
+          </h3>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            {booking.cancel_reason
+              ? t("cancelReasonLabel")
+              : t("rejectReasonLabel")}
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">
+            {terminalReason}
+          </p>
+        </div>
+      )}
 
       {!isTerminal && (
         <div className="card p-5 sm:p-6">
@@ -206,8 +226,13 @@ function TripContent({
           <button
             type="button"
             onClick={async () => {
-              await checkIn.mutateAsync(booking.id);
-              refetch();
+              setActionError(null);
+              try {
+                await checkIn.mutateAsync(booking.id);
+                refetch();
+              } catch {
+                setActionError(t("actionError"));
+              }
             }}
             disabled={checkIn.isPending}
             className="btn-primary w-full"
@@ -220,14 +245,25 @@ function TripContent({
           <button
             type="button"
             onClick={async () => {
-              await checkOut.mutateAsync(booking.id);
-              refetch();
+              setActionError(null);
+              try {
+                await checkOut.mutateAsync(booking.id);
+                refetch();
+              } catch {
+                setActionError(t("actionError"));
+              }
             }}
             disabled={checkOut.isPending}
             className="btn-primary w-full"
           >
             {t("checkOutAction")}
           </button>
+        )}
+
+        {actionError && (
+          <p className="text-sm text-danger-600" role="alert">
+            {actionError}
+          </p>
         )}
 
         {reviewEligible && (

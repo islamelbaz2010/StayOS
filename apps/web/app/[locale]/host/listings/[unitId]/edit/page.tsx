@@ -9,7 +9,12 @@ import { HostLayout } from "@/components/layouts";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListingForm } from "@/components/listings/ListingForm";
 import { PhotoUpload } from "@/components/listings/PhotoUpload";
-import { useHostListing } from "@/lib/queries/hostListings";
+import {
+  useHostListing,
+  useHostListingDetail,
+} from "@/lib/queries/hostListings";
+
+const EDIT_SCOPES = new Set(["owner", "admin", "full_access"]);
 
 export default function EditListingPage({
   params,
@@ -23,6 +28,13 @@ export default function EditListingPage({
   const routeParams = useParams<{ locale: string }>();
   const locale = routeParams?.locale ?? "ar";
   const { data: listing, isLoading, error, refetch } = useHostListing(unitId);
+  const { data: detail } = useHostListingDetail(unitId);
+
+  const scope = detail?.permission_scope;
+  const canEdit = scope == null || EDIT_SCOPES.has(scope);
+  const missingItems = detail?.readiness?.missing_item_labels
+    ? Object.values(detail.readiness.missing_item_labels)
+    : [];
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
@@ -57,8 +69,39 @@ export default function EditListingPage({
 
             {error && <ErrorState onRetry={() => refetch()} />}
 
-            {listing && (
+            {listing && !canEdit && (
+              <div className="card border-s-4 border-s-warning-500 p-5">
+                <p className="text-sm text-neutral-700">
+                  {th("readOnlyScope")}
+                </p>
+              </div>
+            )}
+
+            {listing && listing.status === "REJECTED" && detail?.rejection_reason && (
+              <div className="card border-s-4 border-s-danger-500 p-5">
+                <p className="text-sm text-neutral-700">
+                  <span className="font-semibold text-danger-700">
+                    {th("rejectionReason")}:
+                  </span>{" "}
+                  {detail.rejection_reason}
+                </p>
+              </div>
+            )}
+
+            {listing && canEdit && (
               <>
+                {missingItems.length > 0 && (
+                  <div className="card border-s-4 border-s-warning-500 p-5">
+                    <h2 className="text-sm font-semibold text-brand-900">
+                      {th("readinessTitle")}
+                    </h2>
+                    <p className="mt-1 text-sm text-neutral-600">
+                      {th("readinessMissing", {
+                        items: missingItems.join(", "),
+                      })}
+                    </p>
+                  </div>
+                )}
                 <ListingForm existingListing={listing} unitId={unitId} />
                 <div className="card p-5 sm:p-6">
                   <PhotoUpload unitId={unitId} />

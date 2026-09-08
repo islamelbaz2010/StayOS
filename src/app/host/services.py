@@ -963,6 +963,9 @@ async def get_host_listing_detail(
         photos=photo_list,
         readiness=readiness,
         permission_scope=scope,
+        rejection_reason=unit.rejection_reason
+        if isinstance(unit.rejection_reason, str)
+        else None,
     )
 
 

@@ -14,7 +14,9 @@
     "clear": "مسح",
     "viewAll": "عرض الكل",
     "required": "مطلوب",
-    "optional": "اختياري"
+    "optional": "اختياري",
+    "loadingListing": "جارٍ تحميل الإعلان",
+    "loadingListingDetails": "جارٍ تحميل تفاصيل الإعلان"
   },
   "nav": {
     "home": "الرئيسية",
@@ -32,7 +34,11 @@
     "profile": "الملف الشخصي",
     "bulkImport": "استيراد بالجملة",
     "payments": "المدفوعات",
-    "support": "الدعم"
+    "support": "الدعم",
+    "rights": "جميع الحقوق محفوظة.",
+    "toggleMenu": "تبديل القائمة",
+    "paymentQueue": "قائمة المدفوعات",
+    "discovery": "اكتشاف المعروض"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -53,14 +59,16 @@
     "continueWithGoogle": "المتابعة مع جوجل",
     "continueWithApple": "المتابعة مع آبل",
     "or": "أو",
-    "socialSignInFailed": "فشل تسجيل الدخول. حاول مرة أخرى."
+    "socialSignInFailed": "فشل تسجيل الدخول. حاول مرة أخرى.",
+    "devLogin": "دخول المطورين",
+    "loginAs": "تسجيل الدخول كـ {label}"
   },
   "host": {
     "title": "منطقة المضيف",
     "comingSoon": "ستتوفر ميزات المضيف في Sprint 2-02",
     "manageListings": "عقاراتي",
     "manageListingsDesc": "عرض وإدارة عقاراتك",
-    "pendingReview": "مراجعة المعلقة",
+    "pendingReview": "قيد المراجعة",
     "pendingReviewDesc": "مراجعة العقارات المعلقة للنشر",
     "kycVerification": "التحقق من الهوية",
     "kycStatus": {
@@ -74,7 +82,7 @@
     "title": "عقاراتي",
     "createNew": "إضافة عقار جديد",
     "noListings": "لا توجد عقارات بعد.",
-    "noListingsHint": "أنشئ عقارك الأول لبدب استقبال الضيوف.",
+    "noListingsHint": "أنشئ عقارك الأول لبدء استقبال الضيوف.",
     "loadError": "فشل تحميل العقارات. يرجى المحاولة مرة أخرى.",
     "egp": "ج.م",
     "night": "ليلة",
@@ -118,7 +126,12 @@
     "publishConfirm": "هل تريد نشر هذا العقار؟",
     "unpublishConfirm": "هل تريد إيقاف نشر هذا العقار؟",
     "archiveConfirm": "هل تريد أرشفة هذا العقار؟",
-    "actionError": "تعذّر تنفيذ الإجراء. يرجى المحاولة مرة أخرى."
+    "actionError": "تعذّر تنفيذ الإجراء. يرجى المحاولة مرة أخرى.",
+    "rejectionReason": "سبب الرفض",
+    "readinessTitle": "جاهزية الإعلان",
+    "readinessMissing": "ناقص قبل المراجعة: {items}",
+    "readOnlyScope": "يمكنك عرض هذا الإعلان لكن صلاحياتك كمضيف مشارك لا تسمح بتعديله.",
+    "notEditable": "هذا الإعلان للقراءة فقط لدورك."
   },
   "listingForm": {
     "createTitle": "إضافة عقار جديد",
@@ -239,7 +252,9 @@
     "description": "الوصف",
     "amenities": "المرافق",
     "houseRules": "قواعد المنزل",
-    "egp": "ج.م"
+    "egp": "ج.م",
+    "discovery": "اكتشاف المعروض",
+    "rejectReasonPlaceholder": "سبب الرفض (يظهر للمضيف)"
   },
   "search": {
     "title": "بحث",
@@ -272,7 +287,24 @@
     "list": "قائمة",
     "map": "خريطة",
     "loadMore": "تحميل المزيد",
-    "loadingMore": "جارٍ تحميل المزيد..."
+    "loadingMore": "جارٍ تحميل المزيد...",
+    "filters": "عوامل التصفية",
+    "propertyType": "نوع العقار",
+    "anyType": "أي نوع",
+    "minPrice": "أقل سعر",
+    "maxPrice": "أعلى سعر",
+    "guestsMin": "الضيوف",
+    "clearFilters": "مسح عوامل التصفية",
+    "types": {
+      "APARTMENT": "شقة",
+      "VILLA": "فيلا",
+      "CHALET": "شاليه",
+      "STUDIO": "استوديو",
+      "HOTEL_ROOM": "غرفة فندقية",
+      "RESORT_UNIT": "وحدة منتجع"
+    },
+    "scrollBack": "مرر للخلف",
+    "scrollForward": "مرر للأمام"
   },
   "favorites": {
     "title": "المفضلة",
@@ -280,7 +312,8 @@
     "emptyTitle": "لا توجد مفضلات بعد",
     "emptySubtitle": "اضغط على أيقونة القلب في أي إقامة لحفظها هنا.",
     "signInTitle": "سجّل الدخول لرؤية مفضلاتك",
-    "browseListings": "تصفح الإقامات"
+    "browseListings": "تصفح الإقامات",
+    "guestsOnly": "المفضلة متاحة لحسابات الضيوف فقط."
   },
   "listing": {
     "perNight": "لليلة",
@@ -436,7 +469,11 @@
       "cancelled": "ملغاة",
       "rejected": "مرفوضة",
       "no_show": "لم يحضر"
-    }
+    },
+    "terminalReasonTitle": "انتهى الحجز",
+    "cancelReasonLabel": "سبب الإلغاء",
+    "rejectReasonLabel": "سبب الرفض",
+    "actionError": "تعذر إتمام هذا الإجراء. يرجى المحاولة مرة أخرى."
   },
   "booking": {
     "title": "طلب حجز",
@@ -521,7 +558,8 @@
       "verified": "تم التحقق من الدفع",
       "rejected": "تم رفض إثبات الدفع",
       "cancelled": "تم إلغاء الدفع"
-    }
+    },
+    "readOnlyScope": "صلاحياتك كمضيف مشارك لا تسمح بإدارة هذا الحجز."
   },
   "availability": {
     "title": "التوفر",
@@ -562,7 +600,9 @@
     "generic": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
     "notFound": "الصفحة غير موجودة",
     "unauthorized": "يجب تسجيل الدخول للوصول",
-    "networkError": "خطأ في الاتصال. تحقق من الإنترنت."
+    "networkError": "خطأ في الاتصال. تحقق من الإنترنت.",
+    "tryAgain": "حاول مرة أخرى",
+    "goHome": "العودة للرئيسية"
   },
   "photos": {
     "pageTitle": "إدارة الصور",
@@ -585,7 +625,8 @@
     "retry": "إعادة المحاولة",
     "invalidType": "نوع الملف غير مدعوم. استخدم JPG أو PNG أو WebP.",
     "fileTooLarge": "حجم الملف كبير جداً. الحد الأقصى 10 ميجابايت.",
-    "uploadFailed": "فشل الرفع. حاول مرة أخرى."
+    "uploadFailed": "فشل الرفع. حاول مرة أخرى.",
+    "reorderError": "تعذر حفظ الترتيب الجديد. حاول مرة أخرى."
   },
   "payment": {
     "checkoutTitle": "أكمل عملية الدفع",
@@ -634,7 +675,8 @@
     "confirmReject": "تأكيد الرفض",
     "cancel": "إلغاء",
     "noPendingPayments": "لا توجد دفعات بانتظار المراجعة",
-    "loadError": "تعذّر تحميل الدفعات"
+    "loadError": "تعذّر تحميل الدفعات",
+    "confirmVerify": "تأكيد إثبات الدفع وتأكيد الحجز؟"
   },
   "kyc": {
     "pageTitle": "التحقق من الهوية",
@@ -821,6 +863,17 @@
       "pending_requests": "طلبات معلّقة",
       "unread_messages": "رسائل غير مقروءة",
       "incomplete_listings": "عقارات غير مكتملة"
+    },
+    "items": {
+      "check_in_today": "تسجيل وصول: {name}",
+      "check_out_today": "تسجيل مغادرة: {name}",
+      "current_stay": "ضيف مقيم: {name}",
+      "pending_request": "طلب حجز: {name}",
+      "upcoming_arrival": "وصول قريب: {name}",
+      "upcoming_departure": "مغادرة قريبة: {name}",
+      "unread_message": "لديك رسائل غير مقروءة",
+      "incomplete_listing": "الإعلان غير مكتمل",
+      "incompleteListingSubtitle": "بعض العناصر تحتاج إلى اهتمام قبل المراجعة."
     }
   },
   "hostProfile": {
@@ -899,5 +952,116 @@
     "listings": "عقارات {name}",
     "noListings": "لا توجد عقارات نشطة لهذا المضيف.",
     "loadError": "تعذّر تحميل ملف المضيف."
+  },
+  "adminDiscovery": {
+    "title": "اكتشاف المعروض",
+    "triggerRun": "تشغيل الاكتشاف",
+    "running": "جارٍ التشغيل...",
+    "statsTotal": "الإجمالي",
+    "statsUnique": "فريد",
+    "statsQualified": "مؤهل",
+    "statsSupplyLeads": "عملاء محتملون",
+    "statsContactable": "قابل للتواصل",
+    "statsImported": "مستورد",
+    "statusManual": "يدوي",
+    "allStatus": "كل الحالات",
+    "allSources": "كل المصادر",
+    "allTypes": "كل الأنواع",
+    "allDuplicates": "كل التكرارات",
+    "filterCity": "تصفية حسب المدينة...",
+    "noCandidates": "لا توجد نتائج اكتشاف.",
+    "loadError": "تعذر تحميل نتائج الاكتشاف.",
+    "untitled": "بدون عنوان",
+    "supply": "معروض",
+    "place": "مكان",
+    "notAvailable": "غير متاح",
+    "review": "مراجعة",
+    "showingOf": "عرض {from}–{to} من {total}",
+    "previous": "السابق",
+    "next": "التالي",
+    "viewSource": "عرض المصدر",
+    "imageAlt": "صورة {n}",
+    "qualification": "التأهيل",
+    "completeness": "الاكتمال",
+    "sourceConfidence": "ثقة المصدر",
+    "candidateType": "نوع المرشح",
+    "supplyLead": "عميل معروض",
+    "city": "المدينة",
+    "zone": "المنطقة",
+    "propertyType": "نوع العقار",
+    "bedrooms": "غرف النوم",
+    "bathrooms": "دورات المياه",
+    "guestCapacity": "سعة الضيوف",
+    "nightlyPrice": "السعر الليلي",
+    "coordinates": "الإحداثيات",
+    "contact": "التواصل",
+    "duplicate": "تكرار",
+    "unique": "فريد",
+    "description": "الوصف",
+    "amenities": "وسائل الراحة",
+    "notes": "ملاحظات",
+    "qualify": "تأهيل",
+    "markProspect": "تحديد كعميل محتمل",
+    "markContacted": "تم التواصل",
+    "ownerInterested": "المالك مهتم",
+    "readyForImport": "جاهز للاستيراد",
+    "importToStayOS": "استيراد إلى StayOS",
+    "reject": "رفض",
+    "importTitle": "استيراد المرشح",
+    "importDescription": "سيتم إنشاء إعلان جديد بحالة قيد التحقق عبر خط الاستيراد الحالي.",
+    "hostName": "اسم المضيف",
+    "hostNamePlaceholder": "اسم المالك",
+    "hostPhone": "هاتف المضيف",
+    "hostEmail": "بريد المضيف",
+    "nightlyPriceEgp": "السعر الليلي (جنيه)",
+    "pricePlaceholder": "مطلوب — بحد أدنى 100",
+    "noPriceWarning": "لا يوجد سعر للمرشح — أدخل سعرًا للاستيراد.",
+    "confirmImport": "تأكيد الاستيراد",
+    "importing": "جارٍ الاستيراد...",
+    "importFailed": "فشل الاستيراد. حاول مرة أخرى.",
+    "runFailed": "فشل تشغيل الاكتشاف. حاول مرة أخرى.",
+    "source": "المصدر",
+    "runSource": "مصدر التشغيل",
+    "leadType": "نوع العميل",
+    "type": "النوع",
+    "price": "السعر",
+    "score": "النتيجة",
+    "status": "الحالة",
+    "actions": "إجراءات",
+    "colTitle": "العنوان",
+    "statuses": {
+      "DISCOVERED": "مكتشف",
+      "QUALIFIED": "مؤهل",
+      "PROSPECT": "محتمل",
+      "CONTACTED": "تم التواصل",
+      "OWNER_INTERESTED": "المالك مهتم",
+      "READY_FOR_IMPORT": "جاهز للاستيراد",
+      "IMPORTED": "مستورد",
+      "REJECTED": "مرفوض",
+      "DUPLICATE": "مكرر"
+    },
+    "sorts": {
+      "newest": "الأحدث",
+      "highest_score": "أعلى نتيجة",
+      "best_completeness": "أفضل اكتمال",
+      "source": "المصدر",
+      "city": "المدينة"
+    },
+    "duplicates": {
+      "UNIQUE": "فريد",
+      "POSSIBLE_DUPLICATE": "تكرار محتمل",
+      "CONFIRMED_DUPLICATE": "تكرار مؤكد"
+    },
+    "candidateTypes": {
+      "PLACE": "مكان",
+      "SUPPLY_LEAD": "عميل معروض"
+    }
+  },
+  "gallery": {
+    "label": "معرض الصور",
+    "close": "إغلاق المعرض",
+    "previous": "الصورة السابقة",
+    "next": "الصورة التالية",
+    "viewImage": "عرض الصورة {n}"
   }
 }

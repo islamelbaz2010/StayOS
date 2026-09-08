@@ -77,7 +77,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <dt className="text-sm text-neutral-500">{t("memberSince")}</dt>
                   <dd className="text-sm font-medium text-neutral-900">
-                    {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}
+                    {user?.created_at ? new Date(user.created_at).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-EG") : "—"}
                   </dd>
                 </div>
               </dl>

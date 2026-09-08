@@ -96,6 +96,8 @@ export default function ListingDetailPage() {
   const t = useTranslations("listing");
   const params = useParams<{ locale: string; unitId: string }>();
   const unitId = params?.unitId ?? "";
+  const locale = params?.locale ?? "ar";
+  const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
 
   const { data: listing, isPending, isError, refetch } = useListing(unitId);
   const { data: photos } = useListingPhotos(unitId);
@@ -213,7 +215,7 @@ export default function ListingDetailPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       }
-                      value={formatMoney(listing.price, listing.currency)}
+                      value={formatMoney(listing.price, listing.currency, moneyLocale)}
                       label={t("perNight")}
                     />
                   </div>
@@ -333,7 +335,7 @@ export default function ListingDetailPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="truncate text-lg font-bold text-brand-900">
-                    {formatMoney(listing.price, listing.currency)}
+                    {formatMoney(listing.price, listing.currency, moneyLocale)}
                     <span className="text-sm font-normal text-neutral-500">
                       {" "}
                       / {t("perNight")}
@@ -349,7 +351,7 @@ export default function ListingDetailPage() {
               </div>
             </div>
 
-            <div id="booking" className="px-0 pb-8 pt-6 lg:hidden">
+            <div id="booking" className="px-0 pb-24 pt-6 lg:hidden">
               <BookingPanel listing={listing} />
             </div>
           </article>

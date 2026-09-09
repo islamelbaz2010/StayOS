@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
+from app.host.repository import get_host_earnings
 from app.listings.repository import (
     bulk_replace_calendar_rules,
     create_calendar_rule,
@@ -158,6 +159,44 @@ async def test_get_host_reservation_calendar(fake_session: AsyncMock) -> None:
         fake_session, "host-1", "unit-1", date(2026, 8, 1), date(2026, 8, 10)
     )
     assert result == []
+
+
+@pytest.mark.asyncio
+async def test_get_host_earnings_per_unit_includes_cover_image(fake_session: AsyncMock) -> None:
+    unit_ids_result = MagicMock()
+    unit_ids_result.all = MagicMock(return_value=[("unit-1",)])
+
+    per_unit_row = MagicMock()
+    per_unit_row.unit_id = "unit-1"
+    per_unit_row.booking_count = 2
+    per_unit_row.revenue = 2000
+    per_unit_result = MagicMock()
+    per_unit_result.all = MagicMock(return_value=[per_unit_row])
+
+    title_row = MagicMock()
+    title_row.title_ar = "شقة"
+    title_row.title_en = None
+    title_result = MagicMock()
+    title_result.one_or_none = MagicMock(return_value=title_row)
+
+    cover_result = MagicMock()
+    cover_result.scalar_one_or_none = MagicMock(
+        return_value="https://cdn.example.com/covers/test.jpg"
+    )
+
+    fake_session.execute = AsyncMock(
+        side_effect=[unit_ids_result, per_unit_result, title_result, cover_result]
+    )
+    # Order of scalars: total_bookings, confirmed_bookings, completed_stays,
+    # revenue, pending_verification, refund_pending
+    fake_session.scalar = AsyncMock(side_effect=[1, 0, 0, 2000, 0, 0])
+
+    result = await get_host_earnings(fake_session, "host-1")
+    assert result["per_unit"][0]["unit_id"] == "unit-1"
+    assert result["per_unit"][0]["unit_title"] == "شقة"
+    assert result["per_unit"][0]["unit_cover_image"] == "https://cdn.example.com/covers/test.jpg"
+    assert result["per_unit"][0]["booking_count"] == 2
+    assert result["per_unit"][0]["revenue_egp"] == 2000
 
 
 @pytest.mark.asyncio

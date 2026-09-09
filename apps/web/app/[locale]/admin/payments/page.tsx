@@ -25,6 +25,8 @@ function StatusBadge({ status }: { status: string }) {
     verified: "badge-success",
     rejected: "badge-danger",
     cancelled: "badge-neutral",
+    refund_pending: "badge-warning",
+    refunded: "badge-success",
   };
   const labels: Record<string, string> = {
     pending: t("statusPending"),
@@ -32,6 +34,8 @@ function StatusBadge({ status }: { status: string }) {
     verified: t("statusVerified"),
     rejected: t("statusRejected"),
     cancelled: t("statusCancelled"),
+    refund_pending: t("statusRefundPending"),
+    refunded: t("statusRefunded"),
   };
   return (
     <span className={`${styles[status] ?? styles.pending}`}>

@@ -17,7 +17,8 @@ import {
   useStayInfo,
 } from "@/lib/queries/bookings";
 import { useBookingConversation } from "@/lib/queries/messages";
-import { formatDate } from "@/lib/utils";
+import { usePaymentByBooking } from "@/lib/queries/payments";
+import { formatDate, formatMoney } from "@/lib/utils";
 
 const CANCELLABLE_PHASES = new Set(["upcoming", "check_in_ready"]);
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
@@ -43,6 +44,28 @@ function PhaseBadge({ phase }: { phase: string }) {
   );
 }
 
+const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  pending: "bg-warning-100 text-warning-800",
+  proof_uploaded: "bg-accent-100 text-accent-800",
+  verified: "bg-success-100 text-success-800",
+  rejected: "bg-danger-100 text-danger-800",
+  cancelled: "bg-neutral-100 text-neutral-700",
+  refund_pending: "bg-warning-100 text-warning-800",
+  refunded: "bg-success-100 text-success-800",
+};
+
+function paymentStatusLabel(
+  status: string,
+  t: (key: string) => string
+): string {
+  const key = `status${status
+    .split("_")
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join("")}`;
+  const translated = t(key);
+  return translated === key ? status.toUpperCase() : translated;
+}
+
 function TripContent({
   bookingId,
   locale,
@@ -51,11 +74,13 @@ function TripContent({
   locale: string;
 }) {
   const t = useTranslations("trips");
+  const tp = useTranslations("payment");
   const tc = useTranslations("common");
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
 
   const [actionError, setActionError] = useState<string | null>(null);
   const { data: stay, isLoading, error, refetch } = useStayInfo(bookingId);
+  const { data: payment } = usePaymentByBooking(bookingId);
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
   const conversation = useBookingConversation(
@@ -137,6 +162,32 @@ function TripContent({
           </div>
         </div>
       </div>
+
+      {payment && (
+        <div className="card p-5 sm:p-6">
+          <h3 className="mb-3 text-lg font-bold text-brand-900">
+            {tp("paymentStatus")}
+          </h3>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span
+              className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-sm font-medium ${
+                PAYMENT_STATUS_COLORS[payment.status] ??
+                "bg-neutral-100 text-neutral-700"
+              }`}
+            >
+              {paymentStatusLabel(payment.status, tp)}
+            </span>
+            <p className="text-base font-semibold text-brand-900">
+              {formatMoney(payment.amount_egp, "EGP", dateLocale)}
+            </p>
+          </div>
+          {payment.reject_reason && (
+            <p className="mt-3 text-sm text-danger-600">
+              {tp("rejectReason")}: {payment.reject_reason}
+            </p>
+          )}
+        </div>
+      )}
 
       {isTerminal && terminalReason && (
         <div className="card border-s-4 border-s-danger-500 p-5 sm:p-6">

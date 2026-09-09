@@ -16,7 +16,7 @@ from app.auth.models import User
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.listings.cohost_models import ListingReadinessCheck, UnitCoHost
-from app.listings.models import Unit, UnitListing
+from app.listings.models import Unit, UnitListing, UnitPhoto
 from app.payments.constants import PaymentStatus
 from app.payments.models import Payment
 
@@ -287,9 +287,20 @@ async def get_host_earnings(
         )
         title_row = unit_result.one_or_none()
         title = (title_row.title_ar if title_row else None) or (title_row.title_en if title_row else None)
+
+        # Get cover image for the unit
+        cover_result = await session.execute(
+            select(UnitPhoto.url)
+            .where(UnitPhoto.unit_id == row.unit_id, UnitPhoto.is_cover == True)
+            .order_by(UnitPhoto.display_order.asc())
+            .limit(1)
+        )
+        cover_url = cover_result.scalar_one_or_none()
+
         per_unit.append({
             "unit_id": row.unit_id,
             "unit_title": title,
+            "unit_cover_image": cover_url,
             "booking_count": row.booking_count,
             "revenue_egp": int(row.revenue),
         })

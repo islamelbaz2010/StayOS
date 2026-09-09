@@ -33,6 +33,8 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
   verified: "bg-success-100 text-success-700",
   rejected: "bg-danger-100 text-danger-700",
   cancelled: "bg-neutral-100 text-neutral-700",
+  refund_pending: "bg-amber-100 text-amber-700",
+  refunded: "bg-success-100 text-success-700",
 };
 
 function nights(checkIn: string, checkOut: string): number {

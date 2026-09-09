@@ -575,7 +575,9 @@
       "proof_uploaded": "تم رفع إثبات الدفع",
       "verified": "تم التحقق من الدفع",
       "rejected": "تم رفض إثبات الدفع",
-      "cancelled": "تم إلغاء الدفع"
+      "cancelled": "تم إلغاء الدفع",
+      "refund_pending": "استرداد معلّق",
+      "refunded": "تم الاسترداد"
     },
     "readOnlyScope": "صلاحياتك كمضيف مشارك لا تسمح بإدارة هذا الحجز."
   },
@@ -658,6 +660,8 @@
     "statusVerified": "تم التحقق",
     "statusRejected": "مرفوض",
     "statusCancelled": "ملغي",
+    "statusRefundPending": "استرداد معلّق",
+    "statusRefunded": "تم الاسترداد",
     "referenceNumber": "رقم المرجع",
     "checkIn": "تاريخ الوصول",
     "checkOut": "تاريخ المغادرة",
@@ -868,6 +872,7 @@
     "completedStays": "إقامات مكتملة",
     "perListing": "الأرباح لكل عقار",
     "bookings": "حجوزات",
+    "untitledListing": "عقار بدون عنوان",
     "disclaimer": "جميع المبالغ بالجنيه المصري وتقديرية. يتم معالجة المدفوعات المؤكدة وفقاً لشروط المضيف في StayOS."
   },
   "hostToday": {

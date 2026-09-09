@@ -575,7 +575,9 @@
       "proof_uploaded": "Proof uploaded",
       "verified": "Payment verified",
       "rejected": "Proof rejected",
-      "cancelled": "Payment cancelled"
+      "cancelled": "Payment cancelled",
+      "refund_pending": "Refund pending",
+      "refunded": "Refunded"
     },
     "readOnlyScope": "Your co-host scope does not allow managing this reservation."
   },
@@ -658,6 +660,8 @@
     "statusVerified": "Verified",
     "statusRejected": "Rejected",
     "statusCancelled": "Cancelled",
+    "statusRefundPending": "Refund pending",
+    "statusRefunded": "Refunded",
     "referenceNumber": "Reference number",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
@@ -868,6 +872,7 @@
     "completedStays": "Completed stays",
     "perListing": "Earnings per listing",
     "bookings": "bookings",
+    "untitledListing": "Untitled listing",
     "disclaimer": "All amounts are estimates in EGP. Verified payouts are processed according to the StayOS host terms."
   },
   "hostToday": {

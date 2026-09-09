@@ -7,6 +7,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from app.auth import dependencies as auth_dependencies
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.config import settings
@@ -801,6 +802,7 @@ async def create_booking(
     session: AsyncSession, user: User, request: BookingCreate
 ) -> BookingResponse:
     _assert_guest(user)
+    await auth_dependencies.require_kyc_verified(user)
     _assert_booking_dates(request.check_in, request.check_out)
 
     unit = await listings_repository.get_unit_with_listing(session, request.unit_id)

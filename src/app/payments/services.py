@@ -6,6 +6,7 @@ import boto3
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import dependencies as auth_dependencies
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.bookings import repository as bookings_repository
@@ -327,6 +328,7 @@ async def presign_proof_upload(
     filename: str,
     content_type: str,
 ) -> PaymentProofPresignResponse:
+    await auth_dependencies.require_kyc_verified(user)
     payment = await payments_repository.get_payment_or_raise(session, payment_id)
     if payment.guest_id != user.id and user.role != UserRole.ADMIN:
         raise AuthorizationError("Only the guest or admin can upload proof")
@@ -418,6 +420,7 @@ async def upload_proof(
     s3_key: str,
     url: str | None,
 ) -> PaymentResponse:
+    await auth_dependencies.require_kyc_verified(user)
     payment = await payments_repository.get_payment_or_raise(session, payment_id)
     if payment.guest_id != user.id:
         raise AuthorizationError("Only the guest can upload payment proof")

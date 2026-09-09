@@ -240,6 +240,30 @@ async def test_create_booking_rejects_non_guest(fake_session: AsyncMock) -> None
 
 
 @pytest.mark.asyncio
+async def test_create_booking_rejects_unverified_kyc(fake_session: AsyncMock) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.UNVERIFIED)
+    request = BookingCreate(
+        unit_id="unit-1",
+        check_in=_FUTURE_1,
+        check_out=_FUTURE_2,
+    )
+    with pytest.raises(ValidationError, match="KYC verification required"):
+        await booking_services.create_booking(fake_session, guest, request)
+
+
+@pytest.mark.asyncio
+async def test_create_booking_rejects_pending_kyc(fake_session: AsyncMock) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.PENDING)
+    request = BookingCreate(
+        unit_id="unit-1",
+        check_in=_FUTURE_1,
+        check_out=_FUTURE_2,
+    )
+    with pytest.raises(ValidationError, match="KYC verification required"):
+        await booking_services.create_booking(fake_session, guest, request)
+
+
+@pytest.mark.asyncio
 async def test_create_booking_past_check_in(fake_session: AsyncMock, monkeypatch) -> None:
     guest = _make_user(role=UserRole.GUEST)
     unit = _make_unit()

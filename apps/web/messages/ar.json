@@ -507,6 +507,8 @@
     "signInTitle": "سجّل الدخول لإرسال طلب حجز.",
     "signInButton": "تسجيل الدخول",
     "guestsOnly": "يمكن للضيوف فقط إرسال طلبات الحجز.",
+    "kycRequired": "مطلوب التحقق من الهوية قبل إرسال طلب حجز.",
+    "kycRequiredCta": "تحقق من هويتك",
     "serviceFeeWaived": "مجاني خلال الإطلاق"
   },
   "hostBookings": {
@@ -676,6 +678,8 @@
     "cancel": "إلغاء",
     "noPendingPayments": "لا توجد دفعات بانتظار المراجعة",
     "loadError": "تعذّر تحميل الدفعات",
+    "kycRequired": "مطلوب التحقق من الهوية قبل رفع إيصال الدفع.",
+    "kycRequiredCta": "تحقق من هويتك",
     "confirmVerify": "تأكيد إثبات الدفع وتأكيد الحجز؟"
   },
   "kyc": {

@@ -1594,3 +1594,39 @@ async def test_presign_proof_download_not_uploaded_raises(fake_session: AsyncMoc
 
     with pytest.raises(NotFoundError):
         await payment_services.presign_proof_download(fake_session, guest, payment.id)
+
+
+@pytest.mark.asyncio
+async def test_presign_proof_rejects_unverified_kyc(fake_session: AsyncMock) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.UNVERIFIED)
+    with pytest.raises(ValidationError, match="KYC verification required"):
+        await payment_services.presign_proof_upload(
+            fake_session, guest, "payment-1", "receipt.jpg", "image/jpeg"
+        )
+
+
+@pytest.mark.asyncio
+async def test_presign_proof_rejects_pending_kyc(fake_session: AsyncMock) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.PENDING)
+    with pytest.raises(ValidationError, match="KYC verification required"):
+        await payment_services.presign_proof_upload(
+            fake_session, guest, "payment-1", "receipt.jpg", "image/jpeg"
+        )
+
+
+@pytest.mark.asyncio
+async def test_upload_proof_rejects_unverified_kyc(fake_session: AsyncMock) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.UNVERIFIED)
+    with pytest.raises(ValidationError, match="KYC verification required"):
+        await payment_services.upload_proof(
+            fake_session, guest, "payment-1", "payments/x/proof.jpg", None
+        )
+
+
+@pytest.mark.asyncio
+async def test_upload_proof_rejects_rejected_kyc(fake_session: AsyncMock) -> None:
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.REJECTED)
+    with pytest.raises(ValidationError, match="KYC verification required"):
+        await payment_services.upload_proof(
+            fake_session, guest, "payment-1", "payments/x/proof.jpg", None
+        )

@@ -507,6 +507,8 @@
     "signInTitle": "Sign in to request a booking.",
     "signInButton": "Sign in",
     "guestsOnly": "Only guests can request bookings.",
+    "kycRequired": "Identity verification is required before you can request a booking.",
+    "kycRequiredCta": "Verify your identity",
     "serviceFeeWaived": "Free during launch"
   },
   "hostBookings": {
@@ -676,6 +678,8 @@
     "cancel": "Cancel",
     "noPendingPayments": "No payments awaiting verification",
     "loadError": "Failed to load payments",
+    "kycRequired": "Identity verification is required before you can upload a payment receipt.",
+    "kycRequiredCta": "Verify your identity",
     "confirmVerify": "Verify this payment proof and confirm the booking?"
   },
   "kyc": {

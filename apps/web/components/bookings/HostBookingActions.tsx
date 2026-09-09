@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useAuth } from "@/lib/auth/useAuth";
 import {
@@ -12,11 +13,49 @@ import {
   useUpdateBooking,
 } from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 interface HostBookingActionsProps {
   booking: BookingResponse;
   onSuccess: () => void;
+}
+
+function PropertySummary({
+  booking,
+  dateLocale,
+  t,
+}: {
+  booking: BookingResponse;
+  dateLocale: string;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="mb-3 flex gap-3 rounded-lg border border-neutral-100 bg-white p-3">
+      <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-md bg-neutral-100">
+        <Image
+          src={booking.unit_cover_image || PLACEHOLDER_IMAGE}
+          alt={booking.unit_title || t("untitledListing")}
+          fill
+          sizes="96px"
+          className="object-cover"
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-brand-900">
+          {booking.unit_title ?? t("untitledListing")}
+        </p>
+        <p className="mt-1 text-xs text-neutral-500">
+          {formatDate(new Date(booking.check_in), dateLocale)} →{" "}
+          {formatDate(new Date(booking.check_out), dateLocale)}
+        </p>
+        <p className="mt-0.5 text-xs text-neutral-500">
+          {t(`status.${booking.status}`)}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export function HostBookingActions({
@@ -24,6 +63,8 @@ export function HostBookingActions({
   onSuccess,
 }: HostBookingActionsProps) {
   const t = useTranslations("hostBookings");
+  const locale = useLocale();
+  const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { user } = useAuth();
   const updateBooking = useUpdateBooking();
   const checkIn = useCheckIn();
@@ -237,6 +278,7 @@ export function HostBookingActions({
 
       {action === "reject" && (
         <div className="rounded-card border border-danger-200 bg-danger-50 p-4">
+          <PropertySummary booking={booking} dateLocale={dateLocale} t={t} />
           <label
             htmlFor="reject-reason"
             className="block text-sm font-medium text-danger-900"
@@ -275,6 +317,7 @@ export function HostBookingActions({
 
       {action === "cancel" && (
         <div className="rounded-card border border-neutral-200 bg-neutral-50 p-4">
+          <PropertySummary booking={booking} dateLocale={dateLocale} t={t} />
           <label
             htmlFor="cancel-reason"
             className="block text-sm font-medium text-brand-900"

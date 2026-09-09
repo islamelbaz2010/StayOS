@@ -174,6 +174,9 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
 
     if filters.check_in is not None and filters.check_out is not None:
         stmt = stmt.options(selectinload(Unit.calendar_rules))
+        nights = (filters.check_out - filters.check_in).days
+        stmt = stmt.where(UnitListing.min_nights <= nights)
+        stmt = stmt.where(UnitListing.max_nights >= nights)
         blocked = exists().where(
             CalendarRule.unit_id == Unit.id,
             CalendarRule.status.in_(

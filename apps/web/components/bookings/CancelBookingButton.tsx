@@ -1,14 +1,18 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import {
   useCancelBooking,
   useCancellationPreview,
 } from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
+import { formatDate, formatMoney } from "@/lib/utils";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 interface CancelBookingButtonProps {
   booking: BookingResponse;
@@ -25,6 +29,8 @@ export function CancelBookingButton({
 }: CancelBookingButtonProps) {
   const t = useTranslations("trips");
   const tc = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +68,35 @@ export function CancelBookingButton({
   return (
     <div className="mt-3 w-full rounded-card border border-neutral-200 bg-surface-page p-4 sm:w-96">
       <p className="text-sm font-medium text-brand-900">{t("cancelModalTitle")}</p>
+
+      <div className="mt-3 flex gap-3 rounded-lg border border-neutral-100 bg-white p-3">
+        <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-md bg-neutral-100">
+          <Image
+            src={booking.unit_cover_image || PLACEHOLDER_IMAGE}
+            alt={booking.unit_title || t("untitledListing")}
+            fill
+            sizes="96px"
+            className="object-cover"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-brand-900">
+            {booking.unit_title ?? t("untitledListing")}
+          </p>
+          <p className="mt-1 text-xs text-neutral-500">
+            {formatDate(new Date(booking.check_in), dateLocale)} →{" "}
+            {formatDate(new Date(booking.check_out), dateLocale)}
+          </p>
+          <p className="mt-0.5 text-xs text-neutral-500">
+            {t(`status.${booking.status}`)}
+          </p>
+          {preview.data && preview.data.total_paid_egp > 0 && (
+            <p className="mt-0.5 text-xs font-medium text-brand-900">
+              {formatMoney(preview.data.total_paid_egp, "EGP", dateLocale)}
+            </p>
+          )}
+        </div>
+      </div>
 
       {preview.isLoading && (
         <p className="mt-2 text-sm text-neutral-500">{tc("loading")}</p>

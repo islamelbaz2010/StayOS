@@ -238,6 +238,152 @@ async def test_search_listings(fake_session: AsyncMock, monkeypatch) -> None:
     assert result.data[0].cover_image == "https://cdn.example.com/covers/test.jpg"
 
 
+def _make_search_session_result() -> MagicMock:
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = []
+    return result
+
+
+@pytest.mark.asyncio
+async def test_search_listings_no_dates_shows_per_night_only(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    rows = [(unit, unit.listing, 30.0, 31.0)]
+    monkeypatch.setattr(
+        listings.repository, "search_listings", AsyncMock(return_value=(rows, 1))
+    )
+    monkeypatch.setattr(
+        listings.services.reviews_repository,
+        "get_rating_aggregates_for_units",
+        AsyncMock(return_value={"unit-1": (None, 0)}),
+    )
+    fake_session.execute = AsyncMock(return_value=_make_search_session_result())
+
+    filters = ListingSearchFilters(offset=10, limit=5)
+    result = await search_listings(fake_session, filters)
+    assert len(result.data) == 1
+    assert result.data[0].price == 1500
+    assert result.data[0].available_for_dates is None
+    assert result.data[0].nights is None
+    assert result.data[0].total_egp is None
+
+
+@pytest.mark.asyncio
+async def test_search_listings_selected_dates_total_and_nights(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    rows = [(unit, unit.listing, 30.0, 31.0)]
+    monkeypatch.setattr(
+        listings.repository, "search_listings", AsyncMock(return_value=(rows, 1))
+    )
+    monkeypatch.setattr(
+        listings.services.reviews_repository,
+        "get_rating_aggregates_for_units",
+        AsyncMock(return_value={"unit-1": (None, 0)}),
+    )
+    fake_session.execute = AsyncMock(return_value=_make_search_session_result())
+
+    check_in = date(2026, 8, 1)
+    check_out = date(2026, 8, 4)
+    filters = ListingSearchFilters(check_in=check_in, check_out=check_out)
+    result = await search_listings(fake_session, filters)
+    assert len(result.data) == 1
+    assert result.data[0].available_for_dates is True
+    assert result.data[0].nights == 3
+    assert result.data[0].total_egp == 1500 * 3
+
+
+@pytest.mark.asyncio
+async def test_search_listings_calendar_rule_override_respected(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    unit.calendar_rules = [
+        CalendarRule(
+            id=str(uuid.uuid4()),
+            unit_id="unit-1",
+            date_from=date(2026, 8, 2),
+            date_to=date(2026, 8, 3),
+            status=CalendarStatus.AVAILABLE,
+            price_override=3000,
+        )
+    ]
+    rows = [(unit, unit.listing, 30.0, 31.0)]
+    monkeypatch.setattr(
+        listings.repository, "search_listings", AsyncMock(return_value=(rows, 1))
+    )
+    monkeypatch.setattr(
+        listings.services.reviews_repository,
+        "get_rating_aggregates_for_units",
+        AsyncMock(return_value={"unit-1": (None, 0)}),
+    )
+    fake_session.execute = AsyncMock(return_value=_make_search_session_result())
+
+    check_in = date(2026, 8, 1)
+    check_out = date(2026, 8, 4)
+    filters = ListingSearchFilters(check_in=check_in, check_out=check_out)
+    result = await search_listings(fake_session, filters)
+    assert result.data[0].nights == 3
+    # 1500 + 3000 (override) + 1500
+    assert result.data[0].total_egp == 6000
+
+
+@pytest.mark.asyncio
+async def test_search_listings_adjacent_blocked_rule_excludes_correctly(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    unit = _make_unit()
+    unit.calendar_rules = [
+        CalendarRule(
+            id=str(uuid.uuid4()),
+            unit_id="unit-1",
+            date_from=date(2026, 8, 1),
+            date_to=date(2026, 8, 3),
+            status=CalendarStatus.BLOCKED,
+        )
+    ]
+    rows = [(unit, unit.listing, 30.0, 31.0)]
+    monkeypatch.setattr(
+        listings.repository, "search_listings", AsyncMock(return_value=(rows, 1))
+    )
+    monkeypatch.setattr(
+        listings.services.reviews_repository,
+        "get_rating_aggregates_for_units",
+        AsyncMock(return_value={"unit-1": (None, 0)}),
+    )
+    fake_session.execute = AsyncMock(return_value=_make_search_session_result())
+
+    # The night of 2026-08-03 is after the blocked rule (which covers 2026-08-01 and 2026-08-02).
+    check_in = date(2026, 8, 3)
+    check_out = date(2026, 8, 4)
+    filters = ListingSearchFilters(check_in=check_in, check_out=check_out)
+    result = await search_listings(fake_session, filters)
+    assert result.data[0].nights == 1
+    assert result.data[0].total_egp == 1500
+
+
+@pytest.mark.asyncio
+async def test_search_listings_empty_when_no_units_available_for_dates(fake_session: AsyncMock, monkeypatch) -> None:
+    from app import listings
+
+    monkeypatch.setattr(
+        listings.repository, "search_listings", AsyncMock(return_value=([], 0))
+    )
+    monkeypatch.setattr(
+        listings.services.reviews_repository,
+        "get_rating_aggregates_for_units",
+        AsyncMock(return_value={}),
+    )
+    fake_session.execute = AsyncMock(return_value=_make_search_session_result())
+
+    filters = ListingSearchFilters(check_in=date(2026, 8, 1), check_out=date(2026, 8, 4))
+    result = await search_listings(fake_session, filters)
+    assert result.data == []
+    assert result.pagination.total_count == 0
+
+
 @pytest.mark.asyncio
 async def test_search_listings_validation(fake_session: AsyncMock) -> None:
     from app.listings.services import ValidationError

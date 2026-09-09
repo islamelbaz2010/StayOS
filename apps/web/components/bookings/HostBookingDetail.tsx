@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 
@@ -8,6 +9,8 @@ import { usePaymentByBooking, type PaymentResponse } from "@/lib/queries/payment
 import { formatDate } from "@/lib/utils";
 
 import { HostBookingActions } from "./HostBookingActions";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 interface HostBookingDetailProps {
   booking: BookingResponse;
@@ -73,6 +76,23 @@ export function HostBookingDetail({
         >
           {t(`status.${booking.status}`)}
         </span>
+      </div>
+
+      <div className="mt-4 flex gap-4">
+        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+          <Image
+            src={booking.unit_cover_image || PLACEHOLDER_IMAGE}
+            alt={booking.unit_title || t("listing")}
+            fill
+            sizes="112px"
+            className="object-cover"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-semibold text-brand-900">
+            {booking.unit_title || t("untitledListing")}
+          </p>
+        </div>
       </div>
 
       <dl className="mt-6 grid gap-4 sm:grid-cols-2">

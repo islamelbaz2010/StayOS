@@ -1842,6 +1842,31 @@ async def test_complete_booking_duplicate_rejected(
         await booking_services.complete_booking(fake_session, admin, booking.id)
 
 
+@pytest.mark.asyncio
+async def test_complete_booking_before_checkout_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY - timedelta(days=2),
+        check_out=_TODAY - timedelta(days=1),
+        checked_in_at=datetime.now(UTC) - timedelta(days=2),
+    )
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(ValidationError):
+        await booking_services.complete_booking(fake_session, admin, booking.id)
+
+
 def test_complete_booking_route_admin(bookings_client: TestClient, monkeypatch) -> None:
     admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
     _patch_auth_user(monkeypatch, admin)

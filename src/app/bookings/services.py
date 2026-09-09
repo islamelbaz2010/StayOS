@@ -955,6 +955,9 @@ async def complete_booking(
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
     _assert_status_transition(BookingStatus(booking.status), BookingStatus.COMPLETED)
 
+    if booking.checked_out_at is None:
+        raise ValidationError("Booking must be checked out before completion")
+
     updated = await bookings_repository.update_booking(
         session, booking, status=str(BookingStatus.COMPLETED)
     )

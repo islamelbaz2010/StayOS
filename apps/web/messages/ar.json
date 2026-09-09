@@ -841,6 +841,7 @@
     "loadError": "تعذّر تحميل مدفوعاتك.",
     "reference": "المرجع",
     "deadline": "ادفع قبل",
+    "untitledListing": "إقامة بدون عنوان",
     "viewBooking": "عرض الحجز",
     "payNow": "ادفع الآن",
     "rejectedProofs": "إيصالات مرفوضة: {count}",

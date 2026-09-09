@@ -29,7 +29,7 @@ from app.listings.models import Unit
 from app.listings.schemas import PhotoReorderRequest
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 
-_TODAY = date.today()
+_TODAY = datetime.now(UTC).date()
 _FUTURE_1 = _TODAY + timedelta(days=10)
 _FUTURE_2 = _FUTURE_1 + timedelta(days=3)
 

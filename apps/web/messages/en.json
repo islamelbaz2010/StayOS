@@ -841,6 +841,7 @@
     "loadError": "Could not load your payments.",
     "reference": "Reference",
     "deadline": "Pay by",
+    "untitledListing": "Untitled listing",
     "viewBooking": "View booking",
     "payNow": "Pay now",
     "rejectedProofs": "Rejected proofs: {count}",

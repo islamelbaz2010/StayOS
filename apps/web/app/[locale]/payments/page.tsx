@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -8,6 +9,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
 import { useMyPayments, type PaymentListItem } from "@/lib/queries/payments";
 import { formatDate, formatMoney } from "@/lib/utils";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800",
@@ -70,9 +73,21 @@ export default function PaymentsPage() {
                   key={payment.id}
                   className="rounded-xl bg-white p-4 shadow-card"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                      <Image
+                        src={payment.unit_cover_image || PLACEHOLDER_IMAGE}
+                        alt={payment.unit_title || payment.reference_number}
+                        fill
+                        sizes="112px"
+                        className="object-cover"
+                      />
+                    </div>
                     <div className="flex-1">
                       <p className="font-semibold text-neutral-900">
+                        {payment.unit_title ?? t("untitledListing")}
+                      </p>
+                      <p className="text-sm text-neutral-500">
                         {formatMoney(payment.amount_egp, "EGP", dateLocale)}
                       </p>
                       <p className="text-sm text-neutral-500">

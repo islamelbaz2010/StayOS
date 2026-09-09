@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -13,6 +14,8 @@ import {
   usePaymentProofDownloadUrl,
 } from "@/lib/queries/payments";
 import { formatDate } from "@/lib/utils";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 function StatusBadge({ status }: { status: string }) {
   const t = useTranslations("payment");
@@ -127,6 +130,28 @@ function CheckoutContent({
 
   return (
     <div className="space-y-6">
+      <div className="card p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+            <Image
+              src={booking.unit_cover_image || PLACEHOLDER_IMAGE}
+              alt={booking.unit_title || t("bookingSummary")}
+              fill
+              sizes="144px"
+              className="object-cover"
+            />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-brand-900">
+              {booking.unit_title ?? t("untitledListing")}
+            </p>
+            <p className="mt-1 text-sm text-neutral-600">
+              {formatDate(new Date(booking.check_in), dateLocale)} - {formatDate(new Date(booking.check_out), dateLocale)}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="card p-5 sm:p-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>

@@ -118,6 +118,10 @@ export function BookingPanel({ listing }: BookingPanelProps) {
         nextErrors.checkOut = t("checkOutAfterCheckIn");
       } else if (blockedDatesInRange.length > 0) {
         nextErrors.checkOut = t("datesUnavailable");
+      } else if (nights > 0 && listing.minNights > 0 && nights < listing.minNights) {
+        nextErrors.nights = t("minNightsRequired", { min: listing.minNights });
+      } else if (nights > 0 && listing.maxNights > 0 && nights > listing.maxNights) {
+        nextErrors.nights = t("maxNightsExceeded", { max: listing.maxNights });
       }
     }
 
@@ -179,12 +183,18 @@ export function BookingPanel({ listing }: BookingPanelProps) {
     );
   }
 
+  const minNights = listing.minNights || 1;
+  const maxNights = listing.maxNights || Number.MAX_SAFE_INTEGER;
+  const nightsValid =
+    nights > 0 && nights >= minNights && nights <= maxNights;
+
   const canSubmit =
     isAuthenticated &&
     isGuest &&
     isKycVerified &&
     !createBooking.isPending &&
-    blockedDatesInRange.length === 0;
+    blockedDatesInRange.length === 0 &&
+    nightsValid;
 
   return (
     <section className="card p-5 sm:p-6" aria-label={t("title")}>
@@ -287,6 +297,11 @@ export function BookingPanel({ listing }: BookingPanelProps) {
             {!errors.checkOut && nights > 0 && blockedDatesInRange.length > 0 && (
               <p className="mt-1 text-sm text-danger-600" role="alert">
                 {t("datesUnavailable")}
+              </p>
+            )}
+            {errors.nights && (
+              <p className="mt-1 text-sm text-danger-600" role="alert">
+                {errors.nights}
               </p>
             )}
           </div>

@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { GuestLayout } from "@/components/layouts";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ListingCardSkeleton } from "@/components/listings/ListingCardSkeleton";
+import { SearchBar } from "@/components/search/SearchBar";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useSearchListings } from "@/lib/queries/listings";
 
@@ -126,6 +127,19 @@ export default function SearchPage() {
               {t("search.resultsCount", { count: total })}
             </span>
           )}
+        </div>
+
+        <div className="mt-4">
+          <SearchBar
+            baseParams={searchParams.toString()}
+            q={filters.q}
+            checkin={filters.checkin}
+            checkout={filters.checkout}
+            guests={filters.guests}
+            onSearch={(queryString) =>
+              router.push(`/${locale}/search?${queryString}`, { scroll: false })
+            }
+          />
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">

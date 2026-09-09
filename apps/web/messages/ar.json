@@ -295,6 +295,9 @@
     "maxPrice": "أعلى سعر",
     "guestsMin": "الضيوف",
     "clearFilters": "مسح عوامل التصفية",
+    "clearSearch": "مسح البحث",
+    "checkInPast": "لا يمكن أن يكون تاريخ الوصول في الماضي.",
+    "checkOutAfterCheckIn": "تاريخ المغادرة يجب أن يكون بعد تاريخ الوصول.",
     "types": {
       "APARTMENT": "شقة",
       "VILLA": "فيلا",
@@ -503,6 +506,8 @@
     "atLeastOneGuest": "مطلوب ضيف واحد على الأقل.",
     "atLeastOneAdult": "مطلوب بالغ واحد على الأقل.",
     "maxGuestsExceeded": "هذا العقار يستوعب {max} ضيوف كحد أقصى.",
+    "minNightsRequired": "الحد الأدنى للإقامة {min} ليالي.",
+    "maxNightsExceeded": "الحد الأقصى للإقامة {max} ليالي.",
     "submitError": "فشل إرسال طلب الحجز. يرجى المحاولة مرة أخرى.",
     "signInTitle": "سجّل الدخول لإرسال طلب حجز.",
     "signInButton": "تسجيل الدخول",

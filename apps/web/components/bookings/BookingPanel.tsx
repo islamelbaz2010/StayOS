@@ -17,6 +17,8 @@ import { BookingSuccess } from "./BookingSuccess";
 
 interface BookingPanelProps {
   listing: ListingDetail;
+  initialCheckIn?: string;
+  initialCheckOut?: string;
 }
 
 interface GuestCounts {
@@ -38,7 +40,13 @@ function addDays(date: Date, days: number): Date {
   return next;
 }
 
-export function BookingPanel({ listing }: BookingPanelProps) {
+function isValidIsoDate(value: string | undefined): value is string {
+  if (!value) return false;
+  const d = new Date(value);
+  return !Number.isNaN(d.getTime()) && value.length >= 10;
+}
+
+export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: BookingPanelProps) {
   const t = useTranslations("booking");
   const locale = useLocale();
   const { isAuthenticated, isGuest, isLoading: isAuthLoading, user } = useAuth();
@@ -52,8 +60,11 @@ export function BookingPanel({ listing }: BookingPanelProps) {
   const tomorrow = useMemo(() => addDays(today, 1), [today]);
   const dayAfterTomorrow = useMemo(() => addDays(today, 2), [today]);
 
-  const [checkIn, setCheckIn] = useState<string>(toInputDate(tomorrow));
-  const [checkOut, setCheckOut] = useState<string>(toInputDate(dayAfterTomorrow));
+  const defaultCheckIn = isValidIsoDate(initialCheckIn) ? initialCheckIn : toInputDate(tomorrow);
+  const defaultCheckOut = isValidIsoDate(initialCheckOut) ? initialCheckOut : toInputDate(dayAfterTomorrow);
+
+  const [checkIn, setCheckIn] = useState<string>(defaultCheckIn);
+  const [checkOut, setCheckOut] = useState<string>(defaultCheckOut);
   const [guests, setGuests] = useState<GuestCounts>({
     adults: 1,
     children: 0,

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { BookingPanel } from "@/components/bookings/BookingPanel";
@@ -95,8 +95,11 @@ function HighlightItem({
 export default function ListingDetailPage() {
   const t = useTranslations("listing");
   const params = useParams<{ locale: string; unitId: string }>();
+  const searchParams = useSearchParams();
   const unitId = params?.unitId ?? "";
   const locale = params?.locale ?? "ar";
+  const initialCheckIn = searchParams?.get("checkin") ?? undefined;
+  const initialCheckOut = searchParams?.get("checkout") ?? undefined;
   const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
 
   const { data: listing, isPending, isError, refetch } = useListing(unitId);
@@ -324,7 +327,11 @@ export default function ListingDetailPage() {
 
               <aside className="hidden lg:col-span-1 lg:block">
                 <div className="lg:sticky lg:top-24">
-                  <BookingPanel listing={listing} />
+                  <BookingPanel
+                    listing={listing}
+                    initialCheckIn={initialCheckIn}
+                    initialCheckOut={initialCheckOut}
+                  />
                 </div>
               </aside>
             </div>
@@ -352,7 +359,11 @@ export default function ListingDetailPage() {
             </div>
 
             <div id="booking" className="px-0 pb-24 pt-6 lg:hidden">
-              <BookingPanel listing={listing} />
+              <BookingPanel
+                listing={listing}
+                initialCheckIn={initialCheckIn}
+                initialCheckOut={initialCheckOut}
+              />
             </div>
           </article>
         ) : null}

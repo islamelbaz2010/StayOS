@@ -36,16 +36,23 @@ export interface Listing {
 interface ListingCardProps {
   listing: Listing;
   className?: string;
+  checkin?: string;
+  checkout?: string;
 }
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
-export function ListingCard({ listing, className }: ListingCardProps) {
+export function ListingCard({ listing, className, checkin, checkout }: ListingCardProps) {
   const t = useTranslations("listing");
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
 
   const imageUrl = listing.coverImage ?? PLACEHOLDER_IMAGE;
+  const detailQuery =
+    checkin && checkout
+      ? `?checkin=${encodeURIComponent(checkin)}&checkout=${encodeURIComponent(checkout)}`
+      : "";
+  const detailHref = `/${locale}/listings/${listing.id}${detailQuery}`;
   const isVerified = listing.hostKycStatus === "verified";
 
   return (
@@ -56,7 +63,7 @@ export function ListingCard({ listing, className }: ListingCardProps) {
       )}
     >
       <Link
-        href={`/${locale}/listings/${listing.id}`}
+        href={detailHref}
         className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
         aria-label={`${listing.title}, ${listing.city}`}
       >

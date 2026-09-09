@@ -38,6 +38,7 @@
     "rights": "All rights reserved.",
     "toggleMenu": "Toggle menu",
     "paymentQueue": "Payment Queue",
+    "operations": "Operations",
     "discovery": "Supply Discovery"
   },
   "auth": {
@@ -579,7 +580,18 @@
       "refund_pending": "Refund pending",
       "refunded": "Refunded"
     },
-    "readOnlyScope": "Your co-host scope does not allow managing this reservation."
+    "readOnlyScope": "Your co-host scope does not allow managing this reservation.",
+    "phase": {
+      "upcoming": "Upcoming",
+      "check_in_ready": "Check-in ready",
+      "checked_in": "Checked in",
+      "checkout_ready": "Checkout ready",
+      "checked_out": "Checked out",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "rejected": "Rejected",
+      "no_show": "No-show"
+    }
   },
   "availability": {
     "title": "Availability",
@@ -1092,5 +1104,19 @@
     "previous": "Previous image",
     "next": "Next image",
     "viewImage": "View image {n}"
+  },
+  "adminBookings": {
+    "title": "Operations",
+    "subtitle": "Review and action bookings that need attention across all properties.",
+    "loading": "Loading bookings...",
+    "notFound": "Booking not found.",
+    "selectBooking": "Select a booking to review the required action.",
+    "emptyQueue": "No bookings need this action right now.",
+    "queue": {
+      "decision": "Needs decision",
+      "checkIn": "Needs check-in",
+      "checkOut": "Needs check-out",
+      "complete": "Needs completion"
+    }
   }
 }

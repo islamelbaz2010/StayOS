@@ -884,6 +884,35 @@ def test_update_booking_route_rejects_unauthenticated(bookings_client: TestClien
     assert response.status_code == 401
 
 
+def test_list_host_bookings_route_allows_admin(bookings_client: TestClient, monkeypatch) -> None:
+    admin = _make_user(role=UserRole.ADMIN)
+    _patch_auth_user(monkeypatch, admin)
+    response_model = _make_booking_response()
+    monkeypatch.setattr(
+        "app.bookings.router.list_host_bookings",
+        AsyncMock(return_value=[response_model]),
+    )
+
+    token = _token_for(admin)
+    response = bookings_client.get(
+        "/api/v1/bookings",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+
+
+def test_list_host_bookings_route_rejects_guest(bookings_client: TestClient, monkeypatch) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, guest)
+
+    token = _token_for(guest)
+    response = bookings_client.get(
+        "/api/v1/bookings",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # stay_phase / check-in / check-out / stay info
 # ---------------------------------------------------------------------------

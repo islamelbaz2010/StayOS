@@ -13,6 +13,7 @@ interface HostBookingListProps {
   bookings: BookingResponse[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  showPhase?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -37,6 +38,7 @@ export function HostBookingList({
   bookings,
   selectedId,
   onSelect,
+  showPhase,
 }: HostBookingListProps) {
   const t = useTranslations("hostBookings");
   const params = useParams<{ locale: string }>();
@@ -78,6 +80,12 @@ export function HostBookingList({
                 {nights(booking.check_in, booking.check_out)} {t("nights")}
               </span>
             </div>
+
+            {showPhase && booking.stay_phase && (
+              <p className="mt-1 text-xs font-medium text-accent-700">
+                {t(`phase.${booking.stay_phase}`)}
+              </p>
+            )}
 
             <div className="mt-3 flex gap-3">
               <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-100">

@@ -116,6 +116,13 @@ export function Header() {
             {t("paymentQueue")}
           </Link>
           <Link
+            href={`/${locale}/admin/bookings`}
+            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
+            onClick={() => setMobileOpen(false)}
+          >
+            {t("operations")}
+          </Link>
+          <Link
             href={`/${locale}/admin/discovery`}
             className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             onClick={() => setMobileOpen(false)}

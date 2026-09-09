@@ -89,7 +89,7 @@ export default function ProfilePage() {
                 <p className="mt-2 text-sm text-neutral-600">{t("becomeHostDesc")}</p>
                 <button
                   type="button"
-                  onClick={() => router.push(`/${locale}/host/kyc`)}
+                  onClick={() => router.push(`/${locale}/kyc`)}
                   className="mt-4 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700"
                 >
                   {t("startKyc")}

@@ -41,7 +41,7 @@ export function Header() {
             {t("trips")}
           </Link>
           <Link
-            href={`/${locale}/host/kyc`}
+            href={`/${locale}/kyc`}
             className="text-sm font-medium text-accent-600 hover:text-accent-700"
             onClick={() => setMobileOpen(false)}
           >
@@ -51,7 +51,7 @@ export function Header() {
       )}
       {!isAuthenticated && (
         <Link
-          href={`/${locale}/host/kyc`}
+          href={`/${locale}/kyc`}
           className="text-sm font-medium text-accent-600 hover:text-accent-700"
           onClick={() => setMobileOpen(false)}
         >
@@ -238,7 +238,7 @@ export function Header() {
                   {t("trips")}
                 </Link>
                 <Link
-                  href={`/${locale}/host/kyc`}
+                  href={`/${locale}/kyc`}
                   className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                   onClick={() => setMobileOpen(false)}
                 >
@@ -248,7 +248,7 @@ export function Header() {
             )}
             {!isAuthenticated && (
               <Link
-                href={`/${locale}/host/kyc`}
+                href={`/${locale}/kyc`}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >

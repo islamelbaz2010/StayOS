@@ -33,7 +33,7 @@ export function Footer() {
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
-                  href={`/${locale}/host/kyc`}
+                  href={`/${locale}/kyc`}
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
                   {t("becomeHost")}

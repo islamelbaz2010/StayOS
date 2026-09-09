@@ -244,7 +244,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
         <div className="mt-4 rounded-lg bg-warning-50 p-4">
           <p className="text-sm text-warning-800">{t("kycRequired")}</p>
           <Link
-            href={`/${locale}/host/kyc`}
+            href={`/${locale}/kyc`}
             className="mt-2 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
           >
             {t("kycRequiredCta")}

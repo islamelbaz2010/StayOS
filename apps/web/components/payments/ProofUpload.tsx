@@ -10,6 +10,7 @@ import {
   useUploadProof,
   type PaymentProofPresignResponse,
 } from "@/lib/queries/payments";
+import { getApiErrorMessage } from "@/lib/utils";
 
 interface ProofUploadProps {
   paymentId: string;
@@ -27,7 +28,6 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
   const t = useTranslations("payment");
-  const tc = useTranslations("common");
   const locale = useLocale();
   const { user } = useAuth();
   const isKycVerified = user?.kyc_status === "verified";
@@ -75,13 +75,13 @@ export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
           paymentId,
           payload: { s3_key: presignRes.proof_key },
         });
-      } catch {
-        setError(t("uploadFailed") ?? tc("error"));
+      } catch (err) {
+        setError(getApiErrorMessage(err, t("uploadFailed")));
       } finally {
         setIsUploading(false);
       }
     },
-    [paymentId, presignMutation, uploadMutation, t, tc]
+    [paymentId, presignMutation, uploadMutation, t]
   );
 
   const handleDrop = useCallback(

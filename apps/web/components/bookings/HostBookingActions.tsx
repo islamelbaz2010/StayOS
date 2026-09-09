@@ -13,7 +13,7 @@ import {
   useUpdateBooking,
 } from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, getApiErrorMessage } from "@/lib/utils";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
@@ -82,6 +82,8 @@ export function HostBookingActions({
     booking.permission_scope == null ||
     ["owner", "admin", "full_access"].includes(booking.permission_scope);
 
+  const canCancel = !booking.checked_in_at && !booking.checked_out_at;
+
   if (!canManageBookings) {
     return (
       <p className="text-sm text-neutral-500">{t("readOnlyScope")}</p>
@@ -89,10 +91,7 @@ export function HostBookingActions({
   }
 
   const onActionError = (err: unknown) => {
-    const axiosError = err as {
-      response?: { data?: { error?: { message?: string } } };
-    };
-    setError(axiosError.response?.data?.error?.message || t("updateError"));
+    setError(getApiErrorMessage(err, t("updateError")));
   };
 
   async function handleAction(
@@ -122,10 +121,7 @@ export function HostBookingActions({
       setCancelReason("");
       onSuccess();
     } catch (err) {
-      const axiosError = err as {
-        response?: { data?: { error?: { message?: string } } };
-      };
-      setError(axiosError.response?.data?.error?.message || t("updateError"));
+      setError(getApiErrorMessage(err, t("updateError")));
     }
   }
 
@@ -218,7 +214,56 @@ export function HostBookingActions({
               <p className="text-sm text-neutral-600">{t("stayCompleted")}</p>
             )
           )}
+          {canCancel && (
+            <button
+              type="button"
+              onClick={() => setAction("cancel")}
+              disabled={updateBooking.isPending || action === "cancel"}
+              className="btn-secondary text-sm"
+            >
+              {t("cancel")}
+            </button>
+          )}
         </div>
+
+        {action === "cancel" && (
+          <div className="rounded-card border border-neutral-200 bg-neutral-50 p-4">
+            <PropertySummary booking={booking} dateLocale={dateLocale} t={t} />
+            <label
+              htmlFor="cancel-reason"
+              className="block text-sm font-medium text-brand-900"
+            >
+              {t("cancelReason")}
+            </label>
+            <textarea
+              id="cancel-reason"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="input mt-2 min-h-[5rem]"
+              rows={3}
+            />
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleAction("cancelled")}
+                disabled={updateBooking.isPending}
+                className="btn-primary text-sm"
+              >
+                {t("confirmCancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAction(null);
+                  setCancelReason("");
+                }}
+                className="btn-secondary text-sm"
+              >
+                {t("back")}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -252,18 +297,20 @@ export function HostBookingActions({
           >
             {t("reject")}
           </button>
-          <button
-            type="button"
-            onClick={() => setAction("cancel")}
-            disabled={updateBooking.isPending || action === "cancel"}
-            className="btn-secondary text-sm"
-          >
-            {t("cancel")}
-          </button>
+          {canCancel && (
+            <button
+              type="button"
+              onClick={() => setAction("cancel")}
+              disabled={updateBooking.isPending || action === "cancel"}
+              className="btn-secondary text-sm"
+            >
+              {t("cancel")}
+            </button>
+          )}
         </div>
       )}
 
-      {booking.status === "accepted" && (
+      {booking.status === "accepted" && canCancel && (
         <div className="flex flex-wrap gap-3">
           <button
             type="button"

@@ -146,12 +146,14 @@ export default function MyTripsPage() {
                           {t("checkout")}
                         </Link>
                       )}
-                      {CANCELLABLE_STATUSES.has(booking.status) && (
-                        <CancelBookingButton
-                          booking={booking}
-                          onCancelled={() => refetch()}
-                        />
-                      )}
+                      {CANCELLABLE_STATUSES.has(booking.status) &&
+                        !booking.checked_in_at &&
+                        !booking.checked_out_at && (
+                          <CancelBookingButton
+                            booking={booking}
+                            onCancelled={() => refetch()}
+                          />
+                        )}
                     </div>
                   </div>
                 </div>

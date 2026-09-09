@@ -18,7 +18,7 @@ import {
 } from "@/lib/queries/bookings";
 import { useBookingConversation } from "@/lib/queries/messages";
 import { usePaymentByBooking } from "@/lib/queries/payments";
-import { formatDate, formatMoney } from "@/lib/utils";
+import { formatDate, formatMoney, getApiErrorMessage } from "@/lib/utils";
 
 const CANCELLABLE_PHASES = new Set(["upcoming", "check_in_ready"]);
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
@@ -293,8 +293,8 @@ function TripContent({
               try {
                 await checkIn.mutateAsync(booking.id);
                 refetch();
-              } catch {
-                setActionError(t("actionError"));
+              } catch (err) {
+                setActionError(getApiErrorMessage(err, t("actionError")));
               }
             }}
             disabled={checkIn.isPending}
@@ -312,8 +312,8 @@ function TripContent({
               try {
                 await checkOut.mutateAsync(booking.id);
                 refetch();
-              } catch {
-                setActionError(t("actionError"));
+              } catch (err) {
+                setActionError(getApiErrorMessage(err, t("actionError")));
               }
             }}
             disabled={checkOut.isPending}

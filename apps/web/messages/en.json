@@ -701,7 +701,9 @@
     "loadError": "Failed to load payments",
     "kycRequired": "Identity verification is required before you can upload a payment receipt.",
     "kycRequiredCta": "Verify your identity",
-    "confirmVerify": "Verify this payment proof and confirm the booking?"
+    "confirmVerify": "Verify this payment proof and confirm the booking?",
+    "verifyError": "Could not verify this payment. Please try again.",
+    "rejectError": "Could not reject this payment. Please try again."
   },
   "kyc": {
     "pageTitle": "Identity Verification",

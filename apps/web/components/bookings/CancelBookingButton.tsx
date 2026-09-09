@@ -10,6 +10,7 @@ import {
   useCancellationPreview,
 } from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
+import { getApiErrorMessage } from "@/lib/utils";
 import { formatDate, formatMoney } from "@/lib/utils";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
@@ -48,8 +49,8 @@ export function CancelBookingButton({
       setOpen(false);
       setReason("");
       onCancelled();
-    } catch {
-      setError(t("cancelError") ?? tc("error"));
+    } catch (err) {
+      setError(getApiErrorMessage(err, t("cancelError")));
     }
   }
 

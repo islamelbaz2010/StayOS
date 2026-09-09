@@ -14,6 +14,7 @@ import {
   usePaymentProofDownloadUrl,
   type PaymentListItem,
 } from "@/lib/queries/payments";
+import { getApiErrorMessage } from "@/lib/utils";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
@@ -52,8 +53,8 @@ function PaymentCard({
   isRejecting,
 }: {
   payment: PaymentListItem;
-  onVerify: (id: string) => void;
-  onReject: (id: string, reason: string) => void;
+  onVerify: (id: string) => Promise<unknown>;
+  onReject: (id: string, reason: string) => Promise<unknown>;
   isVerifying: boolean;
   isRejecting: boolean;
 }) {
@@ -64,12 +65,28 @@ function PaymentCard({
   const proofDownload = usePaymentProofDownloadUrl();
   const [showReject, setShowReject] = useState(false);
   const [reason, setReason] = useState("");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
-  const handleReject = () => {
-    if (reason.trim()) {
-      onReject(payment.id, reason.trim());
+  const handleVerify = async () => {
+    if (!window.confirm(t("confirmVerify"))) return;
+    setVerifyError(null);
+    try {
+      await onVerify(payment.id);
+    } catch (err) {
+      setVerifyError(getApiErrorMessage(err, t("verifyError")));
+    }
+  };
+
+  const handleReject = async () => {
+    if (!reason.trim()) return;
+    setRejectError(null);
+    try {
+      await onReject(payment.id, reason.trim());
       setShowReject(false);
       setReason("");
+    } catch (err) {
+      setRejectError(getApiErrorMessage(err, t("rejectError")));
     }
   };
 
@@ -129,15 +146,21 @@ function PaymentCard({
 
       {payment.status === "proof_uploaded" && (
         <div className="border-t border-neutral-200 p-4">
+          {verifyError && (
+            <p className="mb-3 rounded-md bg-danger-50 p-3 text-sm text-danger-700" role="alert">
+              {verifyError}
+            </p>
+          )}
+          {rejectError && (
+            <p className="mb-3 rounded-md bg-danger-50 p-3 text-sm text-danger-700" role="alert">
+              {rejectError}
+            </p>
+          )}
           {!showReject ? (
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm(t("confirmVerify"))) {
-                    onVerify(payment.id);
-                  }
-                }}
+                onClick={handleVerify}
                 disabled={isVerifying || isRejecting}
                 className="btn-primary text-sm disabled:opacity-50"
               >
@@ -145,7 +168,10 @@ function PaymentCard({
               </button>
               <button
                 type="button"
-                onClick={() => setShowReject(true)}
+                onClick={() => {
+                  setRejectError(null);
+                  setShowReject(true);
+                }}
                 disabled={isVerifying || isRejecting}
                 className="btn-danger text-sm disabled:opacity-50"
               >
@@ -181,6 +207,7 @@ function PaymentCard({
                   type="button"
                   onClick={() => {
                     setShowReject(false);
+                    setRejectError(null);
                     setReason("");
                   }}
                   className="btn-secondary text-sm"
@@ -242,9 +269,9 @@ export default function AdminPaymentQueuePage() {
                 <PaymentCard
                   key={payment.id}
                   payment={payment}
-                  onVerify={(id) => verifyMutation.mutate(id)}
+                  onVerify={(id) => verifyMutation.mutateAsync(id)}
                   onReject={(id, reason) =>
-                    rejectMutation.mutate({
+                    rejectMutation.mutateAsync({
                       paymentId: id,
                       rejectReason: reason,
                     })

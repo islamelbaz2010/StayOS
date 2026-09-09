@@ -539,6 +539,7 @@
       "requested": "مطلوب",
       "accepted": "مقبول",
       "confirmed": "مؤكد",
+      "completed": "مكتمل",
       "rejected": "مرفوض",
       "cancelled": "ملغى",
       "no_show": "لم يحضر"
@@ -547,12 +548,14 @@
       "requested": "مطلوب",
       "accepted": "مقبول",
       "confirmed": "مؤكد",
+      "completed": "مكتمل",
       "rejected": "مرفوض",
       "cancelled": "ملغى",
       "no_show": "لم يحضر"
     },
     "confirmedMessage": "تم التحقق من الدفع — تم تأكيد الحجز.",
     "stayCompleted": "اكتملت الإقامة",
+    "complete": "إكمال الإقامة",
     "payment": "الدفع",
     "paymentStatuses": {
       "pending": "في انتظار الدفع",

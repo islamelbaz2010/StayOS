@@ -16,6 +16,7 @@ const FILTERS = [
   "requested",
   "accepted",
   "confirmed",
+  "completed",
   "rejected",
   "cancelled",
   "no_show",

@@ -4,9 +4,11 @@ import { useState } from "react";
 
 import { useTranslations } from "next-intl";
 
+import { useAuth } from "@/lib/auth/useAuth";
 import {
   useCheckIn,
   useCheckOut,
+  useCompleteBooking,
   useUpdateBooking,
 } from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
@@ -22,9 +24,11 @@ export function HostBookingActions({
   onSuccess,
 }: HostBookingActionsProps) {
   const t = useTranslations("hostBookings");
+  const { user } = useAuth();
   const updateBooking = useUpdateBooking();
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
+  const completeBooking = useCompleteBooking();
 
   const [rejectReason, setRejectReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
@@ -87,7 +91,8 @@ export function HostBookingActions({
   if (
     booking.status === "cancelled" ||
     booking.status === "rejected" ||
-    booking.status === "no_show"
+    booking.status === "no_show" ||
+    booking.status === "completed"
   ) {
     return (
       <p className="text-sm text-neutral-500">
@@ -150,7 +155,27 @@ export function HostBookingActions({
             </button>
           )}
           {booking.checked_in_at && booking.checked_out_at && (
-            <p className="text-sm text-neutral-600">{t("stayCompleted")}</p>
+            user?.role === "admin" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  completeBooking.mutate(booking.id, {
+                    onSuccess,
+                    onError: onActionError,
+                  });
+                }}
+                disabled={completeBooking.isPending}
+                className={cn(
+                  "btn-primary text-sm",
+                  completeBooking.isPending && "opacity-60"
+                )}
+              >
+                {completeBooking.isPending ? t("processing") : t("complete")}
+              </button>
+            ) : (
+              <p className="text-sm text-neutral-600">{t("stayCompleted")}</p>
+            )
           )}
         </div>
       </div>

@@ -184,3 +184,22 @@ export function useCheckOut() {
     },
   });
 }
+
+export async function completeBooking(bookingId: string): Promise<BookingResponse> {
+  const { data } = await api.post<BookingResponse>(
+    `/bookings/${bookingId}/complete`
+  );
+  return data;
+}
+
+export function useCompleteBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: completeBooking,
+    onSuccess: (_data, bookingId) => {
+      queryClient.invalidateQueries({ queryKey: ["host-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+    },
+  });
+}

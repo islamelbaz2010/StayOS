@@ -1756,3 +1756,127 @@ async def test_create_booking_locks_unit_and_rejects_conflicting_booking(
         await booking_services.create_booking(fake_session, guest, request)
 
     lock_mock.assert_awaited_once_with(fake_session, unit.id)
+
+
+# --- complete_booking (Alpha-3) ---------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_complete_booking_admin_success(fake_session: AsyncMock, monkeypatch) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY - timedelta(days=2),
+        check_out=_TODAY - timedelta(days=1),
+        checked_in_at=datetime.now(UTC) - timedelta(days=2),
+        checked_out_at=datetime.now(UTC) - timedelta(days=1),
+    )
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(bookings_repository, "update_booking", _apply_booking_update)
+    monkeypatch.setattr(
+        payments_repository, "get_payment_by_booking", AsyncMock(return_value=None)
+    )
+
+    result = await booking_services.complete_booking(fake_session, admin, booking.id)
+
+    assert result.status == BookingStatus.COMPLETED
+    assert booking.status == str(BookingStatus.COMPLETED)
+
+
+@pytest.mark.asyncio
+async def test_complete_booking_non_admin_rejected(fake_session: AsyncMock) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.CONFIRMED)
+
+    with pytest.raises(AuthorizationError):
+        await booking_services.complete_booking(fake_session, guest, booking.id)
+    with pytest.raises(AuthorizationError):
+        await booking_services.complete_booking(fake_session, host, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_complete_booking_invalid_transition_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.REQUESTED)
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(ValidationError):
+        await booking_services.complete_booking(fake_session, admin, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_complete_booking_duplicate_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit, guest, status=BookingStatus.COMPLETED
+    )
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(ValidationError):
+        await booking_services.complete_booking(fake_session, admin, booking.id)
+
+
+def test_complete_booking_route_admin(bookings_client: TestClient, monkeypatch) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    _patch_auth_user(monkeypatch, admin)
+    response_model = _make_booking_response(status="completed")
+    monkeypatch.setattr(
+        "app.bookings.router.complete_booking",
+        AsyncMock(return_value=response_model),
+    )
+
+    token = _token_for(admin)
+    response = bookings_client.post(
+        f"/api/v1/bookings/{response_model.id}/complete",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "completed"
+
+
+def test_complete_booking_route_rejects_non_admin(bookings_client: TestClient, monkeypatch) -> None:
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    _patch_auth_user(monkeypatch, host)
+    response_model = _make_booking_response(status="completed")
+    monkeypatch.setattr(
+        "app.bookings.router.complete_booking",
+        AsyncMock(return_value=response_model),
+    )
+
+    token = _token_for(host)
+    response = bookings_client.post(
+        f"/api/v1/bookings/{response_model.id}/complete",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+def test_complete_booking_route_rejects_unauthenticated(bookings_client: TestClient) -> None:
+    response = bookings_client.post("/api/v1/bookings/test-id/complete")
+    assert response.status_code == 401

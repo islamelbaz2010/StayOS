@@ -18,6 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
   requested: "bg-warning-100 text-warning-700",
   accepted: "bg-accent-100 text-accent-700",
   confirmed: "bg-success-100 text-success-700",
+  completed: "bg-success-100 text-success-700",
   rejected: "bg-danger-100 text-danger-700",
   cancelled: "bg-neutral-100 text-neutral-700",
   no_show: "bg-neutral-100 text-neutral-700",

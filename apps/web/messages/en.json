@@ -539,6 +539,7 @@
       "requested": "Requested",
       "accepted": "Accepted",
       "confirmed": "Confirmed",
+      "completed": "Completed",
       "rejected": "Rejected",
       "cancelled": "Cancelled",
       "no_show": "No-show"
@@ -547,12 +548,14 @@
       "requested": "Requested",
       "accepted": "Accepted",
       "confirmed": "Confirmed",
+      "completed": "Completed",
       "rejected": "Rejected",
       "cancelled": "Cancelled",
       "no_show": "No-show"
     },
     "confirmedMessage": "Payment verified — booking confirmed.",
     "stayCompleted": "Stay completed",
+    "complete": "Complete stay",
     "payment": "Payment",
     "paymentStatuses": {
       "pending": "Payment pending",

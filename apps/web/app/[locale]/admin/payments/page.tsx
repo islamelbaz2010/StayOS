@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -13,6 +14,8 @@ import {
   usePaymentProofDownloadUrl,
   type PaymentListItem,
 } from "@/lib/queries/payments";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 function StatusBadge({ status }: { status: string }) {
   const t = useTranslations("payment");
@@ -69,7 +72,19 @@ function PaymentCard({
   return (
     <div className="card overflow-hidden">
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
+        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+          <Image
+            src={payment.unit_cover_image || PLACEHOLDER_IMAGE}
+            alt={payment.unit_title || payment.reference_number}
+            fill
+            sizes="112px"
+            className="object-cover"
+          />
+        </div>
         <div className="flex-1 space-y-2">
+          <p className="text-sm font-semibold text-brand-900">
+            {payment.unit_title ?? t("untitledListing")}
+          </p>
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-mono text-sm font-medium text-brand-900">
               {payment.reference_number}

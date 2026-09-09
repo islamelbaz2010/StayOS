@@ -8,7 +8,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.models import Base, TimestampMixin, UUIDMixin
 
@@ -93,3 +93,4 @@ class Payment(UUIDMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=True
     )
     instructions: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    unit: Mapped["Unit"] = relationship("Unit", foreign_keys=[unit_id])

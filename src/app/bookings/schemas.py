@@ -116,6 +116,7 @@ class StayArrivalInfo(BaseModel):
 class StayPropertyInfo(BaseModel):
     unit_id: str
     title: str | None
+    cover_image: str | None
     address: str | None
     lat: float | None
     lng: float | None

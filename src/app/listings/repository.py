@@ -79,7 +79,11 @@ async def get_unit_with_listing(
 ) -> Unit | None:
     result = await session.execute(
         select(Unit)
-        .options(selectinload(Unit.listing), selectinload(Unit.photos))
+        .options(
+            selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Unit.photos),
+        )
         .where(Unit.id == unit_id)
     )
     return result.scalar_one_or_none()
@@ -169,6 +173,7 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
         )
 
     if filters.check_in is not None and filters.check_out is not None:
+        stmt = stmt.options(selectinload(Unit.calendar_rules))
         blocked = exists().where(
             CalendarRule.unit_id == Unit.id,
             CalendarRule.status.in_(

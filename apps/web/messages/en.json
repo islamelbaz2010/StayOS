@@ -320,6 +320,8 @@
   },
   "listing": {
     "perNight": "per night",
+    "nights": "nights",
+    "total": "total",
     "propertyTypeLabel": {
       "apartment": "Apartment",
       "villa": "Villa",
@@ -498,6 +500,8 @@
     "submitting": "Submitting...",
     "successTitle": "Booking requested",
     "successMessage": "Your booking request has been sent. The host will review it shortly.",
+    "successForListing": "Your booking request for {title} has been sent. The host will review it shortly.",
+    "statusLabel": "Status",
     "successClose": "Close",
     "viewTrips": "View my trips",
     "checkInRequired": "Check-in date is required.",
@@ -681,6 +685,7 @@
     "queueTitle": "Payment verification queue",
     "amount": "Amount",
     "bookingId": "Booking ID",
+    "untitledListing": "Untitled listing",
     "proofUploaded": "Receipt uploaded",
     "approve": "Approve",
     "reject": "Reject",

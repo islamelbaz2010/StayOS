@@ -3,9 +3,11 @@ from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
+from app.listings.models import Unit, UnitListing
 
 from .constants import PaymentStatus
 from .models import Payment
@@ -90,6 +92,11 @@ async def list_pending_payments(
 ) -> list[Payment]:
     stmt = (
         select(Payment)
+        .options(
+            selectinload(Payment.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo)
+        )
         .order_by(Payment.created_at.desc(), Payment.id.desc())
         .offset(offset)
         .limit(limit)
@@ -139,6 +146,11 @@ async def list_guest_payments(
 ) -> list[Payment]:
     stmt = (
         select(Payment)
+        .options(
+            selectinload(Payment.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo)
+        )
         .where(Payment.guest_id == guest_id)
         .order_by(Payment.created_at.desc(), Payment.id.desc())
         .offset(offset)

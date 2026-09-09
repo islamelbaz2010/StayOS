@@ -2646,6 +2646,10 @@ export interface components {
       review_count?: number;
       /** Available For Dates */
       available_for_dates?: boolean | null;
+      /** Nights */
+      nights?: number | null;
+      /** Total Egp */
+      total_egp?: number | null;
     };
     /** ListingUpdate */
     ListingUpdate: {
@@ -2979,6 +2983,10 @@ export interface components {
       proof_url: string | null;
       /** Proof Uploaded At */
       proof_uploaded_at: string | null;
+      /** Unit Title */
+      unit_title?: string | null;
+      /** Unit Cover Image */
+      unit_cover_image?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -3081,6 +3089,10 @@ export interface components {
       cancelled_at: string | null;
       /** Instructions */
       instructions: string;
+      /** Unit Title */
+      unit_title?: string | null;
+      /** Unit Cover Image */
+      unit_cover_image?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -3569,6 +3581,8 @@ export interface components {
       unit_id: string;
       /** Title */
       title: string | null;
+      /** Cover Image */
+      cover_image: string | null;
       /** Address */
       address: string | null;
       /** Lat */

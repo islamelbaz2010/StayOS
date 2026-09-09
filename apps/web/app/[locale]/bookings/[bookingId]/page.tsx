@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -19,6 +20,7 @@ import { useBookingConversation } from "@/lib/queries/messages";
 import { formatDate } from "@/lib/utils";
 
 const CANCELLABLE_PHASES = new Set(["upcoming", "check_in_ready"]);
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 const PHASE_VARIANTS: Record<string, string> = {
   upcoming: "badge-info",
@@ -103,7 +105,17 @@ function TripContent({
   return (
     <div className="space-y-6">
       <div className="card p-5 sm:p-6">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-neutral-100">
+          <Image
+            src={property.cover_image || PLACEHOLDER_IMAGE}
+            alt={property.title || t("title")}
+            fill
+            sizes="(max-width: 640px) 100vw, 600px"
+            priority
+            className="object-cover"
+          />
+        </div>
+        <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div className="min-w-0 flex-1">
             {property.title && (
               <h2 className="text-lg font-bold text-brand-900 sm:text-xl">

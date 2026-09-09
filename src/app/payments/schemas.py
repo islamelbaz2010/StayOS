@@ -56,6 +56,8 @@ class PaymentResponse(BaseModel):
     reject_reason: str | None
     cancelled_at: datetime | None
     instructions: str
+    unit_title: str | None = None
+    unit_cover_image: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -95,5 +97,7 @@ class PaymentListItem(BaseModel):
     proof_s3_key: str | None = None
     proof_url: str | None
     proof_uploaded_at: datetime | None
+    unit_title: str | None = None
+    unit_cover_image: str | None = None
     created_at: datetime
     updated_at: datetime

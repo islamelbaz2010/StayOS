@@ -320,6 +320,8 @@
   },
   "listing": {
     "perNight": "لليلة",
+    "nights": "ليالي",
+    "total": "الإجمالي",
     "propertyTypeLabel": {
       "apartment": "شقة",
       "villa": "فيلا",
@@ -498,6 +500,8 @@
     "submitting": "جاري الإرسال...",
     "successTitle": "تم إرسال طلب الحجز",
     "successMessage": "تم إرسال طلب الحجز. سيقوم المضيف بمراجعته قريبًا.",
+    "successForListing": "تم إرسال طلب الحجز لـ {title}. سيقوم المضيف بمراجعته قريبًا.",
+    "statusLabel": "الحالة",
     "successClose": "إغلاق",
     "viewTrips": "عرض رحلاتي",
     "checkInRequired": "تاريخ الوصول مطلوب.",
@@ -681,6 +685,7 @@
     "queueTitle": "قائمة مراجعة الدفعات",
     "amount": "المبلغ",
     "bookingId": "رقم الحجز",
+    "untitledListing": "إقامة بدون عنوان",
     "proofUploaded": "تم رفع الإيصال",
     "approve": "موافقة",
     "reject": "رفض",

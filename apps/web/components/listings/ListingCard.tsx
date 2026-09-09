@@ -29,6 +29,8 @@ export interface Listing {
   availableForDates?: boolean | null;
   lat?: number;
   lng?: number;
+  nights?: number | null;
+  totalEgp?: number | null;
 }
 
 interface ListingCardProps {
@@ -133,6 +135,14 @@ export function ListingCard({ listing, className }: ListingCardProps) {
               {t("perNight")}
             </span>
           </p>
+          {listing.nights != null && listing.totalEgp != null && (
+            <p className="mt-1 text-sm text-neutral-700">
+              {formatMoney(listing.totalEgp, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}{" "}
+              <span className="text-neutral-500">
+                · {listing.nights} {t("nights")}
+              </span>
+            </p>
+          )}
         </div>
       </Link>
     </article>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -14,6 +15,8 @@ import {
 } from "@/lib/queries/calendar";
 import { useHostListingDetail } from "@/lib/queries/hostListings";
 import type { components } from "@/lib/api-types";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 const BLOCK_TYPES = [
   { value: "manual", labelKey: "blockManual" },
@@ -134,6 +137,23 @@ export default function ListingAvailabilityPage() {
             <ErrorState onRetry={() => refetch()} />
           ) : (
             <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                  <Image
+                    src={listing?.cover_image || PLACEHOLDER_IMAGE}
+                    alt={listingTitle ?? t("availabilityTitle")}
+                    fill
+                    sizes="112px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold text-brand-900">
+                    {listingTitle}
+                  </p>
+                </div>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-3">
                 <StatCard
                   label={t("calendarAvailable")}

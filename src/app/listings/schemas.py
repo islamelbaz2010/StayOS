@@ -227,6 +227,9 @@ class ListingSearchResult(BaseModel):
     average_rating: float | None = None
     review_count: int = 0
     available_for_dates: bool | None = None
+    # Computed selected-stay totals; only set when the search includes dates.
+    nights: int | None = None
+    total_egp: int | None = None
 
 
 class ListingRejectRequest(BaseModel):

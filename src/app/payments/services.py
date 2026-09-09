@@ -15,7 +15,7 @@ from app.bookings.models import Booking
 from app.config import settings
 from app.listings import repository as listings_repository
 from app.listings.constants import UnitStatus
-from app.listings.models import Unit, UnitListing
+from app.listings.models import Unit, UnitListing, UnitPhoto
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 from app.shared.models import OutboxEvent
 
@@ -77,7 +77,20 @@ def _generate_reference() -> str:
     return f"STY-{uuid.uuid4().hex[:8].upper()}"
 
 
+def _payment_unit_context(payment: Payment) -> tuple[str | None, str | None]:
+    unit_title: str | None = None
+    unit_cover_image: str | None = None
+    unit = getattr(payment, "unit", None)
+    if isinstance(unit, Unit) and unit.listing is not None:
+        listing = unit.listing
+        unit_title = listing.title_en or listing.title_ar
+        if isinstance(listing.cover_photo, UnitPhoto):
+            unit_cover_image = listing.cover_photo.url
+    return unit_title, unit_cover_image
+
+
 def _to_response(payment: Payment) -> PaymentResponse:
+    unit_title, unit_cover_image = _payment_unit_context(payment)
     return PaymentResponse(
         id=payment.id,
         booking_id=payment.booking_id,
@@ -103,12 +116,15 @@ def _to_response(payment: Payment) -> PaymentResponse:
         reject_reason=payment.reject_reason,
         cancelled_at=payment.cancelled_at,
         instructions=payment.instructions,
+        unit_title=unit_title,
+        unit_cover_image=unit_cover_image,
         created_at=payment.created_at,
         updated_at=payment.updated_at,
     )
 
 
 def _to_list_item(payment: Payment) -> PaymentListItem:
+    unit_title, unit_cover_image = _payment_unit_context(payment)
     return PaymentListItem(
         id=payment.id,
         booking_id=payment.booking_id,
@@ -124,6 +140,8 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
         proof_s3_key=payment.proof_s3_key,
         proof_url=None if payment.proof_s3_key else payment.proof_url,
         proof_uploaded_at=payment.proof_uploaded_at,
+        unit_title=unit_title,
+        unit_cover_image=unit_cover_image,
         created_at=payment.created_at,
         updated_at=payment.updated_at,
     )

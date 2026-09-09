@@ -102,6 +102,8 @@ function mapSearchResult(item: ApiSearchResult): Listing {
     availableForDates: item.available_for_dates ?? null,
     lat: item.lat,
     lng: item.lng,
+    nights: item.nights ?? null,
+    totalEgp: item.total_egp ?? null,
   };
 }
 

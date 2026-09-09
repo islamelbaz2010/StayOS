@@ -789,11 +789,14 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
             existing_review = await reviews_repository.get_review_by_booking(session, booking.id)
             review_eligible = existing_review is None
 
+    cover_image = _unit_cover_image(unit)
+
     return StayInfoResponse(
         booking=_to_response(booking),
         property=StayPropertyInfo(
             unit_id=booking.unit_id,
             title=(listing.title_en or listing.title_ar) if listing is not None else None,
+            cover_image=cover_image,
             address=unit.address if unit is not None else None,
             lat=lat,
             lng=lng,

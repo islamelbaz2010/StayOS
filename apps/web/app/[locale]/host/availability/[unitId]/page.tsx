@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -9,6 +10,8 @@ import { HostLayout } from "@/components/layouts";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
 import { useListing } from "@/lib/queries/listings";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 export default function HostAvailabilityPage() {
   const t = useTranslations("availability");
@@ -27,6 +30,15 @@ export default function HostAvailabilityPage() {
             <ListingDetailSkeleton />
           ) : (
             <article className="mx-auto max-w-4xl">
+              <div className="relative mb-4 aspect-[4/3] w-full max-w-lg overflow-hidden rounded-lg bg-neutral-100 sm:aspect-video">
+                <Image
+                  src={data.coverImage || PLACEHOLDER_IMAGE}
+                  alt={data.title}
+                  fill
+                  sizes="(max-width: 640px) 100vw, 600px"
+                  className="object-cover"
+                />
+              </div>
               <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
                 {t("title")} — {data.title}
               </h1>

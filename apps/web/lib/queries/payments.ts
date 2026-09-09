@@ -27,6 +27,8 @@ export interface PaymentResponse {
   guest_service_fee_egp: number | null;
   payment_deadline_at: string | null;
   proof_rejection_count: number;
+  unit_title: string | null;
+  unit_cover_image: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +50,8 @@ export interface PaymentListItem {
   guest_service_fee_egp: number | null;
   payment_deadline_at: string | null;
   proof_rejection_count: number;
+  unit_title: string | null;
+  unit_cover_image: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
 import type { ListingDetail } from "@/lib/queries/listings";
+import type { BookingResponse } from "@/lib/queries/bookings";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useBookingQuote, useCreateBooking } from "@/lib/queries/bookings";
 import { useListingAvailability } from "@/lib/queries/listings";
@@ -60,6 +61,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
+  const [createdBooking, setCreatedBooking] = useState<BookingResponse | null>(null);
 
   useEffect(() => {
     const checkInDate = new Date(checkIn);
@@ -151,7 +153,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
     }
 
     try {
-      await createBooking.mutateAsync({
+      const booking = await createBooking.mutateAsync({
         unit_id: listing.id,
         check_in: checkIn,
         check_out: checkOut,
@@ -159,6 +161,7 @@ export function BookingPanel({ listing }: BookingPanelProps) {
         children: guests.children,
         infants: guests.infants,
       });
+      setCreatedBooking(booking);
       setSuccess(true);
     } catch (error) {
       const axiosError = error as {
@@ -170,11 +173,13 @@ export function BookingPanel({ listing }: BookingPanelProps) {
     }
   }
 
-  if (success) {
+  if (success && createdBooking) {
     return (
       <BookingSuccess
+        booking={createdBooking}
         onClose={() => {
           setSuccess(false);
+          setCreatedBooking(null);
           setCheckIn(toInputDate(tomorrow));
           setCheckOut(toInputDate(dayAfterTomorrow));
           setGuests({ adults: 1, children: 0, infants: 0 });

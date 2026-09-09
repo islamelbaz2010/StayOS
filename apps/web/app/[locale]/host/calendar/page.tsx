@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -19,6 +20,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 type HostCalendarDay = components["schemas"]["HostCalendarDay"];
 
@@ -51,6 +53,10 @@ export default function HostCalendarPage() {
   const checkOut = toISODate(addDays(endOfMonth(cursor), 1));
 
   const { data: listings } = useHostListings();
+  const selectedListing = useMemo(
+    () => listings?.find((l) => l.id === selectedUnitId) ?? null,
+    [listings, selectedUnitId]
+  );
   const { data: calendar, isLoading, isError, refetch } = useHostCalendar(
     selectedUnitId ?? undefined,
     checkIn,
@@ -184,6 +190,25 @@ export default function HostCalendarPage() {
                 </button>
               ))}
             </div>
+          )}
+
+          {selectedListing && (
+            <div className="mb-6 flex gap-4">
+              <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                <Image
+                src={selectedListing.cover_image || PLACEHOLDER_IMAGE}
+                alt={selectedListing.title}
+                fill
+                sizes="112px"
+                className="object-cover"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold text-brand-900">
+                {selectedListing.title}
+              </p>
+            </div>
+          </div>
           )}
 
           <div className="mb-6 grid gap-4 sm:grid-cols-3">

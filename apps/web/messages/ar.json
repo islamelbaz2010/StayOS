@@ -417,6 +417,8 @@
     "checkout": "أكمل الدفع",
     "confirmed": "مؤكد",
     "waitingHost": "بانتظار رد المضيف",
+    "listing": "الإقامة",
+    "untitledListing": "إقامة بدون عنوان",
     "status": {
       "requested": "مطلوب",
       "accepted": "مقبول",

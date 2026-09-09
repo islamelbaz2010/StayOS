@@ -5,7 +5,7 @@
 from datetime import date
 from uuid import uuid4
 
-from app.listings.models import Unit
+from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import NotFoundError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,7 +45,11 @@ async def create_booking(
 async def get_booking(session: AsyncSession, booking_id: str) -> Booking | None:
     result = await session.execute(
         select(Booking)
-        .options(selectinload(Booking.unit))
+        .options(
+            selectinload(Booking.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo)
+        )
         .where(Booking.id == booking_id)
     )
     return result.scalar_one_or_none()
@@ -99,7 +103,11 @@ async def list_guest_bookings(
 ) -> list[Booking]:
     stmt = (
         select(Booking)
-        .options(selectinload(Booking.unit))
+        .options(
+            selectinload(Booking.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo)
+        )
         .where(Booking.guest_id == guest_id)
         .order_by(Booking.created_at.desc(), Booking.id.desc())
         .offset(offset)
@@ -127,7 +135,11 @@ async def list_host_bookings(
     """
     stmt = (
         select(Booking)
-        .options(selectinload(Booking.unit))
+        .options(
+            selectinload(Booking.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo)
+        )
         .join(Unit, Booking.unit_id == Unit.id)
         .order_by(Booking.created_at.desc(), Booking.id.desc())
         .offset(offset)

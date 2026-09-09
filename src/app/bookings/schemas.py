@@ -83,6 +83,10 @@ class BookingResponse(BaseModel):
     cancel_reason: str | None
     created_at: datetime
     updated_at: datetime
+    # Guest-facing context so the booking list is meaningful without
+    # requiring a separate listing lookup for every row.
+    unit_title: str | None = None
+    unit_cover_image: str | None = None
     # Host-facing context — populated when the viewer manages the unit.
     permission_scope: str | None = None
 

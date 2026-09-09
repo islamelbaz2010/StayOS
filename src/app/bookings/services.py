@@ -105,12 +105,28 @@ def _arrival_info_eligible(booking: Booking, listing: Any | None = None) -> bool
     return datetime.now(UTC) >= check_in_start - timedelta(hours=release_hours)
 
 
+def _unit_cover_image(unit: Any | None) -> str | None:
+    if unit is None:
+        return None
+    listing = getattr(unit, "listing", None)
+    if listing is None:
+        return None
+    cover = getattr(listing, "cover_photo", None)
+    return cover.url if cover is not None else None
+
+
 def _to_response(
     booking: Booking, permission_scope: str | None = None
 ) -> BookingResponse:
     host_id: str | None = None
+    unit_title: str | None = None
+    unit_cover_image: str | None = None
     if booking.unit is not None:
         host_id = booking.unit.host_id
+        listing = getattr(booking.unit, "listing", None)
+        if listing is not None:
+            unit_title = listing.title_en or listing.title_ar
+        unit_cover_image = _unit_cover_image(booking.unit)
     return BookingResponse(
         id=booking.id,
         unit_id=booking.unit_id,
@@ -134,6 +150,8 @@ def _to_response(
         cancel_reason=booking.cancel_reason,
         created_at=booking.created_at,
         updated_at=booking.updated_at,
+        unit_title=unit_title,
+        unit_cover_image=unit_cover_image,
         permission_scope=permission_scope,
     )
 

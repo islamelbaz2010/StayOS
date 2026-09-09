@@ -417,6 +417,8 @@
     "checkout": "Complete payment",
     "confirmed": "Confirmed",
     "waitingHost": "Waiting for host response",
+    "listing": "Listing",
+    "untitledListing": "Untitled listing",
     "status": {
       "requested": "Requested",
       "accepted": "Accepted",

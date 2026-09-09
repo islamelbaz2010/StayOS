@@ -525,6 +525,8 @@
     "notFound": "الحجز غير موجود.",
     "noBookings": "لا توجد طلبات حجز.",
     "detailTitle": "تفاصيل الحجز",
+    "listing": "الإقامة",
+    "untitledListing": "إقامة بدون عنوان",
     "checkIn": "تاريخ الوصول",
     "checkOut": "تاريخ المغادرة",
     "nights": "ليالي",

@@ -1,10 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 
 import type { BookingResponse } from "@/lib/queries/bookings";
 import { cn, formatDate } from "@/lib/utils";
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 interface HostBookingListProps {
   bookings: BookingResponse[];
@@ -74,6 +77,23 @@ export function HostBookingList({
               <span className="text-sm text-neutral-500">
                 {nights(booking.check_in, booking.check_out)} {t("nights")}
               </span>
+            </div>
+
+            <div className="mt-3 flex gap-3">
+              <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                <Image
+                  src={booking.unit_cover_image || PLACEHOLDER_IMAGE}
+                  alt={booking.unit_title || t("listing")}
+                  fill
+                  sizes="80px"
+                  className="object-cover"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-brand-900">
+                  {booking.unit_title || t("untitledListing")}
+                </p>
+              </div>
             </div>
 
             <p className="mt-2 text-sm text-neutral-700">

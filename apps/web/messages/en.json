@@ -525,6 +525,8 @@
     "notFound": "Booking not found.",
     "noBookings": "No booking requests found.",
     "detailTitle": "Booking details",
+    "listing": "Listing",
+    "untitledListing": "Untitled listing",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "nights": "nights",

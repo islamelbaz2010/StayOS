@@ -3,6 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useParams, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { BookingPanel } from "@/components/bookings/BookingPanel";
@@ -101,6 +102,7 @@ export default function ListingDetailPage() {
   const initialCheckIn = searchParams?.get("checkin") ?? undefined;
   const initialCheckOut = searchParams?.get("checkout") ?? undefined;
   const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
+  const [copied, setCopied] = useState(false);
 
   const { data: listing, isPending, isError, refetch } = useListing(unitId);
   const { data: photos } = useListingPhotos(unitId);
@@ -130,11 +132,30 @@ export default function ListingDetailPage() {
                 <h1 className="break-words text-balance text-2xl font-bold text-brand-900 sm:text-3xl lg:text-4xl">
                   {listing.title}
                 </h1>
-                <FavoriteButton
-                  unitId={listing.id}
-                  size="md"
-                  className="flex-shrink-0 border border-neutral-200"
-                />
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(window.location.href);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                    aria-label={t("share")}
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                    </svg>
+                    <span className="hidden sm:inline">
+                      {copied ? t("linkCopied") : t("share")}
+                    </span>
+                  </button>
+                  <FavoriteButton
+                    unitId={listing.id}
+                    size="md"
+                    className="flex-shrink-0 border border-neutral-200"
+                  />
+                </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-neutral-600">
                 <RatingBadge
@@ -184,7 +205,7 @@ export default function ListingDetailPage() {
             <div className="grid gap-6 lg:grid-cols-3 lg:gap-10">
               <div className="space-y-6 lg:col-span-2">
                 <section className="card p-5 sm:p-6">
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                     <HighlightItem
                       icon={
                         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -193,6 +214,15 @@ export default function ListingDetailPage() {
                       }
                       value={listing.bedrooms}
                       label={t("bedrooms")}
+                    />
+                    <HighlightItem
+                      icon={
+                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69 6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 012.25 18v-2.25c0-.596.237-1.176.659-1.6m0 0L9 9.75m0 0l3 3m-3-3l-1.5-1.5M21 18.75V12A2.25 2.25 0 0018.75 9.75h-1.5a1.5 1.5 0 00-1.06.44l-2.12 2.12" />
+                        </svg>
+                      }
+                      value={listing.beds}
+                      label={t("beds")}
                     />
                     <HighlightItem
                       icon={

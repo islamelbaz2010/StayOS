@@ -344,6 +344,8 @@
     "guest": "Guest",
     "addToFavorites": "Save to favorites",
     "removeFromFavorites": "Remove from favorites",
+    "share": "Share",
+    "linkCopied": "Link copied",
     "book": "Book now",
     "checkAvailability": "Check availability",
     "amenities": "Amenities",

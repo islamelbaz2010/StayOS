@@ -929,7 +929,18 @@
     "perListing": "الأرباح لكل عقار",
     "bookings": "حجوزات",
     "untitledListing": "عقار بدون عنوان",
-    "disclaimer": "جميع المبالغ بالجنيه المصري وتقديرية. يتم معالجة المدفوعات المؤكدة وفقاً لشروط المضيف في StayOS."
+    "loading": "جاري التحميل...",
+    "paymentActivity": "نشاط الدفع",
+    "filter": {
+      "all": "الكل",
+      "proof_uploaded": "بانتظار التحقق",
+      "verified": "تم التحقق",
+      "refund_pending": "استرداد معلّق",
+      "refunded": "تم الاسترداد"
+    },
+    "refund": "مبلغ الاسترداد",
+    "refundedAt": "تاريخ الاسترداد",
+    "noPayments": "لا توجد مدفوعات في هذه الفئة."
   },
   "hostToday": {
     "title": "اليوم",

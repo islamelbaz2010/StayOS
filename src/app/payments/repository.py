@@ -158,3 +158,28 @@ async def list_guest_payments(
     )
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def list_host_payments(
+    session: AsyncSession,
+    host_id: str,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[Payment]:
+    stmt = (
+        select(Payment)
+        .options(
+            selectinload(Payment.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo)
+        )
+        .where(Payment.host_id == host_id)
+        .order_by(Payment.created_at.desc(), Payment.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    if status is not None:
+        stmt = stmt.where(Payment.status == status)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())

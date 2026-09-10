@@ -48,6 +48,7 @@ export interface PaymentListItem {
   proof_s3_key: string | null;
   proof_url: string | null;
   proof_uploaded_at: string | null;
+  reject_reason: string | null;
   accommodation_amount_egp: number | null;
   guest_service_fee_egp: number | null;
   payment_deadline_at: string | null;
@@ -117,6 +118,15 @@ export async function getPayment(paymentId: string): Promise<PaymentResponse> {
 
 export async function getMyPayments(): Promise<PaymentListItem[]> {
   const { data } = await api.get<PaymentListItem[]>(`/payments`);
+  return data;
+}
+
+export async function getHostPayments(
+  status?: string
+): Promise<PaymentListItem[]> {
+  const { data } = await api.get<PaymentListItem[]>(`/payments/host`, {
+    params: status ? { status } : undefined,
+  });
   return data;
 }
 
@@ -194,6 +204,13 @@ export function useMyPayments() {
   return useQuery({
     queryKey: ["my-payments"],
     queryFn: getMyPayments,
+  });
+}
+
+export function useHostPayments(status?: string) {
+  return useQuery({
+    queryKey: ["host-payments", status],
+    queryFn: () => getHostPayments(status),
   });
 }
 

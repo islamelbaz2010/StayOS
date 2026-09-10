@@ -929,7 +929,18 @@
     "perListing": "Earnings per listing",
     "bookings": "bookings",
     "untitledListing": "Untitled listing",
-    "disclaimer": "All amounts are estimates in EGP. Verified payouts are processed according to the StayOS host terms."
+    "loading": "Loading...",
+    "paymentActivity": "Payment activity",
+    "filter": {
+      "all": "All",
+      "proof_uploaded": "Pending verification",
+      "verified": "Verified",
+      "refund_pending": "Refund pending",
+      "refunded": "Refunded"
+    },
+    "refund": "Refund",
+    "refundedAt": "Refunded at",
+    "noPayments": "No payments in this category."
   },
   "hostToday": {
     "title": "Today",

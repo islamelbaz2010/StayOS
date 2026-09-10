@@ -144,6 +144,7 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
         proof_s3_key=payment.proof_s3_key,
         proof_url=None if payment.proof_s3_key else payment.proof_url,
         proof_uploaded_at=payment.proof_uploaded_at,
+        reject_reason=payment.reject_reason,
         unit_title=unit_title,
         unit_cover_image=unit_cover_image,
         created_at=payment.created_at,
@@ -665,5 +666,20 @@ async def list_guest_payments(
     _assert_guest(user)
     payments = await payments_repository.list_guest_payments(
         session, user.id, limit=limit, offset=offset
+    )
+    return [_to_list_item(p) for p in payments]
+
+
+async def list_host_payments(
+    session: AsyncSession,
+    user: User,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[PaymentListItem]:
+    if user.role not in (UserRole.HOST, UserRole.ADMIN):
+        raise AuthorizationError("Only hosts can view their payment activity")
+    payments = await payments_repository.list_host_payments(
+        session, user.id, status=status, limit=limit, offset=offset
     )
     return [_to_list_item(p) for p in payments]

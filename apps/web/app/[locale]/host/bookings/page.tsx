@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -24,8 +25,16 @@ const FILTERS = [
 
 export default function HostBookingsPage() {
   const t = useTranslations("hostBookings");
+  const searchParams = useSearchParams();
   const [filter, setFilter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const bookingId = searchParams?.get("bookingId");
+    if (bookingId && bookingId !== selectedId) {
+      setSelectedId(bookingId);
+    }
+  }, [searchParams, selectedId]);
 
   const status = filter === "all" ? null : filter;
   const { data: bookings, isPending, isError, refetch } = useHostBookings(status);

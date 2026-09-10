@@ -209,7 +209,7 @@ function actionHref(item: HostTodayItem, locale: string): string | null {
     return `/${locale}/messages`;
   }
   if (item.booking_id) {
-    return `/${locale}/host/bookings`;
+    return `/${locale}/host/bookings?bookingId=${item.booking_id}`;
   }
   return null;
 }

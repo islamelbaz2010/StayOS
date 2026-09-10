@@ -82,6 +82,53 @@ export function useHostBookings(status: string | null = null) {
   });
 }
 
+export interface PaginatedBookings {
+  items: BookingResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export async function getHostBookingsPaginated(
+  params: {
+    status?: string | null;
+    unitId?: string | null;
+    search?: string | null;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<PaginatedBookings> {
+  const limit = params.limit ?? 10;
+  const page = params.page ?? 1;
+  const offset = (page - 1) * limit;
+  const { data } = await api.get<PaginatedBookings>("/host/bookings", {
+    params: {
+      ...(params.status ? { status: params.status } : {}),
+      ...(params.unitId ? { unit_id: params.unitId } : {}),
+      ...(params.search ? { search: params.search } : {}),
+      limit,
+      offset,
+    },
+  });
+  return data;
+}
+
+export function useHostBookingsPaginated(
+  params: {
+    status?: string | null;
+    unitId?: string | null;
+    search?: string | null;
+    page?: number;
+    limit?: number;
+  } = {}
+) {
+  return useQuery({
+    queryKey: ["host-bookings-paginated", params],
+    queryFn: () => getHostBookingsPaginated(params),
+  });
+}
+
 export function useGuestBookings(status: string | null = null) {
   return useQuery({
     queryKey: ["guest-bookings", status],

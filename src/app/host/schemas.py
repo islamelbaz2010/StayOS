@@ -1,6 +1,8 @@
 from datetime import date, datetime
 from typing import Any
 
+from app.bookings.schemas import BookingResponse
+from app.shared.schemas import PaginatedResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -211,3 +213,6 @@ class HostListingDetail(BaseModel):
     readiness: ListingReadinessResponse | None = None
     permission_scope: str = "owner"
     rejection_reason: str | None = None
+
+
+PaginatedHostBookings = PaginatedResponse[BookingResponse]

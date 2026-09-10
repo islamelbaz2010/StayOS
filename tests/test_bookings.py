@@ -1934,3 +1934,46 @@ def test_complete_booking_route_rejects_non_admin(bookings_client: TestClient, m
 def test_complete_booking_route_rejects_unauthenticated(bookings_client: TestClient) -> None:
     response = bookings_client.post("/api/v1/bookings/test-id/complete")
     assert response.status_code == 401
+
+
+def test_paginated_host_bookings_route_accepts_filters(
+    bookings_client: TestClient, monkeypatch
+) -> None:
+    host = _make_user(role=UserRole.HOST)
+    _patch_auth_user(monkeypatch, host)
+    response_model = _make_booking_response()
+    paginated = {
+        "items": [response_model.model_dump(by_alias=True)],
+        "total": 1,
+        "page": 1,
+        "page_size": 10,
+        "total_pages": 1,
+    }
+    monkeypatch.setattr(
+        "app.host.services.list_paginated_host_bookings",
+        AsyncMock(return_value=paginated),
+    )
+
+    token = _token_for(host)
+    response = bookings_client.get(
+        "/api/v1/host/bookings?status=requested&unit_id=unit-1&search=ahmed&limit=5&offset=0",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["items"][0]["id"] == response_model.id
+
+
+def test_paginated_host_bookings_route_rejects_guest(
+    bookings_client: TestClient, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, guest)
+
+    token = _token_for(guest)
+    response = bookings_client.get(
+        "/api/v1/host/bookings",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403

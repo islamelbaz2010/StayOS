@@ -413,6 +413,10 @@ export interface paths {
     /** List My Payments */
     get: operations["list_my_payments_api_v1_payments_get"];
   };
+  "/api/v1/payments/host": {
+    /** List Host Payment Activity */
+    get: operations["list_host_payment_activity_api_v1_payments_host_get"];
+  };
   "/api/v1/payments/{payment_id}/proof/presign": {
     /** Presign Proof */
     post: operations["presign_proof_api_v1_payments__payment_id__proof_presign_post"];
@@ -432,6 +436,10 @@ export interface paths {
   "/api/v1/payments/{payment_id}/reject": {
     /** Reject Payment Endpoint */
     post: operations["reject_payment_endpoint_api_v1_payments__payment_id__reject_post"];
+  };
+  "/api/v1/payments/{payment_id}/refund": {
+    /** Refund Payment Endpoint */
+    post: operations["refund_payment_endpoint_api_v1_payments__payment_id__refund_post"];
   };
   "/api/v1/payments/admin/queue": {
     /** Payment Queue */
@@ -550,6 +558,10 @@ export interface paths {
   "/api/v1/host/today": {
     /** Get Host Today Endpoint */
     get: operations["get_host_today_endpoint_api_v1_host_today_get"];
+  };
+  "/api/v1/host/bookings": {
+    /** List Host Bookings Paginated */
+    get: operations["list_host_bookings_paginated_api_v1_host_bookings_get"];
   };
   "/api/v1/host/reservations": {
     /** List Host Reservations Endpoint */
@@ -895,6 +907,8 @@ export interface components {
       unit_cover_image?: string | null;
       /** Permission Scope */
       permission_scope?: string | null;
+      /** Guest Name */
+      guest_name?: string | null;
     };
     /**
      * BookingStatus
@@ -2905,6 +2919,19 @@ export interface components {
       /** Code */
       code: string;
     };
+    /** PaginatedResponse[BookingResponse] */
+    PaginatedResponse_BookingResponse_: {
+      /** Items */
+      items: components["schemas"]["BookingResponse"][];
+      /** Total */
+      total: number;
+      /** Page */
+      page: number;
+      /** Page Size */
+      page_size: number;
+      /** Total Pages */
+      total_pages: number;
+    };
     /** PaginationInfo */
     PaginationInfo: {
       /** Next Cursor */
@@ -2968,10 +2995,14 @@ export interface components {
       method: string;
       /** Amount Egp */
       amount_egp: number;
+      /** Refund Amount Egp */
+      refund_amount_egp?: number | null;
       /** Reference Number */
       reference_number: string;
       /** Payment Deadline At */
       payment_deadline_at?: string | null;
+      /** Refunded At */
+      refunded_at?: string | null;
       /**
        * Proof Rejection Count
        * @default 0
@@ -2983,6 +3014,8 @@ export interface components {
       proof_url: string | null;
       /** Proof Uploaded At */
       proof_uploaded_at: string | null;
+      /** Reject Reason */
+      reject_reason?: string | null;
       /** Unit Title */
       unit_title?: string | null;
       /** Unit Cover Image */
@@ -3087,6 +3120,10 @@ export interface components {
       reject_reason: string | null;
       /** Cancelled At */
       cancelled_at: string | null;
+      /** Refund Amount Egp */
+      refund_amount_egp?: number | null;
+      /** Refunded At */
+      refunded_at?: string | null;
       /** Instructions */
       instructions: string;
       /** Unit Title */
@@ -6384,6 +6421,30 @@ export interface operations {
       };
     };
   };
+  /** List Host Payment Activity */
+  list_host_payment_activity_api_v1_payments_host_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Presign Proof */
   presign_proof_api_v1_payments__payment_id__proof_presign_post: {
     parameters: {
@@ -6492,6 +6553,28 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["PaymentVerifyRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Refund Payment Endpoint */
+  refund_payment_endpoint_api_v1_payments__payment_id__refund_post: {
+    parameters: {
+      path: {
+        payment_id: string;
       };
     };
     responses: {
@@ -7153,6 +7236,32 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["HostTodayResponse"];
+        };
+      };
+    };
+  };
+  /** List Host Bookings Paginated */
+  list_host_bookings_paginated_api_v1_host_bookings_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        unit_id?: string | null;
+        search?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaginatedResponse_BookingResponse_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

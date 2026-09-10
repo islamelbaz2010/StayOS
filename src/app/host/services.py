@@ -16,7 +16,8 @@ from app.auth.models import User
 from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
-from app.bookings.services import _compute_stay_phase
+from app.bookings.schemas import BookingResponse
+from app.bookings.services import _compute_stay_phase, _to_response
 from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.payments import repository as payments_repository
@@ -55,6 +56,57 @@ async def _resolve_host(
 ) -> User | None:
     result = await session.execute(select(User).where(User.id == host_id))
     return result.scalar_one_or_none()
+
+
+async def list_paginated_host_bookings(
+    session: AsyncSession,
+    user: User,
+    status: str | None = None,
+    unit_id: str | None = None,
+    search: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> host_schemas.PaginatedHostBookings:
+    """Return a host's bookings with optional filters and pagination."""
+    _assert_host_or_cohost(user)
+    managed_unit_ids = await get_managed_unit_ids(session, user)
+    if not managed_unit_ids:
+        return host_schemas.PaginatedHostBookings(
+            items=[], total=0, page=1, page_size=limit, total_pages=0
+        )
+
+    if unit_id is not None and unit_id not in managed_unit_ids:
+        raise NotFoundError("Unit not found")
+
+    bookings, total = await bookings_repository.list_paginated_host_bookings(
+        session,
+        unit_ids=managed_unit_ids,
+        status=status,
+        unit_id=unit_id,
+        search=search,
+        limit=limit,
+        offset=offset,
+    )
+    scope_map = await host_permissions.get_unit_permission_scopes(
+        session, user, managed_unit_ids
+    )
+    items = [
+        _to_response(
+            booking,
+            permission_scope=scope_map.get(booking.unit_id),
+            guest_name=booking.guest.display_name if booking.guest else None,
+        )
+        for booking in bookings
+    ]
+    page = (offset // limit) + 1
+    total_pages = (total + limit - 1) // limit if total > 0 else 1
+    return host_schemas.PaginatedHostBookings(
+        items=items,
+        total=total,
+        page=page,
+        page_size=limit,
+        total_pages=total_pages,
+    )
 
 
 # ============================================================

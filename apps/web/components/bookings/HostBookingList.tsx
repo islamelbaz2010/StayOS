@@ -101,6 +101,11 @@ export function HostBookingList({
                 <p className="truncate font-medium text-brand-900">
                   {booking.unit_title || t("untitledListing")}
                 </p>
+                {booking.guest_name && (
+                  <p className="truncate text-sm text-neutral-600">
+                    {booking.guest_name}
+                  </p>
+                )}
               </div>
             </div>
 

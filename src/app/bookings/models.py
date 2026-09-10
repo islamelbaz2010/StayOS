@@ -76,3 +76,9 @@ class Booking(UUIDMixin, TimestampMixin, Base):
     cancel_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     unit: Mapped[Unit] = relationship("Unit")
+    guest: Mapped["User"] = relationship(
+        "User",
+        primaryjoin="Booking.guest_id == User.id",
+        foreign_keys=[guest_id],
+        lazy="raise",
+    )

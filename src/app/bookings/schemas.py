@@ -89,6 +89,8 @@ class BookingResponse(BaseModel):
     unit_cover_image: str | None = None
     # Host-facing context — populated when the viewer manages the unit.
     permission_scope: str | None = None
+    # Guest display identity; only the public display name is exposed.
+    guest_name: str | None = None
 
 
 class StayHostInfo(BaseModel):

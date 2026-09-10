@@ -605,7 +605,12 @@
     "cancelledAt": "Cancelled at",
     "refundedAt": "Refunded at",
     "paymentRejectReason": "Rejection reason",
-    "viewReceipt": "View receipt"
+    "viewReceipt": "View receipt",
+    "searchPlaceholder": "Search by guest or booking ID",
+    "allUnits": "All listings",
+    "noSearchResults": "No bookings match your search.",
+    "pageInfo": "Page {page} of {total}",
+    "clearFilters": "Clear filters"
   },
   "availability": {
     "title": "Availability",

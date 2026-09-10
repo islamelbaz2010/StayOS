@@ -30,6 +30,28 @@ async def get_host_today_endpoint(
 
 
 # ============================================================
+# HOST BOOKINGS
+# ============================================================
+
+@router.get("/bookings", response_model=host_schemas.PaginatedHostBookings)
+async def list_host_bookings_paginated(
+    status: str | None = None,
+    unit_id: str | None = None,
+    search: str | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> host_schemas.PaginatedHostBookings:
+    try:
+        return await host_services.list_paginated_host_bookings(
+            session, user, status, unit_id, search, limit, offset
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+# ============================================================
 # HOST RESERVATIONS
 # ============================================================
 

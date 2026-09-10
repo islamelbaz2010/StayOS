@@ -605,7 +605,12 @@
     "cancelledAt": "تم الإلغاء في",
     "refundedAt": "تاريخ الاسترداد",
     "paymentRejectReason": "سبب الرفض",
-    "viewReceipt": "عرض الإيصال"
+    "viewReceipt": "عرض الإيصال",
+    "searchPlaceholder": "ابحث بالضيف أو رقم الحجز",
+    "allUnits": "كل العقارات",
+    "noSearchResults": "لا توجد حجوزات مطابقة لبحثك.",
+    "pageInfo": "الصفحة {page} من {total}",
+    "clearFilters": "مسح عوامل التصفية"
   },
   "availability": {
     "title": "التوفر",

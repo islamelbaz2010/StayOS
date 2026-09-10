@@ -5,9 +5,10 @@
 from datetime import date
 from uuid import uuid4
 
+from app.auth.models import User
 from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import NotFoundError
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -138,7 +139,8 @@ async def list_host_bookings(
         .options(
             selectinload(Booking.unit)
             .selectinload(Unit.listing)
-            .selectinload(UnitListing.cover_photo)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Booking.guest),
         )
         .join(Unit, Booking.unit_id == Unit.id)
         .order_by(Booking.created_at.desc(), Booking.id.desc())
@@ -153,6 +155,65 @@ async def list_host_bookings(
         stmt = stmt.where(Booking.status == status)
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def list_paginated_host_bookings(
+    session: AsyncSession,
+    unit_ids: list[str],
+    status: str | None = None,
+    unit_id: str | None = None,
+    search: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple[list[Booking], int]:
+    """List bookings for the given managed unit IDs with optional filters.
+
+    Returns the page of bookings and the total matching count.
+    """
+    base_stmt = (
+        select(Booking)
+        .options(
+            selectinload(Booking.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Booking.guest),
+        )
+        .where(Booking.unit_id.in_(unit_ids))
+    )
+    if status is not None:
+        base_stmt = base_stmt.where(Booking.status == status)
+    if unit_id is not None:
+        base_stmt = base_stmt.where(Booking.unit_id == unit_id)
+    if search is not None and search.strip():
+        search = search.strip()
+        base_stmt = base_stmt.where(
+            or_(
+                Booking.id == search,
+                User.display_name.ilike(f"%{search}%"),
+            )
+        ).join(User, Booking.guest_id == User.id)
+
+    count_stmt = select(func.count(Booking.id)).where(Booking.unit_id.in_(unit_ids))
+    if status is not None:
+        count_stmt = count_stmt.where(Booking.status == status)
+    if unit_id is not None:
+        count_stmt = count_stmt.where(Booking.unit_id == unit_id)
+    if search is not None and search.strip():
+        count_stmt = count_stmt.where(
+            or_(
+                Booking.id == search,
+                User.display_name.ilike(f"%{search}%"),
+            )
+        ).join(User, Booking.guest_id == User.id)
+
+    items_stmt = (
+        base_stmt.order_by(Booking.created_at.desc(), Booking.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    items_result = await session.execute(items_stmt)
+    count_result = await session.execute(count_stmt)
+    return list(items_result.scalars().all()), count_result.scalar_one() or 0
 
 
 async def count_host_completed_bookings(

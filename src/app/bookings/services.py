@@ -116,7 +116,9 @@ def _unit_cover_image(unit: Any | None) -> str | None:
 
 
 def _to_response(
-    booking: Booking, permission_scope: str | None = None
+    booking: Booking,
+    permission_scope: str | None = None,
+    guest_name: str | None = None,
 ) -> BookingResponse:
     host_id: str | None = None
     unit_title: str | None = None
@@ -153,6 +155,7 @@ def _to_response(
         unit_title=unit_title,
         unit_cover_image=unit_cover_image,
         permission_scope=permission_scope,
+        guest_name=guest_name,
     )
 
 
@@ -941,7 +944,11 @@ async def list_host_bookings(
         session, user, unit_ids
     )
     return [
-        _to_response(booking, permission_scope=scope_map.get(booking.unit_id))
+        _to_response(
+            booking,
+            permission_scope=scope_map.get(booking.unit_id),
+            guest_name=booking.guest.display_name if booking.guest else None,
+        )
         for booking in bookings
     ]
 

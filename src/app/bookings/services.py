@@ -795,7 +795,7 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
         if stay_finished and status != BookingStatus.CANCELLED:
             from app.reviews import repository as reviews_repository
 
-            existing_review = await reviews_repository.get_review_by_booking(session, booking.id)
+            existing_review = await reviews_repository.get_guest_review_by_booking(session, booking.id)
             review_eligible = existing_review is None
 
     cover_image = _unit_cover_image(unit)

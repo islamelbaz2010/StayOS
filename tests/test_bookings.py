@@ -1201,7 +1201,7 @@ async def test_get_stay_info_review_eligible_after_self_reported_checkout(
         listings_repository, "get_unit_with_listing", AsyncMock(return_value=unit)
     )
     monkeypatch.setattr(
-        "app.reviews.repository.get_review_by_booking", AsyncMock(return_value=None)
+        "app.reviews.repository.get_guest_review_by_booking", AsyncMock(return_value=None)
     )
     _mock_stay_info_session(fake_session, host)
 

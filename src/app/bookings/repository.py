@@ -2,7 +2,7 @@
 # Import ordering differs between local Ruff (0.1.8: ``app`` sorts with
 # third-party) and CI Ruff (0.16.1: ``app`` is first-party). No single
 # ordering satisfies both, so I001 is suppressed for this file only.
-from datetime import date
+from datetime import date, datetime
 from uuid import uuid4
 
 from app.auth.models import User
@@ -82,6 +82,30 @@ async def list_overlapping_bookings(
     )
     if exclude_booking_id is not None:
         stmt = stmt.where(Booking.id != exclude_booking_id)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def list_expired_requested_bookings(
+    session: AsyncSession,
+    cutoff: datetime,
+    limit: int = 100,
+) -> list[Booking]:
+    """Bookings still in REQUESTED status past the host-response deadline.
+
+    Mirrors Airbnb's 24-hour request expiration: if the host has not
+    accepted or declined within the configured window, the request is
+    expired and the inventory is released.
+    """
+    stmt = (
+        select(Booking)
+        .where(
+            Booking.status == BookingStatus.REQUESTED,
+            Booking.requested_at < cutoff,
+        )
+        .order_by(Booking.requested_at)
+        .limit(limit)
+    )
     result = await session.execute(stmt)
     return list(result.scalars().all())
 

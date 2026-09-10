@@ -124,6 +124,14 @@ class Settings(BaseSettings):
         ge=1,
         description="Hours the guest has to submit payment proof after host acceptance (V1 policy §1.2)",
     )
+    # Airbnb benchmark: hosts have 24 hours to accept or decline a booking
+    # request before it expires. The guest is notified and the inventory is
+    # released back to the market.
+    REQUEST_EXPIRATION_HOURS: int = Field(
+        default=24,
+        ge=1,
+        description="Hours the host has to respond to a booking request before it expires (Airbnb benchmark)",
+    )
     # V1 Cancellation & Refund Policy §2.2 — up to 3 proof rejections within
     # 48 hours of the first rejection, then the booking is cancelled.
     PAYMENT_PROOF_MAX_REJECTIONS: int = Field(default=3, ge=1)

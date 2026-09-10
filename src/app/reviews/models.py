@@ -13,19 +13,21 @@ from app.shared.models import Base, TimestampMixin, UUIDMixin
 
 
 class Review(UUIDMixin, TimestampMixin, Base):
-    """A guest's review of a completed stay.
+    """A review of a completed stay.
 
-    One review per booking, written by the guest who stayed. The listing's
-    average rating and review count are derived from this table rather than
-    stored redundantly.
+    Guest reviews review the listing/host experience. Host reviews review
+    the guest. One review per booking per reviewer role — a guest and a
+    host can each leave one review for the same booking. The listing's
+    average rating and review count are derived from guest reviews only.
     """
 
     __tablename__ = "reviews"
     __table_args__ = (
         CheckConstraint("rating >= 1 AND rating <= 5", name="chk_review_rating_range"),
-        UniqueConstraint("booking_id", name="uq_review_booking"),
+        UniqueConstraint("booking_id", "reviewer_role", name="uq_review_booking_role"),
         Index("idx_reviews_unit_id", "unit_id"),
         Index("idx_reviews_guest_id", "guest_id"),
+        Index("idx_reviews_reviewer_id", "reviewer_id"),
         {"schema": "pms"},
     )
 
@@ -38,5 +40,9 @@ class Review(UUIDMixin, TimestampMixin, Base):
     guest_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False
     )
+    reviewer_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False
+    )
+    reviewer_role: Mapped[str] = mapped_column(String(20), nullable=False, default="guest")
     rating: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)

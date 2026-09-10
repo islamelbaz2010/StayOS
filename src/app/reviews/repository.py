@@ -11,13 +11,43 @@ async def get_review_by_booking(session: AsyncSession, booking_id: str) -> Revie
     return result.scalar_one_or_none()
 
 
+async def get_guest_review_by_booking(session: AsyncSession, booking_id: str) -> Review | None:
+    result = await session.execute(
+        select(Review).where(
+            Review.booking_id == booking_id,
+            Review.reviewer_role == "guest",
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_host_review_by_booking(session: AsyncSession, booking_id: str) -> Review | None:
+    result = await session.execute(
+        select(Review).where(
+            Review.booking_id == booking_id,
+            Review.reviewer_role == "host",
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def create_review(
-    session: AsyncSession, *, booking_id: str, unit_id: str, guest_id: str, rating: int, comment: str | None
+    session: AsyncSession,
+    *,
+    booking_id: str,
+    unit_id: str,
+    guest_id: str,
+    reviewer_id: str,
+    reviewer_role: str,
+    rating: int,
+    comment: str | None,
 ) -> Review:
     review = Review(
         booking_id=booking_id,
         unit_id=unit_id,
         guest_id=guest_id,
+        reviewer_id=reviewer_id,
+        reviewer_role=reviewer_role,
         rating=rating,
         comment=comment,
     )
@@ -33,7 +63,10 @@ async def list_reviews_for_unit(
     result = await session.execute(
         select(Review, User.display_name)
         .join(User, User.id == Review.guest_id)
-        .where(Review.unit_id == unit_id)
+        .where(
+            Review.unit_id == unit_id,
+            Review.reviewer_role == "guest",
+        )
         .order_by(Review.created_at.desc())
         .limit(limit)
         .offset(offset)
@@ -45,7 +78,10 @@ async def get_rating_aggregate_for_unit(
     session: AsyncSession, unit_id: str
 ) -> tuple[float | None, int]:
     result = await session.execute(
-        select(func.avg(Review.rating), func.count(Review.id)).where(Review.unit_id == unit_id)
+        select(func.avg(Review.rating), func.count(Review.id)).where(
+            Review.unit_id == unit_id,
+            Review.reviewer_role == "guest",
+        )
     )
     avg_rating, count = result.one()
     return (round(float(avg_rating), 2) if avg_rating is not None else None, count or 0)
@@ -58,7 +94,10 @@ async def get_rating_aggregates_for_units(
         return {}
     result = await session.execute(
         select(Review.unit_id, func.avg(Review.rating), func.count(Review.id))
-        .where(Review.unit_id.in_(unit_ids))
+        .where(
+            Review.unit_id.in_(unit_ids),
+            Review.reviewer_role == "guest",
+        )
         .group_by(Review.unit_id)
     )
     return {
@@ -70,7 +109,10 @@ async def get_rating_aggregates_for_units(
 async def count_reviews_by_guest(session: AsyncSession, guest_id: str) -> int:
     """Count reviews written by a single guest — a trust signal for hosts."""
     result = await session.execute(
-        select(func.count(Review.id)).where(Review.guest_id == guest_id)
+        select(func.count(Review.id)).where(
+            Review.guest_id == guest_id,
+            Review.reviewer_role == "guest",
+        )
     )
     return result.scalar_one()
 
@@ -83,7 +125,42 @@ async def count_reviews_by_guests(
         return {}
     result = await session.execute(
         select(Review.guest_id, func.count(Review.id))
-        .where(Review.guest_id.in_(guest_ids))
+        .where(
+            Review.guest_id.in_(guest_ids),
+            Review.reviewer_role == "guest",
+        )
         .group_by(Review.guest_id)
     )
     return {guest_id: count for guest_id, count in result.all()}
+
+
+async def list_host_reviews_for_guest(
+    session: AsyncSession, guest_id: str, limit: int, offset: int
+) -> list[tuple[Review, str | None]]:
+    """List host-written reviews of a specific guest."""
+    result = await session.execute(
+        select(Review, User.display_name)
+        .join(User, User.id == Review.reviewer_id)
+        .where(
+            Review.guest_id == guest_id,
+            Review.reviewer_role == "host",
+        )
+        .order_by(Review.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return [(review, host_name) for review, host_name in result.all()]
+
+
+async def get_guest_rating_aggregate(
+    session: AsyncSession, guest_id: str
+) -> tuple[float | None, int]:
+    """Average rating and count of host reviews for a guest."""
+    result = await session.execute(
+        select(func.avg(Review.rating), func.count(Review.id)).where(
+            Review.guest_id == guest_id,
+            Review.reviewer_role == "host",
+        )
+    )
+    avg_rating, count = result.one()
+    return (round(float(avg_rating), 2) if avg_rating is not None else None, count or 0)

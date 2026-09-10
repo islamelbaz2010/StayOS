@@ -528,6 +528,19 @@
     "terminalReasonTitle": "انتهى الحجز",
     "cancelReasonLabel": "سبب الإلغاء",
     "rejectReasonLabel": "سبب الرفض",
+    "cancelReasons": {
+      "request_expired": "انتهت صلاحية طلب الحجز — لم يستجب المضيف في الوقت المحدد",
+      "payment_deadline_expired": "انتهت مهلة الدفع",
+      "guest_cancelled": "ألغاه الضيف",
+      "host_cancelled": "ألغاه المضيف",
+      "proof_resubmission_exhausted": "تم تجاوز حد إعادة إرسال إثبات الدفع"
+    },
+    "rejectReasons": {
+      "dates_unavailable": "التواريخ لم تعد متاحة",
+      "price_mismatch": "السعر لم يعد مطابقاً",
+      "guest_verification": "مشكلة في التحقق من الضيف",
+      "host_unavailable": "المضيف غير متاح"
+    },
     "actionError": "تعذر إتمام هذا الإجراء. يرجى المحاولة مرة أخرى.",
     "hostVerified": "تم التحقق من الهوية",
     "accommodation": "الإقامة",
@@ -679,7 +692,14 @@
     "identityRejected": "تم رفض التحقق من الهوية",
     "identityUnverified": "لم يتم التحقق من الهوية",
     "memberSince": "عضو منذ {date}",
-    "guestReviewsCount": "{count, plural, zero {لا تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييماً} other {# تقييم}}"
+    "guestReviewsCount": "{count, plural, zero {لا تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييماً} other {# تقييم}}",
+    "reviewGuest": "تقييم الضيف",
+    "writeReview": "اكتب تقييماً",
+    "rating": "التقييم",
+    "comment": "تعليق (اختياري)",
+    "reviewPlaceholder": "شارك تجربتك مع هذا الضيف...",
+    "submitReview": "إرسال التقييم",
+    "reviewError": "فشل إرسال التقييم. يرجى المحاولة مرة أخرى."
   },
   "availability": {
     "title": "التوفر",

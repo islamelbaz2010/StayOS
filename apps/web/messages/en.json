@@ -528,6 +528,19 @@
     "terminalReasonTitle": "Booking ended",
     "cancelReasonLabel": "Cancellation reason",
     "rejectReasonLabel": "Rejection reason",
+    "cancelReasons": {
+      "request_expired": "Booking request expired — the host did not respond in time",
+      "payment_deadline_expired": "Payment deadline passed",
+      "guest_cancelled": "Cancelled by guest",
+      "host_cancelled": "Cancelled by host",
+      "proof_resubmission_exhausted": "Payment proof resubmission limit reached"
+    },
+    "rejectReasons": {
+      "dates_unavailable": "Dates no longer available",
+      "price_mismatch": "Pricing no longer matches",
+      "guest_verification": "Guest verification issue",
+      "host_unavailable": "Host unavailable"
+    },
     "actionError": "We couldn't complete this action. Please try again.",
     "hostVerified": "Identity verified",
     "accommodation": "Accommodation",
@@ -679,7 +692,14 @@
     "identityRejected": "Identity verification rejected",
     "identityUnverified": "Identity not verified",
     "memberSince": "Member since {date}",
-    "guestReviewsCount": "{count, plural, one {# review} other {# reviews}}"
+    "guestReviewsCount": "{count, plural, one {# review} other {# reviews}}",
+    "reviewGuest": "Review guest",
+    "writeReview": "Write a review",
+    "rating": "Rating",
+    "comment": "Comment (optional)",
+    "reviewPlaceholder": "Share your experience with this guest...",
+    "submitReview": "Submit review",
+    "reviewError": "Failed to submit review. Please try again."
   },
   "availability": {
     "title": "Availability",

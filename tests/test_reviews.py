@@ -83,6 +83,8 @@ def _make_review(booking: Booking, unit: Unit, guest: User, rating: int = 5) -> 
         booking_id=booking.id,
         unit_id=unit.id,
         guest_id=guest.id,
+        reviewer_id=guest.id,
+        reviewer_role="guest",
         rating=rating,
         comment="Great stay!",
         created_at=now,
@@ -101,7 +103,7 @@ async def test_create_review_success(fake_session: AsyncMock, monkeypatch) -> No
         bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
     )
     monkeypatch.setattr(
-        reviews_repository, "get_review_by_booking", AsyncMock(return_value=None)
+        reviews_repository, "get_guest_review_by_booking", AsyncMock(return_value=None)
     )
     monkeypatch.setattr(
         reviews_repository, "create_review", AsyncMock(return_value=review)
@@ -161,7 +163,7 @@ async def test_create_review_rejects_duplicate(fake_session: AsyncMock, monkeypa
         bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
     )
     monkeypatch.setattr(
-        reviews_repository, "get_review_by_booking", AsyncMock(return_value=existing_review)
+        reviews_repository, "get_guest_review_by_booking", AsyncMock(return_value=existing_review)
     )
 
     with pytest.raises(ConflictError):
@@ -226,6 +228,8 @@ async def test_create_review(fake_session: AsyncMock) -> None:
         booking_id=booking.id,
         unit_id=unit.id,
         guest_id=guest.id,
+        reviewer_id=guest.id,
+        reviewer_role="guest",
         rating=5,
         comment="Great stay!",
     )
@@ -315,7 +319,10 @@ def _make_review_response() -> ReviewResponse:
         unit_id=review.unit_id,
         booking_id=review.booking_id,
         guest_id=review.guest_id,
+        reviewer_id=review.reviewer_id,
+        reviewer_role=review.reviewer_role,
         guest_display_name=guest.display_name,
+        reviewer_display_name=guest.display_name,
         rating=review.rating,
         comment=review.comment,
         created_at=review.created_at,
@@ -383,3 +390,91 @@ def test_post_booking_review_not_found_returns_404(reviews_client, monkeypatch) 
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 404
+
+
+# ============================================================
+# HOST REVIEW COVERAGE
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_create_host_review_success(fake_session: AsyncMock, monkeypatch) -> None:
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    guest = _make_user(user_id="guest-1")
+    unit = _make_unit(host_id="host-1")
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    mock_unit_result = MagicMock()
+    mock_unit_result.scalar_one_or_none.return_value = unit
+    fake_session.execute = AsyncMock(return_value=mock_unit_result)
+
+    mock_guest_result = MagicMock()
+    mock_guest_result.scalar_one_or_none.return_value = guest
+    # Need a separate execute mock for the guest query
+    call_count = [0]
+    original_execute = fake_session.execute
+
+    async def _mock_execute(*args, **kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            return mock_unit_result
+        return mock_guest_result
+
+    fake_session.execute = AsyncMock(side_effect=_mock_execute)
+
+    review = _make_review(booking, unit, guest, rating=4)
+    review.reviewer_id = host.id
+    review.reviewer_role = "host"
+    monkeypatch.setattr(
+        reviews_repository, "get_host_review_by_booking", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        reviews_repository, "create_review", AsyncMock(return_value=review)
+    )
+
+    request = ReviewCreate(rating=4, comment="Good guest")
+    response = await review_services.create_host_review(fake_session, host, booking.id, request)
+
+    assert response.rating == 4
+    assert response.reviewer_id == host.id
+
+
+@pytest.mark.asyncio
+async def test_create_host_review_rejects_guest(fake_session: AsyncMock, monkeypatch) -> None:
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+
+    with pytest.raises(AuthorizationError):
+        await review_services.create_host_review(
+            fake_session, guest, "booking-1", ReviewCreate(rating=5)
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_host_review_rejects_duplicate(fake_session: AsyncMock, monkeypatch) -> None:
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    guest = _make_user(user_id="guest-1")
+    unit = _make_unit(host_id="host-1")
+    booking = _make_booking(unit, guest)
+    existing_review = _make_review(booking, unit, guest)
+    existing_review.reviewer_id = host.id
+    existing_review.reviewer_role = "host"
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    mock_unit_result = MagicMock()
+    mock_unit_result.scalar_one_or_none.return_value = unit
+    fake_session.execute = AsyncMock(return_value=mock_unit_result)
+
+    monkeypatch.setattr(
+        reviews_repository, "get_host_review_by_booking", AsyncMock(return_value=existing_review)
+    )
+
+    with pytest.raises(ConflictError):
+        await review_services.create_host_review(
+            fake_session, host, booking.id, ReviewCreate(rating=3)
+        )

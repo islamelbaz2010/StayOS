@@ -14,6 +14,7 @@ import {
   usePaymentProofDownloadUrl,
   type PaymentResponse,
 } from "@/lib/queries/payments";
+import { useCreateHostReview } from "@/lib/queries/reviews";
 import { formatDate, formatMoney, getApiErrorMessage } from "@/lib/utils";
 
 import { HostBookingActions } from "./HostBookingActions";
@@ -139,11 +140,23 @@ export function HostBookingDetail({
   const router = useRouter();
   const dateLocale = params?.locale === "ar" ? "ar-EG" : "en-EG";
   const [messageError, setMessageError] = useState<string | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const { data: payment } = usePaymentByBooking(booking.id);
+  const createHostReview = useCreateHostReview();
 
   const canMessage =
     booking.permission_scope == null ||
     booking.permission_scope !== "calendar_only";
+
+  const stayFinished =
+    booking.status === "completed" || booking.checked_out_at != null;
+  const canReviewGuest =
+    stayFinished &&
+    booking.status !== "cancelled" &&
+    booking.guest_id != null;
 
   const messageGuest = useMutation({
     mutationFn: async () => {
@@ -413,6 +426,101 @@ export function HostBookingDetail({
           </button>
           {messageError && (
             <p className="text-sm text-danger-600">{messageError}</p>
+          )}
+        </div>
+      )}
+
+      {canReviewGuest && (
+        <div className="mt-6 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+          <h3 className="text-sm font-semibold text-brand-900">
+            {t("reviewGuest")}
+          </h3>
+          {!showReviewForm ? (
+            <button
+              type="button"
+              onClick={() => setShowReviewForm(true)}
+              className="btn-secondary mt-2 w-full sm:w-auto"
+            >
+              {t("writeReview")}
+            </button>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setReviewError(null);
+                try {
+                  await createHostReview.mutateAsync({
+                    bookingId: booking.id,
+                    guestId: booking.guest_id,
+                    rating: reviewRating,
+                    comment: reviewComment.trim() || undefined,
+                  });
+                  setShowReviewForm(false);
+                  setReviewComment("");
+                  setReviewRating(5);
+                  onActionSuccess();
+                } catch (err) {
+                  setReviewError(
+                    getApiErrorMessage(err, t("reviewError"))
+                  );
+                }
+              }}
+              className="mt-3 space-y-3"
+            >
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">
+                  {t("rating")}
+                </label>
+                <select
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(Number(e.target.value))}
+                  className="input w-full text-sm"
+                >
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <option key={n} value={n}>
+                      {n} ★
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">
+                  {t("comment")}
+                </label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  rows={3}
+                  maxLength={2000}
+                  className="input w-full text-sm"
+                  placeholder={t("reviewPlaceholder")}
+                />
+              </div>
+              {reviewError && (
+                <p className="text-sm text-danger-600" role="alert">
+                  {reviewError}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={createHostReview.isPending}
+                  className="btn-primary flex-1 text-sm"
+                >
+                  {createHostReview.isPending ? t("loading") : t("submitReview")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReviewForm(false);
+                    setReviewError(null);
+                  }}
+                  className="rounded-lg bg-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700"
+                >
+                  {t("cancel")}
+                </button>
+              </div>
+            </form>
           )}
         </div>
       )}

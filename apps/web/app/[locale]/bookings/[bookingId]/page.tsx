@@ -311,7 +311,11 @@ function TripContent({
               : t("rejectReasonLabel")}
           </p>
           <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">
-            {terminalReason}
+            {booking.cancel_reason
+              ? t(`cancelReasons.${booking.cancel_reason}`, { default: booking.cancel_reason })
+              : booking.reject_reason
+                ? t(`rejectReasons.${booking.reject_reason}`, { default: booking.reject_reason })
+                : terminalReason}
           </p>
         </div>
       )}

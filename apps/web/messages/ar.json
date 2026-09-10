@@ -313,6 +313,7 @@
     "clearMapArea": "مسح منطقة الخريطة",
     "browseByCategory": "تصفح حسب الفئة",
     "recentlyViewed": "شوهد مؤخراً",
+    "freeCancellation": "إلغاء مجاني",
     "clearSearch": "مسح البحث",
     "checkInPast": "لا يمكن أن يكون تاريخ الوصول في الماضي.",
     "checkOutAfterCheckIn": "تاريخ المغادرة يجب أن يكون بعد تاريخ الوصول.",
@@ -327,9 +328,7 @@
     "scrollBack": "مرر للخلف",
     "scrollForward": "مرر للأمام",
     "popularDestinations": "وجهات شهيرة",
-    "amenities": "المرافق",
-    "amenitiesFilter": "تصفية حسب المرافق",
-    "sortRatingDesc": "الأعلى تقييماً"
+    "amenitiesFilter": "تصفية حسب المرافق"
   },
   "favorites": {
     "title": "المفضلة",
@@ -383,6 +382,7 @@
     "cancel": "إلغاء",
     "price": "السعر",
     "location": "الموقع",
+    "getDirections": "احصل على الاتجاهات",
     "propertyType": "نوع العقار",
     "maxGuests": "عدد الضيوف",
     "guests": "ضيوف",
@@ -676,6 +676,8 @@
     "guest": "الضيف",
     "identityVerified": "تم التحقق من الهوية",
     "identityPending": "التحقق من الهوية قيد المعالجة",
+    "identityRejected": "تم رفض التحقق من الهوية",
+    "identityUnverified": "لم يتم التحقق من الهوية",
     "memberSince": "عضو منذ {date}",
     "guestReviewsCount": "{count, plural, zero {لا تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييماً} other {# تقييم}}"
   },

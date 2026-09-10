@@ -313,6 +313,7 @@
     "clearMapArea": "Clear map area",
     "browseByCategory": "Browse by category",
     "recentlyViewed": "Recently viewed",
+    "freeCancellation": "Free cancellation",
     "clearSearch": "Clear search",
     "checkInPast": "Check-in cannot be in the past.",
     "checkOutAfterCheckIn": "Check-out must be after check-in.",
@@ -327,9 +328,7 @@
     "scrollBack": "Scroll back",
     "scrollForward": "Scroll forward",
     "popularDestinations": "Popular destinations",
-    "amenities": "Amenities",
-    "amenitiesFilter": "Filter by amenities",
-    "sortRatingDesc": "Top rated"
+    "amenitiesFilter": "Filter by amenities"
   },
   "favorites": {
     "title": "Favorites",
@@ -383,6 +382,7 @@
     "cancel": "Cancel",
     "price": "Price",
     "location": "Location",
+    "getDirections": "Get directions",
     "propertyType": "Property type",
     "maxGuests": "Max guests",
     "guests": "guests",
@@ -676,6 +676,8 @@
     "guest": "Guest",
     "identityVerified": "Identity verified",
     "identityPending": "Identity verification pending",
+    "identityRejected": "Identity verification rejected",
+    "identityUnverified": "Identity not verified",
     "memberSince": "Member since {date}",
     "guestReviewsCount": "{count, plural, one {# review} other {# reviews}}"
   },

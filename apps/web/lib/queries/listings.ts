@@ -17,6 +17,7 @@ export interface SearchFilters {
   beds?: string;
   bathrooms?: string;
   amenities?: string;
+  free_cancellation?: string;
   sw_lat?: string;
   sw_lng?: string;
   ne_lat?: string;
@@ -172,6 +173,7 @@ function buildSearchQueryParams(filters: SearchFilters) {
   if (filters.beds) queryParams.beds = filters.beds;
   if (filters.bathrooms) queryParams.bathrooms = filters.bathrooms;
   if (filters.amenities) queryParams.amenities = filters.amenities;
+  if (filters.free_cancellation) queryParams.free_cancellation = filters.free_cancellation;
   if (filters.sw_lat) queryParams.sw_lat = filters.sw_lat;
   if (filters.sw_lng) queryParams.sw_lng = filters.sw_lng;
   if (filters.ne_lat) queryParams.ne_lat = filters.ne_lat;

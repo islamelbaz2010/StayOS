@@ -230,6 +230,9 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
         if tags:
             stmt = stmt.where(UnitListing.cultural_tags.op("&&")(tags))
 
+    if filters.free_cancellation:
+        stmt = stmt.where(UnitListing.cancellation_policy == "FLEXIBLE")
+
     if filters.city:
         stmt = stmt.where(func.lower(Unit.city) == filters.city.lower())
 

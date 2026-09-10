@@ -67,6 +67,7 @@ export default function SearchPage() {
       beds: searchParams.get("beds") || undefined,
       bathrooms: searchParams.get("bathrooms") || undefined,
       amenities: searchParams.get("amenities") || undefined,
+      free_cancellation: searchParams.get("free_cancellation") || undefined,
       sw_lat: searchParams.get("sw_lat") || undefined,
       sw_lng: searchParams.get("sw_lng") || undefined,
       ne_lat: searchParams.get("ne_lat") || undefined,
@@ -208,6 +209,29 @@ export default function SearchPage() {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => {
+              const nextParams = new URLSearchParams(searchParams.toString());
+              if (filters.free_cancellation) {
+                nextParams.delete("free_cancellation");
+              } else {
+                nextParams.set("free_cancellation", "true");
+              }
+              router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
+            }}
+            className={`
+              rounded-full border px-4 py-2 text-sm font-medium transition
+              ${
+                filters.free_cancellation
+                  ? "border-brand-600 bg-brand-600 text-white"
+                  : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
+              }
+            `}
+            aria-pressed={Boolean(filters.free_cancellation)}
+          >
+            {t("search.freeCancellation")}
+          </button>
         </div>
 
         <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl bg-white p-4 shadow-card">

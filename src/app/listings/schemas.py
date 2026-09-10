@@ -299,6 +299,7 @@ class ListingSearchFilters(BaseModel):
     property_type: str | None = None
     cultural_tags: str | None = None
     amenities: str | None = None
+    free_cancellation: bool | None = None
     guests: int | None = Field(None, ge=1)
     sort: str | None = None
     cursor: str | None = None

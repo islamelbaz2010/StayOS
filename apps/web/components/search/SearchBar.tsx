@@ -1,7 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+
+import { useLocationAutocomplete, type LocationSuggestion } from "@/lib/queries/locations";
 
 interface SearchBarProps {
   baseParams: string;
@@ -28,11 +30,19 @@ export function SearchBar({
   onSearch,
 }: SearchBarProps) {
   const t = useTranslations("search");
+  const locale = useLocale();
   const [destination, setDestination] = useState(q ?? "");
   const [checkIn, setCheckIn] = useState(checkin ?? "");
   const [checkOut, setCheckOut] = useState(checkout ?? "");
   const [guestsCount, setGuestsCount] = useState(guests ?? "1");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const destRef = useRef<HTMLDivElement>(null);
+
+  const { data: suggestions } = useLocationAutocomplete(
+    destination,
+    showSuggestions
+  );
 
   useEffect(() => {
     setDestination(q ?? "");
@@ -41,6 +51,22 @@ export function SearchBar({
     setGuestsCount(guests ?? "1");
     setErrors({});
   }, [q, checkin, checkout, guests]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (destRef.current && !destRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectSuggestion = (s: LocationSuggestion) => {
+    const name = locale === "ar" ? s.canonical_name_ar : s.canonical_name_en;
+    setDestination(name);
+    setShowSuggestions(false);
+  };
 
   const todayStr = toInputDate(new Date());
 
@@ -121,14 +147,46 @@ export function SearchBar({
           >
             {t("destination")}
           </label>
-          <input
-            id="search-destination"
-            type="text"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            placeholder={t("placeholder")}
-            className="input w-full"
-          />
+          <div ref={destRef} className="relative">
+            <input
+              id="search-destination"
+              type="text"
+              value={destination}
+              onChange={(e) => {
+                setDestination(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              placeholder={t("placeholder")}
+              className="input w-full"
+              autoComplete="off"
+            />
+            {showSuggestions && suggestions && suggestions.length > 0 && (
+              <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
+                {suggestions.map((s, i) => (
+                  <li key={`${s.canonical_name_en}:${s.city}:${i}`}>
+                    <button
+                      type="button"
+                      onClick={() => selectSuggestion(s)}
+                      className="flex w-full flex-col items-start px-4 py-2 text-start hover:bg-neutral-50"
+                    >
+                      <span className="text-sm font-medium text-neutral-900">
+                        {locale === "ar"
+                          ? s.canonical_name_ar
+                          : s.canonical_name_en}
+                      </span>
+                      <span className="text-xs text-neutral-500">
+                        {s.governorate}
+                        {s.city && s.city !== s.canonical_name_en
+                          ? ` · ${s.city}`
+                          : ""}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         <div className="grid flex-1 grid-cols-2 gap-4">

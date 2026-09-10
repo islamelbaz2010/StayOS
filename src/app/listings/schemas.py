@@ -296,25 +296,14 @@ class ListingSearchFilters(BaseModel):
     bedrooms: int | None = Field(None, ge=0)
     beds: int | None = Field(None, ge=0)
     bathrooms: int | None = Field(None, ge=0)
-    property_type: list[str] | None = None
-    cultural_tags: list[str] | None = None
-    amenities: list[str] | None = None
+    property_type: str | None = None
+    cultural_tags: str | None = None
+    amenities: str | None = None
     guests: int | None = Field(None, ge=1)
     sort: str | None = None
     cursor: str | None = None
     offset: int | None = Field(default=None, ge=0)
     limit: int = Field(default=20, ge=1, le=100)
-
-    @field_validator("property_type", "cultural_tags", "amenities", mode="before")
-    @classmethod
-    def split_comma_separated(cls, v: str | list[str] | None) -> list[str] | None:
-        if v is None:
-            return None
-        if isinstance(v, str):
-            return [item.strip().upper() for item in v.split(",") if item.strip()]
-        if isinstance(v, list):
-            return [item.upper() for item in v]
-        return v
 
     def get_offset(self) -> int:
         if self.offset is not None:

@@ -306,6 +306,8 @@
     "sortRecommended": "موصى به",
     "sortPriceAsc": "السعر: من الأقل إلى الأعلى",
     "sortPriceDesc": "السعر: من الأعلى إلى الأقل",
+    "sortRatingDesc": "التقييم: من الأعلى إلى الأقل",
+    "amenities": "المرافق",
     "clearSearch": "مسح البحث",
     "checkInPast": "لا يمكن أن يكون تاريخ الوصول في الماضي.",
     "checkOutAfterCheckIn": "تاريخ المغادرة يجب أن يكون بعد تاريخ الوصول.",
@@ -318,7 +320,11 @@
       "RESORT_UNIT": "وحدة منتجع"
     },
     "scrollBack": "مرر للخلف",
-    "scrollForward": "مرر للأمام"
+    "scrollForward": "مرر للأمام",
+    "popularDestinations": "وجهات شهيرة",
+    "amenities": "المرافق",
+    "amenitiesFilter": "تصفية حسب المرافق",
+    "sortRatingDesc": "الأعلى تقييماً"
   },
   "favorites": {
     "title": "المفضلة",

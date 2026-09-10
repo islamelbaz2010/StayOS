@@ -213,16 +213,22 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
         stmt = stmt.where(Unit.bathrooms >= filters.bathrooms)
 
     if filters.property_type:
-        stmt = stmt.where(Unit.property_type.in_(filters.property_type))
+        types = [t.strip().upper() for t in filters.property_type.split(",") if t.strip()]
+        if types:
+            stmt = stmt.where(Unit.property_type.in_(types))
 
     if filters.guests is not None:
         stmt = stmt.where(Unit.max_guests >= filters.guests)
 
     if filters.amenities:
-        stmt = stmt.where(UnitListing.amenities.op("&&")(filters.amenities))
+        amenities = [a.strip().lower() for a in filters.amenities.split(",") if a.strip()]
+        if amenities:
+            stmt = stmt.where(UnitListing.amenities.op("&&")(amenities))
 
     if filters.cultural_tags:
-        stmt = stmt.where(UnitListing.cultural_tags.op("&&")(filters.cultural_tags))
+        tags = [t.strip().upper() for t in filters.cultural_tags.split(",") if t.strip()]
+        if tags:
+            stmt = stmt.where(UnitListing.cultural_tags.op("&&")(tags))
 
     if filters.city:
         stmt = stmt.where(func.lower(Unit.city) == filters.city.lower())
@@ -242,6 +248,21 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
         stmt = stmt.order_by(UnitListing.base_price_egp.asc(), Unit.id.desc())
     elif sort == "price_desc":
         stmt = stmt.order_by(UnitListing.base_price_egp.desc(), Unit.id.desc())
+    elif sort == "rating_desc":
+        from app.reviews.models import Review
+
+        rating_subq = (
+            select(Review.unit_id, func.avg(Review.rating).label("avg_rating"))
+            .group_by(Review.unit_id)
+            .subquery()
+        )
+        stmt = stmt.outerjoin(
+            rating_subq, rating_subq.c.unit_id == Unit.id
+        ).order_by(
+            func.coalesce(rating_subq.c.avg_rating, 0).desc(),
+            Unit.created_at.desc(),
+            Unit.id.desc(),
+        )
     else:
         stmt = stmt.order_by(Unit.created_at.desc(), Unit.id.desc())
     return stmt

@@ -306,6 +306,8 @@
     "sortRecommended": "Recommended",
     "sortPriceAsc": "Price: low to high",
     "sortPriceDesc": "Price: high to low",
+    "sortRatingDesc": "Rating: high to low",
+    "amenities": "Amenities",
     "clearSearch": "Clear search",
     "checkInPast": "Check-in cannot be in the past.",
     "checkOutAfterCheckIn": "Check-out must be after check-in.",
@@ -318,7 +320,11 @@
       "RESORT_UNIT": "Resort unit"
     },
     "scrollBack": "Scroll back",
-    "scrollForward": "Scroll forward"
+    "scrollForward": "Scroll forward",
+    "popularDestinations": "Popular destinations",
+    "amenities": "Amenities",
+    "amenitiesFilter": "Filter by amenities",
+    "sortRatingDesc": "Top rated"
   },
   "favorites": {
     "title": "Favorites",

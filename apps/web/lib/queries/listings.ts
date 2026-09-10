@@ -16,6 +16,11 @@ export interface SearchFilters {
   bedrooms?: string;
   beds?: string;
   bathrooms?: string;
+  amenities?: string;
+  sw_lat?: string;
+  sw_lng?: string;
+  ne_lat?: string;
+  ne_lng?: string;
   sort?: string;
   limit?: string;
   offset?: string;
@@ -166,6 +171,11 @@ function buildSearchQueryParams(filters: SearchFilters) {
   if (filters.bedrooms) queryParams.bedrooms = filters.bedrooms;
   if (filters.beds) queryParams.beds = filters.beds;
   if (filters.bathrooms) queryParams.bathrooms = filters.bathrooms;
+  if (filters.amenities) queryParams.amenities = filters.amenities;
+  if (filters.sw_lat) queryParams.sw_lat = filters.sw_lat;
+  if (filters.sw_lng) queryParams.sw_lng = filters.sw_lng;
+  if (filters.ne_lat) queryParams.ne_lat = filters.ne_lat;
+  if (filters.ne_lng) queryParams.ne_lng = filters.ne_lng;
   if (filters.sort) queryParams.sort = filters.sort;
   return queryParams;
 }

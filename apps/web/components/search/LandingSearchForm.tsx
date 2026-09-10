@@ -1,17 +1,34 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
+
+import { useLocationAutocomplete, type LocationSuggestion } from "@/lib/queries/locations";
 
 export function LandingSearchForm({ locale }: { locale: string }) {
   const t = useTranslations("search");
+  const activeLocale = useLocale();
   const router = useRouter();
 
   const [destination, setDestination] = useState("");
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
   const [guests, setGuests] = useState("1");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const destRef = useRef<HTMLDivElement>(null);
+
+  const { data: suggestions } = useLocationAutocomplete(
+    destination,
+    showSuggestions
+  );
+
+  const selectSuggestion = (s: LocationSuggestion) => {
+    const name =
+      activeLocale === "ar" ? s.canonical_name_ar : s.canonical_name_en;
+    setDestination(name);
+    setShowSuggestions(false);
+  };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -62,16 +79,48 @@ export function LandingSearchForm({ locale }: { locale: string }) {
               >
                 {t("destination")}
               </label>
-              <input
-                id="destination"
-                type="text"
-                name="q"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                placeholder={t("placeholder")}
-                className="input"
-                aria-required="false"
-              />
+              <div ref={destRef} className="relative">
+                <input
+                  id="destination"
+                  type="text"
+                  name="q"
+                  value={destination}
+                  onChange={(e) => {
+                    setDestination(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  placeholder={t("placeholder")}
+                  className="input"
+                  aria-required="false"
+                  autoComplete="off"
+                />
+                {showSuggestions && suggestions && suggestions.length > 0 && (
+                  <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
+                    {suggestions.map((s, i) => (
+                      <li key={`${s.canonical_name_en}:${s.city}:${i}`}>
+                        <button
+                          type="button"
+                          onClick={() => selectSuggestion(s)}
+                          className="flex w-full flex-col items-start px-4 py-2 text-start hover:bg-neutral-50"
+                        >
+                          <span className="text-sm font-medium text-neutral-900">
+                            {activeLocale === "ar"
+                              ? s.canonical_name_ar
+                              : s.canonical_name_en}
+                          </span>
+                          <span className="text-xs text-neutral-500">
+                            {s.governorate}
+                            {s.city && s.city !== s.canonical_name_en
+                              ? ` · ${s.city}`
+                              : ""}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             <div className="grid flex-1 grid-cols-2 gap-4 md:grid-cols-3">

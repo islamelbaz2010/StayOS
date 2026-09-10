@@ -33,6 +33,19 @@ const CULTURAL_TAGS = [
   { value: "COUPLES_WELCOME", key: "couplesWelcome" },
 ];
 
+const AMENITIES = [
+  "wifi",
+  "air_conditioning",
+  "heating",
+  "kitchen",
+  "parking",
+  "pool",
+  "gym",
+  "washer",
+  "tv",
+  "elevator",
+];
+
 export default function SearchPage() {
   const t = useTranslations();
   const searchParams = useSearchParams();
@@ -53,6 +66,11 @@ export default function SearchPage() {
       bedrooms: searchParams.get("bedrooms") || undefined,
       beds: searchParams.get("beds") || undefined,
       bathrooms: searchParams.get("bathrooms") || undefined,
+      amenities: searchParams.get("amenities") || undefined,
+      sw_lat: searchParams.get("sw_lat") || undefined,
+      sw_lng: searchParams.get("sw_lng") || undefined,
+      ne_lat: searchParams.get("ne_lat") || undefined,
+      ne_lng: searchParams.get("ne_lng") || undefined,
       sort: searchParams.get("sort") || undefined,
       limit: searchParams.get("limit") || undefined,
     }),
@@ -62,6 +80,10 @@ export default function SearchPage() {
   const selectedTags = useMemo(() => {
     return filters.cultural_tags ? filters.cultural_tags.split(",") : [];
   }, [filters.cultural_tags]);
+
+  const selectedAmenities = useMemo(() => {
+    return filters.amenities ? filters.amenities.split(",") : [];
+  }, [filters.amenities]);
 
   const toggleTag = (tag: string) => {
     const next = new Set(selectedTags);
@@ -81,6 +103,24 @@ export default function SearchPage() {
     router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
   };
 
+  const toggleAmenity = (amenity: string) => {
+    const next = new Set(selectedAmenities);
+    if (next.has(amenity)) {
+      next.delete(amenity);
+    } else {
+      next.add(amenity);
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (next.size > 0) {
+      nextParams.set("amenities", Array.from(next).join(","));
+    } else {
+      nextParams.delete("amenities");
+    }
+
+    router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
+  };
+
   const updateParam = (key: string, value: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     if (value) {
@@ -94,7 +134,7 @@ export default function SearchPage() {
   };
 
   const hasActiveFilters = Boolean(
-    filters.property_type || filters.min_price || filters.max_price || filters.bedrooms || filters.beds || filters.bathrooms
+    filters.property_type || filters.min_price || filters.max_price || filters.bedrooms || filters.beds || filters.bathrooms || filters.amenities
   );
 
   const {
@@ -300,6 +340,7 @@ export default function SearchPage() {
                 nextParams.delete("bedrooms");
                 nextParams.delete("beds");
                 nextParams.delete("bathrooms");
+                nextParams.delete("amenities");
                 router.push(`/${locale}/search?${nextParams.toString()}`, {
                   scroll: false,
                 });
@@ -309,6 +350,33 @@ export default function SearchPage() {
               {t("search.clearFilters")}
             </button>
           )}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-neutral-500">
+            {t("search.amenities")}:
+          </span>
+          {AMENITIES.map((amenity) => {
+            const selected = selectedAmenities.includes(amenity);
+            return (
+              <button
+                key={amenity}
+                type="button"
+                onClick={() => toggleAmenity(amenity)}
+                className={`
+                  rounded-full border px-3 py-1 text-xs font-medium transition
+                  ${
+                    selected
+                      ? "border-brand-600 bg-brand-600 text-white"
+                      : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
+                  }
+                `}
+                aria-pressed={selected}
+              >
+                {t(`listingForm.amenities.${amenity}`)}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-3 flex items-center justify-end">
@@ -328,6 +396,7 @@ export default function SearchPage() {
               <option value="">{t("search.sortRecommended")}</option>
               <option value="price_asc">{t("search.sortPriceAsc")}</option>
               <option value="price_desc">{t("search.sortPriceDesc")}</option>
+              <option value="rating_desc">{t("search.sortRatingDesc")}</option>
             </select>
           </div>
         </div>

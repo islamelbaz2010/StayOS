@@ -158,6 +158,40 @@ def test_search_listings_supports_offset(listings_client: TestClient, monkeypatc
     assert captured.get("limit") == 5
 
 
+def test_search_listings_amenities_lowercased(listings_client: TestClient, monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["amenities"] = filters.amenities
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get("/api/v1/listings?amenities=WIFI,Kitchen")
+    assert response.status_code == 200
+    assert captured.get("amenities") == "WIFI,Kitchen"
+
+
+def test_search_listings_accepts_rating_sort(listings_client: TestClient, monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["sort"] = filters.sort
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get("/api/v1/listings?sort=rating_desc")
+    assert response.status_code == 200
+    assert captured.get("sort") == "rating_desc"
+
+
 def test_get_listing_required_fields(listings_client: TestClient, monkeypatch) -> None:
     listing = _make_listing_response()
     monkeypatch.setattr(

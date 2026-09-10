@@ -136,9 +136,9 @@ async def test_search_listings(fake_session: AsyncMock) -> None:
         check_out=date(2026, 8, 4),
         min_price=1000,
         max_price=2000,
-        property_type=["APARTMENT"],
-        cultural_tags=["FAMILY_ONLY"],
-        amenities=["WIFI"],
+        property_type="APARTMENT",
+        cultural_tags="FAMILY_ONLY",
+        amenities="WIFI",
         guests=4,
         q="شقة",
     )

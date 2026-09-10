@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 
 import { useAuth } from "@/lib/auth/useAuth";
 import { useUnreadCount } from "@/lib/queries/messages";
@@ -37,6 +37,52 @@ function MessagesLink({
         )}
       </span>
     </Link>
+  );
+}
+
+function LanguageSwitcher({ className }: { className?: string }) {
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const switchLocale = (nextLocale: string) => {
+    if (nextLocale === locale) return;
+    const segments = pathname.split("/");
+    if (segments[1] === "ar" || segments[1] === "en") {
+      segments[1] = nextLocale;
+    } else {
+      segments.splice(1, 0, nextLocale);
+    }
+    router.push(segments.join("/"));
+  };
+
+  return (
+    <div className={`flex items-center gap-1 ${className ?? ""}`}>
+      <button
+        type="button"
+        onClick={() => switchLocale("en")}
+        className={`rounded px-1.5 py-0.5 text-xs font-semibold transition ${
+          locale === "en"
+            ? "bg-accent-400 text-brand-900"
+            : "text-neutral-500 hover:text-neutral-800"
+        }`}
+      >
+        EN
+      </button>
+      <span className="text-neutral-300">|</span>
+      <button
+        type="button"
+        onClick={() => switchLocale("ar")}
+        className={`rounded px-1.5 py-0.5 text-xs font-semibold transition ${
+          locale === "ar"
+            ? "bg-accent-400 text-brand-900"
+            : "text-neutral-500 hover:text-neutral-800"
+        }`}
+      >
+        ع
+      </button>
+    </div>
   );
 }
 
@@ -195,6 +241,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <LanguageSwitcher />
           {isLoading ? null : isAuthenticated && user ? (
             <>
               <span className="hidden text-sm text-neutral-700 sm:inline">
@@ -352,6 +399,9 @@ export function Header() {
             >
               {t("support")}
             </Link>
+            <div className="px-3 py-2.5">
+              <LanguageSwitcher />
+            </div>
             {isAuthenticated && (
               <button
                 type="button"

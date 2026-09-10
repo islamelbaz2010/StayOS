@@ -513,6 +513,7 @@
     "actionError": "We couldn't complete this action. Please try again.",
     "hostVerified": "Identity verified",
     "accommodation": "Accommodation",
+    "cleaningFee": "Cleaning fee",
     "serviceFee": "Service fee",
     "serviceFeeWaived": "Free"
   },

@@ -513,6 +513,7 @@
     "actionError": "تعذر إتمام هذا الإجراء. يرجى المحاولة مرة أخرى.",
     "hostVerified": "تم التحقق من الهوية",
     "accommodation": "الإقامة",
+    "cleaningFee": "رسوم التنظيف",
     "serviceFee": "رسوم الخدمة",
     "serviceFeeWaived": "مجاناً"
   },

@@ -190,6 +190,14 @@ function TripContent({
                   {formatMoney(payment.accommodation_amount_egp, "EGP", dateLocale)}
                 </dd>
               </div>
+              {payment.cleaning_fee_egp != null && payment.cleaning_fee_egp > 0 && (
+                <div className="flex justify-between">
+                  <dt>{tp("cleaningFee")}</dt>
+                  <dd className="font-medium text-brand-900">
+                    {formatMoney(payment.cleaning_fee_egp, "EGP", dateLocale)}
+                  </dd>
+                </div>
+              )}
               {payment.guest_service_fee_egp != null &&
                 payment.guest_service_fee_egp > 0 && (
                   <div className="flex justify-between">

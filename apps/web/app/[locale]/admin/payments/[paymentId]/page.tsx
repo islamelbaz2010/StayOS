@@ -159,6 +159,12 @@ export default function AdminPaymentDetailPage() {
                   </Field>
                 )}
 
+                {payment.cleaning_fee_egp != null && payment.cleaning_fee_egp > 0 && (
+                  <Field label={t("cleaningFee")}>
+                    {formatMoney(payment.cleaning_fee_egp, "EGP", dateLocale)}
+                  </Field>
+                )}
+
                 {payment.guest_service_fee_egp != null && (
                   <Field label={t("serviceFee")}>
                     {formatMoney(payment.guest_service_fee_egp, "EGP", dateLocale)}

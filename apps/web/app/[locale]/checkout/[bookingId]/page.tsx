@@ -230,6 +230,14 @@ function CheckoutContent({
               </dd>
             </div>
           )}
+          {payment.cleaning_fee_egp != null && payment.cleaning_fee_egp > 0 && (
+            <div className="flex justify-between">
+              <dt className="text-neutral-600">{t("cleaningFee")}</dt>
+              <dd className="font-medium text-brand-900">
+                {payment.cleaning_fee_egp.toLocaleString(dateLocale)} {t("egp")}
+              </dd>
+            </div>
+          )}
           {payment.guest_service_fee_egp != null &&
             payment.guest_service_fee_egp > 0 && (
               <div className="flex justify-between">

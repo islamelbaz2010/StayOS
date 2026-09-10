@@ -85,3 +85,8 @@ class MessageTemplateResponse(BaseModel):
 class AutomatedMessageSend(BaseModel):
     template_key: str
     variables: dict[str, str] = Field(default_factory=dict)
+
+
+class InquiryCreate(BaseModel):
+    unit_id: str
+    content: str = Field(..., min_length=1, max_length=4000)

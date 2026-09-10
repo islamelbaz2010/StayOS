@@ -12,6 +12,7 @@ from .schemas import (
     ConversationDetailResponse,
     ConversationListItem,
     ConversationResponse,
+    InquiryCreate,
     MarkReadRequest,
     MessageCreate,
     MessageResponse,
@@ -107,6 +108,18 @@ async def get_conversation_for_booking(
 ) -> ConversationResponse:
     try:
         return await messages_services.get_conversation_for_booking(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/inquiries", response_model=ConversationResponse, status_code=201)
+async def create_inquiry(
+    request: InquiryCreate,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ConversationResponse:
+    try:
+        return await messages_services.contact_host(session, user, request)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

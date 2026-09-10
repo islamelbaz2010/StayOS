@@ -104,6 +104,72 @@ async def get_or_create_conversation_for_booking(
         return conversation
 
 
+async def get_inquiry_conversation(
+    session: AsyncSession, unit_id: str, guest_id: str
+) -> Conversation | None:
+    result = await session.execute(
+        select(Conversation)
+        .options(selectinload(Conversation.participants), selectinload(Conversation.messages))
+        .where(
+            Conversation.unit_id == unit_id,
+            Conversation.booking_id.is_(None),
+            Conversation.type == ConversationType.INQUIRY,
+        )
+    )
+    for conv in result.scalars().all():
+        for p in conv.participants:
+            if p.user_id == guest_id and p.role == ParticipantRole.GUEST:
+                return conv
+    return None
+
+
+async def create_inquiry_conversation(
+    session: AsyncSession,
+    unit_id: str,
+    guest_id: str,
+    host_id: str,
+) -> Conversation:
+    conversation = Conversation(
+        id=str(uuid4()),
+        booking_id=None,
+        unit_id=unit_id,
+        type=ConversationType.INQUIRY,
+        status=ConversationStatus.ACTIVE,
+    )
+    session.add(conversation)
+    await session.flush()
+    await session.refresh(conversation)
+
+    session.add_all(
+        [
+            ConversationParticipant(
+                conversation_id=conversation.id,
+                user_id=guest_id,
+                role=ParticipantRole.GUEST,
+            ),
+            ConversationParticipant(
+                conversation_id=conversation.id,
+                user_id=host_id,
+                role=ParticipantRole.HOST,
+            ),
+        ]
+    )
+    await session.flush()
+    return conversation
+
+
+async def get_or_create_inquiry_conversation(
+    session: AsyncSession,
+    unit_id: str,
+    guest_id: str,
+    host_id: str,
+) -> Conversation:
+    existing = await get_inquiry_conversation(session, unit_id, guest_id)
+    if existing is not None:
+        return existing
+    return await create_inquiry_conversation(session, unit_id, guest_id, host_id)
+
+
 async def is_conversation_participant(
     session: AsyncSession, conversation_id: str, user_id: str
 ) -> bool:

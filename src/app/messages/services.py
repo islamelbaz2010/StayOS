@@ -8,11 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth import repository as auth_repository
+from app.auth.constants import UserRole
 from app.auth.models import User
 from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.config import settings
+from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 from app.shared.outbox import write_event
@@ -29,6 +31,7 @@ from .schemas import (
     ConversationDetailResponse,
     ConversationListItem,
     ConversationResponse,
+    InquiryCreate,
     MessageCreate,
     MessageResponse,
     MessageTemplateResponse,
@@ -125,6 +128,51 @@ async def send_message(
     await _notify_message_recipients(session, conversation, user, message)
 
     return MessageResponse.model_validate(message)
+
+
+async def contact_host(
+    session: AsyncSession,
+    user: User,
+    request: InquiryCreate,
+) -> ConversationResponse:
+    """Create or reuse an inquiry conversation and send the first message.
+
+    Allows a guest to message a host before booking, mirroring Airbnb's
+    "Contact host" feature. The conversation is not tied to a booking.
+    """
+    if user.role != UserRole.GUEST:
+        raise AuthorizationError("Only guests can contact hosts")
+
+    result = await session.execute(
+        select(Unit).where(Unit.id == request.unit_id)
+    )
+    unit = result.scalar_one_or_none()
+    if unit is None or unit.status != UnitStatus.LISTED:
+        raise NotFoundError("Listing not found")
+
+    if unit.host_id == user.id:
+        raise ValidationError("Cannot contact your own listing")
+
+    conversation = await messages_repository.get_or_create_inquiry_conversation(
+        session, unit.id, user.id, unit.host_id
+    )
+
+    message = await messages_repository.create_message(
+        session,
+        conversation_id=conversation.id,
+        sender_id=user.id,
+        sender_role=ParticipantRole.GUEST,
+        content=request.content,
+        status=MessageStatus.SENT,
+    )
+
+    conversation.updated_at = datetime.now(UTC)
+    session.add(conversation)
+    await session.flush()
+
+    await _notify_message_recipients(session, conversation, user, message)
+
+    return ConversationResponse.model_validate(conversation)
 
 
 async def get_conversation_detail(

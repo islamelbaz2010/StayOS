@@ -115,3 +115,19 @@ export function useBookingConversation(bookingId: string | null) {
     enabled: Boolean(bookingId),
   });
 }
+
+export function useContactHost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { unitId: string; content: string }) => {
+      const { data } = await api.post<ConversationResponse>("/messages/inquiries", {
+        unit_id: params.unitId,
+        content: params.content,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+}

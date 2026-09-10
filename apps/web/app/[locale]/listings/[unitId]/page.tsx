@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 
 import { BookingPanel } from "@/components/bookings/BookingPanel";
 import { GuestLayout } from "@/components/layouts";
+import { ContactHostButton } from "@/components/listings/ContactHostButton";
 import { FavoriteButton } from "@/components/listings/FavoriteButton";
 import { Gallery } from "@/components/listings/Gallery";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
@@ -314,6 +315,9 @@ export default function ListingDetailPage() {
                           {t("hostVerified")}
                         </span>
                       )}
+                    </div>
+                    <div className="mt-4">
+                      <ContactHostButton unitId={unitId} locale={locale} />
                     </div>
                   </section>
                 )}

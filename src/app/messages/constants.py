@@ -3,6 +3,7 @@ from enum import StrEnum
 
 class ConversationType(StrEnum):
     RESERVATION = "reservation"
+    INQUIRY = "inquiry"
     SUPPORT = "support"
 
 

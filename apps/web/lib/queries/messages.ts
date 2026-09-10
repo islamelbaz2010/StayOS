@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
+import type { components } from "@/lib/api-types";
+
+export type ConversationResponse = components["schemas"]["ConversationResponse"];
 
 export interface MessageResponse {
   id: string;
@@ -95,14 +98,6 @@ export function useMarkRead(conversationId: string | null) {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
-}
-
-export interface ConversationResponse {
-  id: string;
-  booking_id: string | null;
-  unit_id: string | null;
-  type: string;
-  status: string;
 }
 
 export function useBookingConversation(bookingId: string | null) {

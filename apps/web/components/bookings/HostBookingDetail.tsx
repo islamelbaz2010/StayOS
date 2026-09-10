@@ -1,16 +1,20 @@
 "use client";
 
 import Image from "next/image";
+import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 
+import { api } from "@/lib/api";
 import type { BookingResponse } from "@/lib/queries/bookings";
+import type { ConversationResponse } from "@/lib/queries/messages";
 import {
   usePaymentByBooking,
   usePaymentProofDownloadUrl,
   type PaymentResponse,
 } from "@/lib/queries/payments";
-import { formatDate, formatMoney } from "@/lib/utils";
+import { formatDate, formatMoney, getApiErrorMessage } from "@/lib/utils";
 
 import { HostBookingActions } from "./HostBookingActions";
 
@@ -132,8 +136,31 @@ export function HostBookingDetail({
 }: HostBookingDetailProps) {
   const t = useTranslations("hostBookings");
   const params = useParams<{ locale: string }>();
+  const router = useRouter();
   const dateLocale = params?.locale === "ar" ? "ar-EG" : "en-EG";
+  const [messageError, setMessageError] = useState<string | null>(null);
   const { data: payment } = usePaymentByBooking(booking.id);
+
+  const canMessage =
+    booking.permission_scope == null ||
+    booking.permission_scope !== "calendar_only";
+
+  const messageGuest = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.get<ConversationResponse>(
+        `/messages/bookings/${booking.id}/conversation`
+      );
+      return data;
+    },
+    onSuccess: (conversation) => {
+      setMessageError(null);
+      const locale = params?.locale ?? "en";
+      router.push(`/${locale}/messages/${conversation.id}`);
+    },
+    onError: (error) => {
+      setMessageError(getApiErrorMessage(error, t("messageGuestError")));
+    },
+  });
 
   return (
     <section className="card p-5 sm:p-6" aria-label={t("detailTitle")}>
@@ -256,6 +283,22 @@ export function HostBookingDetail({
           <p className="mt-1 text-sm text-neutral-700">
             {booking.reject_reason || booking.cancel_reason}
           </p>
+        </div>
+      )}
+
+      {canMessage && (
+        <div className="mt-6 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => messageGuest.mutate()}
+            disabled={messageGuest.isPending}
+            className="btn-secondary w-full sm:w-auto"
+          >
+            {messageGuest.isPending ? t("loading") : t("messageGuest")}
+          </button>
+          {messageError && (
+            <p className="text-sm text-danger-600">{messageError}</p>
+          )}
         </div>
       )}
 

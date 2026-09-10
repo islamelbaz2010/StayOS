@@ -606,6 +606,8 @@
     "refundedAt": "تاريخ الاسترداد",
     "paymentRejectReason": "سبب الرفض",
     "viewReceipt": "عرض الإيصال",
+    "messageGuest": "مراسلة الضيف",
+    "messageGuestError": "تعذر فتح المحادثة. يرجى المحاولة مرة أخرى.",
     "searchPlaceholder": "ابحث بالضيف أو رقم الحجز",
     "allUnits": "كل العقارات",
     "noSearchResults": "لا توجد حجوزات مطابقة لبحثك.",

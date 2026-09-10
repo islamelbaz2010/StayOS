@@ -606,6 +606,8 @@
     "refundedAt": "Refunded at",
     "paymentRejectReason": "Rejection reason",
     "viewReceipt": "View receipt",
+    "messageGuest": "Message guest",
+    "messageGuestError": "Could not open the conversation. Please try again.",
     "searchPlaceholder": "Search by guest or booking ID",
     "allUnits": "All listings",
     "noSearchResults": "No bookings match your search.",

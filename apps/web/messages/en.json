@@ -571,6 +571,7 @@
     "stayCompleted": "Stay completed",
     "complete": "Complete stay",
     "payment": "Payment",
+    "paymentAmount": "Payment amount",
     "paymentStatuses": {
       "pending": "Payment pending",
       "proof_uploaded": "Proof uploaded",

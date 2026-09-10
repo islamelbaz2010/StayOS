@@ -571,6 +571,7 @@
     "stayCompleted": "اكتملت الإقامة",
     "complete": "إكمال الإقامة",
     "payment": "الدفع",
+    "paymentAmount": "مبلغ الدفع",
     "paymentStatuses": {
       "pending": "في انتظار الدفع",
       "proof_uploaded": "تم رفع إثبات الدفع",

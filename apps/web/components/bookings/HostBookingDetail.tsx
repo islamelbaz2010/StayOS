@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 
 import type { BookingResponse } from "@/lib/queries/bookings";
 import { usePaymentByBooking, type PaymentResponse } from "@/lib/queries/payments";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatMoney } from "@/lib/utils";
 
 import { HostBookingActions } from "./HostBookingActions";
 
@@ -128,19 +128,27 @@ export function HostBookingDetail({
           </dd>
         </div>
         {payment && (
-          <div className="sm:col-span-2">
-            <dt className="text-sm text-neutral-500">{t("payment")}</dt>
-            <dd className="mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  PAYMENT_STATUS_COLORS[payment.status.toLowerCase()] ||
-                  "bg-neutral-100 text-neutral-700"
-                }`}
-              >
-                {paymentStatusLabel(payment.status, t)}
-              </span>
-            </dd>
-          </div>
+          <>
+            <div className="sm:col-span-2">
+              <dt className="text-sm text-neutral-500">{t("payment")}</dt>
+              <dd className="mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    PAYMENT_STATUS_COLORS[payment.status.toLowerCase()] ||
+                    "bg-neutral-100 text-neutral-700"
+                  }`}
+                >
+                  {paymentStatusLabel(payment.status, t)}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm text-neutral-500">{t("paymentAmount")}</dt>
+              <dd className="text-sm font-medium text-brand-900">
+                {formatMoney(payment.amount_egp, "EGP", dateLocale)}
+              </dd>
+            </div>
+          </>
         )}
       </dl>
 

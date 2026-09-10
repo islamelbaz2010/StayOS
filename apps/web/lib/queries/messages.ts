@@ -44,7 +44,9 @@ export function useConversations() {
   });
 }
 
-export function useUnreadCount() {
+export function useUnreadCount(
+  options: { enabled?: boolean } = {}
+) {
   return useQuery({
     queryKey: ["conversations", "unread"],
     queryFn: async () => {
@@ -54,6 +56,7 @@ export function useUnreadCount() {
       return data;
     },
     refetchInterval: 15000,
+    enabled: options.enabled ?? true,
   });
 }
 

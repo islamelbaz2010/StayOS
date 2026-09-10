@@ -455,6 +455,7 @@
     "stayInfo": "Your stay",
     "callHost": "Call host",
     "messageHost": "Message host",
+    "messageHostError": "Could not open the conversation. Please try again.",
     "houseRules": "House rules",
     "checkInAction": "Check in",
     "checkOutAction": "Check out",

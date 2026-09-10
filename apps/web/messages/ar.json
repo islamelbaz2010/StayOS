@@ -455,6 +455,7 @@
     "stayInfo": "إقامتك",
     "callHost": "اتصل بالمضيف",
     "messageHost": "مراسلة المضيف",
+    "messageHostError": "تعذر فتح المحادثة. يرجى المحاولة مرة أخرى.",
     "houseRules": "قواعد المنزل",
     "checkInAction": "تسجيل الوصول",
     "checkOutAction": "تسجيل المغادرة",

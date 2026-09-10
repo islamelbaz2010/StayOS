@@ -9,6 +9,7 @@ import Image from "next/image";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
 import { CancelBookingButton } from "@/components/bookings/CancelBookingButton";
+import { MessageHostButton } from "@/components/bookings/MessageHostButton";
 import { useGuestBookings } from "@/lib/queries/bookings";
 import { formatDate } from "@/lib/utils";
 
@@ -138,6 +139,7 @@ export default function MyTripsPage() {
                       >
                         {t("viewTrip")}
                       </Link>
+                      <MessageHostButton bookingId={booking.id} />
                       {booking.status === "accepted" && (
                         <Link
                           href={`/${locale}/checkout/${booking.id}`}

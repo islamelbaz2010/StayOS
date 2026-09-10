@@ -6,6 +6,39 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 import { useAuth } from "@/lib/auth/useAuth";
+import { useUnreadCount } from "@/lib/queries/messages";
+
+function MessagesLink({
+  className,
+  onClick,
+  enabled,
+}: {
+  className: string;
+  onClick?: () => void;
+  enabled: boolean;
+}) {
+  const t = useTranslations("nav");
+  const { data } = useUnreadCount({ enabled });
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
+  const count = data?.total_unread ?? 0;
+  return (
+    <Link
+      href={`/${locale}/messages`}
+      className={className}
+      onClick={onClick}
+    >
+      <span className="inline-flex items-center gap-1.5">
+        {t("messages")}
+        {count > 0 && (
+          <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold leading-none text-white">
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
+      </span>
+    </Link>
+  );
+}
 
 export function Header() {
   const t = useTranslations("nav");
@@ -68,13 +101,11 @@ export function Header() {
         </Link>
       )}
       {isAuthenticated && (
-        <Link
-          href={`/${locale}/messages`}
+        <MessagesLink
           className="text-sm font-medium text-neutral-700 hover:text-accent-600"
           onClick={() => setMobileOpen(false)}
-        >
-          {t("messages")}
-        </Link>
+          enabled={isAuthenticated}
+        />
       )}
       {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
         <Link
@@ -265,13 +296,11 @@ export function Header() {
               </Link>
             )}
             {isAuthenticated && (
-              <Link
-                href={`/${locale}/messages`}
+              <MessagesLink
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
-              >
-                {t("messages")}
-              </Link>
+                enabled={isAuthenticated}
+              />
             )}
             {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
               <Link

@@ -185,6 +185,10 @@ async def test_create_payment_for_booking_success(fake_session: AsyncMock, monke
         AsyncMock(return_value=unit),
     )
     monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
         "app.payments.services.payments_repository.create_payment",
         AsyncMock(return_value=payment),
     )
@@ -1229,6 +1233,10 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
         "app.payments.services.listings_repository.get_unit_with_listing",
         AsyncMock(return_value=unit),
     )
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
     create_mock = AsyncMock(return_value=payment)
     monkeypatch.setattr(
         "app.payments.services.payments_repository.create_payment", create_mock
@@ -1410,6 +1418,10 @@ async def test_get_booking_quote_waived_alpha(fake_session: AsyncMock, monkeypat
         AsyncMock(return_value=unit),
     )
     monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
         "app.bookings.repository.count_global_completed_bookings",
         AsyncMock(return_value=0),
     )
@@ -1437,6 +1449,10 @@ async def test_get_booking_quote_charged_after_threshold(fake_session: AsyncMock
         AsyncMock(return_value=unit),
     )
     monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
         "app.bookings.repository.count_global_completed_bookings",
         AsyncMock(return_value=10),
     )
@@ -1447,6 +1463,45 @@ async def test_get_booking_quote_charged_after_threshold(fake_session: AsyncMock
     assert quote.service_fee_egp == 82  # round(2050 * 0.04)
     assert quote.service_fee_waived is False
     assert quote.total_egp == 2132
+
+
+@pytest.mark.asyncio
+async def test_get_booking_quote_applies_weekend_multiplier(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """The booking quote must use the pricing engine (weekend multipliers
+    and calendar overrides), not a flat base_price * nights — otherwise
+    the total shown on the listing page would differ from search results.
+    """
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    listing = _make_listing(unit)
+    listing.weekend_mult = 1.5  # 50% weekend surcharge
+    unit.listing = listing
+
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.bookings.repository.count_global_completed_bookings",
+        AsyncMock(return_value=0),
+    )
+
+    # 2026-09-11 is a Friday, 2026-09-12 is a Saturday (MENA weekend).
+    # 4 nights: Thu(10), Fri(11), Sat(12), Sun(13) → 2 weekend nights.
+    quote = await payment_services.get_booking_quote(
+        fake_session, "unit-1", date(2026, 9, 11), date(2026, 9, 15)
+    )
+    assert quote.nights == 4
+    # 2 weekday nights @ 500 + 2 weekend nights @ 750 = 1000 + 1500 = 2500
+    assert quote.accommodation_egp == 2500
+    assert quote.cleaning_fee_egp == 50
+    assert quote.total_egp == 2550  # alpha: no service fee
 
 
 @pytest.mark.asyncio
@@ -1492,6 +1547,10 @@ async def test_get_booking_quote_matches_payment_creation(fake_session: AsyncMoc
     monkeypatch.setattr(
         "app.payments.services.listings_repository.get_unit_with_listing",
         AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.payments.services.listings_repository.get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(
         "app.bookings.repository.count_global_completed_bookings",

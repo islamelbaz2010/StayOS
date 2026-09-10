@@ -222,6 +222,29 @@ function CheckoutContent({
             <dt className="text-neutral-600">{t("nights")}</dt>
             <dd className="font-medium text-brand-900">{payment.nights}</dd>
           </div>
+          {payment.accommodation_amount_egp != null && (
+            <div className="flex justify-between">
+              <dt className="text-neutral-600">{t("accommodation")}</dt>
+              <dd className="font-medium text-brand-900">
+                {payment.accommodation_amount_egp.toLocaleString(dateLocale)} {t("egp")}
+              </dd>
+            </div>
+          )}
+          {payment.guest_service_fee_egp != null &&
+            payment.guest_service_fee_egp > 0 && (
+              <div className="flex justify-between">
+                <dt className="text-neutral-600">{t("serviceFee")}</dt>
+                <dd className="font-medium text-brand-900">
+                  {payment.guest_service_fee_egp.toLocaleString(dateLocale)} {t("egp")}
+                </dd>
+              </div>
+            )}
+          {payment.guest_service_fee_egp === 0 && (
+            <div className="flex justify-between">
+              <dt className="text-neutral-600">{t("serviceFee")}</dt>
+              <dd className="font-medium text-success-600">{t("serviceFeeWaived")}</dd>
+            </div>
+          )}
           <div className="flex justify-between border-t border-neutral-200 pt-3">
             <dt className="text-base font-bold text-brand-900">
               {t("totalAmount")}

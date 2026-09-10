@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import Image from "next/image";
@@ -26,12 +27,48 @@ const STATUS_VARIANTS: Record<string, string> = {
   no_show: "badge-neutral",
 };
 
+type TripFilter = "upcoming" | "past" | "cancelled" | "all";
+
+const ACTIVE_STATUSES = new Set(["requested", "accepted", "confirmed"]);
+const TERMINAL_STATUSES = new Set(["completed", "rejected", "no_show"]);
+
 export default function MyTripsPage() {
   const t = useTranslations("trips");
   const tc = useTranslations("common");
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
+  const [filter, setFilter] = useState<TripFilter>("upcoming");
   const { data: bookings, isLoading, error, refetch } = useGuestBookings();
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const filteredBookings = (bookings ?? []).filter((booking) => {
+    const checkOut = new Date(booking.check_out);
+    const isCancelled = booking.status === "cancelled";
+    const isPast =
+      TERMINAL_STATUSES.has(booking.status) ||
+      (ACTIVE_STATUSES.has(booking.status) && checkOut < now);
+    const isUpcoming = !isCancelled && !isPast;
+
+    switch (filter) {
+      case "upcoming":
+        return isUpcoming;
+      case "past":
+        return isPast;
+      case "cancelled":
+        return isCancelled;
+      case "all":
+        return true;
+    }
+  });
+
+  const FILTER_TABS: { key: TripFilter; label: string }[] = [
+    { key: "upcoming", label: t("filterUpcoming") },
+    { key: "past", label: t("filterPast") },
+    { key: "cancelled", label: t("filterCancelled") },
+    { key: "all", label: t("filterAll") },
+  ];
 
   return (
     <ProtectedRoute allowedRoles={["guest"]}>
@@ -40,6 +77,23 @@ export default function MyTripsPage() {
           <h1 className="mb-6 text-2xl font-bold text-brand-900">
             {t("title")}
           </h1>
+
+          <div className="mb-6 flex gap-2 overflow-x-auto border-b border-neutral-200 pb-px">
+            {FILTER_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setFilter(tab.key)}
+                className={`whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  filter === tab.key
+                    ? "border-accent-600 text-accent-600"
+                    : "border-transparent text-neutral-500 hover:text-brand-900"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           {isLoading && (
             <div className="py-12 text-center text-neutral-600">
@@ -60,21 +114,31 @@ export default function MyTripsPage() {
             </div>
           )}
 
-          {bookings && bookings.length === 0 && (
+          {bookings && filteredBookings.length === 0 && (
             <div className="card p-12 text-center">
-              <p className="text-neutral-500">{t("noBookings")}</p>
-              <Link
-                href={`/${locale}/search`}
-                className="btn-primary mt-4 inline-flex"
-              >
-                {t("searchCta")}
-              </Link>
+              <p className="text-neutral-500">
+                {filter === "upcoming"
+                  ? t("noUpcoming")
+                  : filter === "past"
+                    ? t("noPast")
+                    : filter === "cancelled"
+                      ? t("noCancelled")
+                      : t("noBookings")}
+              </p>
+              {filter === "upcoming" && (
+                <Link
+                  href={`/${locale}/search`}
+                  className="btn-primary mt-4 inline-flex"
+                >
+                  {t("searchCta")}
+                </Link>
+              )}
             </div>
           )}
 
-          {bookings && bookings.length > 0 && (
+          {filteredBookings.length > 0 && (
             <div className="space-y-4">
-              {bookings.map((booking) => (
+              {filteredBookings.map((booking) => (
                 <div
                   key={booking.id}
                   className="card p-4 sm:p-5"

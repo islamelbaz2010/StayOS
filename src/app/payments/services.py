@@ -14,6 +14,7 @@ from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.config import settings
 from app.listings import repository as listings_repository
+from app.listings import pricing
 from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing, UnitPhoto
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
@@ -231,8 +232,23 @@ async def compute_booking_quote(
     """Single source of truth for guest pricing: nightly base + cleaning fee
     + the V1 guest service fee (waived while the alpha free-booking
     incentive still applies). Shared by the quote endpoint and payment
-    creation so clients never have to guess the total."""
-    accommodation_egp = listing.base_price_egp * nights
+    creation so clients never have to guess the total.
+
+    Uses the same pricing engine as search results — weekend multipliers
+    and calendar-rule price overrides are applied per night — so the
+    quote always matches the total shown on the search/listing page.
+    """
+    check_in_date = date.fromisoformat(check_in)
+    check_out_date = date.fromisoformat(check_out)
+    rules = await listings_repository.get_calendar_rules_in_range(
+        session, unit_id, check_in_date, check_out_date
+    )
+    accommodation_egp = pricing.compute_subtotal(
+        listing, rules, check_in_date, check_out_date
+    )
+    nightly_rate_egp = (
+        accommodation_egp // nights if nights > 0 else listing.base_price_egp
+    )
     cleaning_fee_egp = listing.cleaning_fee_egp or 0
     subtotal = accommodation_egp + cleaning_fee_egp
 
@@ -245,7 +261,7 @@ async def compute_booking_quote(
         check_in=check_in,
         check_out=check_out,
         nights=nights,
-        nightly_rate_egp=listing.base_price_egp,
+        nightly_rate_egp=nightly_rate_egp,
         accommodation_egp=accommodation_egp,
         cleaning_fee_egp=cleaning_fee_egp,
         service_fee_egp=service_fee_egp,

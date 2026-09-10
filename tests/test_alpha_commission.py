@@ -158,8 +158,10 @@ async def _run_payment_creation(global_completed, base_price=500, nights=2, clea
          patch.object(ps, "settings", s), \
          patch.object(ps, "_fetch_unit_and_listing", AsyncMock(return_value=(unit, listing))), \
          patch.object(ps, "_emit_outbox_event", AsyncMock()), \
+         patch.object(ps, "listings_repository") as lr, \
          patch("app.bookings.repository.count_global_completed_bookings", return_value=global_completed):
         pr.get_payment_by_booking = AsyncMock(return_value=None)
+        lr.get_calendar_rules_in_range = AsyncMock(return_value=[])
         from datetime import UTC, datetime
         now = datetime.now(UTC)
         captured_amount = {}

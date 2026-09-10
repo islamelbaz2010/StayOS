@@ -51,6 +51,17 @@ export function useListingReviews(unitId: string, limit = 10) {
   });
 }
 
+export async function fetchMoreReviews(
+  unitId: string,
+  offset: number,
+  limit: number
+): Promise<Review[]> {
+  const { data } = await api.get<ApiReviewListResponse>(`/listings/${unitId}/reviews`, {
+    params: { limit, offset },
+  });
+  return data.data.map(mapReview);
+}
+
 export function useCreateReview() {
   const queryClient = useQueryClient();
 

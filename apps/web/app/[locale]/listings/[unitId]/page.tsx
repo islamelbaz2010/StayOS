@@ -322,6 +322,32 @@ export default function ListingDetailPage() {
                   </section>
                 )}
 
+                {(listing.checkInTime || listing.checkOutTime) && (
+                  <section className="card p-5 sm:p-6">
+                    <h2 className="mb-3 text-lg font-semibold text-brand-900">
+                      {t("checkInOutTimes")}
+                    </h2>
+                    <div className="flex flex-wrap gap-6 text-sm text-neutral-700">
+                      {listing.checkInTime && (
+                        <div>
+                          <span className="font-medium text-brand-900">
+                            {t("checkInLabel")}
+                          </span>
+                          <p className="mt-0.5">{listing.checkInTime}</p>
+                        </div>
+                      )}
+                      {listing.checkOutTime && (
+                        <div>
+                          <span className="font-medium text-brand-900">
+                            {t("checkOutLabel")}
+                          </span>
+                          <p className="mt-0.5">{listing.checkOutTime}</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
+
                 <TrustSection listing={listing} />
               </div>
 

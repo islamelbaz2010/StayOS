@@ -35,6 +35,8 @@ export interface ListingDetail extends Listing {
   minNights: number;
   maxNights: number;
   cleaningFee: number;
+  checkInTime: string | null;
+  checkOutTime: string | null;
   hostDisplayName: string | null;
   hostKycStatus: string | null;
   hostJoinedAt: string | null;
@@ -69,6 +71,8 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     minNights: item.min_nights,
     maxNights: item.max_nights,
     cleaningFee: item.cleaning_fee_egp,
+    checkInTime: item.check_in_time ?? null,
+    checkOutTime: item.check_out_time ?? null,
     hostDisplayName: item.host_display_name ?? null,
     hostKycStatus: item.host_kyc_status ?? null,
     hostJoinedAt: item.host_joined_at ?? null,

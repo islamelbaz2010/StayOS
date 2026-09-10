@@ -547,6 +547,7 @@
     "rejectReason": "Rejection reason (optional)",
     "cancelReason": "Cancellation reason (optional)",
     "updateError": "Failed to update the booking. Please try again.",
+    "cancelError": "Could not cancel this booking. Please try again.",
     "finalStatus": "This booking is already {status}.",
     "filter": {
       "all": "All",
@@ -572,6 +573,7 @@
     "complete": "Complete stay",
     "payment": "Payment",
     "paymentAmount": "Payment amount",
+    "refundAmount": "Refund amount",
     "paymentStatuses": {
       "pending": "Payment pending",
       "proof_uploaded": "Proof uploaded",
@@ -694,6 +696,7 @@
     "rejectReason": "Rejection reason",
     "deadlineWarning": "Submit proof before {deadline} or your booking may be cancelled.",
     "attemptsRemaining": "You have {count} proof submission attempts remaining.",
+    "refundAmount": "Refund amount",
     "rejectedSummary": "Your payment receipt was rejected. You can upload a new one.",
     "pendingSummary": "Your booking is not yet confirmed. Upload your payment receipt to secure it.",
     "refundPendingSummary": "Your payment is being refunded.",

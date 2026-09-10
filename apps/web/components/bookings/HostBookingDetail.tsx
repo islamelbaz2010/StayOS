@@ -148,6 +148,15 @@ export function HostBookingDetail({
                 {formatMoney(payment.amount_egp, "EGP", dateLocale)}
               </dd>
             </div>
+            {(payment.status === "refund_pending" || payment.status === "refunded") &&
+              payment.refund_amount_egp != null && (
+                <div>
+                  <dt className="text-sm text-neutral-500">{t("refundAmount")}</dt>
+                  <dd className="text-sm font-medium text-brand-900">
+                    {formatMoney(payment.refund_amount_egp, "EGP", dateLocale)}
+                  </dd>
+                </div>
+              )}
           </>
         )}
       </dl>

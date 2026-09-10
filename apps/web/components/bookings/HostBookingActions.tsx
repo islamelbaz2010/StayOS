@@ -7,6 +7,8 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { useAuth } from "@/lib/auth/useAuth";
 import {
+  useCancelBooking,
+  useCancellationPreview,
   useCheckIn,
   useCheckOut,
   useCompleteBooking,
@@ -63,6 +65,8 @@ export function HostBookingActions({
   onSuccess,
 }: HostBookingActionsProps) {
   const t = useTranslations("hostBookings");
+  const tc = useTranslations("common");
+  const tp = useTranslations("trips");
   const locale = useLocale();
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { user } = useAuth();
@@ -70,11 +74,14 @@ export function HostBookingActions({
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
   const completeBooking = useCompleteBooking();
+  const cancelBooking = useCancelBooking();
 
   const [rejectReason, setRejectReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [action, setAction] = useState<"accept" | "reject" | "cancel" | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const preview = useCancellationPreview(booking.id, action === "cancel");
 
   // Accept/reject/cancel/check-in/check-out are restricted server-side to
   // owner/admin/full_access; hide them for limited co-host scopes.
@@ -93,6 +100,21 @@ export function HostBookingActions({
   const onActionError = (err: unknown) => {
     setError(getApiErrorMessage(err, t("updateError")));
   };
+
+  async function handleCancel() {
+    setError(null);
+    try {
+      await cancelBooking.mutateAsync({
+        bookingId: booking.id,
+        payload: cancelReason ? { reason: cancelReason } : {},
+      });
+      setAction(null);
+      setCancelReason("");
+      onSuccess();
+    } catch (err) {
+      setError(getApiErrorMessage(err, t("cancelError")));
+    }
+  }
 
   async function handleAction(
     newStatus: "accepted" | "rejected" | "cancelled"
@@ -229,9 +251,31 @@ export function HostBookingActions({
         {action === "cancel" && (
           <div className="rounded-card border border-neutral-200 bg-neutral-50 p-4">
             <PropertySummary booking={booking} dateLocale={dateLocale} t={t} />
+
+            {preview.isLoading && (
+              <p className="mt-2 text-sm text-neutral-500">{tc("loading")}</p>
+            )}
+
+            {preview.data && (
+              <p className="mt-2 text-sm text-neutral-700">
+                {preview.data.total_paid_egp === 0
+                  ? tp("cancelNoPayment")
+                  : preview.data.refund_amount_egp === preview.data.total_paid_egp
+                    ? tp("cancelRefundFull", {
+                        amount: preview.data.refund_amount_egp,
+                      })
+                    : preview.data.refund_amount_egp === 0
+                      ? tp("cancelRefundNone")
+                      : tp("cancelRefundPartial", {
+                          amount: preview.data.refund_amount_egp,
+                          total: preview.data.total_paid_egp,
+                        })}
+              </p>
+            )}
+
             <label
               htmlFor="cancel-reason"
-              className="block text-sm font-medium text-brand-900"
+              className="mt-3 block text-sm font-medium text-brand-900"
             >
               {t("cancelReason")}
             </label>
@@ -245,11 +289,11 @@ export function HostBookingActions({
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
-                onClick={() => handleAction("cancelled")}
-                disabled={updateBooking.isPending}
+                onClick={handleCancel}
+                disabled={cancelBooking.isPending || preview.isLoading}
                 className="btn-primary text-sm"
               >
-                {t("confirmCancel")}
+                {cancelBooking.isPending ? t("processing") : t("confirmCancel")}
               </button>
               <button
                 type="button"
@@ -257,6 +301,7 @@ export function HostBookingActions({
                   setAction(null);
                   setCancelReason("");
                 }}
+                disabled={cancelBooking.isPending}
                 className="btn-secondary text-sm"
               >
                 {t("back")}

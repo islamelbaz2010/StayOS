@@ -547,6 +547,7 @@
     "rejectReason": "سبب الرفض (اختياري)",
     "cancelReason": "سبب الإلغاء (اختياري)",
     "updateError": "فشل تحديث الحجز. يرجى المحاولة مرة أخرى.",
+    "cancelError": "تعذر إلغاء الحجز. يرجى المحاولة مرة أخرى.",
     "finalStatus": "هذا الحجز بالفعل {status}.",
     "filter": {
       "all": "الكل",
@@ -572,6 +573,7 @@
     "complete": "إكمال الإقامة",
     "payment": "الدفع",
     "paymentAmount": "مبلغ الدفع",
+    "refundAmount": "مبلغ الاسترداد",
     "paymentStatuses": {
       "pending": "في انتظار الدفع",
       "proof_uploaded": "تم رفع إثبات الدفع",
@@ -694,6 +696,7 @@
     "rejectReason": "سبب الرفض",
     "deadlineWarning": "أرسل إثبات الدفع قبل {deadline} وإلا قد يتم إلغاء حجزك.",
     "attemptsRemaining": "لديك {count} محاولات متبقية لإرسال إثبات الدفع.",
+    "refundAmount": "مبلغ الاسترداد",
     "rejectedSummary": "تم رفض إثبات الدفع. يمكنك رفع إثبات جديد.",
     "pendingSummary": "لم يتم تأكيد حجزك بعد. ارفع إثبات الدفع لتأكيده.",
     "refundPendingSummary": "جاري استرداد المبلغ.",

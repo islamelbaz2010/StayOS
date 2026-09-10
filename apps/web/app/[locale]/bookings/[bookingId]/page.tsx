@@ -239,6 +239,14 @@ function TripContent({
             </div>
           )}
 
+          {(payment.status === "refund_pending" || payment.status === "refunded") &&
+            payment.refund_amount_egp != null && (
+              <p className="mt-2 text-sm font-medium text-brand-900">
+                {tp("refundAmount")}:{" "}
+                {formatMoney(payment.refund_amount_egp, "EGP", dateLocale)}
+              </p>
+            )}
+
           {payment.status === "refund_pending" && (
             <p className="mt-3 text-sm text-amber-700">{tp("refundPendingSummary")}</p>
           )}

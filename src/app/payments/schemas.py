@@ -55,6 +55,7 @@ class PaymentResponse(BaseModel):
     rejected_by: str | None
     reject_reason: str | None
     cancelled_at: datetime | None
+    refund_amount_egp: int | None = None
     instructions: str
     unit_title: str | None = None
     unit_cover_image: str | None = None

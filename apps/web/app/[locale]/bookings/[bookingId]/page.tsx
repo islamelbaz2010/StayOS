@@ -181,10 +181,70 @@ function TripContent({
               {formatMoney(payment.amount_egp, "EGP", dateLocale)}
             </p>
           </div>
+
           {payment.reject_reason && (
             <p className="mt-3 text-sm text-danger-600">
               {tp("rejectReason")}: {payment.reject_reason}
             </p>
+          )}
+
+          {(payment.status === "pending" || payment.status === "rejected") && (
+            <div
+              className={`mt-4 rounded-md border p-4 text-sm ${
+                payment.status === "rejected"
+                  ? "border-danger-200 bg-danger-50"
+                  : "border-warning-200 bg-warning-50"
+              }`}
+            >
+              <p
+                className={`font-medium ${
+                  payment.status === "rejected"
+                    ? "text-danger-800"
+                    : "text-warning-800"
+                }`}
+              >
+                {payment.status === "rejected"
+                  ? tp("rejectedSummary")
+                  : tp("pendingSummary")}
+              </p>
+              {payment.payment_deadline_at && (
+                <p
+                  className={`mt-1 ${
+                    payment.status === "rejected"
+                      ? "text-danger-700"
+                      : "text-warning-700"
+                  }`}
+                >
+                  {tp("deadlineWarning", {
+                    deadline: formatDate(
+                      new Date(payment.payment_deadline_at),
+                      dateLocale
+                    ),
+                  })}
+                </p>
+              )}
+              {payment.status === "rejected" && payment.proof_rejection_count > 0 && (
+                <p className="mt-1 text-danger-700">
+                  {tp("attemptsRemaining", {
+                    count: Math.max(0, 3 - payment.proof_rejection_count),
+                  })}
+                </p>
+              )}
+              <Link
+                href={`/${locale}/checkout/${booking.id}`}
+                className="mt-3 inline-block font-semibold text-accent-600 hover:text-accent-700"
+              >
+                {tp("reuploadCta")}
+              </Link>
+            </div>
+          )}
+
+          {payment.status === "refund_pending" && (
+            <p className="mt-3 text-sm text-amber-700">{tp("refundPendingSummary")}</p>
+          )}
+
+          {payment.status === "refunded" && (
+            <p className="mt-3 text-sm text-success-700">{tp("refundedSummary")}</p>
           )}
         </div>
       )}

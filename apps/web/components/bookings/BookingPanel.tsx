@@ -443,7 +443,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
             <div className="mt-3 space-y-2 text-sm text-neutral-700">
               <div className="flex justify-between">
                 <span className="text-neutral-600">
-                  {formatMoney(listing.price, listing.currency, moneyLocale)} × {nights} {t("nights")}
+                  {formatMoney(quote?.nightly_rate_egp ?? listing.price, listing.currency, moneyLocale)} × {nights} {t("nights")}
                 </span>
                 <span className="font-medium text-brand-900">
                   {formatMoney(totalPrice, listing.currency, moneyLocale)}

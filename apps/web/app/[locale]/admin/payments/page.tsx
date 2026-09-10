@@ -11,10 +11,11 @@ import {
   usePaymentQueue,
   useVerifyPayment,
   useRejectPayment,
+  useRefundPayment,
   usePaymentProofDownloadUrl,
   type PaymentListItem,
 } from "@/lib/queries/payments";
-import { getApiErrorMessage } from "@/lib/utils";
+import { formatMoney, getApiErrorMessage } from "@/lib/utils";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
@@ -49,14 +50,18 @@ function PaymentCard({
   payment,
   onVerify,
   onReject,
+  onRefund,
   isVerifying,
   isRejecting,
+  isRefunding,
 }: {
   payment: PaymentListItem;
   onVerify: (id: string) => Promise<unknown>;
   onReject: (id: string, reason: string) => Promise<unknown>;
+  onRefund: (id: string) => Promise<unknown>;
   isVerifying: boolean;
   isRejecting: boolean;
+  isRefunding: boolean;
 }) {
   const t = useTranslations("payment");
   const tc = useTranslations("common");
@@ -67,6 +72,7 @@ function PaymentCard({
   const [reason, setReason] = useState("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [rejectError, setRejectError] = useState<string | null>(null);
+  const [refundError, setRefundError] = useState<string | null>(null);
 
   const handleVerify = async () => {
     if (!window.confirm(t("confirmVerify"))) return;
@@ -87,6 +93,16 @@ function PaymentCard({
       setReason("");
     } catch (err) {
       setRejectError(getApiErrorMessage(err, t("rejectError")));
+    }
+  };
+
+  const handleRefund = async () => {
+    if (!window.confirm(t("confirmRefund"))) return;
+    setRefundError(null);
+    try {
+      await onRefund(payment.id);
+    } catch (err) {
+      setRefundError(getApiErrorMessage(err, t("refundError")));
     }
   };
 
@@ -115,6 +131,12 @@ function PaymentCard({
           <p className="text-sm text-neutral-600">
             {t("amount")}: {payment.amount_egp.toLocaleString(dateLocale)} {t("egp")}
           </p>
+          {(payment.status === "refund_pending" || payment.status === "refunded") &&
+            payment.refund_amount_egp != null && (
+              <p className="text-sm text-neutral-600">
+                {t("refundAmount")}: {formatMoney(payment.refund_amount_egp, "EGP", dateLocale)}
+              </p>
+            )}
           <p className="text-xs text-neutral-500">
             {t("bookingId")}: {payment.booking_id}
           </p>
@@ -219,16 +241,48 @@ function PaymentCard({
           )}
         </div>
       )}
+
+      {payment.status === "refund_pending" && (
+        <div className="border-t border-neutral-200 p-4">
+          {refundError && (
+            <p
+              className="mb-3 rounded-md bg-danger-50 p-3 text-sm text-danger-700"
+              role="alert"
+            >
+              {refundError}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleRefund}
+              disabled={isRefunding}
+              className="btn-primary text-sm disabled:opacity-50"
+            >
+              {isRefunding ? tc("loading") : t("markRefunded")}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
+type QueueStatus = "pending" | "refund_pending" | "refunded";
+
 export default function AdminPaymentQueuePage() {
   const t = useTranslations("payment");
   const tc = useTranslations("common");
-  const { data: payments, isLoading, error, refetch } = usePaymentQueue();
+  const [status, setStatus] = useState<QueueStatus | undefined>(undefined);
+  const {
+    data: payments,
+    isLoading,
+    error,
+    refetch,
+  } = usePaymentQueue(status === "pending" ? undefined : status);
   const verifyMutation = useVerifyPayment();
   const rejectMutation = useRejectPayment();
+  const refundMutation = useRefundPayment();
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
@@ -237,6 +291,25 @@ export default function AdminPaymentQueuePage() {
           <h1 className="mb-6 text-2xl font-bold text-brand-900 sm:text-3xl">
             {t("queueTitle")}
           </h1>
+
+          <div className="mb-6 flex flex-wrap gap-2">
+            {(["pending", "refund_pending", "refunded"] as QueueStatus[]).map(
+              (tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setStatus(tab === "pending" ? undefined : tab)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    (tab === "pending" && status === undefined) || status === tab
+                      ? "bg-brand-900 text-white"
+                      : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+                  }`}
+                >
+                  {t(`tab.${tab}`)}
+                </button>
+              )
+            )}
+          </div>
 
           {isLoading && (
             <div className="card p-8 text-center text-neutral-500">
@@ -276,8 +349,10 @@ export default function AdminPaymentQueuePage() {
                       rejectReason: reason,
                     })
                   }
+                  onRefund={(id) => refundMutation.mutateAsync(id)}
                   isVerifying={verifyMutation.isPending}
                   isRejecting={rejectMutation.isPending}
+                  isRefunding={refundMutation.isPending}
                 />
               ))}
             </div>

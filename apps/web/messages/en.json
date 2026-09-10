@@ -724,7 +724,15 @@
     "kycRequiredCta": "Verify your identity",
     "confirmVerify": "Verify this payment proof and confirm the booking?",
     "verifyError": "Could not verify this payment. Please try again.",
-    "rejectError": "Could not reject this payment. Please try again."
+    "rejectError": "Could not reject this payment. Please try again.",
+    "tab": {
+      "pending": "Pending & receipts",
+      "refund_pending": "Refunds to process",
+      "refunded": "Refunded"
+    },
+    "markRefunded": "Mark as refunded",
+    "confirmRefund": "Confirm that the refund has been processed for this payment?",
+    "refundError": "Could not mark this payment as refunded. Please try again."
   },
   "kyc": {
     "pageTitle": "Identity Verification",

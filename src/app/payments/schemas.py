@@ -92,6 +92,7 @@ class PaymentListItem(BaseModel):
     status: str
     method: str
     amount_egp: int
+    refund_amount_egp: int | None = None
     reference_number: str
     payment_deadline_at: datetime | None = None
     proof_rejection_count: int = 0

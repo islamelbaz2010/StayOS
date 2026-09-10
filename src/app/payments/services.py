@@ -102,6 +102,7 @@ def _to_response(payment: Payment) -> PaymentResponse:
         amount_egp=payment.amount_egp,
         accommodation_amount_egp=payment.accommodation_amount_egp,
         guest_service_fee_egp=payment.guest_service_fee_egp,
+        refund_amount_egp=payment.refund_amount_egp,
         nights=payment.nights,
         reference_number=payment.reference_number,
         payment_deadline_at=payment.payment_deadline_at,
@@ -134,6 +135,7 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
         status=payment.status,
         method=payment.method,
         amount_egp=payment.amount_egp,
+        refund_amount_egp=payment.refund_amount_egp,
         reference_number=payment.reference_number,
         payment_deadline_at=payment.payment_deadline_at,
         proof_rejection_count=payment.proof_rejection_count or 0,
@@ -519,6 +521,47 @@ async def verify_payment(
         payload={
             "payment_id": payment.id,
             "booking_id": payment.booking_id,
+            "guest_name": guest_user.display_name if guest_user else "Guest",
+            "guest_phone": guest_user.phone_number if guest_user else None,
+            "guest_email": guest_user.email if guest_user else None,
+            "locale": guest_user.locale if guest_user else "ar",
+        },
+    )
+
+    return _to_response(updated)
+
+
+async def refund_payment(
+    session: AsyncSession,
+    user: User,
+    payment_id: str,
+) -> PaymentResponse:
+    _assert_admin(user)
+    payment = await payments_repository.get_payment_or_raise(session, payment_id)
+    if payment.status != PaymentStatus.REFUND_PENDING:
+        raise ValidationError("Only refund-pending payments can be marked as refunded")
+    if payment.refund_amount_egp is None or payment.refund_amount_egp <= 0:
+        raise ValidationError("Refund amount is not set for this payment")
+
+    now = datetime.now(UTC)
+    updated = await payments_repository.update_payment(
+        session,
+        payment,
+        status=PaymentStatus.REFUNDED,
+        refunded_at=now,
+    )
+
+    guest = await session.execute(select(User).where(User.id == payment.guest_id))
+    guest_user = guest.scalar_one_or_none()
+
+    await _emit_outbox_event(
+        session,
+        aggregate_id=payment.id,
+        event_type="payment.refunded",
+        payload={
+            "payment_id": payment.id,
+            "booking_id": payment.booking_id,
+            "refund_amount_egp": payment.refund_amount_egp,
             "guest_name": guest_user.display_name if guest_user else "Guest",
             "guest_phone": guest_user.phone_number if guest_user else None,
             "guest_email": guest_user.email if guest_user else None,

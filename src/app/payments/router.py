@@ -26,6 +26,7 @@ from .services import (
     list_pending_payments,
     presign_proof_download,
     presign_proof_upload,
+    refund_payment,
     reject_payment,
     upload_proof,
     verify_payment,
@@ -148,6 +149,18 @@ async def reject_payment_endpoint(
     try:
         reason = request.reject_reason or "Payment proof could not be verified"
         return await reject_payment(session, user, payment_id, reason)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{payment_id}/refund", response_model=PaymentResponse)
+async def refund_payment_endpoint(
+    payment_id: str,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> PaymentResponse:
+    try:
+        return await refund_payment(session, user, payment_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

@@ -50,6 +50,7 @@ export interface PaymentListItem {
   accommodation_amount_egp: number | null;
   guest_service_fee_egp: number | null;
   payment_deadline_at: string | null;
+  refund_amount_egp: number | null;
   proof_rejection_count: number;
   unit_title: string | null;
   unit_cover_image: string | null;
@@ -166,6 +167,11 @@ export async function rejectPayment(
   return data;
 }
 
+export async function refundPayment(paymentId: string): Promise<PaymentResponse> {
+  const { data } = await api.post<PaymentResponse>(`/payments/${paymentId}/refund`);
+  return data;
+}
+
 export function usePaymentByBooking(bookingId: string) {
   return useQuery({
     queryKey: ["payment", "booking", bookingId],
@@ -239,6 +245,24 @@ export function useVerifyPayment() {
     onSuccess: (_data, paymentId) => {
       queryClient.invalidateQueries({
         queryKey: ["payment", paymentId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["payment-queue"],
+      });
+    },
+  });
+}
+
+export function useRefundPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: refundPayment,
+    onSuccess: (_data, paymentId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["payment", paymentId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["payment", "booking"],
       });
       queryClient.invalidateQueries({
         queryKey: ["payment-queue"],

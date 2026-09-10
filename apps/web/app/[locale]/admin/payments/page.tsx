@@ -146,6 +146,12 @@ function PaymentCard({
               {new Date(payment.proof_uploaded_at).toLocaleString(dateLocale)}
             </p>
           )}
+          {payment.refunded_at && (
+            <p className="text-xs text-neutral-500">
+              {t("refundedAt")}:{" "}
+              {new Date(payment.refunded_at).toLocaleString(dateLocale)}
+            </p>
+          )}
         </div>
 
         {payment.proof_s3_key && (

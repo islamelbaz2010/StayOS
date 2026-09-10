@@ -138,6 +138,7 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
         refund_amount_egp=payment.refund_amount_egp,
         reference_number=payment.reference_number,
         payment_deadline_at=payment.payment_deadline_at,
+        refunded_at=payment.refunded_at,
         proof_rejection_count=payment.proof_rejection_count or 0,
         proof_s3_key=payment.proof_s3_key,
         proof_url=None if payment.proof_s3_key else payment.proof_url,

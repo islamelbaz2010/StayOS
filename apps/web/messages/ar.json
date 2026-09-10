@@ -697,6 +697,7 @@
     "deadlineWarning": "أرسل إثبات الدفع قبل {deadline} وإلا قد يتم إلغاء حجزك.",
     "attemptsRemaining": "لديك {count} محاولات متبقية لإرسال إثبات الدفع.",
     "refundAmount": "مبلغ الاسترداد",
+    "refundedAt": "تاريخ الاسترداد",
     "rejectedSummary": "تم رفض إثبات الدفع. يمكنك رفع إثبات جديد.",
     "pendingSummary": "لم يتم تأكيد حجزك بعد. ارفع إثبات الدفع لتأكيده.",
     "refundPendingSummary": "جاري استرداد المبلغ.",

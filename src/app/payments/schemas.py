@@ -95,6 +95,7 @@ class PaymentListItem(BaseModel):
     refund_amount_egp: int | None = None
     reference_number: str
     payment_deadline_at: datetime | None = None
+    refunded_at: datetime | None = None
     proof_rejection_count: int = 0
     proof_s3_key: str | None = None
     proof_url: str | None

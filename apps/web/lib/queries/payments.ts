@@ -51,6 +51,7 @@ export interface PaymentListItem {
   guest_service_fee_egp: number | null;
   payment_deadline_at: string | null;
   refund_amount_egp: number | null;
+  refunded_at: string | null;
   proof_rejection_count: number;
   unit_title: string | null;
   unit_cover_image: string | null;

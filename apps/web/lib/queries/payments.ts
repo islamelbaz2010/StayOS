@@ -23,6 +23,7 @@ export interface PaymentResponse {
   reject_reason: string | null;
   cancelled_at: string | null;
   refund_amount_egp: number | null;
+  refunded_at: string | null;
   instructions: string;
   accommodation_amount_egp: number | null;
   guest_service_fee_egp: number | null;

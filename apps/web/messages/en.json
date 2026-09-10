@@ -733,7 +733,20 @@
     },
     "markRefunded": "Mark as refunded",
     "confirmRefund": "Confirm that the refund has been processed for this payment?",
-    "refundError": "Could not mark this payment as refunded. Please try again."
+    "refundError": "Could not mark this payment as refunded. Please try again.",
+    "viewDetails": "View details",
+    "paymentDetails": "Payment details",
+    "accommodationAmount": "Accommodation amount",
+    "serviceFee": "Service fee",
+    "guestId": "Guest ID",
+    "hostId": "Host ID",
+    "unitId": "Unit ID",
+    "paymentDeadline": "Payment deadline",
+    "verifiedAt": "Verified at",
+    "rejectedAt": "Rejected at",
+    "cancelledAt": "Cancelled at",
+    "createdAt": "Created at",
+    "updatedAt": "Updated at"
   },
   "kyc": {
     "pageTitle": "Identity Verification",

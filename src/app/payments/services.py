@@ -116,6 +116,7 @@ def _to_response(payment: Payment) -> PaymentResponse:
         rejected_by=payment.rejected_by,
         reject_reason=payment.reject_reason,
         cancelled_at=payment.cancelled_at,
+        refunded_at=payment.refunded_at,
         instructions=payment.instructions,
         unit_title=unit_title,
         unit_cover_image=unit_cover_image,

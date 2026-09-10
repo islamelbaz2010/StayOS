@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -152,6 +153,14 @@ function PaymentCard({
               {new Date(payment.refunded_at).toLocaleString(dateLocale)}
             </p>
           )}
+          <p className="pt-1">
+            <Link
+              href={`/${locale}/admin/payments/${payment.id}`}
+              className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline"
+            >
+              {t("viewDetails")}
+            </Link>
+          </p>
         </div>
 
         {payment.proof_s3_key && (

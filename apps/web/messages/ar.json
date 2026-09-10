@@ -733,7 +733,20 @@
     },
     "markRefunded": "تحديد كمسترد",
     "confirmRefund": "هل تأكد إتمام استرداد هذا المبلغ؟",
-    "refundError": "تعذّر تحديد الدفع كمسترد. حاول مرة أخرى."
+    "refundError": "تعذّر تحديد الدفع كمسترد. حاول مرة أخرى.",
+    "viewDetails": "عرض التفاصيل",
+    "paymentDetails": "تفاصيل الدفع",
+    "accommodationAmount": "مبلغ الإقامة",
+    "serviceFee": "رسوم الخدمة",
+    "guestId": "معرّف الضيف",
+    "hostId": "معرّف المضيف",
+    "unitId": "معرّف الوحدة",
+    "paymentDeadline": "موعد الدفع",
+    "verifiedAt": "تم التحقق في",
+    "rejectedAt": "تم الرفض في",
+    "cancelledAt": "تم الإلغاء في",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "تاريخ التحديث"
   },
   "kyc": {
     "pageTitle": "التحقق من الهوية",

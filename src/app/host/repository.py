@@ -232,12 +232,22 @@ async def get_host_earnings(
     )
     completed_stays = completed_stays or 0
 
-    # Revenue: sum of VERIFIED payment amounts
+    # Settled payments are those that have completed the collection lifecycle:
+    # verified and confirmed, in the process of being refunded, or already
+    # refunded.  PENDING, PROOF_UPLOADED, REJECTED and CANCELLED are not
+    # counted because no money has actually been collected and retained.
+    settled_statuses = {
+        PaymentStatus.VERIFIED,
+        PaymentStatus.REFUND_PENDING,
+        PaymentStatus.REFUNDED,
+    }
+
+    # Revenue: gross amount of settled payment amounts before refunds.
     revenue = await session.scalar(
         select(func.coalesce(func.sum(Payment.amount_egp), 0))
         .where(
             Payment.host_id == host_id,
-            Payment.status == PaymentStatus.VERIFIED,
+            Payment.status.in_(settled_statuses),
         )
     )
     revenue = int(revenue or 0)
@@ -252,7 +262,7 @@ async def get_host_earnings(
     )
     pending_verification = int(pending_verification or 0)
 
-    # Refund pending
+    # Refund pending: money still owed back for cancelled/offset stays.
     refund_pending = await session.scalar(
         select(func.coalesce(func.sum(Payment.refund_amount_egp), 0))
         .where(
@@ -262,9 +272,26 @@ async def get_host_earnings(
     )
     refund_pending = int(refund_pending or 0)
 
-    net_earnings = revenue - refund_pending
+    # Net earnings: the amount the host actually retains after all pending
+    # and completed refunds.  For settled payments, subtract refund_amount_egp
+    # (which is zero/NULL for VERIFIED and the actual refund for the rest).
+    net_earnings = await session.scalar(
+        select(
+            func.coalesce(
+                func.sum(
+                    Payment.amount_egp - func.coalesce(Payment.refund_amount_egp, 0)
+                ),
+                0,
+            )
+        )
+        .where(
+            Payment.host_id == host_id,
+            Payment.status.in_(settled_statuses),
+        )
+    )
+    net_earnings = int(net_earnings or 0)
 
-    # Per-unit breakdown
+    # Per-unit breakdown: same gross settled view as total_revenue.
     per_unit_result = await session.execute(
         select(
             Payment.unit_id,
@@ -273,7 +300,7 @@ async def get_host_earnings(
         )
         .where(
             Payment.host_id == host_id,
-            Payment.status == PaymentStatus.VERIFIED,
+            Payment.status.in_(settled_statuses),
         )
         .group_by(Payment.unit_id)
     )

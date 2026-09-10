@@ -188,8 +188,8 @@ async def test_get_host_earnings_per_unit_includes_cover_image(fake_session: Asy
         side_effect=[unit_ids_result, per_unit_result, title_result, cover_result]
     )
     # Order of scalars: total_bookings, confirmed_bookings, completed_stays,
-    # revenue, pending_verification, refund_pending
-    fake_session.scalar = AsyncMock(side_effect=[1, 0, 0, 2000, 0, 0])
+    # revenue, pending_verification, refund_pending, net_earnings
+    fake_session.scalar = AsyncMock(side_effect=[1, 0, 0, 2000, 0, 0, 1800])
 
     result = await get_host_earnings(fake_session, "host-1")
     assert result["per_unit"][0]["unit_id"] == "unit-1"
@@ -197,6 +197,49 @@ async def test_get_host_earnings_per_unit_includes_cover_image(fake_session: Asy
     assert result["per_unit"][0]["unit_cover_image"] == "https://cdn.example.com/covers/test.jpg"
     assert result["per_unit"][0]["booking_count"] == 2
     assert result["per_unit"][0]["revenue_egp"] == 2000
+
+
+@pytest.mark.asyncio
+async def test_get_host_earnings_refund_reconciliation(
+    fake_session: AsyncMock,
+) -> None:
+    """Refunded and refund-pending payments should still contribute to gross
+    revenue, while net earnings subtract both pending and completed refunds.
+    """
+    unit_ids_result = MagicMock()
+    unit_ids_result.all = MagicMock(return_value=[("unit-1",)])
+
+    per_unit_row = MagicMock()
+    per_unit_row.unit_id = "unit-1"
+    per_unit_row.booking_count = 1
+    per_unit_row.revenue = 10000
+    per_unit_result = MagicMock()
+    per_unit_result.all = MagicMock(return_value=[per_unit_row])
+
+    title_row = MagicMock()
+    title_row.title_ar = "شقة"
+    title_row.title_en = None
+    title_result = MagicMock()
+    title_result.one_or_none = MagicMock(return_value=title_row)
+
+    cover_result = MagicMock()
+    cover_result.scalar_one_or_none = MagicMock(return_value=None)
+
+    fake_session.execute = AsyncMock(
+        side_effect=[unit_ids_result, per_unit_result, title_result, cover_result]
+    )
+    # total_bookings=1, confirmed=0, completed=0, revenue=10000,
+    # pending_verification=0, refund_pending=4000, net_earnings=6000
+    fake_session.scalar = AsyncMock(
+        side_effect=[1, 0, 0, 10000, 0, 4000, 6000]
+    )
+
+    result = await get_host_earnings(fake_session, "host-1")
+
+    assert result["total_revenue_egp"] == 10000
+    assert result["refund_pending_egp"] == 4000
+    assert result["net_earnings_egp"] == 6000
+    assert result["per_unit"][0]["revenue_egp"] == 10000
 
 
 @pytest.mark.asyncio

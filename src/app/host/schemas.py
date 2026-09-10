@@ -103,10 +103,10 @@ class HostEarningsSummary(BaseModel):
     total_bookings: int
     confirmed_bookings: int
     completed_stays: int
-    total_revenue_egp: int  # sum of verified payment amounts
+    total_revenue_egp: int  # gross amount of verified, refunded and refund-pending payments
     pending_verification_egp: int  # payments awaiting admin verification
-    refund_pending_egp: int  # refunds flagged for manual processing
-    net_earnings_egp: int  # revenue - refunds
+    refund_pending_egp: int  # refunds still owed to guests
+    net_earnings_egp: int  # total_revenue minus all pending and completed refunds
     # Per-listing breakdown
     per_unit: list[dict[str, Any]] = Field(default_factory=list)
 

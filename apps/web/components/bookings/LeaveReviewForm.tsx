@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useCreateReview } from "@/lib/queries/reviews";
+import { getApiErrorMessage } from "@/lib/utils";
 
 interface LeaveReviewFormProps {
   bookingId: string;
@@ -46,8 +47,8 @@ export function LeaveReviewForm({
       });
       setOpen(false);
       onSubmitted();
-    } catch {
-      setError(t("reviewError"));
+    } catch (err) {
+      setError(getApiErrorMessage(err, t("reviewError")));
     }
   }
 

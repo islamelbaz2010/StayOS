@@ -25,6 +25,7 @@ async def create_payment(
     instructions: str,
     accommodation_amount_egp: int | None = None,
     guest_service_fee_egp: int | None = None,
+    cleaning_fee_egp: int | None = None,
     payment_deadline_at: datetime | None = None,
 ) -> Payment:
     payment = Payment(
@@ -37,6 +38,7 @@ async def create_payment(
         amount_egp=amount_egp,
         accommodation_amount_egp=accommodation_amount_egp,
         guest_service_fee_egp=guest_service_fee_egp,
+        cleaning_fee_egp=cleaning_fee_egp,
         nights=nights,
         reference_number=reference_number,
         instructions=instructions,

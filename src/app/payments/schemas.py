@@ -42,6 +42,7 @@ class PaymentResponse(BaseModel):
     amount_egp: int
     accommodation_amount_egp: int | None = None
     guest_service_fee_egp: int | None = None
+    cleaning_fee_egp: int | None = None
     nights: int
     reference_number: str
     payment_deadline_at: datetime | None = None

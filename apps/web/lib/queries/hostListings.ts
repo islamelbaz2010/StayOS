@@ -39,6 +39,8 @@ export interface HostListing {
   max_nights: number;
   house_rules: string | null;
   check_in_instructions: string | null;
+  check_in_time: string | null;
+  check_out_time: string | null;
   policies: string | null;
   cover_image: string | null;
   permission_scope?: string | null;
@@ -73,6 +75,8 @@ export interface ListingCreateInput {
   max_nights?: number;
   house_rules?: string;
   check_in_instructions?: string;
+  check_in_time?: string;
+  check_out_time?: string;
   policies?: string;
   country?: string;
   currency?: string;
@@ -107,6 +111,8 @@ export interface ListingUpdateInput {
   max_nights?: number;
   house_rules?: string;
   check_in_instructions?: string;
+  check_in_time?: string;
+  check_out_time?: string;
   policies?: string;
   country?: string;
   currency?: string;

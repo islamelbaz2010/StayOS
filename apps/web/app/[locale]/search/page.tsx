@@ -50,6 +50,9 @@ export default function SearchPage() {
       cultural_tags: searchParams.get("cultural_tags") || undefined,
       min_price: searchParams.get("min_price") || undefined,
       max_price: searchParams.get("max_price") || undefined,
+      bedrooms: searchParams.get("bedrooms") || undefined,
+      beds: searchParams.get("beds") || undefined,
+      bathrooms: searchParams.get("bathrooms") || undefined,
       sort: searchParams.get("sort") || undefined,
       limit: searchParams.get("limit") || undefined,
     }),
@@ -91,7 +94,7 @@ export default function SearchPage() {
   };
 
   const hasActiveFilters = Boolean(
-    filters.property_type || filters.min_price || filters.max_price
+    filters.property_type || filters.min_price || filters.max_price || filters.bedrooms || filters.beds || filters.bathrooms
   );
 
   const {
@@ -223,6 +226,69 @@ export default function SearchPage() {
               className="input mt-1 w-full text-sm"
             />
           </div>
+          <div className="w-24">
+            <label
+              htmlFor="filter-bedrooms"
+              className="block text-xs font-medium text-neutral-500"
+            >
+              {t("search.bedrooms")}
+            </label>
+            <select
+              id="filter-bedrooms"
+              value={filters.bedrooms ?? ""}
+              onChange={(e) => updateParam("bedrooms", e.target.value)}
+              className="input mt-1 w-full text-sm"
+            >
+              <option value="">{t("search.any")}</option>
+              {Array.from({ length: 6 }, (_, i) => i).map((n) => (
+                <option key={n} value={String(n)}>
+                  {n}+
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-24">
+            <label
+              htmlFor="filter-beds"
+              className="block text-xs font-medium text-neutral-500"
+            >
+              {t("search.beds")}
+            </label>
+            <select
+              id="filter-beds"
+              value={filters.beds ?? ""}
+              onChange={(e) => updateParam("beds", e.target.value)}
+              className="input mt-1 w-full text-sm"
+            >
+              <option value="">{t("search.any")}</option>
+              {Array.from({ length: 8 }, (_, i) => i).map((n) => (
+                <option key={n} value={String(n)}>
+                  {n}+
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-24">
+            <label
+              htmlFor="filter-bathrooms"
+              className="block text-xs font-medium text-neutral-500"
+            >
+              {t("search.bathrooms")}
+            </label>
+            <select
+              id="filter-bathrooms"
+              value={filters.bathrooms ?? ""}
+              onChange={(e) => updateParam("bathrooms", e.target.value)}
+              className="input mt-1 w-full text-sm"
+            >
+              <option value="">{t("search.any")}</option>
+              {Array.from({ length: 5 }, (_, i) => i).map((n) => (
+                <option key={n} value={String(n)}>
+                  {n}+
+                </option>
+              ))}
+            </select>
+          </div>
           {hasActiveFilters && (
             <button
               type="button"
@@ -231,6 +297,9 @@ export default function SearchPage() {
                 nextParams.delete("property_type");
                 nextParams.delete("min_price");
                 nextParams.delete("max_price");
+                nextParams.delete("bedrooms");
+                nextParams.delete("beds");
+                nextParams.delete("bathrooms");
                 router.push(`/${locale}/search?${nextParams.toString()}`, {
                   scroll: false,
                 });

@@ -115,6 +115,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     max_nights: existingListing?.max_nights ?? 30,
     house_rules: existingListing?.house_rules ?? "",
     check_in_instructions: existingListing?.check_in_instructions ?? "",
+    check_in_time: existingListing?.check_in_time ?? "",
+    check_out_time: existingListing?.check_out_time ?? "",
     policies: existingListing?.policies ?? "",
     country: existingListing?.country ?? "Egypt",
     currency: existingListing?.currency ?? "EGP",
@@ -202,6 +204,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     max_nights: form.max_nights,
     house_rules: form.house_rules || undefined,
     check_in_instructions: form.check_in_instructions || undefined,
+    check_in_time: form.check_in_time || undefined,
+    check_out_time: form.check_out_time || undefined,
     policies: form.policies || undefined,
     country: form.country,
     currency: form.currency,
@@ -666,6 +670,29 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               className={inputClass}
               placeholder={t("placeholders.checkInInstructions")}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>{t("checkInTime")}</label>
+              <input
+                type="time"
+                value={form.check_in_time ?? ""}
+                onChange={(e) => update("check_in_time", e.target.value)}
+                className={inputClass}
+                placeholder="14:00"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>{t("checkOutTime")}</label>
+              <input
+                type="time"
+                value={form.check_out_time ?? ""}
+                onChange={(e) => update("check_out_time", e.target.value)}
+                className={inputClass}
+                placeholder="12:00"
+              />
+            </div>
           </div>
 
           <div>

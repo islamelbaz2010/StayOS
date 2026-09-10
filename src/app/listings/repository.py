@@ -205,6 +205,13 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
     if filters.max_price is not None:
         stmt = stmt.where(UnitListing.base_price_egp <= filters.max_price)
 
+    if filters.bedrooms is not None:
+        stmt = stmt.where(Unit.bedrooms >= filters.bedrooms)
+    if filters.beds is not None:
+        stmt = stmt.where(Unit.beds >= filters.beds)
+    if filters.bathrooms is not None:
+        stmt = stmt.where(Unit.bathrooms >= filters.bathrooms)
+
     if filters.property_type:
         stmt = stmt.where(Unit.property_type.in_(filters.property_type))
 

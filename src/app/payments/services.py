@@ -311,6 +311,7 @@ async def create_payment_for_booking(
         amount_egp=amount,
         accommodation_amount_egp=subtotal,
         guest_service_fee_egp=guest_fee,
+        cleaning_fee_egp=quote.cleaning_fee_egp,
         nights=nights,
         reference_number=reference,
         instructions=instructions,

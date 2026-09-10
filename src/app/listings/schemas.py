@@ -293,6 +293,9 @@ class ListingSearchFilters(BaseModel):
     check_out: date | None = None
     min_price: int | None = Field(None, ge=0)
     max_price: int | None = Field(None, ge=0)
+    bedrooms: int | None = Field(None, ge=0)
+    beds: int | None = Field(None, ge=0)
+    bathrooms: int | None = Field(None, ge=0)
     property_type: list[str] | None = None
     cultural_tags: list[str] | None = None
     amenities: list[str] | None = None

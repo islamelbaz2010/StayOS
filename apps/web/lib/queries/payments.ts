@@ -27,6 +27,7 @@ export interface PaymentResponse {
   instructions: string;
   accommodation_amount_egp: number | null;
   guest_service_fee_egp: number | null;
+  cleaning_fee_egp: number | null;
   payment_deadline_at: string | null;
   proof_rejection_count: number;
   unit_title: string | null;

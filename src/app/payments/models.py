@@ -52,6 +52,9 @@ class Payment(UUIDMixin, TimestampMixin, Base):
     guest_service_fee_egp: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )
+    cleaning_fee_egp: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
     nights: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     reference_number: Mapped[str] = mapped_column(String(36), nullable=False)
     # V1 Cancellation & Refund Policy §1.2 — guest must submit proof within

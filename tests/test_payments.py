@@ -1571,6 +1571,7 @@ async def test_get_booking_quote_matches_payment_creation(fake_session: AsyncMoc
         quote.accommodation_egp + quote.cleaning_fee_egp
     )
     assert create_payment_mock.call_args.kwargs["guest_service_fee_egp"] == quote.service_fee_egp
+    assert create_payment_mock.call_args.kwargs["cleaning_fee_egp"] == quote.cleaning_fee_egp
 
 
 @pytest.mark.asyncio

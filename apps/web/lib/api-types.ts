@@ -3097,6 +3097,8 @@ export interface components {
       accommodation_amount_egp?: number | null;
       /** Guest Service Fee Egp */
       guest_service_fee_egp?: number | null;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp?: number | null;
       /** Nights */
       nights: number;
       /** Reference Number */
@@ -4504,6 +4506,9 @@ export interface operations {
         check_out?: string | null;
         min_price?: number | null;
         max_price?: number | null;
+        bedrooms?: number | null;
+        beds?: number | null;
+        bathrooms?: number | null;
         guests?: number | null;
         sort?: string | null;
         cursor?: string | null;

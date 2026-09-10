@@ -309,6 +309,57 @@ function TripContent({
           {property.address && (
             <p className="mb-2 text-sm text-neutral-700">{property.address}</p>
           )}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {property.lat != null && property.lng != null && (
+              <a
+                href={`https://www.google.com/maps?q=${property.lat},${property.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 transition hover:bg-brand-100"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                {t("getDirections")}
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                const start = new Date(booking.check_in);
+                const end = new Date(booking.check_out);
+                const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+                const ics = [
+                  "BEGIN:VCALENDAR",
+                  "VERSION:2.0",
+                  "PRODID:-//StayOS//Booking//EN",
+                  "BEGIN:VEVENT",
+                  `UID:${booking.id}@stayos`,
+                  `DTSTAMP:${fmt(new Date())}`,
+                  `DTSTART:${fmt(start)}`,
+                  `DTEND:${fmt(end)}`,
+                  `SUMMARY:${property.title || t("title")}`,
+                  `LOCATION:${property.address || ""}`,
+                  "END:VEVENT",
+                  "END:VCALENDAR",
+                ].join("\r\n");
+                const blob = new Blob([ics], { type: "text/calendar" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "stayos-booking.ics";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0V12a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 12v6.75" />
+              </svg>
+              {t("addToCalendar")}
+            </button>
+          </div>
           <p className="mb-3 text-sm text-neutral-500">
             {t("checkIn")}: {arrival.default_check_in_time} · {t("checkOut")}:{" "}
             {arrival.default_check_out_time}

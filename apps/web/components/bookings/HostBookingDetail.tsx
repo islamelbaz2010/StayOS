@@ -322,6 +322,14 @@ export function HostBookingDetail({
                 </dd>
               </div>
             )}
+            {payment.cleaning_fee_egp != null && payment.cleaning_fee_egp > 0 && (
+              <div>
+                <dt className="text-sm text-neutral-500">{t("cleaningFee")}</dt>
+                <dd className="text-sm font-medium text-brand-900">
+                  {formatMoney(payment.cleaning_fee_egp, "EGP", dateLocale)}
+                </dd>
+              </div>
+            )}
             {payment.guest_service_fee_egp != null && (
               <div>
                 <dt className="text-sm text-neutral-500">{t("serviceFee")}</dt>

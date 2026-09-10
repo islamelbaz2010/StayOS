@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -9,16 +9,19 @@ import type { Listing } from "@/components/listings/ListingCard";
 interface SearchMapProps {
   listings: Listing[];
   onSelect: (unitId: string) => void;
+  onBoundsChange?: (bounds: { sw_lat: string; sw_lng: string; ne_lat: string; ne_lng: string }) => void;
   className?: string;
+  searchAreaLabel?: string;
 }
 
 const DEFAULT_CENTER: L.LatLngExpression = [30.0444, 31.2357];
 const DEFAULT_ZOOM = 12;
 
-export function SearchMap({ listings, onSelect, className }: SearchMapProps) {
+export function SearchMap({ listings, onSelect, onBoundsChange, className, searchAreaLabel }: SearchMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const [showSearchButton, setShowSearchButton] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -73,6 +76,12 @@ export function SearchMap({ listings, onSelect, className }: SearchMapProps) {
       } else {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       }
+
+      if (onBoundsChange) {
+        map.on("moveend zoomend", () => {
+          setShowSearchButton(true);
+        });
+      }
     };
 
     initMap();
@@ -83,7 +92,34 @@ export function SearchMap({ listings, onSelect, className }: SearchMapProps) {
         mapRef.current = null;
       }
     };
-  }, [listings, onSelect]);
+  }, [listings, onSelect, onBoundsChange]);
 
-  return <div ref={containerRef} className={className ?? "h-[60vh] w-full rounded-xl"} />;
+  const handleSearchArea = () => {
+    if (!mapRef.current || !onBoundsChange) return;
+    const bounds = mapRef.current.getBounds();
+    onBoundsChange({
+      sw_lat: bounds.getSouth().toFixed(6),
+      sw_lng: bounds.getWest().toFixed(6),
+      ne_lat: bounds.getNorth().toFixed(6),
+      ne_lng: bounds.getEast().toFixed(6),
+    });
+    setShowSearchButton(false);
+  };
+
+  return (
+    <div className="relative">
+      {showSearchButton && onBoundsChange && (
+        <div className="absolute left-1/2 top-4 z-[1000] -translate-x-1/2">
+          <button
+            type="button"
+            onClick={handleSearchArea}
+            className="rounded-full bg-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-700"
+          >
+            {searchAreaLabel ?? "Search this area"}
+          </button>
+        </div>
+      )}
+      <div ref={containerRef} className={className ?? "h-[60vh] w-full rounded-xl"} />
+    </div>
+  );
 }

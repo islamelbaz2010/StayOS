@@ -458,7 +458,44 @@ export default function SearchPage() {
           </div>
         ) : viewMode === "map" ? (
           <div className="mt-6">
-            <SearchMap listings={allListings} onSelect={goToListing} />
+            <SearchMap
+              listings={allListings}
+              onSelect={goToListing}
+              onBoundsChange={(bounds) => {
+                const nextParams = new URLSearchParams(searchParams.toString());
+                nextParams.set("sw_lat", bounds.sw_lat);
+                nextParams.set("sw_lng", bounds.sw_lng);
+                nextParams.set("ne_lat", bounds.ne_lat);
+                nextParams.set("ne_lng", bounds.ne_lng);
+                router.push(`/${locale}/search?${nextParams.toString()}`, {
+                  scroll: false,
+                });
+              }}
+              searchAreaLabel={t("search.searchArea")}
+            />
+            {(filters.sw_lat || filters.sw_lng || filters.ne_lat || filters.ne_lng) && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-sm text-neutral-500">
+                  {t("search.filteredByMapArea")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextParams = new URLSearchParams(searchParams.toString());
+                    nextParams.delete("sw_lat");
+                    nextParams.delete("sw_lng");
+                    nextParams.delete("ne_lat");
+                    nextParams.delete("ne_lng");
+                    router.push(`/${locale}/search?${nextParams.toString()}`, {
+                      scroll: false,
+                    });
+                  }}
+                  className="text-sm font-semibold text-accent-600 hover:text-accent-700"
+                >
+                  {t("search.clearMapArea")}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <>

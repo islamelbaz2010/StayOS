@@ -119,6 +119,9 @@ def _to_response(
     booking: Booking,
     permission_scope: str | None = None,
     guest_name: str | None = None,
+    guest_kyc_status: str | None = None,
+    guest_member_since: datetime | None = None,
+    guest_reviews_count: int | None = None,
 ) -> BookingResponse:
     host_id: str | None = None
     unit_title: str | None = None
@@ -156,6 +159,9 @@ def _to_response(
         unit_cover_image=unit_cover_image,
         permission_scope=permission_scope,
         guest_name=guest_name,
+        guest_kyc_status=guest_kyc_status,
+        guest_member_since=guest_member_since,
+        guest_reviews_count=guest_reviews_count,
     )
 
 
@@ -809,6 +815,7 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
         host=StayHostInfo(
             name=host_user.display_name if host_user else None,
             phone=host_user.phone_number if host_user and arrival_eligible else None,
+            kyc_status=host_user.kyc_status if host_user else None,
         ),
         arrival=StayArrivalInfo(
             eligible=arrival_eligible,
@@ -875,7 +882,36 @@ async def get_booking(
     scope: str | None = None
     if user.role in (UserRole.HOST, UserRole.ADMIN) and booking.guest_id != user.id:
         scope = await _unit_permission_scope(session, booking, user)
-    return _to_response(booking, permission_scope=scope)
+    # When the viewer is an authorized host/co-host, populate the
+    # guest trust context (name, verification status, member-since,
+    # review activity). These fields stay null when the guest views
+    # their own booking — the data is host-facing only.
+    guest_name: str | None = None
+    guest_kyc_status: str | None = None
+    guest_member_since: datetime | None = None
+    guest_reviews_count: int | None = None
+    if scope is not None:
+        guest_result = await session.execute(
+            select(User).where(User.id == booking.guest_id)
+        )
+        guest = guest_result.scalar_one_or_none()
+        if guest is not None:
+            guest_name = guest.display_name
+            guest_kyc_status = guest.kyc_status
+            guest_member_since = guest.created_at
+        from app.reviews import repository as reviews_repository
+
+        guest_reviews_count = await reviews_repository.count_reviews_by_guest(
+            session, booking.guest_id
+        )
+    return _to_response(
+        booking,
+        permission_scope=scope,
+        guest_name=guest_name,
+        guest_kyc_status=guest_kyc_status,
+        guest_member_since=guest_member_since,
+        guest_reviews_count=guest_reviews_count,
+    )
 
 
 async def update_booking(
@@ -943,11 +979,21 @@ async def list_host_bookings(
     scope_map = await host_permissions.get_unit_permission_scopes(
         session, user, unit_ids
     )
+    # Batch-count reviews for all guests in this page — one query, not N+1.
+    from app.reviews import repository as reviews_repository
+
+    guest_ids = {b.guest_id for b in bookings}
+    reviews_count_map = await reviews_repository.count_reviews_by_guests(
+        session, list(guest_ids)
+    )
     return [
         _to_response(
             booking,
             permission_scope=scope_map.get(booking.unit_id),
             guest_name=booking.guest.display_name if booking.guest else None,
+            guest_kyc_status=booking.guest.kyc_status if booking.guest else None,
+            guest_member_since=booking.guest.created_at if booking.guest else None,
+            guest_reviews_count=reviews_count_map.get(booking.guest_id, 0),
         )
         for booking in bookings
     ]

@@ -388,6 +388,14 @@ async def test_get_booking_viewable_by_any_cohost_scope(
         "get_unit_permission_scope",
         AsyncMock(return_value=CoHostPermissionScope.CALENDAR_ONLY),
     )
+    # Stub the guest User lookup so trust fields can be populated.
+    guest_result = MagicMock()
+    guest_result.scalar_one_or_none.return_value = guest
+    fake_session.execute = AsyncMock(return_value=guest_result)
+    monkeypatch.setattr(
+        "app.reviews.repository.count_reviews_by_guest",
+        AsyncMock(return_value=0),
+    )
     result = await booking_services.get_booking(fake_session, cohost, booking.id)
     assert result.id == booking.id
 

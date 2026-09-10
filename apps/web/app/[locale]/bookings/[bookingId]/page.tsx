@@ -312,6 +312,25 @@ function TripContent({
           {host.name && (
             <p className="font-medium text-brand-900">{host.name}</p>
           )}
+          {host.kyc_status === "verified" && (
+            <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-success-700">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              {t("hostVerified")}
+            </span>
+          )}
           <div className="mt-2 flex flex-wrap gap-4">
             {host.phone && (
               <a

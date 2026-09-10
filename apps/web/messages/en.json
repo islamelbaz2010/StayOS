@@ -482,7 +482,8 @@
     "terminalReasonTitle": "Booking ended",
     "cancelReasonLabel": "Cancellation reason",
     "rejectReasonLabel": "Rejection reason",
-    "actionError": "We couldn't complete this action. Please try again."
+    "actionError": "We couldn't complete this action. Please try again.",
+    "hostVerified": "Identity verified"
   },
   "booking": {
     "title": "Request to book",
@@ -613,7 +614,12 @@
     "allUnits": "All listings",
     "noSearchResults": "No bookings match your search.",
     "pageInfo": "Page {page} of {total}",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "guest": "Guest",
+    "identityVerified": "Identity verified",
+    "identityPending": "Identity verification pending",
+    "memberSince": "Member since {date}",
+    "guestReviewsCount": "{count, plural, one {# review} other {# reviews}}"
   },
   "availability": {
     "title": "Availability",

@@ -1977,3 +1977,148 @@ def test_paginated_host_bookings_route_rejects_guest(
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Trust / Identity — booking-context guest trust fields
+# These verify that guest trust data (KYC status, member-since, review
+# count) is only exposed to authorized hosts, never to the guest
+# themselves or unrelated users.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_booking_host_receives_guest_trust_fields(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Authorized host viewing a booking gets guest trust context."""
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.VERIFIED)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+    monkeypatch.setattr(
+        "app.bookings.services.host_permissions.get_unit_permission_scope",
+        AsyncMock(return_value="owner"),
+    )
+    # Stub the guest User lookup (session.execute → User)
+    _stub_user_lookup(fake_session, guest)
+    # Stub the review count
+    monkeypatch.setattr(
+        "app.reviews.repository.count_reviews_by_guest",
+        AsyncMock(return_value=3),
+    )
+
+    response = await booking_services.get_booking(fake_session, host, booking.id)
+
+    assert response.guest_name == "Test User"
+    assert response.guest_kyc_status == "verified"
+    assert response.guest_member_since is not None
+    assert response.guest_reviews_count == 3
+    assert response.permission_scope == "owner"
+
+
+@pytest.mark.asyncio
+async def test_get_booking_guest_does_not_receive_own_trust_fields(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Guest viewing their own booking does NOT get trust fields populated."""
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.VERIFIED)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+
+    response = await booking_services.get_booking(fake_session, guest, booking.id)
+
+    # Guest viewing their own booking — trust fields must be null.
+    assert response.guest_kyc_status is None
+    assert response.guest_member_since is None
+    assert response.guest_reviews_count is None
+    assert response.permission_scope is None
+
+
+@pytest.mark.asyncio
+async def test_get_booking_unauthorized_no_trust_fields(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Unrelated user cannot access booking — trust fields never leaked."""
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.VERIFIED)
+    other = _make_user(user_id="other-guest", role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+
+    with pytest.raises(AuthorizationError):
+        await booking_services.get_booking(fake_session, other, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_get_stay_info_includes_host_kyc_status(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Guest viewing trip detail sees host's identity verification status."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    unit = _make_unit(host_id=host.id)
+    unit.listing = _make_listing(unit.id)
+    booking = _make_booking(
+        unit, guest, status=BookingStatus.CONFIRMED, check_in=_TODAY + timedelta(days=10)
+    )
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(
+        listings_repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    _mock_stay_info_session(fake_session, host)
+
+    result = await booking_services.get_stay_info(fake_session, guest, booking.id)
+
+    assert result.host.kyc_status == "verified"
+    assert result.host.name == "Test User"
+
+
+@pytest.mark.asyncio
+async def test_get_stay_info_host_kyc_null_when_unverified(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Host kyc_status is surfaced as-is — 'unverified' is a valid value."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(
+        user_id="host-1", role=UserRole.HOST, kyc_status=KycStatus.UNVERIFIED
+    )
+    unit = _make_unit(host_id=host.id)
+    unit.listing = _make_listing(unit.id)
+    booking = _make_booking(
+        unit, guest, status=BookingStatus.CONFIRMED, check_in=_TODAY + timedelta(days=10)
+    )
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(
+        listings_repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    _mock_stay_info_session(fake_session, host)
+
+    result = await booking_services.get_stay_info(fake_session, guest, booking.id)
+
+    assert result.host.kyc_status == "unverified"

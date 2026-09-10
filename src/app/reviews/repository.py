@@ -65,3 +65,25 @@ async def get_rating_aggregates_for_units(
         unit_id: (round(float(avg_rating), 2), count)
         for unit_id, avg_rating, count in result.all()
     }
+
+
+async def count_reviews_by_guest(session: AsyncSession, guest_id: str) -> int:
+    """Count reviews written by a single guest — a trust signal for hosts."""
+    result = await session.execute(
+        select(func.count(Review.id)).where(Review.guest_id == guest_id)
+    )
+    return result.scalar_one()
+
+
+async def count_reviews_by_guests(
+    session: AsyncSession, guest_ids: list[str]
+) -> dict[str, int]:
+    """Batch-count reviews written by each guest — avoids N+1 in list views."""
+    if not guest_ids:
+        return {}
+    result = await session.execute(
+        select(Review.guest_id, func.count(Review.id))
+        .where(Review.guest_id.in_(guest_ids))
+        .group_by(Review.guest_id)
+    )
+    return {guest_id: count for guest_id, count in result.all()}

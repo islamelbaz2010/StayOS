@@ -482,7 +482,8 @@
     "terminalReasonTitle": "انتهى الحجز",
     "cancelReasonLabel": "سبب الإلغاء",
     "rejectReasonLabel": "سبب الرفض",
-    "actionError": "تعذر إتمام هذا الإجراء. يرجى المحاولة مرة أخرى."
+    "actionError": "تعذر إتمام هذا الإجراء. يرجى المحاولة مرة أخرى.",
+    "hostVerified": "تم التحقق من الهوية"
   },
   "booking": {
     "title": "طلب حجز",
@@ -613,7 +614,12 @@
     "allUnits": "كل العقارات",
     "noSearchResults": "لا توجد حجوزات مطابقة لبحثك.",
     "pageInfo": "الصفحة {page} من {total}",
-    "clearFilters": "مسح عوامل التصفية"
+    "clearFilters": "مسح عوامل التصفية",
+    "guest": "الضيف",
+    "identityVerified": "تم التحقق من الهوية",
+    "identityPending": "التحقق من الهوية قيد المعالجة",
+    "memberSince": "عضو منذ {date}",
+    "guestReviewsCount": "{count, plural, zero {لا تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييماً} other {# تقييم}}"
   },
   "availability": {
     "title": "التوفر",

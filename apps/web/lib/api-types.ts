@@ -909,6 +909,12 @@ export interface components {
       permission_scope?: string | null;
       /** Guest Name */
       guest_name?: string | null;
+      /** Guest Kyc Status */
+      guest_kyc_status?: string | null;
+      /** Guest Member Since */
+      guest_member_since?: string | null;
+      /** Guest Reviews Count */
+      guest_reviews_count?: number | null;
     };
     /**
      * BookingStatus
@@ -3596,6 +3602,8 @@ export interface components {
       name: string | null;
       /** Phone */
       phone?: string | null;
+      /** Kyc Status */
+      kyc_status?: string | null;
     };
     /**
      * StayInfoResponse

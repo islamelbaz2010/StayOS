@@ -194,6 +194,75 @@ export function HostBookingDetail({
         </div>
       </div>
 
+      {(booking.guest_name || booking.guest_kyc_status) && (
+        <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+          <h3 className="text-sm font-semibold text-brand-900">
+            {t("guest")}
+          </h3>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+            {booking.guest_name && (
+              <p className="text-sm font-medium text-brand-900">
+                {booking.guest_name}
+              </p>
+            )}
+            {booking.guest_kyc_status === "verified" && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-success-700">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {t("identityVerified")}
+              </span>
+            )}
+            {booking.guest_kyc_status === "pending" && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-warning-700">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6v6h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {t("identityPending")}
+              </span>
+            )}
+            {booking.guest_member_since && (
+              <p className="text-xs text-neutral-500">
+                {t("memberSince", {
+                  date: new Intl.DateTimeFormat(dateLocale, {
+                    year: "numeric",
+                    month: "long",
+                  }).format(new Date(booking.guest_member_since)),
+                })}
+              </p>
+            )}
+            {booking.guest_reviews_count != null &&
+              booking.guest_reviews_count > 0 && (
+                <p className="text-xs text-neutral-500">
+                  {t("guestReviewsCount", { count: booking.guest_reviews_count })}
+                </p>
+              )}
+          </div>
+        </div>
+      )}
+
       <dl className="mt-6 grid gap-4 sm:grid-cols-2">
         <div>
           <dt className="text-sm text-neutral-500">{t("checkIn")}</dt>

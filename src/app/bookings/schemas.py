@@ -91,6 +91,13 @@ class BookingResponse(BaseModel):
     permission_scope: str | None = None
     # Guest display identity; only the public display name is exposed.
     guest_name: str | None = None
+    # Host-visible guest trust context — populated ONLY when the viewer is
+    # an authorized host/co-host/admin for the booking's unit. Always null
+    # when the guest views their own booking. No PII is exposed here: just
+    # verification status, account age, and review activity.
+    guest_kyc_status: str | None = None
+    guest_member_since: datetime | None = None
+    guest_reviews_count: int | None = None
 
 
 class StayHostInfo(BaseModel):
@@ -98,6 +105,11 @@ class StayHostInfo(BaseModel):
     # Contact detail — only populated once pre-arrival info is eligible for
     # release (see services._arrival_info_eligible); null before that.
     phone: str | None = None
+    # Host identity-verification status — a trust signal the guest can see
+    # about the person hosting them, equivalent to Airbnb's "Identity
+    # verified" indicator. Only the status string is exposed, never the
+    # underlying KYC documents or internal metadata.
+    kyc_status: str | None = None
 
 
 class StayArrivalInfo(BaseModel):

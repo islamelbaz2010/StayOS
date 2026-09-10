@@ -90,11 +90,21 @@ async def list_paginated_host_bookings(
     scope_map = await host_permissions.get_unit_permission_scopes(
         session, user, managed_unit_ids
     )
+    # Batch-count reviews for all guests in this page — one query, not N+1.
+    from app.reviews import repository as reviews_repository
+
+    guest_ids = {b.guest_id for b in bookings}
+    reviews_count_map = await reviews_repository.count_reviews_by_guests(
+        session, list(guest_ids)
+    )
     items = [
         _to_response(
             booking,
             permission_scope=scope_map.get(booking.unit_id),
             guest_name=booking.guest.display_name if booking.guest else None,
+            guest_kyc_status=booking.guest.kyc_status if booking.guest else None,
+            guest_member_since=booking.guest.created_at if booking.guest else None,
+            guest_reviews_count=reviews_count_map.get(booking.guest_id, 0),
         )
         for booking in bookings
     ]

@@ -594,7 +594,18 @@
       "cancelled": "ملغى",
       "rejected": "مرفوض",
       "no_show": "لم يحضر"
-    }
+    },
+    "accommodationAmount": "مبلغ الإقامة",
+    "serviceFee": "رسوم الخدمة",
+    "paymentTimeline": "تواريخ الدفع",
+    "paymentDeadline": "موعد الدفع",
+    "proofUploaded": "تم رفع الإيصال",
+    "verifiedAt": "تم التحقق في",
+    "rejectedAt": "تم الرفض في",
+    "cancelledAt": "تم الإلغاء في",
+    "refundedAt": "تاريخ الاسترداد",
+    "paymentRejectReason": "سبب الرفض",
+    "viewReceipt": "عرض الإيصال"
   },
   "availability": {
     "title": "التوفر",

@@ -5,7 +5,11 @@ import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 
 import type { BookingResponse } from "@/lib/queries/bookings";
-import { usePaymentByBooking, type PaymentResponse } from "@/lib/queries/payments";
+import {
+  usePaymentByBooking,
+  usePaymentProofDownloadUrl,
+  type PaymentResponse,
+} from "@/lib/queries/payments";
 import { formatDate, formatMoney } from "@/lib/utils";
 
 import { HostBookingActions } from "./HostBookingActions";
@@ -54,6 +58,72 @@ function paymentStatusLabel(
   const translated = t(key);
   // next-intl returns the key when a message is missing; fall back to the raw status.
   return translated === key ? status.toUpperCase() : translated;
+}
+
+function PaymentTimeline({
+  payment,
+  locale,
+  t,
+}: {
+  payment: PaymentResponse;
+  locale: string;
+  t: (key: string) => string;
+}) {
+  const proofDownload = usePaymentProofDownloadUrl();
+
+  function dateRow(
+    value: string | null | undefined,
+    labelKey: string
+  ): React.ReactNode {
+    if (!value) return null;
+    return (
+      <div>
+        <dt className="text-sm text-neutral-500">{t(labelKey)}</dt>
+        <dd className="text-sm font-medium text-brand-900">
+          {new Date(value).toLocaleString(locale)}
+        </dd>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sm:col-span-2">
+      <dt className="text-sm text-neutral-500">{t("paymentTimeline")}</dt>
+      <dd className="mt-1 grid gap-3 sm:grid-cols-2">
+        {dateRow(payment.payment_deadline_at, "paymentDeadline")}
+        {dateRow(payment.proof_uploaded_at, "proofUploaded")}
+        {dateRow(payment.verified_at, "verifiedAt")}
+        {dateRow(payment.rejected_at, "rejectedAt")}
+        {dateRow(payment.cancelled_at, "cancelledAt")}
+        {dateRow(payment.refunded_at, "refundedAt")}
+        {payment.reject_reason && (
+          <div className="sm:col-span-2">
+            <dt className="text-sm text-neutral-500">{t("paymentRejectReason")}</dt>
+            <dd className="text-sm font-medium text-danger-600">
+              {payment.reject_reason}
+            </dd>
+          </div>
+        )}
+        {payment.proof_s3_key && (
+          <div className="sm:col-span-2">
+            <button
+              type="button"
+              disabled={proofDownload.isPending}
+              onClick={() =>
+                proofDownload.mutate(payment.id, {
+                  onSuccess: (url) =>
+                    window.open(url, "_blank", "noopener,noreferrer"),
+                })
+              }
+              className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline disabled:opacity-50"
+            >
+              {proofDownload.isPending ? t("loading") : t("viewReceipt")}
+            </button>
+          </div>
+        )}
+      </dd>
+    </div>
+  );
 }
 
 export function HostBookingDetail({
@@ -148,6 +218,22 @@ export function HostBookingDetail({
                 {formatMoney(payment.amount_egp, "EGP", dateLocale)}
               </dd>
             </div>
+            {payment.accommodation_amount_egp != null && (
+              <div>
+                <dt className="text-sm text-neutral-500">{t("accommodationAmount")}</dt>
+                <dd className="text-sm font-medium text-brand-900">
+                  {formatMoney(payment.accommodation_amount_egp, "EGP", dateLocale)}
+                </dd>
+              </div>
+            )}
+            {payment.guest_service_fee_egp != null && (
+              <div>
+                <dt className="text-sm text-neutral-500">{t("serviceFee")}</dt>
+                <dd className="text-sm font-medium text-brand-900">
+                  {formatMoney(payment.guest_service_fee_egp, "EGP", dateLocale)}
+                </dd>
+              </div>
+            )}
             {(payment.status === "refund_pending" || payment.status === "refunded") &&
               payment.refund_amount_egp != null && (
                 <div>
@@ -157,6 +243,7 @@ export function HostBookingDetail({
                   </dd>
                 </div>
               )}
+            <PaymentTimeline payment={payment} locale={dateLocale} t={t} />
           </>
         )}
       </dl>

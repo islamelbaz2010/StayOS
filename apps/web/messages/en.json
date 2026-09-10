@@ -594,7 +594,18 @@
       "cancelled": "Cancelled",
       "rejected": "Rejected",
       "no_show": "No-show"
-    }
+    },
+    "accommodationAmount": "Accommodation amount",
+    "serviceFee": "Service fee",
+    "paymentTimeline": "Payment timeline",
+    "paymentDeadline": "Payment deadline",
+    "proofUploaded": "Receipt uploaded",
+    "verifiedAt": "Verified at",
+    "rejectedAt": "Rejected at",
+    "cancelledAt": "Cancelled at",
+    "refundedAt": "Refunded at",
+    "paymentRejectReason": "Rejection reason",
+    "viewReceipt": "View receipt"
   },
   "availability": {
     "title": "Availability",

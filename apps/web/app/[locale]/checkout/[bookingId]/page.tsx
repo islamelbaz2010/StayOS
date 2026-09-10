@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
 import { ProofUpload } from "@/components/payments/ProofUpload";
-import { useBooking } from "@/lib/queries/bookings";
+import { useBooking, useStayInfo } from "@/lib/queries/bookings";
 import {
   usePaymentByBooking,
   usePaymentProofDownloadUrl,
@@ -67,6 +67,7 @@ function CheckoutContent({
     refetch: refetchPayment,
   } = usePaymentByBooking(bookingId);
   const proofDownload = usePaymentProofDownloadUrl();
+  const { data: stayInfo } = useStayInfo(bookingId);
 
   if (bookingLoading || paymentLoading) {
     return (
@@ -272,6 +273,17 @@ function CheckoutContent({
           {payment.instructions}
         </pre>
       </div>
+
+      {stayInfo?.property?.cancellation_policy && (
+        <div className="card p-5 sm:p-6">
+          <h2 className="mb-2 text-lg font-bold text-brand-900">
+            {t("cancellationPolicy")}
+          </h2>
+          <p className="text-sm text-neutral-600">
+            {t(`cancellationPolicies.${stayInfo.property.cancellation_policy.toLowerCase()}`)}
+          </p>
+        </div>
+      )}
 
       <div className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">

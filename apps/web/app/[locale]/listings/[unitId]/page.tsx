@@ -3,7 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useParams, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { BookingPanel } from "@/components/bookings/BookingPanel";
@@ -18,6 +18,7 @@ import { VerifiedBadge } from "@/components/listings/VerifiedBadge";
 import { RatingBadge } from "@/components/ui/RatingBadge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useListing, useListingPhotos } from "@/lib/queries/listings";
+import { pushRecentlyViewed } from "@/components/search/RecentlyViewed";
 import { formatMoney, formatDate } from "@/lib/utils";
 
 const ListingMap = dynamic(
@@ -106,6 +107,19 @@ export default function ListingDetailPage() {
 
   const { data: listing, isPending, isError, refetch } = useListing(unitId);
   const { data: photos } = useListingPhotos(unitId);
+
+  useEffect(() => {
+    if (listing) {
+      pushRecentlyViewed({
+        id: listing.id,
+        title: listing.title,
+        price: listing.price,
+        currency: listing.currency,
+        coverImage: listing.coverImage,
+        city: listing.city ?? null,
+      });
+    }
+  }, [listing]);
 
   const galleryImages =
     photos && photos.length > 0

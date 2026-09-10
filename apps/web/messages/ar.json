@@ -311,6 +311,8 @@
     "searchArea": "ابحث في هذه المنطقة",
     "filteredByMapArea": "مُصفّى حسب منطقة الخريطة",
     "clearMapArea": "مسح منطقة الخريطة",
+    "browseByCategory": "تصفح حسب الفئة",
+    "recentlyViewed": "شوهد مؤخراً",
     "clearSearch": "مسح البحث",
     "checkInPast": "لا يمكن أن يكون تاريخ الوصول في الماضي.",
     "checkOutAfterCheckIn": "تاريخ المغادرة يجب أن يكون بعد تاريخ الوصول.",
@@ -778,6 +780,12 @@
     "noPaymentHint": "ستظهر تعليمات الدفع هنا بعد قبول المضيف لحجزك.",
     "backHome": "العودة للرئيسية",
     "backToTrips": "رحلاتي",
+    "cancellationPolicy": "سياسة الإلغاء",
+    "cancellationPolicies": {
+      "flexible": "مرن — استرداد كامل حتى يوم قبل الوصول",
+      "moderate": "معتدل — استرداد كامل حتى 5 أيام قبل الوصول",
+      "strict": "صارم — استرداد 50% حتى أسبوع قبل الوصول"
+    },
     "queueTitle": "قائمة مراجعة الدفعات",
     "amount": "المبلغ",
     "bookingId": "رقم الحجز",

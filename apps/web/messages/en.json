@@ -311,6 +311,8 @@
     "searchArea": "Search this area",
     "filteredByMapArea": "Filtered by map area",
     "clearMapArea": "Clear map area",
+    "browseByCategory": "Browse by category",
+    "recentlyViewed": "Recently viewed",
     "clearSearch": "Clear search",
     "checkInPast": "Check-in cannot be in the past.",
     "checkOutAfterCheckIn": "Check-out must be after check-in.",
@@ -778,6 +780,12 @@
     "noPaymentHint": "Payment instructions will appear here after the host accepts your booking.",
     "backHome": "Back to home",
     "backToTrips": "My trips",
+    "cancellationPolicy": "Cancellation policy",
+    "cancellationPolicies": {
+      "flexible": "Flexible — full refund up to 1 day before check-in",
+      "moderate": "Moderate — full refund up to 5 days before check-in",
+      "strict": "Strict — 50% refund up to 1 week before check-in"
+    },
     "queueTitle": "Payment verification queue",
     "amount": "Amount",
     "bookingId": "Booking ID",

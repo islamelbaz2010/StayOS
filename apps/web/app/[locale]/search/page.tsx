@@ -50,6 +50,7 @@ export default function SearchPage() {
       cultural_tags: searchParams.get("cultural_tags") || undefined,
       min_price: searchParams.get("min_price") || undefined,
       max_price: searchParams.get("max_price") || undefined,
+      sort: searchParams.get("sort") || undefined,
       limit: searchParams.get("limit") || undefined,
     }),
     [searchParams]
@@ -239,6 +240,27 @@ export default function SearchPage() {
               {t("search.clearFilters")}
             </button>
           )}
+        </div>
+
+        <div className="mt-3 flex items-center justify-end">
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="sort-select"
+              className="text-sm font-medium text-neutral-500"
+            >
+              {t("search.sortBy")}
+            </label>
+            <select
+              id="sort-select"
+              value={filters.sort ?? ""}
+              onChange={(e) => updateParam("sort", e.target.value)}
+              className="input w-44 text-sm"
+            >
+              <option value="">{t("search.sortRecommended")}</option>
+              <option value="price_asc">{t("search.sortPriceAsc")}</option>
+              <option value="price_desc">{t("search.sortPriceDesc")}</option>
+            </select>
+          </div>
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2">

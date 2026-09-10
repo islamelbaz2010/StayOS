@@ -297,6 +297,7 @@ class ListingSearchFilters(BaseModel):
     cultural_tags: list[str] | None = None
     amenities: list[str] | None = None
     guests: int | None = Field(None, ge=1)
+    sort: str | None = None
     cursor: str | None = None
     offset: int | None = Field(default=None, ge=0)
     limit: int = Field(default=20, ge=1, le=100)

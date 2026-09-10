@@ -13,6 +13,7 @@ export interface SearchFilters {
   cultural_tags?: string;
   min_price?: string;
   max_price?: string;
+  sort?: string;
   limit?: string;
   offset?: string;
 }
@@ -159,6 +160,7 @@ function buildSearchQueryParams(filters: SearchFilters) {
   if (filters.cultural_tags) queryParams.cultural_tags = filters.cultural_tags;
   if (filters.min_price) queryParams.min_price = filters.min_price;
   if (filters.max_price) queryParams.max_price = filters.max_price;
+  if (filters.sort) queryParams.sort = filters.sort;
   return queryParams;
 }
 

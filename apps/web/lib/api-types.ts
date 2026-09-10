@@ -4505,6 +4505,7 @@ export interface operations {
         min_price?: number | null;
         max_price?: number | null;
         guests?: number | null;
+        sort?: string | null;
         cursor?: string | null;
         offset?: number | null;
         limit?: number;

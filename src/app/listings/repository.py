@@ -230,7 +230,13 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
         tsquery = func.plainto_tsquery("simple", filters.q)
         stmt = stmt.where(UnitListing.search_vector.bool_op("@@")(tsquery))
 
-    stmt = stmt.order_by(Unit.created_at.desc(), Unit.id.desc())
+    sort = (filters.sort or "").lower()
+    if sort == "price_asc":
+        stmt = stmt.order_by(UnitListing.base_price_egp.asc(), Unit.id.desc())
+    elif sort == "price_desc":
+        stmt = stmt.order_by(UnitListing.base_price_egp.desc(), Unit.id.desc())
+    else:
+        stmt = stmt.order_by(Unit.created_at.desc(), Unit.id.desc())
     return stmt
 
 

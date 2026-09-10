@@ -6,6 +6,8 @@ from geoalchemy2.elements import WKTElement
 
 from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import CalendarRule, Unit, UnitListing
+from app.auth.models import User  # noqa: F401 — ensure mapper registry includes User
+from app.bookings.models import Booking  # noqa: F401 — ensure mapper registry includes Booking
 from app.listings.repository import (
     create_listing,
     get_calendar_rules_in_range,
@@ -146,7 +148,48 @@ async def test_search_listings(fake_session: AsyncMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_calendar_rules_in_range(fake_session: AsyncMock) -> None:
+async def test_search_listings_sort_price_asc(fake_session: AsyncMock) -> None:
+    """Sort by price_asc should be accepted and return results."""
+    unit = _make_unit()
+    listing = _make_listing()
+    result_mock = MagicMock()
+    result_mock.all = MagicMock(return_value=[(unit, listing, 30.0, 31.0)])
+    fake_session.execute = AsyncMock(return_value=result_mock)
+
+    filters = ListingSearchFilters(sort="price_asc")
+    rows, total = await search_listings(fake_session, filters, 0, 20)
+    assert len(rows) == 1
+    assert total == 1
+
+
+@pytest.mark.asyncio
+async def test_search_listings_sort_price_desc(fake_session: AsyncMock) -> None:
+    """Sort by price_desc should be accepted and return results."""
+    unit = _make_unit()
+    listing = _make_listing()
+    result_mock = MagicMock()
+    result_mock.all = MagicMock(return_value=[(unit, listing, 30.0, 31.0)])
+    fake_session.execute = AsyncMock(return_value=result_mock)
+
+    filters = ListingSearchFilters(sort="price_desc")
+    rows, total = await search_listings(fake_session, filters, 0, 20)
+    assert len(rows) == 1
+    assert total == 1
+
+
+@pytest.mark.asyncio
+async def test_search_listings_sort_default_uses_created_at(fake_session: AsyncMock) -> None:
+    """Default sort (no sort param) should be accepted and return results."""
+    unit = _make_unit()
+    listing = _make_listing()
+    result_mock = MagicMock()
+    result_mock.all = MagicMock(return_value=[(unit, listing, 30.0, 31.0)])
+    fake_session.execute = AsyncMock(return_value=result_mock)
+
+    filters = ListingSearchFilters()
+    rows, total = await search_listings(fake_session, filters, 0, 20)
+    assert len(rows) == 1
+    assert total == 1
     rule = CalendarRule(
         id="rule-1",
         unit_id="unit-1",

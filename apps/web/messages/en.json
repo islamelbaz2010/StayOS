@@ -526,7 +526,14 @@
     "accommodation": "Accommodation",
     "cleaningFee": "Cleaning fee",
     "serviceFee": "Service fee",
-    "serviceFeeWaived": "Free"
+    "serviceFeeWaived": "Free",
+    "timelineTitle": "Stay progress",
+    "timeline": {
+      "booked": "Booked",
+      "confirmed": "Confirmed",
+      "checkedIn": "Checked in",
+      "completed": "Completed"
+    }
   },
   "booking": {
     "title": "Request to book",

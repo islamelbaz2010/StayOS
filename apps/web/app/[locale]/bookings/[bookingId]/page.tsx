@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
 import { CancelBookingButton } from "@/components/bookings/CancelBookingButton";
 import { LeaveReviewForm } from "@/components/bookings/LeaveReviewForm";
+import { StayTimeline } from "@/components/bookings/StayTimeline";
 import {
   useCheckIn,
   useCheckOut,
@@ -162,6 +163,12 @@ function TripContent({
           </div>
         </div>
       </div>
+
+      <StayTimeline
+        phase={phase}
+        paymentStatus={payment?.status ?? null}
+        bookingStatus={booking.status}
+      />
 
       {payment && (
         <div className="card p-5 sm:p-6">

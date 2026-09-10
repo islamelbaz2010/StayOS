@@ -526,7 +526,14 @@
     "accommodation": "الإقامة",
     "cleaningFee": "رسوم التنظيف",
     "serviceFee": "رسوم الخدمة",
-    "serviceFeeWaived": "مجاناً"
+    "serviceFeeWaived": "مجاناً",
+    "timelineTitle": "تقدم الإقامة",
+    "timeline": {
+      "booked": "تم الحجز",
+      "confirmed": "مؤكد",
+      "checkedIn": "تم تسجيل الوصول",
+      "completed": "مكتمل"
+    }
   },
   "booking": {
     "title": "طلب حجز",

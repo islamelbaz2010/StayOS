@@ -2620,6 +2620,10 @@ export interface components {
       host_joined_at?: string | null;
       /** Host Languages */
       host_languages?: string[];
+      /** Host Response Rate */
+      host_response_rate?: number | null;
+      /** Host Response Time Hours */
+      host_response_time_hours?: number | null;
       /** Property Type */
       property_type: string;
       /** Status */

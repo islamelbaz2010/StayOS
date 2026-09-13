@@ -296,6 +296,12 @@ class ListingResponse(BaseModel):
     host_kyc_status: str | None = None
     host_joined_at: str | None = None
     host_languages: list[str] = Field(default_factory=list)
+    # Airbnb shows the host response rate and response time on the
+    # listing detail page (in the host info section). Derived from
+    # messaging + booking action timestamps over the last 30 days.
+    # ``None`` when the host has received no inquiries/requests.
+    host_response_rate: int | None = None
+    host_response_time_hours: float | None = None
     property_type: str
     status: str
     lat: float

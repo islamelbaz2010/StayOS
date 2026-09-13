@@ -57,6 +57,8 @@ export interface ListingDetail extends Listing {
   hostKycStatus: string | null;
   hostJoinedAt: string | null;
   hostLanguages: string[];
+  hostResponseRate: number | null;
+  hostResponseTimeHours: number | null;
   allowsPets: boolean;
   selfCheckIn: boolean;
   selfCheckInMethods: string[];
@@ -103,6 +105,8 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     hostKycStatus: item.host_kyc_status ?? null,
     hostJoinedAt: item.host_joined_at ?? null,
     hostLanguages: item.host_languages ?? [],
+    hostResponseRate: item.host_response_rate ?? null,
+    hostResponseTimeHours: item.host_response_time_hours ?? null,
     allowsPets: item.allows_pets ?? false,
     selfCheckIn: item.self_check_in ?? false,
     selfCheckInMethods: item.self_check_in_methods ?? [],

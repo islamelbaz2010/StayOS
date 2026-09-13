@@ -630,7 +630,9 @@
     "cancellationTitle": "Cancellation Policy",
     "cancellationDesc": "Review the cancellation terms before booking.",
     "hostedBy": "Hosted by {name}",
-    "joinedIn": "Joined in {date}"
+    "joinedIn": "Joined in {date}",
+    "responseRate": "Response rate: {rate}%",
+    "responseTime": "Responds within {hours, plural, one {an hour} other {# hours}}"
   },
   "trips": {
     "title": "My trips",

@@ -84,6 +84,8 @@ def _cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
 def _to_listing_response(
     unit: Unit, listing: UnitListing, lat: float, lng: float,
     host: User | None = None, permission_scope: str | None = None,
+    host_response_rate: int | None = None,
+    host_response_time_hours: float | None = None,
 ) -> ListingResponse:
     # Extract accessibility features that have at least one evidence photo.
     accessibility_photo_features = sorted({
@@ -98,6 +100,8 @@ def _to_listing_response(
         host_kyc_status=host.kyc_status if host else None,
         host_joined_at=str(host.created_at) if host else None,
         host_languages=list(host.languages or []) if host else [],
+        host_response_rate=host_response_rate,
+        host_response_time_hours=host_response_time_hours,
         property_type=unit.property_type,
         status=unit.status,
         lat=lat,
@@ -239,7 +243,14 @@ async def get_listing_detail(
 
     host = await _fetch_host(session, unit.host_id)
     lat, lng = await _fetch_coordinates(session, unit)
-    response = _to_listing_response(unit, listing, lat, lng, host)
+    host_response_rate, host_response_time_hours = (
+        await _calculate_host_response_metrics(session, unit.host_id)
+    )
+    response = _to_listing_response(
+        unit, listing, lat, lng, host,
+        host_response_rate=host_response_rate,
+        host_response_time_hours=host_response_time_hours,
+    )
     response.average_rating, response.review_count = (
         await reviews_repository.get_rating_aggregate_for_unit(session, unit_id)
     )

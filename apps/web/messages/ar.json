@@ -630,7 +630,9 @@
     "cancellationTitle": "سياسة الإلغاء",
     "cancellationDesc": "راجع شروط الإلغاء قبل الحجز.",
     "hostedBy": "مستضاف بواسطة {name}",
-    "joinedIn": "انضم في {date}"
+    "joinedIn": "انضم في {date}",
+    "responseRate": "معدل الاستجابة: {rate}%",
+    "responseTime": "يرد خلال {hours, plural, one {ساعة} other {# ساعات}}"
   },
   "trips": {
     "title": "رحلاتي",

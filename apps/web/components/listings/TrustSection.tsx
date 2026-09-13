@@ -101,6 +101,20 @@ export function TrustSection({ listing }: TrustSectionProps) {
                 {t("joinedIn", { date: joinedDate })}
               </p>
             )}
+            {(listing.hostResponseRate !== null || listing.hostResponseTimeHours !== null) && (
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600">
+                {listing.hostResponseRate !== null && (
+                  <span>
+                    {t("responseRate", { rate: listing.hostResponseRate })}
+                  </span>
+                )}
+                {listing.hostResponseTimeHours !== null && (
+                  <span>
+                    {t("responseTime", { hours: listing.hostResponseTimeHours })}
+                  </span>
+                )}
+              </div>
+            )}
             {isHostVerified && (
               <div className="mt-2">
                 <VerifiedBadge variant="host" />

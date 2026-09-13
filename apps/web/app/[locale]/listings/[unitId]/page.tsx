@@ -13,6 +13,7 @@ import { CollapsibleText } from "@/components/listings/CollapsibleText";
 import { DescriptionSection } from "@/components/listings/DescriptionSection";
 import { FavoriteButton } from "@/components/listings/FavoriteButton";
 import { Gallery } from "@/components/listings/Gallery";
+import { HostOtherListingsSection } from "@/components/listings/HostOtherListingsSection";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
 import { ReviewsSection } from "@/components/listings/ReviewsSection";
 import { SimilarListingsSection } from "@/components/listings/SimilarListingsSection";
@@ -607,6 +608,13 @@ export default function ListingDetailPage() {
             </div>
 
             <SimilarListingsSection unitId={unitId} />
+
+            {listing.hostId && (
+              <HostOtherListingsSection
+                hostId={listing.hostId}
+                currentUnitId={unitId}
+              />
+            )}
 
             <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 bg-surface-card px-4 py-3 shadow-lg lg:hidden">
               <div className="flex items-center justify-between gap-4">

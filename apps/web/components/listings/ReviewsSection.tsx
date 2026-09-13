@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { RatingBadge } from "@/components/ui/RatingBadge";
-import { useListingReviews, fetchMoreReviews, type Review } from "@/lib/queries/reviews";
+import {
+  useListingReviews,
+  fetchMoreReviews,
+  type Review,
+  type Subratings,
+  SUBRATING_KEYS,
+} from "@/lib/queries/reviews";
 
 const PAGE_SIZE = 10;
 
@@ -15,7 +21,37 @@ function formatDate(iso: string, locale: string): string {
   });
 }
 
-function ReviewCard({ review, locale, t }: { review: Review; locale: string; t: (k: string) => string }) {
+function SubratingBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-24 shrink-0 text-xs text-neutral-600">{label}</span>
+      <div className="flex-1">
+        <div className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
+          <div
+            className="h-full rounded-full bg-amber-400"
+            style={{ width: `${(value / 5) * 100}%` }}
+          />
+        </div>
+      </div>
+      <span className="w-6 shrink-0 text-right text-xs font-medium text-neutral-700">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ReviewCard({
+  review,
+  locale,
+  t,
+}: {
+  review: Review;
+  locale: string;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const hasSubratings =
+    review.subratings && Object.keys(review.subratings).length > 0;
+
   return (
     <div className="rounded-lg bg-neutral-50 p-4">
       <div className="flex items-center justify-between">
@@ -40,6 +76,33 @@ function ReviewCard({ review, locale, t }: { review: Review; locale: string; t: 
       </p>
       {review.comment && (
         <p className="mt-2 text-sm leading-relaxed text-neutral-700">{review.comment}</p>
+      )}
+
+      {hasSubratings && (
+        <div className="mt-3 space-y-1.5 border-t border-neutral-200 pt-3">
+          {SUBRATING_KEYS.map((key) => {
+            const value = (review.subratings as Subratings)[key];
+            if (value === undefined) return null;
+            return (
+              <SubratingBar
+                key={key}
+                label={t(`subrating_${key}`)}
+                value={value}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {review.hostResponse && (
+        <div className="mt-3 border-t border-neutral-200 pt-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            {t("hostResponse")}
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-neutral-700">
+            {review.hostResponse}
+          </p>
+        </div>
       )}
     </div>
   );

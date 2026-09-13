@@ -559,6 +559,13 @@ export interface paths {
     /** Post Host Review */
     post: operations["post_host_review_api_v1_bookings__booking_id__host_reviews_post"];
   };
+  "/api/v1/reviews/{review_id}/host-response": {
+    /**
+     * Post Host Response
+     * @description Host writes a public response to a guest review (Airbnb behavior).
+     */
+    post: operations["post_host_response_api_v1_reviews__review_id__host_response_post"];
+  };
   "/api/v1/guests/{guest_id}/reviews": {
     /** Get Guest Review History */
     get: operations["get_guest_review_history_api_v1_guests__guest_id__reviews_get"];
@@ -2000,6 +2007,14 @@ export interface components {
       /** Cancel Reason */
       cancel_reason?: string | null;
     };
+    /**
+     * HostResponseCreate
+     * @description Host writes a public response to a guest review (one per review).
+     */
+    HostResponseCreate: {
+      /** Response */
+      response: string;
+    };
     /** HostReviewResponse */
     HostReviewResponse: {
       /** Id */
@@ -2018,6 +2033,11 @@ export interface components {
       rating: number;
       /** Comment */
       comment: string | null;
+      /**
+       * Published
+       * @default true
+       */
+      published?: boolean;
       /**
        * Created At
        * Format: date-time
@@ -3628,6 +3648,10 @@ export interface components {
       rating: number;
       /** Comment */
       comment?: string | null;
+      /** Subratings */
+      subratings?: {
+        [key: string]: number;
+      } | null;
     };
     /** ReviewListResponse */
     ReviewListResponse: {
@@ -3664,6 +3688,19 @@ export interface components {
       rating: number;
       /** Comment */
       comment: string | null;
+      /** Subratings */
+      subratings?: {
+        [key: string]: number;
+      } | null;
+      /**
+       * Published
+       * @default true
+       */
+      published?: boolean;
+      /** Host Response */
+      host_response?: string | null;
+      /** Host Response At */
+      host_response_at?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -7403,6 +7440,36 @@ export interface operations {
       201: {
         content: {
           "application/json": components["schemas"]["HostReviewResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Post Host Response
+   * @description Host writes a public response to a guest review (Airbnb behavior).
+   */
+  post_host_response_api_v1_reviews__review_id__host_response_post: {
+    parameters: {
+      path: {
+        review_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HostResponseCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["ReviewResponse"];
         };
       };
       /** @description Validation Error */

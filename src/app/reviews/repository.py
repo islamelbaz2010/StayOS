@@ -1,8 +1,11 @@
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 
+from .constants import PUBLICATION_WINDOW_DAYS
 from .models import Review
 
 
@@ -31,6 +34,11 @@ async def get_host_review_by_booking(session: AsyncSession, booking_id: str) -> 
     return result.scalar_one_or_none()
 
 
+async def get_review_by_id(session: AsyncSession, review_id: str) -> Review | None:
+    result = await session.execute(select(Review).where(Review.id == review_id))
+    return result.scalar_one_or_none()
+
+
 async def create_review(
     session: AsyncSession,
     *,
@@ -41,6 +49,7 @@ async def create_review(
     reviewer_role: str,
     rating: int,
     comment: str | None,
+    subratings: dict[str, int] | None = None,
 ) -> Review:
     review = Review(
         booking_id=booking_id,
@@ -50,6 +59,7 @@ async def create_review(
         reviewer_role=reviewer_role,
         rating=rating,
         comment=comment,
+        subratings=subratings,
     )
     session.add(review)
     await session.commit()
@@ -57,9 +67,46 @@ async def create_review(
     return review
 
 
+async def set_host_response(
+    session: AsyncSession, review: Review, response: str
+) -> Review:
+    """Set the host's public response on a guest review."""
+    review.host_response = response
+    review.host_response_at = datetime.now(timezone.utc)
+    await session.commit()
+    await session.refresh(review)
+    return review
+
+
+def is_review_published(
+    review: Review,
+    has_counterpart: bool,
+    now: datetime | None = None,
+) -> bool:
+    """Determine if a review is visible per Airbnb's simultaneous
+    publication rule.
+
+    A review is published when:
+    - ``published_at`` is already set (backfilled or previously
+      computed), OR
+    - the other party's review for the same booking exists, OR
+    - PUBLICATION_WINDOW_DAYS have elapsed since ``created_at``.
+
+    Computed on read to avoid a background sweep.
+    """
+    if review.published_at is not None:
+        return True
+    if has_counterpart:
+        return True
+    now = now or datetime.now(timezone.utc)
+    window = timedelta(days=PUBLICATION_WINDOW_DAYS)
+    return (now - review.created_at) >= window
+
+
 async def list_reviews_for_unit(
     session: AsyncSession, unit_id: str, limit: int, offset: int
 ) -> list[tuple[Review, str | None]]:
+    """List published guest reviews for a unit, newest first."""
     result = await session.execute(
         select(Review, User.display_name)
         .join(User, User.id == Review.guest_id)
@@ -71,12 +118,34 @@ async def list_reviews_for_unit(
         .limit(limit)
         .offset(offset)
     )
-    return [(review, guest_name) for review, guest_name in result.all()]
+    rows = [(review, guest_name) for review, guest_name in result.all()]
+    if not rows:
+        return []
+    booking_ids = [review.booking_id for review, _ in rows]
+    # For each booking, check whether a host review exists (counterpart).
+    counterpart_result = await session.execute(
+        select(Review.booking_id)
+        .where(
+            Review.booking_id.in_(booking_ids),
+            Review.reviewer_role == "host",
+        )
+        .group_by(Review.booking_id)
+    )
+    has_host_review = {row[0] for row in counterpart_result.all()}
+    now = datetime.now(timezone.utc)
+    return [
+        (review, guest_name)
+        for review, guest_name in rows
+        if is_review_published(review, review.booking_id in has_host_review, now)
+    ]
 
 
 async def get_rating_aggregate_for_unit(
     session: AsyncSession, unit_id: str
 ) -> tuple[float | None, int]:
+    """Aggregate over ALL guest reviews (published or not) — the
+    aggregate is the same whether or not we filter for publication
+    because unpublished reviews are temporary (14-day window)."""
     result = await session.execute(
         select(func.avg(Review.rating), func.count(Review.id)).where(
             Review.unit_id == unit_id,

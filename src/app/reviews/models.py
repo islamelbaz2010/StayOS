@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from sqlalchemy import (
     CheckConstraint,
+    DateTime,
     ForeignKey,
     Index,
     SmallInteger,
@@ -7,6 +10,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.shared.models import Base, TimestampMixin, UUIDMixin
@@ -46,3 +50,21 @@ class Review(UUIDMixin, TimestampMixin, Base):
     reviewer_role: Mapped[str] = mapped_column(String(20), nullable=False, default="guest")
     rating: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Airbnb-style 6 subrating categories (guest reviews only). Stored as
+    # JSONB: {"cleanliness": 5, "accuracy": 4, ...}. NULL for host reviews.
+    subratings: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Simultaneous publication: NULL = not yet published. A review is
+    # considered published when both reviews for the booking exist OR
+    # PUBLICATION_WINDOW_DAYS have passed since created_at. Computed on
+    # read to avoid a background sweep. Backfilled to NOW() for
+    # pre-existing reviews so they stay visible.
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Host public response to a guest review (one per review). NULL
+    # until the host writes a response. Only guest reviews can have a
+    # host_response.
+    host_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+    host_response_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )

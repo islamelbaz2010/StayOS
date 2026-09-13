@@ -1,11 +1,49 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from .constants import SUBRATING_KEYS
+
+
+def _validate_subratings(
+    subratings: dict[str, int] | None,
+) -> dict[str, int] | None:
+    """Validate Airbnb-style subratings: 6 fixed categories, each 1-5."""
+    if subratings is None:
+        return None
+    unknown = set(subratings.keys()) - SUBRATING_KEYS
+    if unknown:
+        raise ValueError(f"Unknown subrating categories: {sorted(unknown)}")
+    for key, value in subratings.items():
+        if not isinstance(value, int) or value < 1 or value > 5:
+            raise ValueError(f"Subrating '{key}' must be an integer 1-5")
+    return subratings
 
 
 class ReviewCreate(BaseModel):
     rating: int = Field(..., ge=1, le=5)
     comment: str | None = Field(None, max_length=2000)
+    # Airbnb-style 6 subrating categories. Optional; when provided each
+    # must be 1-5 and keys must be from the fixed vocabulary.
+    subratings: dict[str, int] | None = None
+
+    @field_validator("subratings")
+    @classmethod
+    def _check_subratings(cls, v: dict[str, int] | None) -> dict[str, int] | None:
+        return _validate_subratings(v)
+
+
+class HostReviewCreate(BaseModel):
+    """Host reviews a guest — no subratings (Airbnb host reviews are overall only)."""
+
+    rating: int = Field(..., ge=1, le=5)
+    comment: str | None = Field(None, max_length=2000)
+
+
+class HostResponseCreate(BaseModel):
+    """Host writes a public response to a guest review (one per review)."""
+
+    response: str = Field(..., min_length=1, max_length=2000)
 
 
 class ReviewResponse(BaseModel):
@@ -19,6 +57,10 @@ class ReviewResponse(BaseModel):
     reviewer_display_name: str | None = None
     rating: int
     comment: str | None
+    subratings: dict[str, int] | None = None
+    published: bool = True
+    host_response: str | None = None
+    host_response_at: datetime | None = None
     created_at: datetime
 
 
@@ -31,6 +73,7 @@ class HostReviewResponse(BaseModel):
     guest_display_name: str | None = None
     rating: int
     comment: str | None
+    published: bool = True
     created_at: datetime
 
 

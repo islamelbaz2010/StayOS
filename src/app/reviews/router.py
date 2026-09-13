@@ -8,12 +8,14 @@ from app.shared.exceptions import StayOSError, to_http_exception
 
 from .schemas import (
     GuestReviewListResponse,
+    HostResponseCreate,
     HostReviewResponse,
     ReviewCreate,
     ReviewListResponse,
     ReviewResponse,
 )
 from .services import (
+    create_host_response,
     create_host_review,
     create_review,
     get_guest_reviews,
@@ -49,6 +51,24 @@ async def post_host_review(
 ) -> HostReviewResponse:
     try:
         return await create_host_review(session, user, booking_id, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post(
+    "/reviews/{review_id}/host-response",
+    response_model=ReviewResponse,
+    status_code=201,
+)
+async def post_host_response(
+    review_id: str,
+    request: HostResponseCreate,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ReviewResponse:
+    """Host writes a public response to a guest review (Airbnb behavior)."""
+    try:
+        return await create_host_response(session, user, review_id, request)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

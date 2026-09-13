@@ -18,7 +18,7 @@ from app.reviews import repository as reviews_repository
 from app.reviews import router as reviews_router
 from app.reviews import services as review_services
 from app.reviews.models import Review
-from app.reviews.schemas import ReviewCreate, ReviewListResponse, ReviewResponse
+from app.reviews.schemas import HostResponseCreate, ReviewCreate, ReviewListResponse, ReviewResponse
 from app.shared.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 
 _TODAY = datetime.now(UTC).date()
@@ -89,6 +89,9 @@ def _make_review(booking: Booking, unit: Unit, guest: User, rating: int = 5) -> 
         comment="Great stay!",
         created_at=now,
         updated_at=now,
+        # Mark as published so existing tests that don't test the
+        # publication window still see the review.
+        published_at=now,
     )
 
 
@@ -325,6 +328,10 @@ def _make_review_response() -> ReviewResponse:
         reviewer_display_name=guest.display_name,
         rating=review.rating,
         comment=review.comment,
+        subratings=None,
+        published=True,
+        host_response=None,
+        host_response_at=None,
         created_at=review.created_at,
     )
 
@@ -477,4 +484,293 @@ async def test_create_host_review_rejects_duplicate(fake_session: AsyncMock, mon
     with pytest.raises(ConflictError):
         await review_services.create_host_review(
             fake_session, host, booking.id, ReviewCreate(rating=3)
+        )
+
+
+# ============================================================
+# REVIEW PARITY — subratings, publication, host response
+# ============================================================
+
+
+def test_subratings_validation_accepts_valid() -> None:
+    """Valid subratings with all 6 categories, each 1-5, are accepted."""
+    req = ReviewCreate(
+        rating=5,
+        subratings={
+            "cleanliness": 5,
+            "accuracy": 4,
+            "check_in": 5,
+            "communication": 4,
+            "location": 5,
+            "value": 4,
+        },
+    )
+    assert req.subratings is not None
+    assert req.subratings["cleanliness"] == 5
+
+
+def test_subratings_validation_rejects_unknown_category() -> None:
+    """Unknown subrating categories are rejected."""
+    with pytest.raises(ValueError):
+        ReviewCreate(rating=5, subratings={"cleanliness": 5, "foo": 3})
+
+
+def test_subratings_validation_rejects_out_of_range() -> None:
+    """Subrating values outside 1-5 are rejected."""
+    with pytest.raises(ValueError):
+        ReviewCreate(rating=5, subratings={"cleanliness": 0})
+    with pytest.raises(ValueError):
+        ReviewCreate(rating=5, subratings={"cleanliness": 6})
+
+
+def test_subratings_validation_accepts_none() -> None:
+    """No subratings (None) is accepted — subratings are optional."""
+    req = ReviewCreate(rating=4)
+    assert req.subratings is None
+
+
+def test_is_review_published_with_counterpart() -> None:
+    """A review is published when the other party's review exists."""
+    from app.reviews.constants import PUBLICATION_WINDOW_DAYS
+
+    guest = _make_user()
+    unit = _make_unit()
+    booking = _make_booking(unit, guest)
+    review = _make_review(booking, unit, guest)
+    review.published_at = None  # not pre-published
+    assert reviews_repository.is_review_published(review, has_counterpart=True)
+
+
+def test_is_review_published_after_window() -> None:
+    """A review is published after the 14-day window even without counterpart."""
+    guest = _make_user()
+    unit = _make_unit()
+    booking = _make_booking(unit, guest)
+    review = _make_review(booking, unit, guest)
+    review.published_at = None
+    # created_at is now; simulate 15 days ago
+    review.created_at = datetime.now(UTC) - timedelta(days=15)
+    assert reviews_repository.is_review_published(review, has_counterpart=False)
+
+
+def test_is_review_published_within_window_no_counterpart() -> None:
+    """A review within the 14-day window with no counterpart is NOT published."""
+    guest = _make_user()
+    unit = _make_unit()
+    booking = _make_booking(unit, guest)
+    review = _make_review(booking, unit, guest)
+    review.published_at = None
+    review.created_at = datetime.now(UTC) - timedelta(days=3)
+    assert not reviews_repository.is_review_published(review, has_counterpart=False)
+
+
+def test_is_review_published_pre_published() -> None:
+    """A review with published_at set is always published."""
+    guest = _make_user()
+    unit = _make_unit()
+    booking = _make_booking(unit, guest)
+    review = _make_review(booking, unit, guest)
+    # published_at is set by _make_review helper
+    assert reviews_repository.is_review_published(review, has_counterpart=False)
+
+
+@pytest.mark.asyncio
+async def test_create_review_with_subratings(fake_session: AsyncMock, monkeypatch) -> None:
+    """Guest review with subratings stores and returns them."""
+    guest = _make_user()
+    unit = _make_unit()
+    booking = _make_booking(unit, guest)
+    booking.status = BookingStatus.COMPLETED
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(
+        reviews_repository, "get_guest_review_by_booking", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        reviews_repository, "get_host_review_by_booking", AsyncMock(return_value=None)
+    )
+
+    created_review = _make_review(booking, unit, guest)
+    created_review.subratings = {"cleanliness": 5, "accuracy": 4}
+
+    monkeypatch.setattr(
+        reviews_repository,
+        "create_review",
+        AsyncMock(return_value=created_review),
+    )
+
+    request = ReviewCreate(
+        rating=5,
+        subratings={"cleanliness": 5, "accuracy": 4},
+    )
+    result = await review_services.create_review(fake_session, guest, booking.id, request)
+    assert result.subratings == {"cleanliness": 5, "accuracy": 4}
+
+
+@pytest.mark.asyncio
+async def test_create_host_review_stores_no_subratings(fake_session: AsyncMock, monkeypatch) -> None:
+    """Host reviews never store subratings (Airbnb behavior)."""
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    guest = _make_user(user_id="guest-1")
+    unit = _make_unit(host_id="host-1")
+    booking = _make_booking(unit, guest)
+    booking.status = BookingStatus.COMPLETED
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    mock_unit_result = MagicMock()
+    mock_unit_result.scalar_one_or_none.return_value = unit
+    mock_guest_result = MagicMock()
+    mock_guest_result.scalar_one_or_none.return_value = guest
+    fake_session.execute = AsyncMock(
+        side_effect=[mock_unit_result, mock_guest_result]
+    )
+
+    monkeypatch.setattr(
+        reviews_repository, "get_host_review_by_booking", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        reviews_repository, "get_guest_review_by_booking", AsyncMock(return_value=None)
+    )
+
+    created_review = _make_review(booking, unit, guest, rating=4)
+    created_review.reviewer_id = host.id
+    created_review.reviewer_role = "host"
+    created_review.subratings = None
+
+    monkeypatch.setattr(
+        reviews_repository,
+        "create_review",
+        AsyncMock(return_value=created_review),
+    )
+
+    # Even if the request includes subratings, host review stores None
+    request = ReviewCreate(
+        rating=4,
+        subratings={"cleanliness": 5},  # should be ignored for host reviews
+    )
+    result = await review_services.create_host_review(fake_session, host, booking.id, request)
+    assert result.rating == 4
+
+
+@pytest.mark.asyncio
+async def test_create_host_response_success(fake_session: AsyncMock, monkeypatch) -> None:
+    """Host can write a public response to a guest review."""
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    guest = _make_user(user_id="guest-1")
+    unit = _make_unit(host_id="host-1")
+    booking = _make_booking(unit, guest)
+    review = _make_review(booking, unit, guest)
+    review.host_response = None
+    review.host_response_at = None
+
+    monkeypatch.setattr(
+        reviews_repository, "get_review_by_id", AsyncMock(return_value=review)
+    )
+
+    mock_unit_result = MagicMock()
+    mock_unit_result.scalar_one_or_none.return_value = unit
+    mock_guest_result = MagicMock()
+    mock_guest_result.scalar_one_or_none.return_value = guest
+    # First execute call returns unit, second returns guest
+    fake_session.execute = AsyncMock(
+        side_effect=[mock_unit_result, mock_guest_result]
+    )
+
+    async def _set_response(session, rev, resp):
+        rev.host_response = resp
+        rev.host_response_at = datetime.now(UTC)
+        return rev
+
+    monkeypatch.setattr(reviews_repository, "set_host_response", _set_response)
+    monkeypatch.setattr(
+        reviews_repository, "get_host_review_by_booking", AsyncMock(return_value=None)
+    )
+
+    result = await review_services.create_host_response(
+        fake_session, host, review.id, HostResponseCreate(response="Thank you!")
+    )
+    assert result.host_response == "Thank you!"
+    assert result.host_response_at is not None
+
+
+@pytest.mark.asyncio
+async def test_create_host_response_rejects_duplicate(fake_session: AsyncMock, monkeypatch) -> None:
+    """Host cannot write a second response to the same review."""
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    guest = _make_user(user_id="guest-1")
+    unit = _make_unit(host_id="host-1")
+    booking = _make_booking(unit, guest)
+    review = _make_review(booking, unit, guest)
+    review.host_response = "Already responded"
+    review.host_response_at = datetime.now(UTC)
+
+    monkeypatch.setattr(
+        reviews_repository, "get_review_by_id", AsyncMock(return_value=review)
+    )
+
+    with pytest.raises(ConflictError):
+        await review_services.create_host_response(
+            fake_session, host, review.id, HostResponseCreate(response="Second response")
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_host_response_rejects_host_review(fake_session: AsyncMock, monkeypatch) -> None:
+    """Host cannot respond to a host review (only guest reviews)."""
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    guest = _make_user(user_id="guest-1")
+    unit = _make_unit(host_id="host-1")
+    booking = _make_booking(unit, guest)
+    review = _make_review(booking, unit, guest)
+    review.reviewer_role = "host"
+
+    monkeypatch.setattr(
+        reviews_repository, "get_review_by_id", AsyncMock(return_value=review)
+    )
+
+    with pytest.raises(ValidationError):
+        await review_services.create_host_response(
+            fake_session, host, review.id, HostResponseCreate(response="Response")
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_host_response_rejects_non_owner(fake_session: AsyncMock, monkeypatch) -> None:
+    """A host who doesn't own the unit cannot respond to a guest review."""
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    other_host = _make_user(user_id="host-2", role=UserRole.HOST)
+    guest = _make_user(user_id="guest-1")
+    unit = _make_unit(host_id="host-1")  # owned by host-1, not other_host
+    booking = _make_booking(unit, guest)
+    review = _make_review(booking, unit, guest)
+
+    monkeypatch.setattr(
+        reviews_repository, "get_review_by_id", AsyncMock(return_value=review)
+    )
+
+    mock_unit_result = MagicMock()
+    mock_unit_result.scalar_one_or_none.return_value = unit
+    fake_session.execute = AsyncMock(return_value=mock_unit_result)
+
+    with pytest.raises(AuthorizationError):
+        await review_services.create_host_response(
+            fake_session, other_host, review.id, HostResponseCreate(response="Response")
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_host_response_rejects_not_found(fake_session: AsyncMock, monkeypatch) -> None:
+    """Responding to a non-existent review raises NotFoundError."""
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    monkeypatch.setattr(
+        reviews_repository, "get_review_by_id", AsyncMock(return_value=None)
+    )
+    with pytest.raises(NotFoundError):
+        await review_services.create_host_response(
+            fake_session, host, "nonexistent", HostResponseCreate(response="Response")
         )

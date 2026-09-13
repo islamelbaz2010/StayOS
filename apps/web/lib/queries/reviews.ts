@@ -5,6 +5,20 @@ import type { components } from "@/lib/api-types";
 
 type ApiReviewListResponse = components["schemas"]["ReviewListResponse"];
 
+/** Airbnb-style 6 subrating categories. */
+export const SUBRATING_KEYS = [
+  "cleanliness",
+  "accuracy",
+  "check_in",
+  "communication",
+  "location",
+  "value",
+] as const;
+
+export type SubratingKey = (typeof SUBRATING_KEYS)[number];
+
+export type Subratings = Partial<Record<SubratingKey, number>>;
+
 export interface Review {
   id: string;
   unitId: string;
@@ -12,6 +26,10 @@ export interface Review {
   guestDisplayName: string | null;
   rating: number;
   comment: string | null;
+  subratings: Subratings | null;
+  published: boolean;
+  hostResponse: string | null;
+  hostResponseAt: string | null;
   createdAt: string;
 }
 
@@ -29,6 +47,10 @@ function mapReview(item: ApiReviewListResponse["data"][number]): Review {
     guestDisplayName: item.guest_display_name ?? null,
     rating: item.rating,
     comment: item.comment,
+    subratings: (item.subratings as Subratings | null) ?? null,
+    published: item.published ?? true,
+    hostResponse: item.host_response ?? null,
+    hostResponseAt: item.host_response_at ?? null,
     createdAt: item.created_at,
   };
 }
@@ -70,15 +92,18 @@ export function useCreateReview() {
       bookingId,
       rating,
       comment,
+      subratings,
     }: {
       bookingId: string;
       unitId: string;
       rating: number;
       comment?: string;
+      subratings?: Subratings;
     }) => {
       const { data } = await api.post(`/bookings/${bookingId}/reviews`, {
         rating,
         comment,
+        subratings: subratings ?? undefined,
       });
       return data;
     },
@@ -117,6 +142,29 @@ export function useCreateHostReview() {
   });
 }
 
+/** Host writes a public response to a guest review (Airbnb behavior). */
+export function useCreateHostResponse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      reviewId,
+      unitId,
+      response,
+    }: {
+      reviewId: string;
+      unitId: string;
+      response: string;
+    }) => {
+      const { data } = await api.post(`/reviews/${reviewId}/host-response`, { response });
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["listing-reviews", variables.unitId] });
+    },
+  });
+}
+
 export interface HostReview {
   id: string;
   bookingId: string;
@@ -126,6 +174,7 @@ export interface HostReview {
   guestDisplayName: string | null;
   rating: number;
   comment: string | null;
+  published: boolean;
   createdAt: string;
 }
 
@@ -149,6 +198,7 @@ export function useGuestReviews(guestId: string | null, limit = 10) {
           guest_display_name: string | null;
           rating: number;
           comment: string | null;
+          published: boolean;
           created_at: string;
         }>;
         average_rating: number | null;
@@ -166,6 +216,7 @@ export function useGuestReviews(guestId: string | null, limit = 10) {
           guestDisplayName: item.guest_display_name,
           rating: item.rating,
           comment: item.comment,
+          published: item.published ?? true,
           createdAt: item.created_at,
         })),
         averageRating: data.average_rating,

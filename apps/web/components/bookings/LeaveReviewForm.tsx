@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { useCreateReview } from "@/lib/queries/reviews";
+import {
+  useCreateReview,
+  SUBRATING_KEYS,
+  type SubratingKey,
+  type Subratings,
+} from "@/lib/queries/reviews";
 import { getApiErrorMessage } from "@/lib/utils";
 
 interface LeaveReviewFormProps {
@@ -18,9 +23,11 @@ export function LeaveReviewForm({
   onSubmitted,
 }: LeaveReviewFormProps) {
   const t = useTranslations("trips");
+  const ts = useTranslations("listing");
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [subratings, setSubratings] = useState<Subratings>({});
   const [error, setError] = useState<string | null>(null);
   const createReview = useCreateReview();
 
@@ -36,14 +43,21 @@ export function LeaveReviewForm({
     );
   }
 
+  function setSubrating(key: SubratingKey, value: number) {
+    setSubratings((prev) => ({ ...prev, [key]: value }));
+  }
+
   async function handleSubmit() {
     setError(null);
     try {
+      // Only send subratings if at least one was set.
+      const hasSubratings = Object.keys(subratings).length > 0;
       await createReview.mutateAsync({
         bookingId,
         unitId,
         rating,
         comment: comment.trim() || undefined,
+        subratings: hasSubratings ? subratings : undefined,
       });
       setOpen(false);
       onSubmitted();
@@ -73,6 +87,34 @@ export function LeaveReviewForm({
           >
             ★
           </button>
+        ))}
+      </div>
+
+      {/* Airbnb-style 6 subrating categories */}
+      <div className="mt-4 space-y-2">
+        {SUBRATING_KEYS.map((key) => (
+          <div key={key} className="flex items-center justify-between gap-2">
+            <span className="text-xs text-neutral-600">
+              {ts(`subrating_${key}`)}
+            </span>
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSubrating(key, value)}
+                  aria-label={`${value}`}
+                  className={`text-sm transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 ${
+                    value <= (subratings[key] ?? 0)
+                      ? "text-warning-500"
+                      : "text-neutral-300"
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 

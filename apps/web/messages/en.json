@@ -291,6 +291,8 @@
     "cancellationPolicy": "Cancellation",
     "location": "Location",
     "description": "Description",
+    "showMore": "Show more",
+    "showLess": "Show less",
     "amenities": "Amenities",
     "houseRules": "House Rules",
     "egp": "EGP",

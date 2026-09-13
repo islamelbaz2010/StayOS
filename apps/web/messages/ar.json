@@ -291,6 +291,8 @@
     "cancellationPolicy": "الإلغاء",
     "location": "الموقع",
     "description": "الوصف",
+    "showMore": "عرض المزيد",
+    "showLess": "عرض أقل",
     "amenities": "المرافق",
     "houseRules": "قواعد المنزل",
     "egp": "ج.م",

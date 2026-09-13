@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import { BookingPanel } from "@/components/bookings/BookingPanel";
 import { GuestLayout } from "@/components/layouts";
 import { ContactHostButton } from "@/components/listings/ContactHostButton";
+import { DescriptionSection } from "@/components/listings/DescriptionSection";
 import { FavoriteButton } from "@/components/listings/FavoriteButton";
 import { Gallery } from "@/components/listings/Gallery";
 import { ListingDetailSkeleton } from "@/components/listings/ListingDetailSkeleton";
@@ -303,14 +304,7 @@ export default function ListingDetailPage() {
                   </section>
                 )}
 
-                <section className="card p-5 sm:p-6">
-                  <h2 className="mb-3 text-lg font-semibold text-brand-900">
-                    {t("description")}
-                  </h2>
-                  <p className="whitespace-pre-line leading-relaxed text-neutral-700">
-                    {listing.description}
-                  </p>
-                </section>
+                <DescriptionSection description={listing.description} />
 
                 {listing.hostDisplayName && (
                   <section className="card p-5 sm:p-6">

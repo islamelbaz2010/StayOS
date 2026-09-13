@@ -46,6 +46,7 @@ export interface HostListing {
   check_in_time: string | null;
   check_out_time: string | null;
   policies: string | null;
+  sleeping_arrangements: Array<{ beds: Array<{ type: string; count: number }> }> | null;
   cover_image: string | null;
   permission_scope?: string | null;
   rejection_reason?: string | null;
@@ -86,6 +87,7 @@ export interface ListingCreateInput {
   check_in_time?: string;
   check_out_time?: string;
   policies?: string;
+  sleeping_arrangements?: Array<{ beds: Array<{ type: string; count: number }> }> | null;
   country?: string;
   currency?: string;
   is_draft?: boolean;
@@ -126,6 +128,7 @@ export interface ListingUpdateInput {
   check_in_time?: string;
   check_out_time?: string;
   policies?: string;
+  sleeping_arrangements?: Array<{ beds: Array<{ type: string; count: number }> }> | null;
   country?: string;
   currency?: string;
   cover_photo_id?: string;

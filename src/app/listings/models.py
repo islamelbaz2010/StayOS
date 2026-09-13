@@ -19,7 +19,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import TSVECTOR
+from sqlalchemy.dialects.postgresql import TSVECTOR, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.models import Base, TimestampMixin, UUIDMixin
@@ -121,6 +121,13 @@ class UnitListing(UUIDMixin, Base):
     check_out_time: Mapped[str | None] = mapped_column(String(5), nullable=True)
     pre_arrival_info_release_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
     policies: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Per-bedroom bed configuration (DEC-019 sleeping arrangements).
+    # JSON array of bedroom entries, each with a ``beds`` list of
+    # ``{type, count}`` objects. Nullable — when absent, the listing
+    # shows aggregate ``beds`` / ``bedrooms`` counts only.
+    sleeping_arrangements: Mapped[list[dict] | None] = mapped_column(
+        JSONB, nullable=True
+    )
     base_price_egp: Mapped[int] = mapped_column(Integer, nullable=False)
     weekend_mult: Mapped[float] = mapped_column(
         Numeric(4, 2), nullable=False, default=1.0

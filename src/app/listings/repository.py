@@ -59,6 +59,7 @@ async def create_listing(
         check_out_time=request.check_out_time,
         pre_arrival_info_release_hours=request.pre_arrival_info_release_hours,
         policies=request.policies,
+        sleeping_arrangements=request.sleeping_arrangements,
         base_price_egp=request.base_price_egp,
         cleaning_fee_egp=request.cleaning_fee_egp,
         cancellation_policy=request.cancellation_policy,

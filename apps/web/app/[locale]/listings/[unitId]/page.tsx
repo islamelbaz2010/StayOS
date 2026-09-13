@@ -276,6 +276,33 @@ export default function ListingDetailPage() {
                   </div>
                 </section>
 
+                {listing.sleepingArrangements && listing.sleepingArrangements.length > 0 && (
+                  <section className="card p-5 sm:p-6">
+                    <h2 className="mb-3 text-lg font-semibold text-brand-900">
+                      {t("sleepingArrangements")}
+                    </h2>
+                    <div className="space-y-3">
+                      {listing.sleepingArrangements.map((room, idx) => (
+                        <div key={idx} className="flex items-start gap-3">
+                          <span className="mt-0.5 text-sm font-medium text-neutral-500">
+                            {t("bedroomLabel", { number: idx + 1 })}
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {room.beds.map((bed, bidx) => (
+                              <span
+                                key={bidx}
+                                className="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700"
+                              >
+                                {bed.count} {t(`bedType.${bed.type.toLowerCase()}`, { count: bed.count })}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 <section className="card p-5 sm:p-6">
                   <h2 className="mb-3 text-lg font-semibold text-brand-900">
                     {t("description")}

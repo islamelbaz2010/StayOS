@@ -4,7 +4,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .constants import AccessibilityFeature, SelfCheckInMethod
+from .constants import AccessibilityFeature, BedType, SelfCheckInMethod
 
 
 def _validate_accessibility_features(values: list[str]) -> list[str]:
@@ -35,6 +35,52 @@ def _validate_self_check_in_methods(values: list[str]) -> list[str]:
             f"Allowed: {', '.join(sorted(allowed))}"
         )
     return list(dict.fromkeys(values))
+
+
+def _validate_sleeping_arrangements(
+    value: list[dict] | None,
+) -> list[dict] | None:
+    """Validate per-bedroom bed configuration (DEC-019 sleeping arrangements).
+
+    Each entry must have a ``beds`` list of ``{type, count}`` objects where
+    ``type`` is a known :class:`BedType` and ``count`` is a positive integer.
+    Returns ``None`` for empty/absent input so the listing falls back to
+    aggregate ``beds`` / ``bedrooms`` display.
+    """
+    if not value:
+        return None
+    allowed_types = {str(bed_type) for bed_type in BedType}
+    result: list[dict] = []
+    for idx, room in enumerate(value):
+        if not isinstance(room, dict):
+            raise ValueError(
+                f"sleeping_arrangements[{idx}] must be an object"
+            )
+        beds = room.get("beds")
+        if not isinstance(beds, list):
+            raise ValueError(
+                f"sleeping_arrangements[{idx}].beds must be a list"
+            )
+        validated_beds: list[dict] = []
+        for bed in beds:
+            if not isinstance(bed, dict):
+                raise ValueError(
+                    f"sleeping_arrangements[{idx}].beds entries must be objects"
+                )
+            bed_type = str(bed.get("type", "")).upper()
+            if bed_type not in allowed_types:
+                raise ValueError(
+                    f"Unknown bed type '{bed.get('type')}'. "
+                    f"Allowed: {', '.join(sorted(allowed_types))}"
+                )
+            count = bed.get("count", 0)
+            if not isinstance(count, int) or count < 1:
+                raise ValueError(
+                    f"sleeping_arrangements[{idx}] bed count must be >= 1"
+                )
+            validated_beds.append({"type": bed_type, "count": count})
+        result.append({"beds": validated_beds})
+    return result
 
 
 class ListingCreate(BaseModel):
@@ -74,6 +120,7 @@ class ListingCreate(BaseModel):
     check_out_time: str | None = Field(None, max_length=5)
     pre_arrival_info_release_hours: int | None = Field(None, ge=0)
     policies: str | None = None
+    sleeping_arrangements: list[dict] | None = None
     country: str = Field(default="Egypt", min_length=1, max_length=100)
     currency: str = Field(default="EGP", min_length=3, max_length=3)
     cover_photo_id: str | None = None
@@ -120,6 +167,11 @@ class ListingCreate(BaseModel):
     def validate_self_check_in_methods(cls, v: list[str]) -> list[str]:
         return _validate_self_check_in_methods(v)
 
+    @field_validator("sleeping_arrangements")
+    @classmethod
+    def validate_sleeping_arrangements(cls, v: list[dict] | None) -> list[dict] | None:
+        return _validate_sleeping_arrangements(v)
+
     @model_validator(mode="after")
     def validate_nights(self) -> "ListingCreate":
         if self.min_nights > self.max_nights:
@@ -164,6 +216,7 @@ class ListingUpdate(BaseModel):
     check_out_time: str | None = Field(None, max_length=5)
     pre_arrival_info_release_hours: int | None = Field(None, ge=0)
     policies: str | None = None
+    sleeping_arrangements: list[dict] | None = None
     country: str | None = Field(None, min_length=1, max_length=100)
     currency: str | None = Field(None, min_length=3, max_length=3)
     cover_photo_id: str | None = None
@@ -210,6 +263,13 @@ class ListingUpdate(BaseModel):
         if v is None:
             return v
         return _validate_self_check_in_methods(v)
+
+    @field_validator("sleeping_arrangements")
+    @classmethod
+    def validate_update_sleeping_arrangements(
+        cls, v: list[dict] | None
+    ) -> list[dict] | None:
+        return _validate_sleeping_arrangements(v)
 
     @field_validator("property_type", "category", "cancellation_policy", mode="before")
     @classmethod
@@ -277,6 +337,7 @@ class ListingResponse(BaseModel):
     check_out_time: str | None = None
     pre_arrival_info_release_hours: int | None = None
     policies: str | None
+    sleeping_arrangements: list[dict] | None = None
     cover_image: str | None = None
     average_rating: float | None = None
     review_count: int = 0

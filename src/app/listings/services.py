@@ -124,6 +124,7 @@ def _to_listing_response(
         check_out_time=listing.check_out_time,
         pre_arrival_info_release_hours=listing.pre_arrival_info_release_hours,
         policies=listing.policies,
+        sleeping_arrangements=listing.sleeping_arrangements,
         base_price_egp=listing.base_price_egp,
         cleaning_fee_egp=listing.cleaning_fee_egp,
         cancellation_policy=listing.cancellation_policy,

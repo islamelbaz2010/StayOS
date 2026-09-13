@@ -61,6 +61,7 @@ export interface ListingDetail extends Listing {
   selfCheckIn: boolean;
   selfCheckInMethods: string[];
   accessibilityFeatures: string[];
+  sleepingArrangements: Array<{ beds: Array<{ type: string; count: number }> }> | null;
   category: string;
   lat: number;
   lng: number;
@@ -105,6 +106,7 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     selfCheckIn: item.self_check_in ?? false,
     selfCheckInMethods: item.self_check_in_methods ?? [],
     accessibilityFeatures: item.accessibility_features ?? [],
+    sleepingArrangements: (item.sleeping_arrangements as Array<{ beds: Array<{ type: string; count: number }> }> | null) ?? null,
     lat: item.lat,
     lng: item.lng,
     district: item.district,

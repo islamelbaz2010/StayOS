@@ -28,6 +28,21 @@ const CATEGORIES = [
   { value: "SHARED_ROOM", labelKey: "sharedRoom" },
 ];
 
+const BED_TYPES = [
+  "SINGLE",
+  "DOUBLE",
+  "QUEEN",
+  "KING",
+  "SOFA_BED",
+  "BUNK_BED",
+  "AIR_MATTRESS",
+  "CRIB",
+  "FLOOR_MATTRESS",
+  "TODDLER_BED",
+  "WATER_BED",
+  "HAMMOCK",
+];
+
 const CANCELLATION_POLICIES = [
   { value: "FLEXIBLE", labelKey: "flexible" },
   { value: "MODERATE", labelKey: "moderate" },
@@ -147,6 +162,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     check_in_time: existingListing?.check_in_time ?? "",
     check_out_time: existingListing?.check_out_time ?? "",
     policies: existingListing?.policies ?? "",
+    sleeping_arrangements: existingListing?.sleeping_arrangements ?? null,
     country: existingListing?.country ?? "Egypt",
     currency: existingListing?.currency ?? "EGP",
     is_draft: true,
@@ -264,6 +280,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     check_in_time: form.check_in_time || undefined,
     check_out_time: form.check_out_time || undefined,
     policies: form.policies || undefined,
+    sleeping_arrangements: form.sleeping_arrangements || undefined,
     country: form.country,
     currency: form.currency,
   });
@@ -609,6 +626,116 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             />
           </div>
         </div>
+      </section>
+
+      {/* Sleeping arrangements */}
+      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+        <h2 className="mb-1 text-lg font-semibold text-brand-900">
+          {t("sleepingArrangements")}
+        </h2>
+        <p className="mb-4 text-sm text-neutral-500">
+          {t("sleepingArrangementsHint")}
+        </p>
+        {(form.sleeping_arrangements ?? []).map((room, idx) => (
+          <div key={idx} className="mb-3 rounded-lg border border-neutral-200 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-medium text-neutral-700">
+                {t("bedroomLabel", { number: idx + 1 })}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = [...(form.sleeping_arrangements ?? [])];
+                  next.splice(idx, 1);
+                  update("sleeping_arrangements", next.length ? next : null);
+                }}
+                className="text-sm text-danger-600 hover:text-danger-700"
+              >
+                {t("removeBedroom")}
+              </button>
+            </div>
+            {(room.beds ?? []).map((bed, bidx) => (
+              <div key={bidx} className="mb-2 flex items-center gap-2">
+                <select
+                  value={bed.type}
+                  onChange={(e) => {
+                    const next = [...(form.sleeping_arrangements ?? [])];
+                    next[idx] = {
+                      ...next[idx],
+                      beds: next[idx].beds.map((b, i) =>
+                        i === bidx ? { ...b, type: e.target.value } : b
+                      ),
+                    };
+                    update("sleeping_arrangements", next);
+                  }}
+                  className="input flex-1 text-sm"
+                >
+                  {BED_TYPES.map((bt) => (
+                    <option key={bt} value={bt}>
+                      {t(`bedType.${bt.toLowerCase()}`, { count: 1 })}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  value={bed.count}
+                  onChange={(e) => {
+                    const next = [...(form.sleeping_arrangements ?? [])];
+                    next[idx] = {
+                      ...next[idx],
+                      beds: next[idx].beds.map((b, i) =>
+                        i === bidx
+                          ? { ...b, count: parseInt(e.target.value) || 1 }
+                          : b
+                      ),
+                    };
+                    update("sleeping_arrangements", next);
+                  }}
+                  className="input w-20 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = [...(form.sleeping_arrangements ?? [])];
+                    next[idx] = {
+                      ...next[idx],
+                      beds: next[idx].beds.filter((_, i) => i !== bidx),
+                    };
+                    update("sleeping_arrangements", next);
+                  }}
+                  className="text-sm text-danger-600 hover:text-danger-700"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                const next = [...(form.sleeping_arrangements ?? [])];
+                next[idx] = {
+                  ...next[idx],
+                  beds: [...next[idx].beds, { type: "QUEEN", count: 1 }],
+                };
+                update("sleeping_arrangements", next);
+              }}
+              className="text-sm font-medium text-accent-600 hover:text-accent-700"
+            >
+              {t("addBed")}
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => {
+            const next = [...(form.sleeping_arrangements ?? []), { beds: [{ type: "QUEEN", count: 1 }] }];
+            update("sleeping_arrangements", next);
+          }}
+          className="text-sm font-medium text-accent-600 hover:text-accent-700"
+        >
+          {t("addBedroom")}
+        </button>
       </section>
 
       {/* Amenities */}

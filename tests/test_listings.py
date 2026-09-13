@@ -1108,3 +1108,98 @@ async def test_calculate_host_response_metrics_unresponded_inquiry() -> None:
     assert rate == 50
     # Only one response time → median is 1.0.
     assert hours == 1.0
+
+
+def test_sleeping_arrangements_validator_rejects_unknown_bed_type() -> None:
+    """Unknown bed types must be rejected at the contract boundary."""
+    from app.listings.schemas import ListingCreate
+
+    with pytest.raises(ValidationError):
+        ListingCreate(
+            property_type="APARTMENT",
+            lat=30.0,
+            lng=31.0,
+            governorate="Cairo",
+            city="Cairo",
+            max_guests=4,
+            bedrooms=2,
+            bathrooms=1,
+            title_ar="test",
+            description_ar="test",
+            base_price_egp=500,
+            sleeping_arrangements=[
+                {"beds": [{"type": "QUEEN", "count": 1}]},
+                {"beds": [{"type": "MAGIC_BED", "count": 1}]},
+            ],
+        )
+
+
+def test_sleeping_arrangements_validator_accepts_valid_input() -> None:
+    """Valid per-bedroom bed configurations pass validation."""
+    from app.listings.schemas import ListingCreate
+
+    listing = ListingCreate(
+        property_type="APARTMENT",
+        lat=30.0,
+        lng=31.0,
+        governorate="Cairo",
+        city="Cairo",
+        max_guests=4,
+        bedrooms=2,
+        bathrooms=1,
+        title_ar="test",
+        description_ar="test",
+        base_price_egp=500,
+        sleeping_arrangements=[
+            {"beds": [{"type": "queen", "count": 1}]},
+            {"beds": [{"type": "single", "count": 2}]},
+        ],
+    )
+    assert listing.sleeping_arrangements is not None
+    assert len(listing.sleeping_arrangements) == 2
+    # Bed types are normalized to uppercase.
+    assert listing.sleeping_arrangements[0]["beds"][0]["type"] == "QUEEN"
+
+
+def test_sleeping_arrangements_validator_rejects_zero_count() -> None:
+    """Bed count must be >= 1."""
+    from app.listings.schemas import ListingCreate
+
+    with pytest.raises(ValidationError):
+        ListingCreate(
+            property_type="APARTMENT",
+            lat=30.0,
+            lng=31.0,
+            governorate="Cairo",
+            city="Cairo",
+            max_guests=4,
+            bedrooms=1,
+            bathrooms=1,
+            title_ar="test",
+            description_ar="test",
+            base_price_egp=500,
+            sleeping_arrangements=[
+                {"beds": [{"type": "QUEEN", "count": 0}]},
+            ],
+        )
+
+
+def test_sleeping_arrangements_validator_none_when_empty() -> None:
+    """Empty or absent sleeping arrangements normalize to None."""
+    from app.listings.schemas import ListingCreate
+
+    listing = ListingCreate(
+        property_type="APARTMENT",
+        lat=30.0,
+        lng=31.0,
+        governorate="Cairo",
+        city="Cairo",
+        max_guests=4,
+        bedrooms=2,
+        bathrooms=1,
+        title_ar="test",
+        description_ar="test",
+        base_price_egp=500,
+        sleeping_arrangements=[],
+    )
+    assert listing.sleeping_arrangements is None

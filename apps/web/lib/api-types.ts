@@ -2541,6 +2541,10 @@ export interface components {
       pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies?: string | null;
+      /** Sleeping Arrangements */
+      sleeping_arrangements?: {
+          [key: string]: unknown;
+        }[] | null;
       /**
        * Country
        * @default Egypt
@@ -2684,6 +2688,10 @@ export interface components {
       pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies: string | null;
+      /** Sleeping Arrangements */
+      sleeping_arrangements?: {
+          [key: string]: unknown;
+        }[] | null;
       /** Cover Image */
       cover_image?: string | null;
       /** Average Rating */
@@ -2848,6 +2856,10 @@ export interface components {
       pre_arrival_info_release_hours?: number | null;
       /** Policies */
       policies?: string | null;
+      /** Sleeping Arrangements */
+      sleeping_arrangements?: {
+          [key: string]: unknown;
+        }[] | null;
       /** Country */
       country?: string | null;
       /** Currency */

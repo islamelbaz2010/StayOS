@@ -93,3 +93,25 @@ class SelfCheckInMethod(StrEnum):
     SMART_LOCK = "SMART_LOCK"
     KEYPAD = "KEYPAD"
     BUILDING_STAFF = "BUILDING_STAFF"
+
+
+class BedType(StrEnum):
+    """Standard hospitality bed-type vocabulary for sleeping arrangements.
+
+    Matches the Airbnb bed-type taxonomy used in the sleeping-arrangements
+    UI. Stored as ``type`` in each ``{type, count}`` entry of the
+    ``sleeping_arrangements`` JSONB column.
+    """
+
+    SINGLE = "SINGLE"
+    DOUBLE = "DOUBLE"
+    QUEEN = "QUEEN"
+    KING = "KING"
+    SOFA_BED = "SOFA_BED"
+    BUNK_BED = "BUNK_BED"
+    AIR_MATTRESS = "AIR_MATTRESS"
+    CRIB = "CRIB"
+    FLOOR_MATTRESS = "FLOOR_MATTRESS"
+    TODDLER_BED = "TODDLER_BED"
+    WATER_BED = "WATER_BED"
+    HAMMOCK = "HAMMOCK"

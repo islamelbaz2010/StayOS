@@ -253,6 +253,78 @@ def test_search_listings_discovery_filters_default_to_none(
     assert captured.get("host_language") is None
 
 
+def test_search_listings_accepts_category_filter(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    """Type-of-place (category) filter reaches the search layer."""
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["category"] = filters.category
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get(
+        "/api/v1/listings?category=ENTIRE_PLACE,PRIVATE_ROOM"
+    )
+    assert response.status_code == 200
+    assert captured.get("category") == "ENTIRE_PLACE,PRIVATE_ROOM"
+
+
+def test_search_listings_category_defaults_to_none(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    """Absent category filter must stay None so it never narrows results."""
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["category"] = filters.category
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get("/api/v1/listings?city=Cairo")
+    assert response.status_code == 200
+    assert captured.get("category") is None
+
+
+def test_search_result_includes_category() -> None:
+    """ListingSearchResult must expose the listing category field."""
+    from app.listings.schemas import ListingSearchResult
+
+    result = ListingSearchResult(
+        id="test-id",
+        title_ar="اختبار",
+        title_en="Test",
+        title="Test",
+        description="A test listing",
+        property_type="APARTMENT",
+        category="PRIVATE_ROOM",
+        city="Cairo",
+        governorate="Cairo",
+        country="Egypt",
+        base_price_egp=500,
+        price=500,
+        currency="EGP",
+        lat=30.0,
+        lng=31.0,
+        max_guests=4,
+        bedrooms=2,
+        bathrooms=1,
+        amenities=["wifi"],
+        cultural_tags=[],
+        house_rules=None,
+    )
+    assert result.category == "PRIVATE_ROOM"
+
+
 def test_listing_create_rejects_unknown_accessibility_feature() -> None:
     from app.listings.schemas import ListingCreate
 

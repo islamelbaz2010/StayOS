@@ -144,9 +144,16 @@ export default function ListingDetailPage() {
 
             <header className="mb-6 sm:mb-8">
               <div className="flex items-start justify-between gap-4">
-                <h1 className="break-words text-balance text-2xl font-bold text-brand-900 sm:text-3xl lg:text-4xl">
-                  {listing.title}
-                </h1>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-neutral-500">
+                    {t(`categoryLabel.${listing.category.toLowerCase()}`, {
+                      default: listing.category.replace(/_/g, " ").toLowerCase(),
+                    })}
+                  </p>
+                  <h1 className="break-words text-balance text-2xl font-bold text-brand-900 sm:text-3xl lg:text-4xl">
+                    {listing.title}
+                  </h1>
+                </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"

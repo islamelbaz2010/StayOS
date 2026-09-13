@@ -16,6 +16,7 @@ export interface Listing {
   governorate: string;
   country: string;
   propertyType: string;
+  category?: string;
   price: number;
   currency: string;
   maxGuests: number;
@@ -96,6 +97,13 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
         </div>
 
         <div className="p-4">
+          {listing.category && (
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
+              {t(`categoryLabel.${listing.category.toLowerCase()}`, {
+                default: listing.category.replace(/_/g, " ").toLowerCase(),
+              })}
+            </p>
+          )}
           <div className="flex items-start justify-between gap-2">
             <h2 className="text-lg font-semibold text-neutral-900 line-clamp-1">
               {listing.title}

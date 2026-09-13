@@ -320,6 +320,8 @@
     "filters": "عوامل التصفية",
     "propertyType": "نوع العقار",
     "anyType": "أي نوع",
+    "category": "نوع المكان",
+    "anyCategory": "أي",
     "any": "أي",
     "minPrice": "أقل سعر",
     "maxPrice": "أعلى سعر",
@@ -433,6 +435,11 @@
       "townhouse": "تاون هاوس",
       "hotel_room": "غرفة فندقية",
       "resort_unit": "وحدة منتجع"
+    },
+    "categoryLabel": {
+      "entire_place": "مكان بالكامل",
+      "private_room": "غرفة خاصة",
+      "shared_room": "غرفة مشتركة"
     },
     "reviews": "{count} تقييم",
     "noReviews": "لا توجد تقييمات بعد",

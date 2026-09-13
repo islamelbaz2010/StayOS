@@ -2718,6 +2718,11 @@ export interface components {
       description: string;
       /** Property Type */
       property_type: string;
+      /**
+       * Category
+       * @default ENTIRE_PLACE
+       */
+      category?: string;
       /** City */
       city: string;
       /** Governorate */
@@ -4621,6 +4626,7 @@ export interface operations {
         beds?: number | null;
         bathrooms?: number | null;
         property_type?: string | null;
+        category?: string | null;
         cultural_tags?: string | null;
         amenities?: string | null;
         free_cancellation?: boolean | null;

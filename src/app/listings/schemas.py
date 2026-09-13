@@ -293,6 +293,7 @@ class ListingSearchResult(BaseModel):
     title: str
     description: str
     property_type: str
+    category: str = "ENTIRE_PLACE"
     city: str
     governorate: str
     country: str
@@ -383,6 +384,7 @@ class ListingSearchFilters(BaseModel):
     beds: int | None = Field(None, ge=0)
     bathrooms: int | None = Field(None, ge=0)
     property_type: str | None = None
+    category: str | None = None
     cultural_tags: str | None = None
     amenities: str | None = None
     free_cancellation: bool | None = None

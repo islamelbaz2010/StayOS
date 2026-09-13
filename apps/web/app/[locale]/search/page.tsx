@@ -26,6 +26,12 @@ const PROPERTY_TYPES = [
   "RESORT_UNIT",
 ];
 
+const LISTING_CATEGORIES = [
+  "ENTIRE_PLACE",
+  "PRIVATE_ROOM",
+  "SHARED_ROOM",
+];
+
 const CULTURAL_TAGS = [
   { value: "FAMILY_ONLY", key: "familyOnly" },
   { value: "HALAL_CERTIFIED", key: "halalCertified" },
@@ -86,6 +92,7 @@ export default function SearchPage() {
       checkout: searchParams.get("checkout") || undefined,
       guests: searchParams.get("guests") || undefined,
       property_type: searchParams.get("property_type") || undefined,
+      category: searchParams.get("category") || undefined,
       cultural_tags: searchParams.get("cultural_tags") || undefined,
       min_price: searchParams.get("min_price") || undefined,
       max_price: searchParams.get("max_price") || undefined,
@@ -188,6 +195,7 @@ export default function SearchPage() {
 
   const hasActiveFilters = Boolean(
     filters.property_type ||
+      filters.category ||
       filters.min_price ||
       filters.max_price ||
       filters.bedrooms ||
@@ -318,6 +326,27 @@ export default function SearchPage() {
               ))}
             </select>
           </div>
+          <div className="min-w-36 flex-1 sm:flex-none">
+            <label
+              htmlFor="filter-category"
+              className="block text-xs font-medium text-neutral-500"
+            >
+              {t("search.category")}
+            </label>
+            <select
+              id="filter-category"
+              value={filters.category ?? ""}
+              onChange={(e) => updateParam("category", e.target.value)}
+              className="input mt-1 w-full text-sm"
+            >
+              <option value="">{t("search.anyCategory")}</option>
+              {LISTING_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {t(`listing.categoryLabel.${cat.toLowerCase()}`)}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="w-28">
             <label
               htmlFor="filter-min-price"
@@ -421,6 +450,7 @@ export default function SearchPage() {
               onClick={() => {
                 const nextParams = new URLSearchParams(searchParams.toString());
                 nextParams.delete("property_type");
+                nextParams.delete("category");
                 nextParams.delete("min_price");
                 nextParams.delete("max_price");
                 nextParams.delete("bedrooms");

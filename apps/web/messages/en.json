@@ -320,6 +320,8 @@
     "filters": "Filters",
     "propertyType": "Property type",
     "anyType": "Any type",
+    "category": "Type of place",
+    "anyCategory": "Any",
     "any": "Any",
     "minPrice": "Min price",
     "maxPrice": "Max price",
@@ -433,6 +435,11 @@
       "townhouse": "Townhouse",
       "hotel_room": "Hotel Room",
       "resort_unit": "Resort Unit"
+    },
+    "categoryLabel": {
+      "entire_place": "Entire place",
+      "private_room": "Private room",
+      "shared_room": "Shared room"
     },
     "reviews": "{count} reviews",
     "noReviews": "No reviews yet",

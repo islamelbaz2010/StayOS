@@ -160,6 +160,7 @@ def _to_search_result(
         "title": _resolve_title(listing),
         "description": _resolve_description(listing),
         "property_type": unit.property_type,
+        "category": listing.category,
         "city": unit.city,
         "governorate": unit.governorate,
         "country": listing.country,

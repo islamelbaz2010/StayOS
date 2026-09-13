@@ -221,6 +221,11 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
         if types:
             stmt = stmt.where(Unit.property_type.in_(types))
 
+    if filters.category:
+        categories = [c.strip().upper() for c in filters.category.split(",") if c.strip()]
+        if categories:
+            stmt = stmt.where(UnitListing.category.in_(categories))
+
     if filters.guests is not None:
         stmt = stmt.where(Unit.max_guests >= filters.guests)
 

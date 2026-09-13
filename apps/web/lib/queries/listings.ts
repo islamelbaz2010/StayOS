@@ -10,6 +10,7 @@ export interface SearchFilters {
   checkout?: string;
   guests?: string;
   property_type?: string;
+  category?: string;
   cultural_tags?: string;
   min_price?: string;
   max_price?: string;
@@ -59,6 +60,7 @@ export interface ListingDetail extends Listing {
   selfCheckIn: boolean;
   selfCheckInMethods: string[];
   accessibilityFeatures: string[];
+  category: string;
   lat: number;
   lng: number;
   district: string | null;
@@ -75,6 +77,7 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     governorate: item.governorate,
     country: item.country,
     propertyType: item.property_type,
+    category: item.category ?? "ENTIRE_PLACE",
     price: item.price,
     currency: item.currency,
     maxGuests: item.max_guests,
@@ -117,6 +120,7 @@ function mapSearchResult(item: ApiSearchResult): Listing {
     governorate: item.governorate,
     country: item.country,
     propertyType: item.property_type,
+    category: item.category ?? "ENTIRE_PLACE",
     price: item.price,
     currency: item.currency,
     maxGuests: item.max_guests,
@@ -143,6 +147,7 @@ export function useListings(filters: SearchFilters) {
   if (filters.checkout) queryParams.check_out = filters.checkout;
   if (filters.guests) queryParams.guests = filters.guests;
   if (filters.property_type) queryParams.property_type = filters.property_type;
+  if (filters.category) queryParams.category = filters.category;
   if (filters.cultural_tags) queryParams.cultural_tags = filters.cultural_tags;
   if (filters.min_price) queryParams.min_price = filters.min_price;
   if (filters.max_price) queryParams.max_price = filters.max_price;
@@ -180,6 +185,7 @@ function buildSearchQueryParams(filters: SearchFilters) {
   if (filters.checkout) queryParams.check_out = filters.checkout;
   if (filters.guests) queryParams.guests = filters.guests;
   if (filters.property_type) queryParams.property_type = filters.property_type;
+  if (filters.category) queryParams.category = filters.category;
   if (filters.cultural_tags) queryParams.cultural_tags = filters.cultural_tags;
   if (filters.min_price) queryParams.min_price = filters.min_price;
   if (filters.max_price) queryParams.max_price = filters.max_price;

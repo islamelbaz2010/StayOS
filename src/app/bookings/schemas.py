@@ -98,6 +98,10 @@ class BookingResponse(BaseModel):
     guest_kyc_status: str | None = None
     guest_member_since: datetime | None = None
     guest_reviews_count: int | None = None
+    # Average rating from host reviews of this guest (Airbnb shows this
+    # to hosts as a guest trust signal). None when the guest has no
+    # host-written reviews or the viewer is not an authorized host.
+    guest_average_rating: float | None = None
 
 
 class StayHostInfo(BaseModel):

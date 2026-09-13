@@ -310,6 +310,12 @@ export function HostBookingDetail({
                   {t("guestReviewsCount", { count: booking.guest_reviews_count })}
                 </p>
               )}
+            {booking.guest_average_rating != null &&
+              booking.guest_average_rating > 0 && (
+                <p className="text-xs text-neutral-500">
+                  {t("guestAverageRating", { rating: booking.guest_average_rating })}
+                </p>
+              )}
           </div>
         </div>
       )}

@@ -122,6 +122,7 @@ def _to_response(
     guest_kyc_status: str | None = None,
     guest_member_since: datetime | None = None,
     guest_reviews_count: int | None = None,
+    guest_average_rating: float | None = None,
 ) -> BookingResponse:
     host_id: str | None = None
     unit_title: str | None = None
@@ -162,6 +163,7 @@ def _to_response(
         guest_kyc_status=guest_kyc_status,
         guest_member_since=guest_member_since,
         guest_reviews_count=guest_reviews_count,
+        guest_average_rating=guest_average_rating,
     )
 
 
@@ -890,6 +892,7 @@ async def get_booking(
     guest_kyc_status: str | None = None
     guest_member_since: datetime | None = None
     guest_reviews_count: int | None = None
+    guest_average_rating: float | None = None
     if scope is not None:
         guest_result = await session.execute(
             select(User).where(User.id == booking.guest_id)
@@ -904,6 +907,11 @@ async def get_booking(
         guest_reviews_count = await reviews_repository.count_reviews_by_guest(
             session, booking.guest_id
         )
+        guest_average_rating, _ = (
+            await reviews_repository.get_guest_rating_aggregate(
+                session, booking.guest_id
+            )
+        )
     return _to_response(
         booking,
         permission_scope=scope,
@@ -911,6 +919,7 @@ async def get_booking(
         guest_kyc_status=guest_kyc_status,
         guest_member_since=guest_member_since,
         guest_reviews_count=guest_reviews_count,
+        guest_average_rating=guest_average_rating,
     )
 
 
@@ -986,6 +995,9 @@ async def list_host_bookings(
     reviews_count_map = await reviews_repository.count_reviews_by_guests(
         session, list(guest_ids)
     )
+    rating_map = await reviews_repository.get_guest_rating_aggregates(
+        session, list(guest_ids)
+    )
     return [
         _to_response(
             booking,
@@ -994,6 +1006,7 @@ async def list_host_bookings(
             guest_kyc_status=booking.guest.kyc_status if booking.guest else None,
             guest_member_since=booking.guest.created_at if booking.guest else None,
             guest_reviews_count=reviews_count_map.get(booking.guest_id, 0),
+            guest_average_rating=rating_map.get(booking.guest_id, (None, 0))[0],
         )
         for booking in bookings
     ]

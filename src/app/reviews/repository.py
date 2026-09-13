@@ -233,3 +233,26 @@ async def get_guest_rating_aggregate(
     )
     avg_rating, count = result.one()
     return (round(float(avg_rating), 2) if avg_rating is not None else None, count or 0)
+
+
+async def get_guest_rating_aggregates(
+    session: AsyncSession, guest_ids: list[str]
+) -> dict[str, tuple[float | None, int]]:
+    """Batch average rating + count of host reviews per guest."""
+    if not guest_ids:
+        return {}
+    result = await session.execute(
+        select(Review.guest_id, func.avg(Review.rating), func.count(Review.id))
+        .where(
+            Review.guest_id.in_(guest_ids),
+            Review.reviewer_role == "host",
+        )
+        .group_by(Review.guest_id)
+    )
+    return {
+        guest_id: (
+            round(float(avg), 2) if avg is not None else None,
+            count or 0,
+        )
+        for guest_id, avg, count in result.all()
+    }

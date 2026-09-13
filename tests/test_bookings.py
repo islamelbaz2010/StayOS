@@ -2013,6 +2013,11 @@ async def test_get_booking_host_receives_guest_trust_fields(
         "app.reviews.repository.count_reviews_by_guest",
         AsyncMock(return_value=3),
     )
+    # Stub the guest rating aggregate (avg rating, count)
+    monkeypatch.setattr(
+        "app.reviews.repository.get_guest_rating_aggregate",
+        AsyncMock(return_value=(4.5, 3)),
+    )
 
     response = await booking_services.get_booking(fake_session, host, booking.id)
 
@@ -2020,6 +2025,7 @@ async def test_get_booking_host_receives_guest_trust_fields(
     assert response.guest_kyc_status == "verified"
     assert response.guest_member_since is not None
     assert response.guest_reviews_count == 3
+    assert response.guest_average_rating == 4.5
     assert response.permission_scope == "owner"
 
 
@@ -2045,6 +2051,7 @@ async def test_get_booking_guest_does_not_receive_own_trust_fields(
     assert response.guest_kyc_status is None
     assert response.guest_member_since is None
     assert response.guest_reviews_count is None
+    assert response.guest_average_rating is None
     assert response.permission_scope is None
 
 

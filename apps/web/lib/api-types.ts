@@ -925,6 +925,8 @@ export interface components {
       guest_member_since?: string | null;
       /** Guest Reviews Count */
       guest_reviews_count?: number | null;
+      /** Guest Average Rating */
+      guest_average_rating?: number | null;
     };
     /**
      * BookingStatus

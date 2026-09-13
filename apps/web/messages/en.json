@@ -882,6 +882,7 @@
     "identityUnverified": "Identity not verified",
     "memberSince": "Member since {date}",
     "guestReviewsCount": "{count, plural, one {# review} other {# reviews}}",
+    "guestAverageRating": "Guest rating: {rating} / 5",
     "reviewGuest": "Review guest",
     "writeReview": "Write a review",
     "rating": "Rating",

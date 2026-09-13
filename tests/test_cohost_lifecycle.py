@@ -396,6 +396,10 @@ async def test_get_booking_viewable_by_any_cohost_scope(
         "app.reviews.repository.count_reviews_by_guest",
         AsyncMock(return_value=0),
     )
+    monkeypatch.setattr(
+        "app.reviews.repository.get_guest_rating_aggregate",
+        AsyncMock(return_value=(None, 0)),
+    )
     result = await booking_services.get_booking(fake_session, cohost, booking.id)
     assert result.id == booking.id
 

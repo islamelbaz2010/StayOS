@@ -24,8 +24,8 @@ class KycDocumentType(StrEnum):
 class SpokenLanguage(StrEnum):
     """ISO 639-1 codes a host can declare (DEC-019).
 
-    Scoped to the languages relevant to Egypt-inbound travel and the
-    Egypt-GCC corridor (DEC-002) rather than an open-ended language list.
+    Matches the Airbnb host-language filter vocabulary. Codes follow
+    ISO 639-1 where applicable; ``sign`` represents sign language.
     """
 
     AR = "ar"
@@ -36,3 +36,28 @@ class SpokenLanguage(StrEnum):
     IT = "it"
     ES = "es"
     TR = "tr"
+    ZH = "zh"
+    JA = "ja"
+    KO = "ko"
+    PT = "pt"
+    NL = "nl"
+    FI = "fi"
+    EL = "el"
+    HE = "he"
+    HI = "hi"
+    HU = "hu"
+    ID = "id"
+    MS = "ms"
+    SV = "sv"
+    TH = "th"
+    BE = "be"
+    BG = "bg"
+    GU = "gu"
+    HT = "ht"
+    FA = "fa"
+    PA = "pa"
+    TL = "tl"
+    UK = "uk"
+    UR = "ur"
+    VI = "vi"
+    SIGN = "sign"

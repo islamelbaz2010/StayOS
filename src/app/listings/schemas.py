@@ -4,7 +4,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .constants import AccessibilityFeature
+from .constants import AccessibilityFeature, SelfCheckInMethod
 
 
 def _validate_accessibility_features(values: list[str]) -> list[str]:
@@ -22,6 +22,18 @@ def _validate_accessibility_features(values: list[str]) -> list[str]:
             f"Allowed: {', '.join(sorted(allowed))}"
         )
     # Preserve host ordering but drop duplicates.
+    return list(dict.fromkeys(values))
+
+
+def _validate_self_check_in_methods(values: list[str]) -> list[str]:
+    """Reject unknown self check-in method codes (DEC-019)."""
+    allowed = {str(method) for method in SelfCheckInMethod}
+    unknown = [value for value in values if value not in allowed]
+    if unknown:
+        raise ValueError(
+            f"Unknown self check-in methods: {', '.join(sorted(unknown))}. "
+            f"Allowed: {', '.join(sorted(allowed))}"
+        )
     return list(dict.fromkeys(values))
 
 
@@ -47,6 +59,7 @@ class ListingCreate(BaseModel):
     cultural_tags: list[str] = Field(default_factory=list)
     allows_pets: bool = False
     self_check_in: bool = False
+    self_check_in_methods: list[str] = Field(default_factory=list)
     accessibility_features: list[str] = Field(default_factory=list)
     base_price_egp: int = Field(..., ge=100)
     cleaning_fee_egp: int = Field(default=0, ge=0)
@@ -86,6 +99,7 @@ class ListingCreate(BaseModel):
         "category",
         "cancellation_policy",
         "accessibility_features",
+        "self_check_in_methods",
         mode="before",
     )
     @classmethod
@@ -100,6 +114,11 @@ class ListingCreate(BaseModel):
     @classmethod
     def validate_accessibility_features(cls, v: list[str]) -> list[str]:
         return _validate_accessibility_features(v)
+
+    @field_validator("self_check_in_methods")
+    @classmethod
+    def validate_self_check_in_methods(cls, v: list[str]) -> list[str]:
+        return _validate_self_check_in_methods(v)
 
     @model_validator(mode="after")
     def validate_nights(self) -> "ListingCreate":
@@ -129,6 +148,7 @@ class ListingUpdate(BaseModel):
     cultural_tags: list[str] | None = None
     allows_pets: bool | None = None
     self_check_in: bool | None = None
+    self_check_in_methods: list[str] | None = None
     accessibility_features: list[str] | None = None
     base_price_egp: int | None = Field(None, ge=100)
     cleaning_fee_egp: int | None = Field(None, ge=0)
@@ -162,7 +182,11 @@ class ListingUpdate(BaseModel):
             return v.upper()
         return v
 
-    @field_validator("amenities", "cultural_tags", "accessibility_features", mode="before")
+    @field_validator(
+        "amenities", "cultural_tags", "accessibility_features",
+        "self_check_in_methods",
+        mode="before",
+    )
     @classmethod
     def uppercase_lists(cls, v: list[str] | None) -> list[str] | None:
         if isinstance(v, list):
@@ -177,6 +201,15 @@ class ListingUpdate(BaseModel):
         if v is None:
             return v
         return _validate_accessibility_features(v)
+
+    @field_validator("self_check_in_methods")
+    @classmethod
+    def validate_update_self_check_in_methods(
+        cls, v: list[str] | None
+    ) -> list[str] | None:
+        if v is None:
+            return v
+        return _validate_self_check_in_methods(v)
 
     @field_validator("property_type", "category", "cancellation_policy", mode="before")
     @classmethod
@@ -227,6 +260,7 @@ class ListingResponse(BaseModel):
     cultural_tags: list[str]
     allows_pets: bool = False
     self_check_in: bool = False
+    self_check_in_methods: list[str] = Field(default_factory=list)
     accessibility_features: list[str] = Field(default_factory=list)
     base_price_egp: int
     cleaning_fee_egp: int

@@ -50,13 +50,27 @@ const AMENITIES = [
 const ACCESSIBILITY_FEATURES = [
   { value: "STEP_FREE_ENTRANCE", key: "stepFreeEntrance" },
   { value: "WIDE_ENTRANCE", key: "wideEntrance" },
+  { value: "ACCESSIBLE_PARKING", key: "accessibleParking" },
+  { value: "STEP_FREE_PATH", key: "stepFreePath" },
   { value: "STEP_FREE_BEDROOM", key: "stepFreeBedroom" },
+  { value: "WIDE_BEDROOM", key: "wideBedroom" },
   { value: "ACCESSIBLE_BATHROOM", key: "accessibleBathroom" },
+  { value: "WIDE_BATHROOM", key: "wideBathroom" },
   { value: "SHOWER_GRAB_BAR", key: "showerGrabBar" },
+  { value: "TOILET_GRAB_BAR", key: "toiletGrabBar" },
+  { value: "STEP_FREE_SHOWER", key: "stepFreeShower" },
+  { value: "SHOWER_CHAIR", key: "showerChair" },
+  { value: "CEILING_HOIST", key: "ceilingHoist" },
 ];
 
 // Must match app.auth.constants.SpokenLanguage (DEC-019).
-const HOST_LANGUAGES = ["ar", "en", "fr", "de", "ru", "it", "es", "tr"];
+const HOST_LANGUAGES = [
+  "ar", "en", "fr", "de", "ru", "it", "es", "tr",
+  "zh", "ja", "ko", "pt", "nl", "fi", "el", "he",
+  "hi", "hu", "id", "ms", "sv", "th", "be", "bg",
+  "gu", "ht", "fa", "pa", "tl", "uk", "ur", "vi",
+  "sign",
+];
 
 export default function SearchPage() {
   const t = useTranslations();

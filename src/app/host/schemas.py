@@ -219,6 +219,7 @@ class HostListingDetail(BaseModel):
     cultural_tags: list[str] = Field(default_factory=list)
     allows_pets: bool = False
     self_check_in: bool = False
+    self_check_in_methods: list[str] = Field(default_factory=list)
     accessibility_features: list[str] = Field(default_factory=list)
     house_rules: str | None = None
     check_in_instructions: str | None = None

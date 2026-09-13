@@ -180,13 +180,28 @@
     "policies": "Additional Policies",
     "allowsPets": "Pets allowed",
     "selfCheckIn": "Self check-in available",
+    "selfCheckInMethods": "Self check-in methods",
+    "selfCheckInMethod": {
+      "lockbox": "Key lockbox",
+      "smartLock": "Smart lock",
+      "keypad": "Keypad",
+      "buildingStaff": "Building staff"
+    },
     "accessibilityFeatures": "Accessibility features",
     "accessibility": {
       "stepFreeEntrance": "Step-free entrance",
       "wideEntrance": "Wide entrance",
+      "accessibleParking": "Accessible parking spot",
+      "stepFreePath": "Step-free path to entrance",
       "stepFreeBedroom": "Step-free bedroom",
-      "accessibleBathroom": "Accessible bathroom",
-      "showerGrabBar": "Shower grab bar"
+      "wideBedroom": "Wide bedroom entrance",
+      "accessibleBathroom": "Step-free bathroom",
+      "wideBathroom": "Wide bathroom entrance",
+      "showerGrabBar": "Shower grab bar",
+      "toiletGrabBar": "Toilet grab bar",
+      "stepFreeShower": "Step-free shower",
+      "showerChair": "Shower or bath chair",
+      "ceilingHoist": "Ceiling or mobile hoist"
     },
     "placeholders": {
       "titleAr": "e.g. شقة فاخرة في المعادي",
@@ -347,9 +362,17 @@
     "accessibilityFeatures": {
       "stepFreeEntrance": "Step-free entrance",
       "wideEntrance": "Wide entrance",
+      "accessibleParking": "Accessible parking spot",
+      "stepFreePath": "Step-free path to entrance",
       "stepFreeBedroom": "Step-free bedroom",
-      "accessibleBathroom": "Accessible bathroom",
-      "showerGrabBar": "Shower grab bar"
+      "wideBedroom": "Wide bedroom entrance",
+      "accessibleBathroom": "Step-free bathroom",
+      "wideBathroom": "Wide bathroom entrance",
+      "showerGrabBar": "Shower grab bar",
+      "toiletGrabBar": "Toilet grab bar",
+      "stepFreeShower": "Step-free shower",
+      "showerChair": "Shower or bath chair",
+      "ceilingHoist": "Ceiling or mobile hoist"
     },
     "languages": {
       "ar": "Arabic",
@@ -359,7 +382,32 @@
       "ru": "Russian",
       "it": "Italian",
       "es": "Spanish",
-      "tr": "Turkish"
+      "tr": "Turkish",
+      "zh": "Chinese (Simplified)",
+      "ja": "Japanese",
+      "ko": "Korean",
+      "pt": "Portuguese",
+      "nl": "Dutch",
+      "fi": "Finnish",
+      "el": "Greek",
+      "he": "Hebrew",
+      "hi": "Hindi",
+      "hu": "Hungarian",
+      "id": "Indonesian",
+      "ms": "Malay",
+      "sv": "Swedish",
+      "th": "Thai",
+      "be": "Belarusian",
+      "bg": "Bulgarian",
+      "gu": "Gujarati",
+      "ht": "Haitian",
+      "fa": "Persian",
+      "pa": "Punjabi",
+      "tl": "Tagalog",
+      "uk": "Ukrainian",
+      "ur": "Urdu",
+      "vi": "Vietnamese",
+      "sign": "Sign language"
     }
   },
   "favorites": {
@@ -471,9 +519,23 @@
     "accessibilityFeatures": {
       "step_free_entrance": "Step-free entrance",
       "wide_entrance": "Wide entrance",
+      "accessible_parking": "Accessible parking spot",
+      "step_free_path": "Step-free path to entrance",
       "step_free_bedroom": "Step-free bedroom",
-      "accessible_bathroom": "Accessible bathroom",
-      "shower_grab_bar": "Shower grab bar"
+      "wide_bedroom": "Wide bedroom entrance",
+      "accessible_bathroom": "Step-free bathroom",
+      "wide_bathroom": "Wide bathroom entrance",
+      "shower_grab_bar": "Shower grab bar",
+      "toilet_grab_bar": "Toilet grab bar",
+      "step_free_shower": "Step-free shower",
+      "shower_chair": "Shower or bath chair",
+      "ceiling_hoist": "Ceiling or mobile hoist"
+    },
+    "selfCheckInMethods": {
+      "lockbox": "Key lockbox",
+      "smart_lock": "Smart lock",
+      "keypad": "Keypad",
+      "building_staff": "Building staff"
     },
     "hostLanguages": "Host languages",
     "languages": {
@@ -484,7 +546,32 @@
       "ru": "Russian",
       "it": "Italian",
       "es": "Spanish",
-      "tr": "Turkish"
+      "tr": "Turkish",
+      "zh": "Chinese (Simplified)",
+      "ja": "Japanese",
+      "ko": "Korean",
+      "pt": "Portuguese",
+      "nl": "Dutch",
+      "fi": "Finnish",
+      "el": "Greek",
+      "he": "Hebrew",
+      "hi": "Hindi",
+      "hu": "Hungarian",
+      "id": "Indonesian",
+      "ms": "Malay",
+      "sv": "Swedish",
+      "th": "Thai",
+      "be": "Belarusian",
+      "bg": "Bulgarian",
+      "gu": "Gujarati",
+      "ht": "Haitian",
+      "fa": "Persian",
+      "pa": "Punjabi",
+      "tl": "Tagalog",
+      "uk": "Ukrainian",
+      "ur": "Urdu",
+      "vi": "Vietnamese",
+      "sign": "Sign language"
     }
   },
   "trust": {

@@ -74,6 +74,7 @@ def _make_listing_response(user_id: str | None = None) -> ListingResponse:
         cultural_tags=["FAMILY_ONLY"],
         allows_pets=False,
         self_check_in=False,
+        self_check_in_methods=[],
         accessibility_features=[],
         host_languages=[],
         base_price_egp=1500,
@@ -294,6 +295,101 @@ def test_listing_create_normalizes_accessibility_features() -> None:
     # Booleans default to opt-out.
     assert listing.allows_pets is False
     assert listing.self_check_in is False
+    assert listing.self_check_in_methods == []
+
+
+def test_listing_create_rejects_unknown_self_check_in_method() -> None:
+    from pydantic import ValidationError
+
+    from app.listings.schemas import ListingCreate
+
+    with pytest.raises(ValidationError):
+        ListingCreate(
+            property_type="APARTMENT",
+            lat=30.0,
+            lng=31.0,
+            governorate="Cairo",
+            city="Cairo",
+            max_guests=2,
+            bedrooms=1,
+            bathrooms=1,
+            title_ar="شقة",
+            description_ar="وصف",
+            base_price_egp=500,
+            self_check_in_methods=["MAGIC_KEY"],
+        )
+
+
+def test_listing_create_normalizes_self_check_in_methods() -> None:
+    from app.listings.schemas import ListingCreate
+
+    listing = ListingCreate(
+        property_type="APARTMENT",
+        lat=30.0,
+        lng=31.0,
+        governorate="Cairo",
+        city="Cairo",
+        max_guests=2,
+        bedrooms=1,
+        bathrooms=1,
+        title_ar="شقة",
+        description_ar="وصف",
+        base_price_egp=500,
+        self_check_in_methods=["lockbox", "LOCKBOX", "smart_lock"],
+    )
+    assert listing.self_check_in_methods == ["LOCKBOX", "SMART_LOCK"]
+
+
+def test_listing_create_accepts_expanded_accessibility_vocabulary() -> None:
+    from app.listings.schemas import ListingCreate
+
+    listing = ListingCreate(
+        property_type="APARTMENT",
+        lat=30.0,
+        lng=31.0,
+        governorate="Cairo",
+        city="Cairo",
+        max_guests=2,
+        bedrooms=1,
+        bathrooms=1,
+        title_ar="شقة",
+        description_ar="وصف",
+        base_price_egp=500,
+        accessibility_features=[
+            "accessible_parking",
+            "step_free_path",
+            "wide_bedroom",
+            "wide_bathroom",
+            "toilet_grab_bar",
+            "step_free_shower",
+            "shower_chair",
+            "ceiling_hoist",
+        ],
+    )
+    assert listing.accessibility_features == [
+        "ACCESSIBLE_PARKING",
+        "STEP_FREE_PATH",
+        "WIDE_BEDROOM",
+        "WIDE_BATHROOM",
+        "TOILET_GRAB_BAR",
+        "STEP_FREE_SHOWER",
+        "SHOWER_CHAIR",
+        "CEILING_HOIST",
+    ]
+
+
+def test_host_profile_update_accepts_expanded_language_vocabulary() -> None:
+    from app.host.schemas import HostProfileUpdate
+
+    update = HostProfileUpdate(
+        languages=["zh", "ja", "ko", "pt", "nl", "fi", "el", "he",
+                    "hi", "hu", "id", "ms", "sv", "th", "be", "bg",
+                    "gu", "ht", "fa", "pa", "tl", "uk", "ur", "vi",
+                    "sign"]
+    )
+    assert "zh" in update.languages
+    assert "sign" in update.languages
+    assert len(update.languages) == 25
 
 
 def test_host_profile_update_rejects_unknown_language() -> None:
@@ -337,6 +433,7 @@ def test_get_listing_includes_discovery_fields(
     listing = _make_listing_response()
     listing.allows_pets = True
     listing.self_check_in = True
+    listing.self_check_in_methods = ["LOCKBOX", "SMART_LOCK"]
     listing.accessibility_features = ["STEP_FREE_ENTRANCE", "WIDE_ENTRANCE"]
     listing.host_languages = ["ar", "en"]
     monkeypatch.setattr(
@@ -348,6 +445,7 @@ def test_get_listing_includes_discovery_fields(
     data = response.json()
     assert data["allows_pets"] is True
     assert data["self_check_in"] is True
+    assert data["self_check_in_methods"] == ["LOCKBOX", "SMART_LOCK"]
     assert data["accessibility_features"] == ["STEP_FREE_ENTRANCE", "WIDE_ENTRANCE"]
     assert data["host_languages"] == ["ar", "en"]
 

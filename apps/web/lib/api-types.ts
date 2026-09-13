@@ -1816,6 +1816,8 @@ export interface components {
        * @default false
        */
       self_check_in?: boolean;
+      /** Self Check In Methods */
+      self_check_in_methods?: string[];
       /** Accessibility Features */
       accessibility_features?: string[];
       /** House Rules */
@@ -2491,6 +2493,8 @@ export interface components {
        * @default false
        */
       self_check_in?: boolean;
+      /** Self Check In Methods */
+      self_check_in_methods?: string[];
       /** Accessibility Features */
       accessibility_features?: string[];
       /** Base Price Egp */
@@ -2646,6 +2650,8 @@ export interface components {
        * @default false
        */
       self_check_in?: boolean;
+      /** Self Check In Methods */
+      self_check_in_methods?: string[];
       /** Accessibility Features */
       accessibility_features?: string[];
       /** Base Price Egp */
@@ -2800,6 +2806,8 @@ export interface components {
       allows_pets?: boolean | null;
       /** Self Check In */
       self_check_in?: boolean | null;
+      /** Self Check In Methods */
+      self_check_in_methods?: string[] | null;
       /** Accessibility Features */
       accessibility_features?: string[] | null;
       /** Base Price Egp */

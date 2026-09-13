@@ -57,6 +57,7 @@ export interface ListingDetail extends Listing {
   hostLanguages: string[];
   allowsPets: boolean;
   selfCheckIn: boolean;
+  selfCheckInMethods: string[];
   accessibilityFeatures: string[];
   lat: number;
   lng: number;
@@ -97,6 +98,7 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     hostLanguages: item.host_languages ?? [],
     allowsPets: item.allows_pets ?? false,
     selfCheckIn: item.self_check_in ?? false,
+    selfCheckInMethods: item.self_check_in_methods ?? [],
     accessibilityFeatures: item.accessibility_features ?? [],
     lat: item.lat,
     lng: item.lng,

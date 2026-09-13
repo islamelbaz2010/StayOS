@@ -382,9 +382,25 @@ export default function ListingDetailPage() {
                         </div>
                       )}
                       {listing.selfCheckIn && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">🔑</span>
-                          <span>{t("selfCheckIn")}</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🔑</span>
+                            <span>{t("selfCheckIn")}</span>
+                          </div>
+                          {listing.selfCheckInMethods.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1.5 pl-7">
+                              {listing.selfCheckInMethods.map((method) => (
+                                <span
+                                  key={method}
+                                  className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs"
+                                >
+                                  {t(`selfCheckInMethods.${method.toLowerCase()}`, {
+                                    default: method.replace(/_/g, " ").toLowerCase(),
+                                  })}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       {listing.accessibilityFeatures.length > 0 && (

@@ -51,6 +51,7 @@ async def create_listing(
         cultural_tags=request.cultural_tags,
         allows_pets=request.allows_pets,
         self_check_in=request.self_check_in,
+        self_check_in_methods=request.self_check_in_methods,
         accessibility_features=request.accessibility_features,
         house_rules=request.house_rules,
         check_in_instructions=request.check_in_instructions,

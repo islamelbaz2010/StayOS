@@ -109,6 +109,9 @@ class UnitListing(UUIDMixin, Base):
     self_check_in: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
+    self_check_in_methods: Mapped[list[str]] = mapped_column(
+        ARRAY(String), nullable=False, default=list
+    )
     accessibility_features: Mapped[list[str]] = mapped_column(
         ARRAY(String), nullable=False, default=list
     )

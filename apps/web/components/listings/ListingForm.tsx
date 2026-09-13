@@ -51,9 +51,25 @@ const COMMON_AMENITIES = [
 const ACCESSIBILITY_FEATURES = [
   { value: "STEP_FREE_ENTRANCE", labelKey: "stepFreeEntrance" },
   { value: "WIDE_ENTRANCE", labelKey: "wideEntrance" },
+  { value: "ACCESSIBLE_PARKING", labelKey: "accessibleParking" },
+  { value: "STEP_FREE_PATH", labelKey: "stepFreePath" },
   { value: "STEP_FREE_BEDROOM", labelKey: "stepFreeBedroom" },
+  { value: "WIDE_BEDROOM", labelKey: "wideBedroom" },
   { value: "ACCESSIBLE_BATHROOM", labelKey: "accessibleBathroom" },
+  { value: "WIDE_BATHROOM", labelKey: "wideBathroom" },
   { value: "SHOWER_GRAB_BAR", labelKey: "showerGrabBar" },
+  { value: "TOILET_GRAB_BAR", labelKey: "toiletGrabBar" },
+  { value: "STEP_FREE_SHOWER", labelKey: "stepFreeShower" },
+  { value: "SHOWER_CHAIR", labelKey: "showerChair" },
+  { value: "CEILING_HOIST", labelKey: "ceilingHoist" },
+];
+
+// Must match app.listings.constants.SelfCheckInMethod (DEC-019).
+const SELF_CHECK_IN_METHODS = [
+  { value: "LOCKBOX", labelKey: "lockbox" },
+  { value: "SMART_LOCK", labelKey: "smartLock" },
+  { value: "KEYPAD", labelKey: "keypad" },
+  { value: "BUILDING_STAFF", labelKey: "buildingStaff" },
 ];
 
 const EGYPT_GOVERNORATES = [
@@ -117,6 +133,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     cultural_tags: existingListing?.cultural_tags ?? [],
     allows_pets: existingListing?.allows_pets ?? false,
     self_check_in: existingListing?.self_check_in ?? false,
+    self_check_in_methods: existingListing?.self_check_in_methods ?? [],
     accessibility_features: existingListing?.accessibility_features ?? [],
     base_price_egp: existingListing?.base_price_egp ?? 500,
     cleaning_fee_egp: existingListing?.cleaning_fee_egp ?? 0,
@@ -178,6 +195,18 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     }
   };
 
+  const toggleSelfCheckInMethod = (method: string) => {
+    const current = form.self_check_in_methods ?? [];
+    if (current.includes(method)) {
+      update(
+        "self_check_in_methods",
+        current.filter((m) => m !== method)
+      );
+    } else {
+      update("self_check_in_methods", [...current, method]);
+    }
+  };
+
   const validate = (forSubmit = false): boolean => {
     const errs: Record<string, string> = {};
     if (!form.title_ar.trim()) errs.title_ar = t("errors.titleRequired");
@@ -220,6 +249,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     cultural_tags: form.cultural_tags,
     allows_pets: form.allows_pets,
     self_check_in: form.self_check_in,
+    self_check_in_methods: form.self_check_in_methods,
     accessibility_features: form.accessibility_features,
     base_price_egp: form.base_price_egp,
     cleaning_fee_egp: form.cleaning_fee_egp,
@@ -635,6 +665,35 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               <span className="text-neutral-700">{t("selfCheckIn")}</span>
             </label>
           </div>
+
+          {form.self_check_in && (
+            <div>
+              <p className="mb-2 text-sm font-medium text-neutral-700">
+                {t("selfCheckInMethods")}
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+                {SELF_CHECK_IN_METHODS.map((method) => {
+                  const checked = (form.self_check_in_methods ?? []).includes(method.value);
+                  return (
+                    <label
+                      key={method.value}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleSelfCheckInMethod(method.value)}
+                        className="h-4 w-4 rounded border-neutral-300 text-accent-600 focus:ring-accent-500"
+                      />
+                      <span className="text-neutral-700">
+                        {t(`selfCheckInMethod.${method.labelKey}`)}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div>
             <p className="mb-2 text-sm font-medium text-neutral-700">

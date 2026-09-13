@@ -30,6 +30,7 @@ export interface HostListing {
   cultural_tags: string[];
   allows_pets: boolean;
   self_check_in: boolean;
+  self_check_in_methods: string[];
   accessibility_features: string[];
   base_price_egp: number;
   cleaning_fee_egp: number;
@@ -71,6 +72,7 @@ export interface ListingCreateInput {
   cultural_tags?: string[];
   allows_pets?: boolean;
   self_check_in?: boolean;
+  self_check_in_methods?: string[];
   accessibility_features?: string[];
   base_price_egp: number;
   cleaning_fee_egp?: number;
@@ -109,6 +111,7 @@ export interface ListingUpdateInput {
   cultural_tags?: string[];
   allows_pets?: boolean;
   self_check_in?: boolean;
+  self_check_in_methods?: string[];
   accessibility_features?: string[];
   base_price_egp?: number;
   cleaning_fee_egp?: number;

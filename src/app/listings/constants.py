@@ -55,14 +55,41 @@ class CulturalTag(StrEnum):
 class AccessibilityFeature(StrEnum):
     """Structured accessibility features (DEC-019).
 
-    Deliberately small vocabulary covering the entrance/bedroom/bathroom
-    access dimensions. ``ELEVATOR`` is intentionally absent — it already
-    exists in the ``amenities`` vocabulary, and duplicating it across two
-    fields would make filtering ambiguous.
+    Matches the Airbnb accessibility filter vocabulary grouped by area:
+    guest entrance/parking, bedroom, bathroom, and adaptive equipment.
+    ``ELEVATOR`` is intentionally absent — it already exists in the
+    ``amenities`` vocabulary, and duplicating it across two fields would
+    make filtering ambiguous.
     """
 
+    # Guest entrance and parking
     STEP_FREE_ENTRANCE = "STEP_FREE_ENTRANCE"
     WIDE_ENTRANCE = "WIDE_ENTRANCE"
+    ACCESSIBLE_PARKING = "ACCESSIBLE_PARKING"
+    STEP_FREE_PATH = "STEP_FREE_PATH"
+    # Bedroom
     STEP_FREE_BEDROOM = "STEP_FREE_BEDROOM"
+    WIDE_BEDROOM = "WIDE_BEDROOM"
+    # Bathroom
     ACCESSIBLE_BATHROOM = "ACCESSIBLE_BATHROOM"
+    WIDE_BATHROOM = "WIDE_BATHROOM"
     SHOWER_GRAB_BAR = "SHOWER_GRAB_BAR"
+    TOILET_GRAB_BAR = "TOILET_GRAB_BAR"
+    STEP_FREE_SHOWER = "STEP_FREE_SHOWER"
+    SHOWER_CHAIR = "SHOWER_CHAIR"
+    # Adaptive equipment
+    CEILING_HOIST = "CEILING_HOIST"
+
+
+class SelfCheckInMethod(StrEnum):
+    """Self check-in access methods (DEC-019).
+
+    Matches the four Airbnb-documented self check-in access options.
+    Stored as a structured array so guests can see how they will access
+    the property without requiring a new access-control workflow.
+    """
+
+    LOCKBOX = "LOCKBOX"
+    SMART_LOCK = "SMART_LOCK"
+    KEYPAD = "KEYPAD"
+    BUILDING_STAFF = "BUILDING_STAFF"

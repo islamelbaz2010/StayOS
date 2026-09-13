@@ -180,13 +180,28 @@
     "policies": "سياسات إضافية",
     "allowsPets": "مسموح بالحيوانات الأليفة",
     "selfCheckIn": "تسجيل دخول ذاتي متاح",
+    "selfCheckInMethods": "طرق تسجيل الدخول الذاتي",
+    "selfCheckInMethod": {
+      "lockbox": "صندوق مفاتيح",
+      "smartLock": "قفل ذكي",
+      "keypad": "لوحة مفاتيح رقمية",
+      "buildingStaff": "موظفو المبنى"
+    },
     "accessibilityFeatures": "ميزات إمكانية الوصول",
     "accessibility": {
       "stepFreeEntrance": "مدخل بدون درجات",
       "wideEntrance": "مدخل واسع",
+      "accessibleParking": "موقف سيارات قابل للوصول",
+      "stepFreePath": "مسار بدون درجات للمدخل",
       "stepFreeBedroom": "غرفة نوم بدون درجات",
-      "accessibleBathroom": "حمام قابل للوصول",
-      "showerGrabBar": "ممساك دش"
+      "wideBedroom": "مدخل غرفة نوم واسع",
+      "accessibleBathroom": "حمام بدون درجات",
+      "wideBathroom": "مدخل حمام واسع",
+      "showerGrabBar": "ممساك دش",
+      "toiletGrabBar": "ممساك المرحاض",
+      "stepFreeShower": "دش بدون درجات",
+      "showerChair": "كرسي دش أو حوض",
+      "ceilingHoist": "رافعة سقفية أو متحركة"
     },
     "placeholders": {
       "titleAr": "مثال: شقة فاخرة في المعادي",
@@ -347,9 +362,17 @@
     "accessibilityFeatures": {
       "stepFreeEntrance": "مدخل بدون درجات",
       "wideEntrance": "مدخل واسع",
+      "accessibleParking": "موقف سيارات قابل للوصول",
+      "stepFreePath": "مسار بدون درجات للمدخل",
       "stepFreeBedroom": "غرفة نوم بدون درجات",
-      "accessibleBathroom": "حمام قابل للوصول",
-      "showerGrabBar": "ممساك دش"
+      "wideBedroom": "مدخل غرفة نوم واسع",
+      "accessibleBathroom": "حمام بدون درجات",
+      "wideBathroom": "مدخل حمام واسع",
+      "showerGrabBar": "ممساك دش",
+      "toiletGrabBar": "ممساك المرحاض",
+      "stepFreeShower": "دش بدون درجات",
+      "showerChair": "كرسي دش أو حوض",
+      "ceilingHoist": "رافعة سقفية أو متحركة"
     },
     "languages": {
       "ar": "العربية",
@@ -359,7 +382,32 @@
       "ru": "الروسية",
       "it": "الإيطالية",
       "es": "الإسبانية",
-      "tr": "التركية"
+      "tr": "التركية",
+      "zh": "الصينية (المبسطة)",
+      "ja": "اليابانية",
+      "ko": "الكورية",
+      "pt": "البرتغالية",
+      "nl": "الهولندية",
+      "fi": "الفنلندية",
+      "el": "اليونانية",
+      "he": "العبرية",
+      "hi": "الهندية",
+      "hu": "المجرية",
+      "id": "الإندونيسية",
+      "ms": "المالايوية",
+      "sv": "السويدية",
+      "th": "التايلاندية",
+      "be": "البيلاروسية",
+      "bg": "البلغارية",
+      "gu": "الغوجاراتية",
+      "ht": "الكريولية الهايتية",
+      "fa": "الفارسية",
+      "pa": "البنجابية",
+      "tl": "التاغالوغية",
+      "uk": "الأوكرانية",
+      "ur": "الأردية",
+      "vi": "الفيتنامية",
+      "sign": "لغة الإشارة"
     }
   },
   "favorites": {
@@ -471,9 +519,23 @@
     "accessibilityFeatures": {
       "step_free_entrance": "مدخل بدون درجات",
       "wide_entrance": "مدخل واسع",
+      "accessible_parking": "موقف سيارات قابل للوصول",
+      "step_free_path": "مسار بدون درجات للمدخل",
       "step_free_bedroom": "غرفة نوم بدون درجات",
-      "accessible_bathroom": "حمام قابل للوصول",
-      "shower_grab_bar": "ممساك دش"
+      "wide_bedroom": "مدخل غرفة نوم واسع",
+      "accessible_bathroom": "حمام بدون درجات",
+      "wide_bathroom": "مدخل حمام واسع",
+      "shower_grab_bar": "ممساك دش",
+      "toilet_grab_bar": "ممساك المرحاض",
+      "step_free_shower": "دش بدون درجات",
+      "shower_chair": "كرسي دش أو حوض",
+      "ceiling_hoist": "رافعة سقفية أو متحركة"
+    },
+    "selfCheckInMethods": {
+      "lockbox": "صندوق مفاتيح",
+      "smart_lock": "قفل ذكي",
+      "keypad": "لوحة مفاتيح رقمية",
+      "building_staff": "موظفو المبنى"
     },
     "hostLanguages": "لغات المضيف",
     "languages": {
@@ -484,7 +546,32 @@
       "ru": "الروسية",
       "it": "الإيطالية",
       "es": "الإسبانية",
-      "tr": "التركية"
+      "tr": "التركية",
+      "zh": "الصينية (المبسطة)",
+      "ja": "اليابانية",
+      "ko": "الكورية",
+      "pt": "البرتغالية",
+      "nl": "الهولندية",
+      "fi": "الفنلندية",
+      "el": "اليونانية",
+      "he": "العبرية",
+      "hi": "الهندية",
+      "hu": "المجرية",
+      "id": "الإندونيسية",
+      "ms": "المالايوية",
+      "sv": "السويدية",
+      "th": "التايلاندية",
+      "be": "البيلاروسية",
+      "bg": "البلغارية",
+      "gu": "الغوجاراتية",
+      "ht": "الكريولية الهايتية",
+      "fa": "الفارسية",
+      "pa": "البنجابية",
+      "tl": "التاغالوغية",
+      "uk": "الأوكرانية",
+      "ur": "الأردية",
+      "vi": "الفيتنامية",
+      "sign": "لغة الإشارة"
     }
   },
   "trust": {

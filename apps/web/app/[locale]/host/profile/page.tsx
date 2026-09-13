@@ -22,7 +22,13 @@ const KYC_COLORS: Record<string, string> = {
 };
 
 // Must match app.auth.constants.SpokenLanguage (DEC-019).
-const SPOKEN_LANGUAGES = ["ar", "en", "fr", "de", "ru", "it", "es", "tr"];
+const SPOKEN_LANGUAGES = [
+  "ar", "en", "fr", "de", "ru", "it", "es", "tr",
+  "zh", "ja", "ko", "pt", "nl", "fi", "el", "he",
+  "hi", "hu", "id", "ms", "sv", "th", "be", "bg",
+  "gu", "ht", "fa", "pa", "tl", "uk", "ur", "vi",
+  "sign",
+];
 
 export default function HostProfilePage() {
   const t = useTranslations("hostProfile");

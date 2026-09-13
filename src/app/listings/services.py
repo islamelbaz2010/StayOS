@@ -111,6 +111,7 @@ def _to_listing_response(
         cultural_tags=listing.cultural_tags,
         allows_pets=bool(listing.allows_pets),
         self_check_in=bool(listing.self_check_in),
+        self_check_in_methods=list(listing.self_check_in_methods or []),
         accessibility_features=list(listing.accessibility_features or []),
         house_rules=listing.house_rules,
         check_in_instructions=listing.check_in_instructions,

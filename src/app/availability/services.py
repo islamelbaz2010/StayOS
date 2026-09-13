@@ -8,7 +8,8 @@ from app.bookings.models import Booking
 from app.host.permissions import assert_can_manage_calendar
 from app.listings import repository as listings_repository
 from app.listings.constants import CalendarBlockType, CalendarStatus
-from app.listings.models import CalendarRule, Unit
+from app.listings.models import CalendarRule, Unit, UnitListing
+from app.listings.pricing import find_rule_for_day, get_day_price
 from app.reservations.models import Reservation
 from app.shared.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 
@@ -71,6 +72,7 @@ def _build_day_statuses(
     rules: list[CalendarRule],
     active_bookings: list[Booking],
     confirmed_reservations: list[Reservation],
+    listing: UnitListing | None = None,
 ) -> list[AvailabilityDay]:
     # Index occupied date ranges for fast lookup.
     occupied_ranges: list[tuple[date, date, str, str | None]] = []
@@ -112,7 +114,18 @@ def _build_day_statuses(
                 status = str(CalendarStatus.BLOCKED)
                 block_type = blocked_rule.block_type
 
-        days.append(AvailabilityDay(date=current, status=status, block_type=block_type))
+        days.append(
+            AvailabilityDay(
+                date=current,
+                status=status,
+                block_type=block_type,
+                price_egp=(
+                    get_day_price(listing, find_rule_for_day(rules, current), current)
+                    if listing is not None
+                    else None
+                ),
+            )
+        )
         current += timedelta(days=1)
 
     return days
@@ -141,8 +154,11 @@ async def get_availability(
         session, unit_id, check_in, check_out
     )
 
+    listing = await listings_repository.get_unit_with_listing(session, unit_id)
+    listing_obj = listing.listing if listing is not None else None
+
     days = _build_day_statuses(
-        check_in, check_out, rules, active_bookings, confirmed_reservations
+        check_in, check_out, rules, active_bookings, confirmed_reservations, listing_obj
     )
 
     return AvailabilityResponse(

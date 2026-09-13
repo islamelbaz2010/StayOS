@@ -8,6 +8,8 @@ export type AvailabilityResponse =
   components["schemas"]["app__availability__schemas__AvailabilityResponse"];
 export type AvailabilityRule = components["schemas"]["AvailabilityRule"];
 export type AvailabilityUpdateRequest = components["schemas"]["AvailabilityUpdateRequest"];
+export type BulkPricingItem = components["schemas"]["BulkPricingItem"];
+export type BulkPricingRequest = components["schemas"]["BulkPricingRequest"];
 
 export async function getAvailability(
   unitId: string,
@@ -26,6 +28,17 @@ export async function updateAvailability(
 ): Promise<AvailabilityResponse> {
   const { data } = await api.patch<AvailabilityResponse>(
     `/availability/${unitId}`,
+    payload
+  );
+  return data;
+}
+
+export async function bulkUpdatePricing(
+  unitId: string,
+  payload: BulkPricingRequest
+): Promise<unknown> {
+  const { data } = await api.post(
+    `/listings/${unitId}/calendar/bulk-pricing`,
     payload
   );
   return data;
@@ -52,5 +65,17 @@ export function useUpdateAvailability() {
       unitId: string;
       payload: AvailabilityUpdateRequest;
     }) => updateAvailability(unitId, payload),
+  });
+}
+
+export function useBulkUpdatePricing() {
+  return useMutation({
+    mutationFn: ({
+      unitId,
+      payload,
+    }: {
+      unitId: string;
+      payload: BulkPricingRequest;
+    }) => bulkUpdatePricing(unitId, payload),
   });
 }

@@ -722,6 +722,8 @@ export interface components {
       status: string;
       /** Block Type */
       block_type?: string | null;
+      /** Price Egp */
+      price_egp?: number | null;
     };
     /** AvailabilityRule */
     AvailabilityRule: {

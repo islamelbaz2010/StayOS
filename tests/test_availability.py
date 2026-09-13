@@ -15,7 +15,7 @@ from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.listings import repository as listings_repository
 from app.listings.constants import CalendarStatus, UnitStatus
-from app.listings.models import CalendarRule, Unit
+from app.listings.models import CalendarRule, Unit, UnitListing
 from app.reservations.constants import ReservationStatus
 from app.reservations.models import Reservation
 from app.shared.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
@@ -880,3 +880,87 @@ async def test_update_availability_rejects_booked_calendar_rule_overlap(
         await availability_services.update_availability(
             fake_session, host, "unit-1", request
         )
+
+
+@pytest.mark.asyncio
+async def test_get_availability_includes_price_egp(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """When a listing exists, each availability day exposes its computed nightly price."""
+    host = _make_user(role=UserRole.HOST)
+    listing = UnitListing(
+        unit_id="unit-1",
+        title_ar="شقة",
+        title_en="Apartment",
+        description_ar="وصف",
+        description_en="desc",
+        category="ENTIRE_PLACE",
+        base_price_egp=1000,
+        cleaning_fee_egp=0,
+        cancellation_policy="FLEXIBLE",
+        weekend_mult=1.0,
+        peak_mult=1.0,
+        min_nights=1,
+        max_nights=30,
+        allows_pets=False,
+        self_check_in=False,
+    )
+    unit = _make_unit(host.id)
+    unit.listing = listing
+
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_calendar_rules_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_confirmed_reservations_for_unit",
+        AsyncMock(return_value=[]),
+    )
+
+    response = await availability_services.get_availability(
+        fake_session, host, "unit-1", date(2026, 8, 1), date(2026, 8, 3)
+    )
+    assert len(response.days) == 2
+    assert response.days[0].price_egp == 1000
+    assert response.days[1].price_egp == 1000
+
+
+@pytest.mark.asyncio
+async def test_get_availability_price_egp_null_without_listing(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """When no listing is attached, price_egp is null but the response still resolves."""
+    host = _make_user(role=UserRole.HOST)
+    unit = _make_unit(host.id)
+    unit.listing = None
+
+    monkeypatch.setattr(
+        "app.availability.services.listings_repository.get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_calendar_rules_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_active_bookings_for_unit",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.availability.services.availability_repository.get_confirmed_reservations_for_unit",
+        AsyncMock(return_value=[]),
+    )
+
+    response = await availability_services.get_availability(
+        fake_session, host, "unit-1", date(2026, 8, 1), date(2026, 8, 3)
+    )
+    assert len(response.days) == 2
+    assert response.days[0].price_egp is None

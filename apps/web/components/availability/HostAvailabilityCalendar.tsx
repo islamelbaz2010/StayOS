@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import {
   useAvailability,
+  useBulkUpdatePricing,
   useUpdateAvailability,
 } from "@/lib/queries/availability";
 
@@ -96,6 +97,7 @@ export function HostAvailabilityCalendar({
   const t = useTranslations("availability");
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+  const [customPrice, setCustomPrice] = useState<string>("");
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,14 +119,16 @@ export function HostAvailabilityCalendar({
   } = useAvailability(unitId, checkIn, checkOut);
 
   const updateAvailability = useUpdateAvailability();
+  const bulkPricing = useBulkUpdatePricing();
 
   const dayMap = useMemo(() => {
-    const map: Record<string, { status: string; block_type: string | null }> = {};
+    const map: Record<string, { status: string; block_type: string | null; price_egp: number | null }> = {};
     if (availability) {
       for (const day of availability.days) {
         map[day.date] = {
           status: day.status,
           block_type: day.block_type ?? null,
+          price_egp: day.price_egp ?? null,
         };
       }
     }
@@ -150,6 +154,7 @@ export function HostAvailabilityCalendar({
 
   function clearSelection() {
     setSelectedDates(new Set());
+    setCustomPrice("");
     setSuccess(null);
     setError(null);
   }
@@ -169,6 +174,36 @@ export function HostAvailabilityCalendar({
         status === "blocked" ? t("blockSuccess") : t("unblockSuccess")
       );
       setSelectedDates(new Set());
+      await refetch();
+    } catch (err) {
+      const axiosError = err as {
+        response?: { data?: { error?: { message?: string } } };
+      };
+      setError(
+        axiosError.response?.data?.error?.message || t("updateError")
+      );
+    }
+  }
+
+  async function applyCustomPrice() {
+    if (selectedDates.size === 0) return;
+    const price = Number(customPrice);
+    if (!Number.isFinite(price) || price < 0) {
+      setError(t("priceInvalid"));
+      return;
+    }
+    setSuccess(null);
+    setError(null);
+
+    const rules = groupContiguousDates(Array.from(selectedDates)).map(
+      (group) => ({ ...group, price_override: price })
+    );
+
+    try {
+      await bulkPricing.mutateAsync({ unitId, payload: { rules } });
+      setSuccess(t("priceSuccess"));
+      setSelectedDates(new Set());
+      setCustomPrice("");
       await refetch();
     } catch (err) {
       const axiosError = err as {
@@ -239,6 +274,7 @@ export function HostAvailabilityCalendar({
               const info = dayMap[dateStr] || {
                 status: "available",
                 block_type: null,
+                price_egp: null,
               };
               const occupied =
                 ["booked", "hold"].includes(info.status) || isPast(day);
@@ -248,7 +284,7 @@ export function HostAvailabilityCalendar({
                 <button
                   key={dateStr}
                   type="button"
-                  disabled={occupied || updateAvailability.isPending}
+                  disabled={occupied || updateAvailability.isPending || bulkPricing.isPending}
                   onClick={() => toggleDate(dateStr, occupied)}
                   className={`
                     relative aspect-square w-full rounded-lg border p-2 text-sm
@@ -268,6 +304,11 @@ export function HostAvailabilityCalendar({
                   })}
                 >
                   <span className="block text-center">{day.getDate()}</span>
+                  {info.price_egp != null && (
+                    <span className="block text-center text-[10px] font-medium text-neutral-500">
+                      {info.price_egp}
+                    </span>
+                  )}
                   {selected && (
                     <span className="absolute end-1 top-1 h-2 w-2 rounded-full bg-accent-600" />
                   )}
@@ -296,7 +337,7 @@ export function HostAvailabilityCalendar({
               type="button"
               onClick={() => applyStatus("blocked")}
               disabled={
-                selectedDates.size === 0 || updateAvailability.isPending
+                selectedDates.size === 0 || updateAvailability.isPending || bulkPricing.isPending
               }
               className="btn-danger text-sm"
             >
@@ -306,7 +347,7 @@ export function HostAvailabilityCalendar({
               type="button"
               onClick={() => applyStatus("available")}
               disabled={
-                selectedDates.size === 0 || updateAvailability.isPending
+                selectedDates.size === 0 || updateAvailability.isPending || bulkPricing.isPending
               }
               className="btn-primary text-sm"
             >
@@ -318,13 +359,43 @@ export function HostAvailabilityCalendar({
               type="button"
               onClick={clearSelection}
               disabled={
-                selectedDates.size === 0 || updateAvailability.isPending
+                selectedDates.size === 0 || updateAvailability.isPending || bulkPricing.isPending
               }
               className="btn-secondary text-sm"
             >
               {t("clearSelection")}
             </button>
           </div>
+
+          {selectedDates.size > 0 && (
+            <div className="mt-4 flex flex-wrap items-end gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  {t("customPriceLabel")}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={customPrice}
+                  onChange={(e) => setCustomPrice(e.target.value)}
+                  placeholder={t("customPricePlaceholder")}
+                  className="input w-40"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={applyCustomPrice}
+                disabled={
+                  selectedDates.size === 0 ||
+                  bulkPricing.isPending ||
+                  !customPrice
+                }
+                className="btn-secondary text-sm"
+              >
+                {bulkPricing.isPending ? t("applying") : t("applyPrice")}
+              </button>
+            </div>
+          )}
 
           {success && (
             <p

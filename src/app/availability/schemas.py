@@ -9,6 +9,7 @@ class AvailabilityDay(BaseModel):
     date: date
     status: str
     block_type: str | None = None
+    price_egp: int | None = None
 
 
 class AvailabilityResponse(BaseModel):

@@ -453,6 +453,7 @@
     "checkAvailability": "Check availability",
     "amenities": "Amenities",
     "houseRules": "House rules",
+    "policies": "Additional policies",
     "cancellationPolicy": "Cancellation policy",
     "checkInOutTimes": "Check-in / Check-out",
     "checkInLabel": "Check-in time",

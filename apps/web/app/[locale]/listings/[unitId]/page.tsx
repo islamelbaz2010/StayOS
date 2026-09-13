@@ -492,6 +492,17 @@ export default function ListingDetailPage() {
                   </section>
                 )}
 
+                {listing.policies && (
+                  <section className="card p-5 sm:p-6">
+                    <h2 className="mb-3 text-lg font-semibold text-brand-900">
+                      {t("policies")}
+                    </h2>
+                    <p className="whitespace-pre-line leading-relaxed text-neutral-700">
+                      {listing.policies}
+                    </p>
+                  </section>
+                )}
+
                 {listing.cancellationPolicy && (
                   <section className="card p-5 sm:p-6">
                     <h2 className="mb-3 text-lg font-semibold text-brand-900">

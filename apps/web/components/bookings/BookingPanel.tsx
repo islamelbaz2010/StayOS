@@ -323,6 +323,17 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
           </div>
         </div>
 
+        {listing.minNights > 1 && (
+          <p className="text-xs text-neutral-500">
+            {t("minNightsInfo", { min: listing.minNights })}
+          </p>
+        )}
+        {listing.maxNights > 0 && (
+          <p className="text-xs text-neutral-500">
+            {t("maxNightsInfo", { max: listing.maxNights })}
+          </p>
+        )}
+
         <div>
           <h3 className="text-sm font-medium text-neutral-700">
             {t("guests")}

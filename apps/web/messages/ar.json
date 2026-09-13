@@ -742,6 +742,8 @@
     "maxGuestsExceeded": "هذا العقار يستوعب {max} ضيوف كحد أقصى.",
     "minNightsRequired": "الحد الأدنى للإقامة {min} ليالي.",
     "maxNightsExceeded": "الحد الأقصى للإقامة {max} ليالي.",
+    "minNightsInfo": "الحد الأدنى للإقامة {min} ليالي",
+    "maxNightsInfo": "الحد الأقصى للإقامة {max} ليالي",
     "submitError": "فشل إرسال طلب الحجز. يرجى المحاولة مرة أخرى.",
     "signInTitle": "سجّل الدخول لإرسال طلب حجز.",
     "signInButton": "تسجيل الدخول",

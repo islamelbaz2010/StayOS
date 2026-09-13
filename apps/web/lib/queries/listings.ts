@@ -40,6 +40,7 @@ export interface ListingDetail extends Listing {
   hostId: string;
   description: string;
   amenities: string[];
+  culturalTags: string[];
   houseRules: string | null;
   checkInInstructions: string | null;
   policies: string | null;
@@ -86,6 +87,7 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     beds: item.beds,
     coverImage: item.cover_image ?? null,
     amenities: item.amenities,
+    culturalTags: item.cultural_tags ?? [],
     houseRules: item.house_rules,
     checkInInstructions: item.check_in_instructions,
     policies: item.policies,

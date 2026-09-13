@@ -376,12 +376,31 @@ export default function ListingDetailPage() {
                   </section>
                 )}
 
-                {(listing.allowsPets || listing.selfCheckIn || listing.accessibilityFeatures.length > 0) && (
+                {(listing.allowsPets || listing.selfCheckIn || listing.accessibilityFeatures.length > 0 || listing.culturalTags.length > 0) && (
                   <section className="card p-5 sm:p-6">
                     <h2 className="mb-3 text-lg font-semibold text-brand-900">
                       {t("discovery")}
                     </h2>
                     <div className="space-y-3 text-sm text-neutral-700">
+                      {listing.culturalTags.length > 0 && (
+                        <div>
+                          <p className="mb-2 font-medium text-brand-900">
+                            {t("culturalTags")}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {listing.culturalTags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-3 py-1 text-xs"
+                              >
+                                {t(`culturalTag.${tag.toLowerCase()}`, {
+                                  default: tag.replace(/_/g, " ").toLowerCase(),
+                                })}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {listing.allowsPets && (
                         <div className="flex items-center gap-2">
                           <span className="text-lg">🐾</span>

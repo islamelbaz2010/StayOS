@@ -293,6 +293,7 @@ class ListingResponse(BaseModel):
     id: str
     host_id: str
     host_display_name: str | None = None
+    host_bio: str | None = None
     host_kyc_status: str | None = None
     host_joined_at: str | None = None
     host_languages: list[str] = Field(default_factory=list)

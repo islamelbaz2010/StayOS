@@ -2620,6 +2620,8 @@ export interface components {
       host_id: string;
       /** Host Display Name */
       host_display_name?: string | null;
+      /** Host Bio */
+      host_bio?: string | null;
       /** Host Kyc Status */
       host_kyc_status?: string | null;
       /** Host Joined At */

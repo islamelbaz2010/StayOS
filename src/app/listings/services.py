@@ -97,6 +97,7 @@ def _to_listing_response(
         id=unit.id,
         host_id=unit.host_id,
         host_display_name=host.display_name if host else None,
+        host_bio=host.bio if host else None,
         host_kyc_status=host.kyc_status if host else None,
         host_joined_at=str(host.created_at) if host else None,
         host_languages=list(host.languages or []) if host else [],

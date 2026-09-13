@@ -54,6 +54,7 @@ export interface ListingDetail extends Listing {
   checkInTime: string | null;
   checkOutTime: string | null;
   hostDisplayName: string | null;
+  hostBio: string | null;
   hostKycStatus: string | null;
   hostJoinedAt: string | null;
   hostLanguages: string[];
@@ -102,6 +103,7 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     checkInTime: item.check_in_time ?? null,
     checkOutTime: item.check_out_time ?? null,
     hostDisplayName: item.host_display_name ?? null,
+    hostBio: item.host_bio ?? null,
     hostKycStatus: item.host_kyc_status ?? null,
     hostJoinedAt: item.host_joined_at ?? null,
     hostLanguages: item.host_languages ?? [],

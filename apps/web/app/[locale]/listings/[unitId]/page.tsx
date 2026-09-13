@@ -345,6 +345,11 @@ export default function ListingDetailPage() {
                         </span>
                       )}
                     </div>
+                    {listing.hostBio && (
+                      <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
+                        {listing.hostBio}
+                      </p>
+                    )}
                     <div className="mt-4">
                       <ContactHostButton unitId={unitId} locale={locale} />
                     </div>

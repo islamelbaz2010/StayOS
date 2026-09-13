@@ -18,6 +18,7 @@ export interface PhotoCreate {
   caption?: string;
   is_cover: boolean;
   display_order: number;
+  accessibility_feature?: string | null;
 }
 
 export interface PhotoResponse {
@@ -28,6 +29,7 @@ export interface PhotoResponse {
   display_order: number;
   is_cover: boolean;
   caption: string | null;
+  accessibility_feature: string | null;
 }
 
 export async function presignPhoto(

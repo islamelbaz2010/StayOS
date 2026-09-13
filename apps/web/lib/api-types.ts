@@ -2692,6 +2692,8 @@ export interface components {
       sleeping_arrangements?: {
           [key: string]: unknown;
         }[] | null;
+      /** Accessibility Photo Features */
+      accessibility_photo_features?: string[];
       /** Cover Image */
       cover_image?: string | null;
       /** Average Rating */
@@ -3355,6 +3357,8 @@ export interface components {
        * @default 0
        */
       display_order?: number;
+      /** Accessibility Feature */
+      accessibility_feature?: string | null;
     };
     /** PhotoOrderItem */
     PhotoOrderItem: {
@@ -3398,6 +3402,8 @@ export interface components {
       is_cover: boolean;
       /** Caption */
       caption: string | null;
+      /** Accessibility Feature */
+      accessibility_feature?: string | null;
     };
     /**
      * PowSolution

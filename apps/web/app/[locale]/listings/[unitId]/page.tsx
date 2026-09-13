@@ -470,6 +470,14 @@ export default function ListingDetailPage() {
                                 {t(`accessibilityFeatures.${feature.toLowerCase()}`, {
                                   default: feature.replace(/_/g, " ").toLowerCase(),
                                 })}
+                                {listing.accessibilityPhotoFeatures.includes(feature) && (
+                                  <span className="inline-flex items-center gap-0.5 text-success-600">
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                                    </svg>
+                                    {t("photoProvided")}
+                                  </span>
+                                )}
                               </span>
                             ))}
                           </div>

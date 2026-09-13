@@ -194,6 +194,7 @@
       "buildingStaff": "Building staff"
     },
     "accessibilityFeatures": "Accessibility features",
+    "photoProvided": "Photo provided",
     "accessibility": {
       "stepFreeEntrance": "Step-free entrance",
       "wideEntrance": "Wide entrance",
@@ -945,7 +946,22 @@
     "invalidType": "Unsupported file type. Use JPG, PNG, or WebP.",
     "fileTooLarge": "File too large. Maximum 10MB.",
     "uploadFailed": "Upload failed. Try again.",
-    "reorderError": "Couldn't save the new order. Try again."
+    "reorderError": "Couldn't save the new order. Try again.",
+    "accessibilityFeatures": {
+      "step_free_entrance": "Step-free entrance",
+      "wide_entrance": "Wide entrance",
+      "accessible_parking": "Accessible parking spot",
+      "step_free_path": "Step-free path",
+      "step_free_bedroom": "Step-free bedroom",
+      "wide_bedroom": "Wide bedroom",
+      "accessible_bathroom": "Accessible bathroom",
+      "wide_bathroom": "Wide bathroom",
+      "shower_grab_bar": "Shower grab bar",
+      "toilet_grab_bar": "Toilet grab bar",
+      "step_free_shower": "Step-free shower",
+      "shower_chair": "Shower chair",
+      "ceiling_hoist": "Ceiling hoist"
+    }
   },
   "payment": {
     "checkoutTitle": "Complete your payment",

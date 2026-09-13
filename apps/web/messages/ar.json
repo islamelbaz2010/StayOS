@@ -194,6 +194,7 @@
       "buildingStaff": "موظفو المبنى"
     },
     "accessibilityFeatures": "ميزات إمكانية الوصول",
+    "photoProvided": "صورة مرفقة",
     "accessibility": {
       "stepFreeEntrance": "مدخل بدون درجات",
       "wideEntrance": "مدخل واسع",
@@ -945,7 +946,22 @@
     "invalidType": "نوع الملف غير مدعوم. استخدم JPG أو PNG أو WebP.",
     "fileTooLarge": "حجم الملف كبير جداً. الحد الأقصى 10 ميجابايت.",
     "uploadFailed": "فشل الرفع. حاول مرة أخرى.",
-    "reorderError": "تعذر حفظ الترتيب الجديد. حاول مرة أخرى."
+    "reorderError": "تعذر حفظ الترتيب الجديد. حاول مرة أخرى.",
+    "accessibilityFeatures": {
+      "step_free_entrance": "مدخل بدون درجات",
+      "wide_entrance": "مدخل واسع",
+      "accessible_parking": "موقف مركبات ذو إمكانية وصول",
+      "step_free_path": "مسار بدون درجات",
+      "step_free_bedroom": "غرفة نوم بدون درجات",
+      "wide_bedroom": "غرفة نوم واسعة",
+      "accessible_bathroom": "حمام ذو إمكانية وصول",
+      "wide_bathroom": "حمام واسع",
+      "shower_grab_bar": "قضيب مسك في الدش",
+      "toilet_grab_bar": "قضيب مسك في المرحاض",
+      "step_free_shower": "دش بدون درجات",
+      "shower_chair": "كرسي دش",
+      "ceiling_hoist": "رافعة سقفية"
+    }
   },
   "payment": {
     "checkoutTitle": "أكمل عملية الدفع",

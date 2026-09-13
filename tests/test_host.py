@@ -1024,6 +1024,7 @@ async def test_co_host_full_access_can_upload_photo(fake_session: AsyncMock, mon
     photo.display_order = 0
     photo.is_cover = True
     photo.caption_ar = None
+    photo.accessibility_feature = None
     monkeypatch.setattr(
         listings_repo, "get_photos_by_unit", AsyncMock(return_value=[photo])
     )

@@ -708,6 +708,7 @@ def _make_photo_response(photo_id: str = "photo-1", is_cover: bool = False) -> P
         display_order=0,
         is_cover=is_cover,
         caption=None,
+        accessibility_feature=None,
     )
 
 
@@ -1203,3 +1204,41 @@ def test_sleeping_arrangements_validator_none_when_empty() -> None:
         sleeping_arrangements=[],
     )
     assert listing.sleeping_arrangements is None
+
+
+def test_photo_create_validates_accessibility_feature() -> None:
+    """PhotoCreate must reject unknown accessibility feature codes."""
+    from app.listings.schemas import PhotoCreate
+
+    # Valid feature passes.
+    photo = PhotoCreate(
+        s3_key="test/key.jpg",
+        url="https://example.com/test.jpg",
+        accessibility_feature="step_free_entrance",
+    )
+    assert photo.accessibility_feature == "STEP_FREE_ENTRANCE"
+
+    # Unknown feature fails.
+    with pytest.raises(ValidationError):
+        PhotoCreate(
+            s3_key="test/key.jpg",
+            url="https://example.com/test.jpg",
+            accessibility_feature="MAGIC_RAMP",
+        )
+
+    # None passes (regular gallery photo).
+    photo = PhotoCreate(
+        s3_key="test/key.jpg",
+        url="https://example.com/test.jpg",
+    )
+    assert photo.accessibility_feature is None
+
+
+def test_listing_response_includes_accessibility_photo_features() -> None:
+    """ListingResponse must expose accessibility_photo_features so the
+    frontend can show a 'Photo provided' badge per accessibility feature."""
+    from app.listings.schemas import ListingResponse
+
+    fields = ListingResponse.model_fields
+    assert "accessibility_photo_features" in fields
+    assert fields["accessibility_photo_features"].default_factory is not None

@@ -537,6 +537,7 @@ def _make_photo(
         display_order=display_order,
         is_cover=is_cover,
         caption_ar=None,
+        accessibility_feature=None,
     )
 
 

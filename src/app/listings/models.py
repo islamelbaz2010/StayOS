@@ -224,5 +224,12 @@ class UnitPhoto(UUIDMixin, TimestampMixin, Base):
     is_cover: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     caption_ar: Mapped[str | None] = mapped_column(String(500), nullable=True)
     caption_en: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # When set, this photo is evidence for the named accessibility feature
+    # (DEC-019). NULL for regular gallery photos. The full verification
+    # workflow is a separate business decision; this column only links the
+    # photo to the feature so guests can see evidence on listing detail.
+    accessibility_feature: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )
 
     unit: Mapped["Unit"] = relationship("Unit", back_populates="photos")

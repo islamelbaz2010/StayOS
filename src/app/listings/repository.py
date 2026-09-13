@@ -633,6 +633,7 @@ async def create_photo(
     caption_ar: str | None,
     is_cover: bool,
     display_order: int,
+    accessibility_feature: str | None = None,
 ) -> UnitPhoto:
     photo = UnitPhoto(
         id=str(uuid4()),
@@ -642,6 +643,7 @@ async def create_photo(
         caption_ar=caption_ar,
         is_cover=is_cover,
         display_order=display_order,
+        accessibility_feature=accessibility_feature,
     )
     session.add(photo)
     await session.flush()

@@ -85,6 +85,12 @@ def _to_listing_response(
     unit: Unit, listing: UnitListing, lat: float, lng: float,
     host: User | None = None, permission_scope: str | None = None,
 ) -> ListingResponse:
+    # Extract accessibility features that have at least one evidence photo.
+    accessibility_photo_features = sorted({
+        photo.accessibility_feature
+        for photo in (unit.photos or [])
+        if photo.accessibility_feature
+    })
     return ListingResponse(
         id=unit.id,
         host_id=unit.host_id,
@@ -134,6 +140,7 @@ def _to_listing_response(
         peak_mult=listing.peak_mult,
         min_nights=listing.min_nights,
         max_nights=listing.max_nights,
+        accessibility_photo_features=accessibility_photo_features,
         cover_image=_cover_image_url(unit, listing),
         permission_scope=permission_scope,
         rejection_reason=unit.rejection_reason
@@ -1085,6 +1092,7 @@ def _to_photo_response(photo: Any) -> PhotoResponse:
         display_order=photo.display_order,
         is_cover=photo.is_cover,
         caption=photo.caption_ar,
+        accessibility_feature=photo.accessibility_feature,
     )
 
 
@@ -1110,6 +1118,7 @@ async def create_photo(
         caption_ar=request.caption,
         is_cover=request.is_cover,
         display_order=request.display_order,
+        accessibility_feature=request.accessibility_feature,
     )
 
     if request.is_cover:

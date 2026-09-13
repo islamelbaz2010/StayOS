@@ -688,6 +688,7 @@ def _make_photo(photo_id: str, order: int) -> MagicMock:
     photo.display_order = order
     photo.is_cover = False
     photo.caption_ar = None
+    photo.accessibility_feature = None
     return photo
 
 

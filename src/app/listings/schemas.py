@@ -338,6 +338,11 @@ class ListingResponse(BaseModel):
     pre_arrival_info_release_hours: int | None = None
     policies: str | None
     sleeping_arrangements: list[dict] | None = None
+    # Accessibility features that have at least one evidence photo uploaded
+    # by the host (DEC-019). Displayed as a "Photo provided" badge on the
+    # listing detail page. The full verification workflow is a separate
+    # business decision; this field only signals photo evidence exists.
+    accessibility_photo_features: list[str] = Field(default_factory=list)
     cover_image: str | None = None
     average_rating: float | None = None
     review_count: int = 0
@@ -601,6 +606,27 @@ class PhotoCreate(BaseModel):
     caption: str | None = Field(None, max_length=500)
     is_cover: bool = False
     display_order: int = Field(default=0, ge=0)
+    accessibility_feature: str | None = Field(None, max_length=50)
+
+    @field_validator("accessibility_feature", mode="before")
+    @classmethod
+    def normalize_accessibility_feature(cls, v: str | None) -> str | None:
+        if isinstance(v, str):
+            return v.upper() or None
+        return v
+
+    @field_validator("accessibility_feature")
+    @classmethod
+    def validate_accessibility_feature(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        allowed = {str(feature) for feature in AccessibilityFeature}
+        if v not in allowed:
+            raise ValueError(
+                f"Unknown accessibility feature: {v}. "
+                f"Allowed: {', '.join(sorted(allowed))}"
+            )
+        return v
 
 
 class PhotoResponse(BaseModel):
@@ -611,6 +637,7 @@ class PhotoResponse(BaseModel):
     display_order: int
     is_cover: bool
     caption: str | None
+    accessibility_feature: str | None = None
 
 
 class PhotoOrderItem(BaseModel):

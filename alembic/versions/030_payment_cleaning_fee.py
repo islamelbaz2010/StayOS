@@ -1,10 +1,10 @@
-"""Add cleaning_fee_egp to pms.payments
+"""Add cleaning_fee_egp to payment.payments
 
 Revision ID: 030_payment_cleaning_fee
 Revises: 029_unit_rejection_reason
 Create Date: 2026-09-10 00:00:00.000000
 
-Adds ``pms.payments.cleaning_fee_egp`` so the host booking detail and
+Adds ``payment.payments.cleaning_fee_egp`` so the host booking detail and
 guest checkout can show the cleaning fee component of the total without
 reverse-engineering it. Nullable and backward-compatible — existing
 payments simply have no recorded cleaning fee.
@@ -26,9 +26,9 @@ def upgrade() -> None:
     op.add_column(
         "payments",
         sa.Column("cleaning_fee_egp", sa.Integer(), nullable=True),
-        schema="pms",
+        schema="payment",
     )
 
 
 def downgrade() -> None:
-    op.drop_column("payments", "cleaning_fee_egp", schema="pms")
+    op.drop_column("payments", "cleaning_fee_egp", schema="payment")

@@ -188,6 +188,20 @@ async def get_subrating_averages_for_unit(
     }
 
 
+async def get_rating_distribution_for_unit(
+    session: AsyncSession, unit_id: str
+) -> dict[int, int]:
+    """Count of guest reviews per star rating (1-5). Missing stars are 0."""
+    result = await session.execute(
+        select(Review.rating, func.count(Review.id)).where(
+            Review.unit_id == unit_id,
+            Review.reviewer_role == "guest",
+        ).group_by(Review.rating)
+    )
+    counts = {row[0]: row[1] for row in result.all()}
+    return {star: counts.get(star, 0) for star in range(1, 6)}
+
+
 async def get_rating_aggregates_for_units(
     session: AsyncSession, unit_ids: list[str]
 ) -> dict[str, tuple[float, int]]:

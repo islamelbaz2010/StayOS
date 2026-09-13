@@ -3673,6 +3673,10 @@ export interface components {
       subrating_averages?: {
         [key: string]: number;
       } | null;
+      /** Rating Distribution */
+      rating_distribution?: {
+        [key: string]: number;
+      } | null;
       /** Limit */
       limit: number;
       /** Offset */

@@ -90,6 +90,7 @@ class ReviewListResponse(BaseModel):
     average_rating: float | None
     review_count: int
     subrating_averages: dict[str, float] | None = None
+    rating_distribution: dict[int, int] | None = None
     limit: int
     offset: int
 

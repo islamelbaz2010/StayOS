@@ -199,6 +199,11 @@ async def test_get_listing_reviews_returns_aggregate(
         "get_subrating_averages_for_unit",
         AsyncMock(return_value={}),
     )
+    monkeypatch.setattr(
+        reviews_repository,
+        "get_rating_distribution_for_unit",
+        AsyncMock(return_value={5: 1, 4: 0, 3: 0, 2: 0, 1: 0}),
+    )
 
     result = await review_services.get_listing_reviews(fake_session, unit.id, limit=10, offset=0)
 
@@ -293,6 +298,15 @@ async def test_get_subrating_averages_for_unit_empty(fake_session: AsyncMock) ->
     fake_session.execute = AsyncMock(return_value=mock_result)
     averages = await reviews_repository.get_subrating_averages_for_unit(fake_session, "unit-1")
     assert averages == {}
+
+
+@pytest.mark.asyncio
+async def test_get_rating_distribution_for_unit(fake_session: AsyncMock) -> None:
+    mock_result = MagicMock()
+    mock_result.all.return_value = [(5, 3), (4, 2), (1, 1)]
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    dist = await reviews_repository.get_rating_distribution_for_unit(fake_session, "unit-1")
+    assert dist == {1: 1, 2: 0, 3: 0, 4: 2, 5: 3}
 
 
 @pytest.mark.asyncio

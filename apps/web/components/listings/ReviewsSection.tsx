@@ -177,6 +177,36 @@ export function ReviewsSection({ unitId, locale }: { unitId: string; locale: str
         </div>
       )}
 
+      {data?.ratingDistribution && totalReviewCount > 0 && (
+        <div className="mb-6 max-w-xs space-y-1.5">
+          {[5, 4, 3, 2, 1].map((star) => {
+            const count = data.ratingDistribution![star] ?? 0;
+            const pct = totalReviewCount > 0 ? (count / totalReviewCount) * 100 : 0;
+            return (
+              <div key={star} className="flex items-center gap-2">
+                <span className="w-6 shrink-0 text-xs font-medium text-neutral-700">
+                  {star}
+                </span>
+                <svg className="h-3 w-3 shrink-0 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.363 1.118l1.287 3.959c.3.92-.755 1.688-1.54 1.118l-3.366-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.784.57-1.838-.197-1.539-1.118l1.286-3.959a1 1 0 00-.363-1.118L2.062 9.385c-.783-.57-.38-1.81.588-1.81h4.163a1 1 0 00.95-.69l1.286-3.958z" />
+                </svg>
+                <div className="flex-1">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
+                    <div
+                      className="h-full rounded-full bg-neutral-700"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+                <span className="w-8 shrink-0 text-right text-xs text-neutral-600">
+                  {count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {allReviews.length === 0 ? (
         <p className="text-sm text-neutral-500">{t("noReviews")}</p>
       ) : (

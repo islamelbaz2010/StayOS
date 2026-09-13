@@ -178,6 +178,7 @@
     "checkInTime": "وقت تسجيل الوصول",
     "checkOutTime": "وقت تسجيل المغادرة",
     "policies": "سياسات إضافية",
+    "preArrivalInfoReleaseHours": "إصدار معلومات ما قبل الوصول (ساعات)",
     "sleepingArrangements": "ترتيب النوم",
     "sleepingArrangementsHint": "أضف تفاصيل الأسرة لكل غرفة نوم ليعرف الضيوف أين سينامون. اختياري — إذا تُرك فارغًا، يرى الضيوف عدد الأسرة الإجمالي.",
     "bedroomLabel": "غرفة النوم {number}",
@@ -221,7 +222,11 @@
       "houseRules": "ممنوع التدخين، لا حيوانات أليفة، إلخ.",
       "checkInInstructions": "كيفية استلام المفاتيح، إلخ.",
       "policies": "سياسات إضافية",
+      "preArrivalInfoReleaseHours": "48",
       "selectGovernorate": "اختر المحافظة"
+    },
+    "hints": {
+      "preArrivalInfoReleaseHours": "عدد الساعات قبل تسجيل الوصول التي تصبح فيها معلومات المضيف وتعليمات تسجيل الوصول مرئية للضيف. اتركه فارغًا لاستخدام الإعداد الافتراضي."
     },
     "propertyTypes": {
       "apartment": "شقة",

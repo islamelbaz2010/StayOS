@@ -178,6 +178,7 @@
     "checkInTime": "Check-in Time",
     "checkOutTime": "Check-out Time",
     "policies": "Additional Policies",
+    "preArrivalInfoReleaseHours": "Pre-arrival info release (hours)",
     "sleepingArrangements": "Sleeping arrangements",
     "sleepingArrangementsHint": "Add per-bedroom bed details so guests know where they will sleep. Optional — if left empty, guests see the aggregate bed count.",
     "bedroomLabel": "Bedroom {number}",
@@ -221,7 +222,11 @@
       "houseRules": "No smoking, no pets, etc.",
       "checkInInstructions": "How to get the keys, etc.",
       "policies": "Additional policies",
+      "preArrivalInfoReleaseHours": "48",
       "selectGovernorate": "Select governorate"
+    },
+    "hints": {
+      "preArrivalInfoReleaseHours": "Hours before check-in when the host's phone and check-in instructions become visible to the guest. Leave empty to use the platform default."
     },
     "propertyTypes": {
       "apartment": "Apartment",

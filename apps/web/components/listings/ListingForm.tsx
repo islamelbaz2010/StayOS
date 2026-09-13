@@ -162,6 +162,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     check_in_time: existingListing?.check_in_time ?? "",
     check_out_time: existingListing?.check_out_time ?? "",
     policies: existingListing?.policies ?? "",
+    pre_arrival_info_release_hours: existingListing?.pre_arrival_info_release_hours ?? undefined,
     sleeping_arrangements: existingListing?.sleeping_arrangements ?? null,
     country: existingListing?.country ?? "Egypt",
     currency: existingListing?.currency ?? "EGP",
@@ -280,6 +281,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     check_in_time: form.check_in_time || undefined,
     check_out_time: form.check_out_time || undefined,
     policies: form.policies || undefined,
+    pre_arrival_info_release_hours: form.pre_arrival_info_release_hours ?? undefined,
     sleeping_arrangements: form.sleeping_arrangements || undefined,
     country: form.country,
     currency: form.currency,
@@ -973,6 +975,27 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               className={inputClass}
               placeholder={t("placeholders.policies")}
             />
+          </div>
+
+          <div>
+            <label className={labelClass}>{t("preArrivalInfoReleaseHours")}</label>
+            <input
+              type="number"
+              min={0}
+              max={168}
+              value={form.pre_arrival_info_release_hours ?? ""}
+              onChange={(e) =>
+                update(
+                  "pre_arrival_info_release_hours",
+                  e.target.value === "" ? null : Number(e.target.value)
+                )
+              }
+              className={inputClass}
+              placeholder={t("placeholders.preArrivalInfoReleaseHours")}
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              {t("hints.preArrivalInfoReleaseHours")}
+            </p>
           </div>
         </div>
       </section>

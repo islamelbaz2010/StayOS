@@ -86,6 +86,7 @@ def _to_listing_response(
         host_display_name=host.display_name if host else None,
         host_kyc_status=host.kyc_status if host else None,
         host_joined_at=str(host.created_at) if host else None,
+        host_languages=list(host.languages or []) if host else [],
         property_type=unit.property_type,
         status=unit.status,
         lat=lat,
@@ -108,6 +109,9 @@ def _to_listing_response(
         description=_resolve_description(listing),
         amenities=listing.amenities,
         cultural_tags=listing.cultural_tags,
+        allows_pets=bool(listing.allows_pets),
+        self_check_in=bool(listing.self_check_in),
+        accessibility_features=list(listing.accessibility_features or []),
         house_rules=listing.house_rules,
         check_in_instructions=listing.check_in_instructions,
         check_in_time=listing.check_in_time,
@@ -532,6 +536,7 @@ async def get_host_profile(
         display_name=host.display_name,
         kyc_status=host.kyc_status,
         joined_at=str(host.created_at) if host.created_at else None,
+        languages=list(host.languages or []),
         listings=listings,
     )
 

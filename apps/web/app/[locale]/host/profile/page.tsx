@@ -21,6 +21,9 @@ const KYC_COLORS: Record<string, string> = {
   rejected: "bg-danger-100 text-danger-700",
 };
 
+// Must match app.auth.constants.SpokenLanguage (DEC-019).
+const SPOKEN_LANGUAGES = ["ar", "en", "fr", "de", "ru", "it", "es", "tr"];
+
 export default function HostProfilePage() {
   const t = useTranslations("hostProfile");
   const tc = useTranslations("common");
@@ -32,6 +35,7 @@ export default function HostProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
+  const [languages, setLanguages] = useState<string[]>([]);
 
   if (isLoading) {
     return (
@@ -60,13 +64,21 @@ export default function HostProfilePage() {
   const startEdit = () => {
     setDisplayName(profile.display_name ?? "");
     setEmail(profile.email ?? "");
+    setLanguages(profile.languages ?? []);
     setIsEditing(true);
+  };
+
+  const toggleLanguage = (lang: string) => {
+    setLanguages((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+    );
   };
 
   const saveEdit = async () => {
     await updateProfile.mutateAsync({
       display_name: displayName.trim() || undefined,
       email: email.trim() || undefined,
+      languages,
     });
     setIsEditing(false);
   };
@@ -125,6 +137,34 @@ export default function HostProfilePage() {
                           className="input mt-1 text-sm"
                         />
                       </div>
+                      <div>
+                        <p className="mb-2 text-sm font-medium text-neutral-700">
+                          {t("languages")}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {SPOKEN_LANGUAGES.map((lang) => {
+                            const selected = languages.includes(lang);
+                            return (
+                              <button
+                                key={lang}
+                                type="button"
+                                onClick={() => toggleLanguage(lang)}
+                                className={`
+                                  rounded-full border px-3 py-1 text-xs font-medium transition
+                                  ${
+                                    selected
+                                      ? "border-brand-600 bg-brand-600 text-white"
+                                      : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
+                                  }
+                                `}
+                                aria-pressed={selected}
+                              >
+                                {tc(`search.languages.${lang}`, { default: lang })}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         <button
                           type="submit"
@@ -156,6 +196,18 @@ export default function HostProfilePage() {
                       <p className="mt-2 text-sm text-neutral-500">
                         {profile.email || t("noEmail")}
                       </p>
+                      {profile.languages && profile.languages.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {profile.languages.map((lang) => (
+                            <span
+                              key={lang}
+                              className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs text-brand-700"
+                            >
+                              {tc(`search.languages.${lang}`, { default: lang })}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={startEdit}

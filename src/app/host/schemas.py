@@ -1,9 +1,10 @@
 from datetime import date, datetime
 from typing import Any
 
+from app.auth.constants import SpokenLanguage
 from app.bookings.schemas import BookingResponse
 from app.shared.schemas import PaginatedResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CoHostResponse(BaseModel):
@@ -141,6 +142,7 @@ class HostProfileResponse(BaseModel):
     email: str | None
     kyc_status: str
     locale: str
+    languages: list[str] = Field(default_factory=list)
     is_active: bool
     total_listings: int
     listed_listings: int
@@ -152,6 +154,27 @@ class HostProfileUpdate(BaseModel):
     display_name: str | None = Field(None, max_length=255)
     email: str | None = Field(None, max_length=255)
     locale: str | None = Field(None, max_length=10)
+    languages: list[str] | None = None
+
+    @field_validator("languages")
+    @classmethod
+    def validate_languages(cls, v: list[str] | None) -> list[str] | None:
+        """Reject unknown language codes (DEC-019).
+
+        The vocabulary is fixed, so an unrecognised code would silently
+        never match the host_language search filter.
+        """
+        if v is None:
+            return v
+        allowed = {str(lang) for lang in SpokenLanguage}
+        normalized = [lang.strip().lower() for lang in v if lang.strip()]
+        unknown = [lang for lang in normalized if lang not in allowed]
+        if unknown:
+            raise ValueError(
+                f"Unknown language codes: {', '.join(sorted(unknown))}. "
+                f"Allowed: {', '.join(sorted(allowed))}"
+            )
+        return list(dict.fromkeys(normalized))
 
 
 class HostListingPhoto(BaseModel):
@@ -194,6 +217,9 @@ class HostListingDetail(BaseModel):
     description_en: str | None = None
     amenities: list[str] = Field(default_factory=list)
     cultural_tags: list[str] = Field(default_factory=list)
+    allows_pets: bool = False
+    self_check_in: bool = False
+    accessibility_features: list[str] = Field(default_factory=list)
     house_rules: str | None = None
     check_in_instructions: str | None = None
     check_in_time: str | None = None

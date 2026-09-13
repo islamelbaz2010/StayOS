@@ -149,6 +149,7 @@
       "location": "الموقع",
       "capacity": "السعة",
       "amenities": "المرافق",
+      "discovery": "تفضيلات الضيف",
       "pricing": "التسعير",
       "rules": "القواعد والسياسات"
     },
@@ -177,6 +178,16 @@
     "checkInTime": "وقت تسجيل الوصول",
     "checkOutTime": "وقت تسجيل المغادرة",
     "policies": "سياسات إضافية",
+    "allowsPets": "مسموح بالحيوانات الأليفة",
+    "selfCheckIn": "تسجيل دخول ذاتي متاح",
+    "accessibilityFeatures": "ميزات إمكانية الوصول",
+    "accessibility": {
+      "stepFreeEntrance": "مدخل بدون درجات",
+      "wideEntrance": "مدخل واسع",
+      "stepFreeBedroom": "غرفة نوم بدون درجات",
+      "accessibleBathroom": "حمام قابل للوصول",
+      "showerGrabBar": "ممساك دش"
+    },
     "placeholders": {
       "titleAr": "مثال: شقة فاخرة في المعادي",
       "titleEn": "مثال: Luxury apartment in Maadi",
@@ -328,7 +339,28 @@
     "scrollBack": "مرر للخلف",
     "scrollForward": "مرر للأمام",
     "popularDestinations": "وجهات شهيرة",
-    "amenitiesFilter": "تصفية حسب المرافق"
+    "amenitiesFilter": "تصفية حسب المرافق",
+    "petsAllowed": "مسموح بالحيوانات الأليفة",
+    "selfCheckIn": "تسجيل دخول ذاتي",
+    "accessibility": "إمكانية الوصول",
+    "hostLanguage": "لغة المضيف",
+    "accessibilityFeatures": {
+      "stepFreeEntrance": "مدخل بدون درجات",
+      "wideEntrance": "مدخل واسع",
+      "stepFreeBedroom": "غرفة نوم بدون درجات",
+      "accessibleBathroom": "حمام قابل للوصول",
+      "showerGrabBar": "ممساك دش"
+    },
+    "languages": {
+      "ar": "العربية",
+      "en": "الإنجليزية",
+      "fr": "الفرنسية",
+      "de": "الألمانية",
+      "ru": "الروسية",
+      "it": "الإيطالية",
+      "es": "الإسبانية",
+      "tr": "التركية"
+    }
   },
   "favorites": {
     "title": "المفضلة",
@@ -432,7 +464,28 @@
       "strict": "استرداد 50% حتى أسبوع قبل الوصول"
     },
     "availableForDates": "متاح للتواريخ المختارة",
-    "similarListings": "إقامات مشابهة"
+    "similarListings": "إقامات مشابهة",
+    "discovery": "ما يقدمه هذا المكان",
+    "petsAllowed": "مسموح بالحيوانات الأليفة",
+    "selfCheckIn": "تسجيل دخول ذاتي",
+    "accessibilityFeatures": {
+      "step_free_entrance": "مدخل بدون درجات",
+      "wide_entrance": "مدخل واسع",
+      "step_free_bedroom": "غرفة نوم بدون درجات",
+      "accessible_bathroom": "حمام قابل للوصول",
+      "shower_grab_bar": "ممساك دش"
+    },
+    "hostLanguages": "لغات المضيف",
+    "languages": {
+      "ar": "العربية",
+      "en": "الإنجليزية",
+      "fr": "الفرنسية",
+      "de": "الألمانية",
+      "ru": "الروسية",
+      "it": "الإيطالية",
+      "es": "الإسبانية",
+      "tr": "التركية"
+    }
   },
   "trust": {
     "title": "الثقة والأمان",
@@ -1080,6 +1133,7 @@
     "displayName": "اسم العرض",
     "email": "البريد الإلكتروني",
     "noEmail": "لم يتم تعيين بريد إلكتروني",
+    "languages": "اللغات التي تتحدثها",
     "edit": "تعديل الملف الشخصي",
     "saveError": "تعذّر حفظ الملف الشخصي. يرجى المحاولة مرة أخرى.",
     "verifyIdentityPrompt": "تحقق من هويتك لبناء الثقة مع الضيوف.",

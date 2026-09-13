@@ -369,6 +369,65 @@ export default function ListingDetailPage() {
                   </section>
                 )}
 
+                {(listing.allowsPets || listing.selfCheckIn || listing.accessibilityFeatures.length > 0) && (
+                  <section className="card p-5 sm:p-6">
+                    <h2 className="mb-3 text-lg font-semibold text-brand-900">
+                      {t("discovery")}
+                    </h2>
+                    <div className="space-y-3 text-sm text-neutral-700">
+                      {listing.allowsPets && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🐾</span>
+                          <span>{t("petsAllowed")}</span>
+                        </div>
+                      )}
+                      {listing.selfCheckIn && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🔑</span>
+                          <span>{t("selfCheckIn")}</span>
+                        </div>
+                      )}
+                      {listing.accessibilityFeatures.length > 0 && (
+                        <div>
+                          <p className="mb-2 font-medium text-brand-900">
+                            {t("accessibilityFeatures")}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {listing.accessibilityFeatures.map((feature) => (
+                              <span
+                                key={feature}
+                                className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-3 py-1 text-xs"
+                              >
+                                {t(`accessibilityFeatures.${feature.toLowerCase()}`, {
+                                  default: feature.replace(/_/g, " ").toLowerCase(),
+                                })}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                {listing.hostLanguages.length > 0 && (
+                  <section className="card p-5 sm:p-6">
+                    <h2 className="mb-3 text-lg font-semibold text-brand-900">
+                      {t("hostLanguages")}
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      {listing.hostLanguages.map((lang) => (
+                        <span
+                          key={lang}
+                          className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-700"
+                        >
+                          {t(`languages.${lang}`, { default: lang })}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 <ReviewsSection unitId={unitId} locale={params?.locale ?? "ar"} />
 
                 <section className="card p-5 sm:p-6">

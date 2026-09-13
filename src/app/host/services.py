@@ -1007,6 +1007,9 @@ async def get_host_listing_detail(
         description_en=listing.description_en,
         amenities=listing.amenities,
         cultural_tags=listing.cultural_tags,
+        allows_pets=bool(listing.allows_pets),
+        self_check_in=bool(listing.self_check_in),
+        accessibility_features=list(listing.accessibility_features or []),
         house_rules=listing.house_rules,
         check_in_instructions=listing.check_in_instructions,
         check_in_time=listing.check_in_time,
@@ -1058,6 +1061,7 @@ async def get_host_profile(
         email=user.email,
         kyc_status=user.kyc_status,
         locale=user.locale,
+        languages=list(user.languages or []),
         is_active=user.is_active,
         total_listings=total_listings,
         listed_listings=listed_listings,
@@ -1080,6 +1084,8 @@ async def update_host_profile(
         if request.locale not in ("ar", "en"):
             raise ValidationError("Locale must be 'ar' or 'en'")
         user.locale = request.locale
+    if request.languages is not None:
+        user.languages = request.languages
 
     session.add(user)
     await session.flush()

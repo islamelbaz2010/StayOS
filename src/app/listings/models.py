@@ -17,6 +17,7 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -75,6 +76,11 @@ class UnitListing(UUIDMixin, Base):
         Index("idx_unit_listings_search", "search_vector", postgresql_using="gin"),
         Index("idx_unit_listings_amenities", "amenities", postgresql_using="gin"),
         Index("idx_unit_listings_cultural_tags", "cultural_tags", postgresql_using="gin"),
+        Index(
+            "idx_unit_listings_accessibility",
+            "accessibility_features",
+            postgresql_using="gin",
+        ),
         CheckConstraint("base_price_egp >= 100", name="chk_listing_base_price"),
         {"schema": "pms"},
     )
@@ -93,6 +99,17 @@ class UnitListing(UUIDMixin, Base):
         ARRAY(String), nullable=False, default=list
     )
     cultural_tags: Mapped[list[str]] = mapped_column(
+        ARRAY(String), nullable=False, default=list
+    )
+    # Structured discovery attributes (DEC-019). Kept as first-class columns
+    # rather than free-text amenity tags so search can filter on them reliably.
+    allows_pets: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    self_check_in: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    accessibility_features: Mapped[list[str]] = mapped_column(
         ARRAY(String), nullable=False, default=list
     )
     house_rules: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, String
+from sqlalchemy import ARRAY, JSON, Boolean, Date, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.models import Base, TimestampMixin, UUIDMixin
@@ -24,6 +24,11 @@ class User(UUIDMixin, TimestampMixin, Base):
     locale: Mapped[str] = mapped_column(String(10), default="ar")
     role: Mapped[str] = mapped_column(String(20), default="guest")
     kyc_status: Mapped[str] = mapped_column(String(20), default="unverified")
+    # Languages the user speaks, as ISO 639-1 codes (DEC-019). Surfaced on
+    # host profiles and filterable in search; empty for most guests.
+    languages: Mapped[list[str]] = mapped_column(
+        ARRAY(String), nullable=False, default=list
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     account: Mapped["Account | None"] = relationship(

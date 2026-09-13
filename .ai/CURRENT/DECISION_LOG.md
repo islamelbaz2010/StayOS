@@ -751,3 +751,48 @@ These features are scale problems, not launch problems. Resources should be conc
 
 - DEC-016: Sprint 3 re-scope.
 - DEC-017: Closed alpha before public launch.
+
+---
+
+### DEC-019: Structured Listing Discovery Attributes (Pets, Self Check-in, Accessibility, Host Languages) Added to Scope
+
+**Status**: Accepted
+**Date**: 2026-09-13
+**Decision Maker**: Founder
+**Urgency**: PRE-LAUNCH
+**Reversibility**: MEDIUM
+
+#### Context
+
+Airbnb is the sole external product benchmark for StayOS. A forensic Airbnb benchmark reconciliation found four documented Airbnb discovery/filter capabilities with no StayOS representation and no prior scope entry in `docs/MVP_SLICE.md`, `docs/02_product/MVP_FREEZE.md`, `FEATURE_CATALOG.md`, or `BUSINESS_RULES.md`: pet allowance, self check-in, accessibility features, and host languages. Because they were undocumented, `AGENTS.md` §2.2 prohibited implementing them without an explicit decision.
+
+#### Decision
+
+All four attributes are added to scope now as structured data (not free-text amenity tags):
+
+- **Pets** — listing-level boolean pet allowance.
+- **Self check-in** — listing-level boolean.
+- **Accessibility** — a deliberately small fixed vocabulary of five step/entrance/bathroom features. `ELEVATOR` is intentionally excluded because it already exists in the `amenities` vocabulary (no duplicate fields).
+- **Host languages** — host-level list of ISO 639-1 codes from a fixed MENA-inbound-relevant set.
+
+Each attribute is exposed through host listing/profile configuration, a search filter, and listing detail display.
+
+#### Alternatives Considered
+
+- **Defer all four (B2)** — Rejected. They are demonstrated Airbnb capabilities, so absence is a real benchmark gap, not missing nice-to-haves.
+- **Pets + self check-in only** — Rejected. Partial coverage leaves an acknowledged benchmark gap.
+- **Encode them in the existing free-text `amenities` array** — Rejected. `amenities` is an unvalidated string array, which cannot support reliable filtering or validation.
+
+#### Rationale
+
+The target is Airbnb 1:1 behavioral/product-depth equivalence. These are established Airbnb discovery filters, and the existing `UnitListing`/`User` models plus the existing array-overlap filter pattern already used for `amenities` and `cultural_tags` support them without new business rules.
+
+#### Consequences
+
+- **Positive**: Closes four confirmed Airbnb discovery gaps; structured data enables correct filtering and validation.
+- **Negative**: Adds two Alembic migrations and widens listing/host forms; extends scope beyond the frozen MVP baseline.
+- **Neutral**: No change to booking, pricing, payment, refund, or review behavior. Decision A (Request-to-Book only) and Decision C (core reviews) remain unchanged.
+
+#### Related Decisions
+
+- DEC-018: Postponed scale features (Instant Book remains V1.5 per `docs/MVP_SLICE.md`).

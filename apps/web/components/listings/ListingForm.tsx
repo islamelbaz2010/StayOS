@@ -47,6 +47,15 @@ const COMMON_AMENITIES = [
   "elevator",
 ];
 
+// Must match app.listings.constants.AccessibilityFeature (DEC-019).
+const ACCESSIBILITY_FEATURES = [
+  { value: "STEP_FREE_ENTRANCE", labelKey: "stepFreeEntrance" },
+  { value: "WIDE_ENTRANCE", labelKey: "wideEntrance" },
+  { value: "STEP_FREE_BEDROOM", labelKey: "stepFreeBedroom" },
+  { value: "ACCESSIBLE_BATHROOM", labelKey: "accessibleBathroom" },
+  { value: "SHOWER_GRAB_BAR", labelKey: "showerGrabBar" },
+];
+
 const EGYPT_GOVERNORATES = [
   "Cairo",
   "Giza",
@@ -106,6 +115,9 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     description_en: existingListing?.description_en ?? "",
     amenities: existingListing?.amenities ?? [],
     cultural_tags: existingListing?.cultural_tags ?? [],
+    allows_pets: existingListing?.allows_pets ?? false,
+    self_check_in: existingListing?.self_check_in ?? false,
+    accessibility_features: existingListing?.accessibility_features ?? [],
     base_price_egp: existingListing?.base_price_egp ?? 500,
     cleaning_fee_egp: existingListing?.cleaning_fee_egp ?? 0,
     cancellation_policy: existingListing?.cancellation_policy ?? "FLEXIBLE",
@@ -154,6 +166,18 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     }
   };
 
+  const toggleAccessibility = (feature: string) => {
+    const current = form.accessibility_features ?? [];
+    if (current.includes(feature)) {
+      update(
+        "accessibility_features",
+        current.filter((f) => f !== feature)
+      );
+    } else {
+      update("accessibility_features", [...current, feature]);
+    }
+  };
+
   const validate = (forSubmit = false): boolean => {
     const errs: Record<string, string> = {};
     if (!form.title_ar.trim()) errs.title_ar = t("errors.titleRequired");
@@ -194,6 +218,9 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     description_en: form.description_en || undefined,
     amenities: form.amenities,
     cultural_tags: form.cultural_tags,
+    allows_pets: form.allows_pets,
+    self_check_in: form.self_check_in,
+    accessibility_features: form.accessibility_features,
     base_price_egp: form.base_price_egp,
     cleaning_fee_egp: form.cleaning_fee_egp,
     cancellation_policy: form.cancellation_policy,
@@ -579,6 +606,62 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               </label>
             );
           })}
+        </div>
+      </section>
+
+      {/* Discovery attributes (DEC-019): pets, self check-in, accessibility */}
+      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
+          {t("sections.discovery")}
+        </h2>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-4">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+              <input
+                type="checkbox"
+                checked={form.allows_pets ?? false}
+                onChange={(e) => update("allows_pets", e.target.checked)}
+                className="h-4 w-4 rounded border-neutral-300 text-accent-600 focus:ring-accent-500"
+              />
+              <span className="text-neutral-700">{t("allowsPets")}</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+              <input
+                type="checkbox"
+                checked={form.self_check_in ?? false}
+                onChange={(e) => update("self_check_in", e.target.checked)}
+                className="h-4 w-4 rounded border-neutral-300 text-accent-600 focus:ring-accent-500"
+              />
+              <span className="text-neutral-700">{t("selfCheckIn")}</span>
+            </label>
+          </div>
+
+          <div>
+            <p className="mb-2 text-sm font-medium text-neutral-700">
+              {t("accessibilityFeatures")}
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {ACCESSIBILITY_FEATURES.map((feature) => {
+                const checked = (form.accessibility_features ?? []).includes(feature.value);
+                return (
+                  <label
+                    key={feature.value}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleAccessibility(feature.value)}
+                      className="h-4 w-4 rounded border-neutral-300 text-accent-600 focus:ring-accent-500"
+                    />
+                    <span className="text-neutral-700">
+                      {t(`accessibility.${feature.labelKey}`)}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 

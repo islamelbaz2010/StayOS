@@ -385,6 +385,10 @@ export interface paths {
     /** Get Conversation For Booking */
     get: operations["get_conversation_for_booking_api_v1_messages_bookings__booking_id__conversation_get"];
   };
+  "/api/v1/messages/inquiries": {
+    /** Create Inquiry */
+    post: operations["create_inquiry_api_v1_messages_inquiries_post"];
+  };
   "/api/v1/messages/templates": {
     /** Get Message Templates */
     get: operations["get_message_templates_api_v1_messages_templates_get"];
@@ -550,6 +554,14 @@ export interface paths {
   "/api/v1/bookings/{booking_id}/reviews": {
     /** Post Booking Review */
     post: operations["post_booking_review_api_v1_bookings__booking_id__reviews_post"];
+  };
+  "/api/v1/bookings/{booking_id}/host-reviews": {
+    /** Post Host Review */
+    post: operations["post_host_review_api_v1_bookings__booking_id__host_reviews_post"];
+  };
+  "/api/v1/guests/{guest_id}/reviews": {
+    /** Get Guest Review History */
+    get: operations["get_guest_review_history_api_v1_guests__guest_id__reviews_get"];
   };
   "/api/v1/listings/{unit_id}/reviews": {
     /** Get Unit Reviews */
@@ -732,15 +744,6 @@ export interface components {
     AvailabilityUpdateResponse: {
       /** Rules */
       rules: components["schemas"]["app__availability__schemas__CalendarRuleResponse"][];
-    };
-    /** Body_list_listings_api_v1_listings_get */
-    Body_list_listings_api_v1_listings_get: {
-      /** Property Type */
-      property_type?: string[] | null;
-      /** Cultural Tags */
-      cultural_tags?: string[] | null;
-      /** Amenities */
-      amenities?: string[] | null;
     };
     /** Body_preview_import_api_v1_import_preview_post */
     Body_preview_import_api_v1_import_preview_post: {
@@ -1644,6 +1647,19 @@ export interface components {
       /** Id Token */
       id_token: string;
     };
+    /** GuestReviewListResponse */
+    GuestReviewListResponse: {
+      /** Data */
+      data: components["schemas"]["HostReviewResponse"][];
+      /** Average Rating */
+      average_rating: number | null;
+      /** Review Count */
+      review_count: number;
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -1790,6 +1806,18 @@ export interface components {
       amenities?: string[];
       /** Cultural Tags */
       cultural_tags?: string[];
+      /**
+       * Allows Pets
+       * @default false
+       */
+      allows_pets?: boolean;
+      /**
+       * Self Check In
+       * @default false
+       */
+      self_check_in?: boolean;
+      /** Accessibility Features */
+      accessibility_features?: string[];
       /** House Rules */
       house_rules?: string | null;
       /** Check In Instructions */
@@ -1855,6 +1883,8 @@ export interface components {
       email?: string | null;
       /** Locale */
       locale?: string | null;
+      /** Languages */
+      languages?: string[] | null;
     };
     /** HostReservationCalendarItem */
     HostReservationCalendarItem: {
@@ -1967,6 +1997,30 @@ export interface components {
       checked_out_at?: string | null;
       /** Cancel Reason */
       cancel_reason?: string | null;
+    };
+    /** HostReviewResponse */
+    HostReviewResponse: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string;
+      /** Guest Id */
+      guest_id: string;
+      /** Reviewer Id */
+      reviewer_id: string;
+      /** Reviewer Display Name */
+      reviewer_display_name?: string | null;
+      /** Guest Display Name */
+      guest_display_name?: string | null;
+      /** Rating */
+      rating: number;
+      /** Comment */
+      comment: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
     };
     /**
      * HostTodayItem
@@ -2221,6 +2275,13 @@ export interface components {
       /** Results */
       results: components["schemas"]["ImportResultRow"][];
     };
+    /** InquiryCreate */
+    InquiryCreate: {
+      /** Unit Id */
+      unit_id: string;
+      /** Content */
+      content: string;
+    };
     /** KycApproveRequest */
     KycApproveRequest: {
       /** Legal Name */
@@ -2420,6 +2481,18 @@ export interface components {
       amenities?: string[];
       /** Cultural Tags */
       cultural_tags?: string[];
+      /**
+       * Allows Pets
+       * @default false
+       */
+      allows_pets?: boolean;
+      /**
+       * Self Check In
+       * @default false
+       */
+      self_check_in?: boolean;
+      /** Accessibility Features */
+      accessibility_features?: string[];
       /** Base Price Egp */
       base_price_egp: number;
       /**
@@ -2517,6 +2590,8 @@ export interface components {
       host_kyc_status?: string | null;
       /** Host Joined At */
       host_joined_at?: string | null;
+      /** Host Languages */
+      host_languages?: string[];
       /** Property Type */
       property_type: string;
       /** Status */
@@ -2561,6 +2636,18 @@ export interface components {
       amenities: string[];
       /** Cultural Tags */
       cultural_tags: string[];
+      /**
+       * Allows Pets
+       * @default false
+       */
+      allows_pets?: boolean;
+      /**
+       * Self Check In
+       * @default false
+       */
+      self_check_in?: boolean;
+      /** Accessibility Features */
+      accessibility_features?: string[];
       /** Base Price Egp */
       base_price_egp: number;
       /** Cleaning Fee Egp */
@@ -2709,6 +2796,12 @@ export interface components {
       amenities?: string[] | null;
       /** Cultural Tags */
       cultural_tags?: string[] | null;
+      /** Allows Pets */
+      allows_pets?: boolean | null;
+      /** Self Check In */
+      self_check_in?: boolean | null;
+      /** Accessibility Features */
+      accessibility_features?: string[] | null;
       /** Base Price Egp */
       base_price_egp?: number | null;
       /** Cleaning Fee Egp */
@@ -3523,8 +3616,14 @@ export interface components {
       booking_id: string;
       /** Guest Id */
       guest_id: string;
+      /** Reviewer Id */
+      reviewer_id: string;
+      /** Reviewer Role */
+      reviewer_role: string;
       /** Guest Display Name */
       guest_display_name?: string | null;
+      /** Reviewer Display Name */
+      reviewer_display_name?: string | null;
       /** Rating */
       rating: number;
       /** Comment */
@@ -3950,6 +4049,8 @@ export interface components {
       kyc_status: string;
       /** Locale */
       locale: string;
+      /** Languages */
+      languages?: string[];
       /** Is Active */
       is_active: boolean;
       /** Total Listings */
@@ -4014,6 +4115,8 @@ export interface components {
       kyc_status: string | null;
       /** Joined At */
       joined_at: string | null;
+      /** Languages */
+      languages?: string[];
       /** Listings */
       listings: components["schemas"]["ListingSearchResult"][];
     };
@@ -4509,16 +4612,19 @@ export interface operations {
         bedrooms?: number | null;
         beds?: number | null;
         bathrooms?: number | null;
+        property_type?: string | null;
+        cultural_tags?: string | null;
+        amenities?: string | null;
+        free_cancellation?: boolean | null;
+        pets?: boolean | null;
+        self_check_in?: boolean | null;
+        accessibility?: string | null;
+        host_language?: string | null;
         guests?: number | null;
         sort?: string | null;
         cursor?: string | null;
         offset?: number | null;
         limit?: number;
-      };
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["Body_list_listings_api_v1_listings_get"];
       };
     };
     responses: {
@@ -6291,6 +6397,28 @@ export interface operations {
       };
     };
   };
+  /** Create Inquiry */
+  create_inquiry_api_v1_messages_inquiries_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InquiryCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["ConversationResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Message Templates */
   get_message_templates_api_v1_messages_templates_get: {
     parameters: {
@@ -7207,6 +7335,59 @@ export interface operations {
       201: {
         content: {
           "application/json": components["schemas"]["ReviewResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Host Review */
+  post_host_review_api_v1_bookings__booking_id__host_reviews_post: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["HostReviewResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Guest Review History */
+  get_guest_review_history_api_v1_guests__guest_id__reviews_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      path: {
+        guest_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["GuestReviewListResponse"];
         };
       };
       /** @description Validation Error */

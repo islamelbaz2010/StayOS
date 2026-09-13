@@ -149,6 +149,7 @@
       "location": "Location",
       "capacity": "Capacity",
       "amenities": "Amenities",
+      "discovery": "Guest Preferences",
       "pricing": "Pricing",
       "rules": "Rules & Policies"
     },
@@ -177,6 +178,16 @@
     "checkInTime": "Check-in Time",
     "checkOutTime": "Check-out Time",
     "policies": "Additional Policies",
+    "allowsPets": "Pets allowed",
+    "selfCheckIn": "Self check-in available",
+    "accessibilityFeatures": "Accessibility features",
+    "accessibility": {
+      "stepFreeEntrance": "Step-free entrance",
+      "wideEntrance": "Wide entrance",
+      "stepFreeBedroom": "Step-free bedroom",
+      "accessibleBathroom": "Accessible bathroom",
+      "showerGrabBar": "Shower grab bar"
+    },
     "placeholders": {
       "titleAr": "e.g. شقة فاخرة في المعادي",
       "titleEn": "e.g. Luxury apartment in Maadi",
@@ -328,7 +339,28 @@
     "scrollBack": "Scroll back",
     "scrollForward": "Scroll forward",
     "popularDestinations": "Popular destinations",
-    "amenitiesFilter": "Filter by amenities"
+    "amenitiesFilter": "Filter by amenities",
+    "petsAllowed": "Pets allowed",
+    "selfCheckIn": "Self check-in",
+    "accessibility": "Accessibility",
+    "hostLanguage": "Host language",
+    "accessibilityFeatures": {
+      "stepFreeEntrance": "Step-free entrance",
+      "wideEntrance": "Wide entrance",
+      "stepFreeBedroom": "Step-free bedroom",
+      "accessibleBathroom": "Accessible bathroom",
+      "showerGrabBar": "Shower grab bar"
+    },
+    "languages": {
+      "ar": "Arabic",
+      "en": "English",
+      "fr": "French",
+      "de": "German",
+      "ru": "Russian",
+      "it": "Italian",
+      "es": "Spanish",
+      "tr": "Turkish"
+    }
   },
   "favorites": {
     "title": "Favorites",
@@ -432,7 +464,28 @@
       "strict": "50% refund up to 1 week before check-in"
     },
     "availableForDates": "Available for your dates",
-    "similarListings": "Similar listings"
+    "similarListings": "Similar listings",
+    "discovery": "What this place offers",
+    "petsAllowed": "Pets allowed",
+    "selfCheckIn": "Self check-in",
+    "accessibilityFeatures": {
+      "step_free_entrance": "Step-free entrance",
+      "wide_entrance": "Wide entrance",
+      "step_free_bedroom": "Step-free bedroom",
+      "accessible_bathroom": "Accessible bathroom",
+      "shower_grab_bar": "Shower grab bar"
+    },
+    "hostLanguages": "Host languages",
+    "languages": {
+      "ar": "Arabic",
+      "en": "English",
+      "fr": "French",
+      "de": "German",
+      "ru": "Russian",
+      "it": "Italian",
+      "es": "Spanish",
+      "tr": "Turkish"
+    }
   },
   "trust": {
     "title": "Trust & Safety",
@@ -1080,6 +1133,7 @@
     "displayName": "Display name",
     "email": "Email",
     "noEmail": "No email set",
+    "languages": "Languages you speak",
     "edit": "Edit profile",
     "saveError": "Could not save profile. Please try again.",
     "verifyIdentityPrompt": "Verify your identity to build trust with guests.",

@@ -49,6 +49,9 @@ async def create_listing(
         description_en=request.description_en,
         amenities=request.amenities,
         cultural_tags=request.cultural_tags,
+        allows_pets=request.allows_pets,
+        self_check_in=request.self_check_in,
+        accessibility_features=request.accessibility_features,
         house_rules=request.house_rules,
         check_in_instructions=request.check_in_instructions,
         check_in_time=request.check_in_time,
@@ -233,6 +236,37 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
     if filters.free_cancellation:
         stmt = stmt.where(UnitListing.cancellation_policy == "FLEXIBLE")
 
+    if filters.pets:
+        stmt = stmt.where(UnitListing.allows_pets.is_(True))
+
+    if filters.self_check_in:
+        stmt = stmt.where(UnitListing.self_check_in.is_(True))
+
+    if filters.accessibility:
+        features = [
+            f.strip().upper() for f in filters.accessibility.split(",") if f.strip()
+        ]
+        if features:
+            # Overlap (&&), matching the amenities/cultural_tags convention:
+            # a listing qualifies if it has any of the requested features.
+            stmt = stmt.where(UnitListing.accessibility_features.op("&&")(features))
+
+    if filters.host_language:
+        languages = [
+            lang.strip().lower()
+            for lang in filters.host_language.split(",")
+            if lang.strip()
+        ]
+        if languages:
+            # Host languages live on auth.users, which the base statement
+            # does not join — add it only when this filter is active so the
+            # common search path keeps its two-table plan.
+            from app.auth.models import User
+
+            stmt = stmt.join(User, Unit.host_id == User.id).where(
+                User.languages.op("&&")(languages)
+            )
+
     if filters.city:
         stmt = stmt.where(func.lower(Unit.city) == filters.city.lower())
 
@@ -256,6 +290,9 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
 
         rating_subq = (
             select(Review.unit_id, func.avg(Review.rating).label("avg_rating"))
+            # Only guest reviews describe the listing. Host-written reviews
+            # rate the guest and must never affect listing ranking.
+            .where(Review.reviewer_role == "guest")
             .group_by(Review.unit_id)
             .subquery()
         )

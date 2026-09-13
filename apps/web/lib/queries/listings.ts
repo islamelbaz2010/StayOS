@@ -18,6 +18,10 @@ export interface SearchFilters {
   bathrooms?: string;
   amenities?: string;
   free_cancellation?: string;
+  pets?: string;
+  self_check_in?: string;
+  accessibility?: string;
+  host_language?: string;
   sw_lat?: string;
   sw_lng?: string;
   ne_lat?: string;
@@ -50,6 +54,10 @@ export interface ListingDetail extends Listing {
   hostDisplayName: string | null;
   hostKycStatus: string | null;
   hostJoinedAt: string | null;
+  hostLanguages: string[];
+  allowsPets: boolean;
+  selfCheckIn: boolean;
+  accessibilityFeatures: string[];
   lat: number;
   lng: number;
   district: string | null;
@@ -86,6 +94,10 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     hostDisplayName: item.host_display_name ?? null,
     hostKycStatus: item.host_kyc_status ?? null,
     hostJoinedAt: item.host_joined_at ?? null,
+    hostLanguages: item.host_languages ?? [],
+    allowsPets: item.allows_pets ?? false,
+    selfCheckIn: item.self_check_in ?? false,
+    accessibilityFeatures: item.accessibility_features ?? [],
     lat: item.lat,
     lng: item.lng,
     district: item.district,
@@ -174,6 +186,10 @@ function buildSearchQueryParams(filters: SearchFilters) {
   if (filters.bathrooms) queryParams.bathrooms = filters.bathrooms;
   if (filters.amenities) queryParams.amenities = filters.amenities;
   if (filters.free_cancellation) queryParams.free_cancellation = filters.free_cancellation;
+  if (filters.pets) queryParams.pets = filters.pets;
+  if (filters.self_check_in) queryParams.self_check_in = filters.self_check_in;
+  if (filters.accessibility) queryParams.accessibility = filters.accessibility;
+  if (filters.host_language) queryParams.host_language = filters.host_language;
   if (filters.sw_lat) queryParams.sw_lat = filters.sw_lat;
   if (filters.sw_lng) queryParams.sw_lng = filters.sw_lng;
   if (filters.ne_lat) queryParams.ne_lat = filters.ne_lat;

@@ -28,6 +28,9 @@ export interface HostListing {
   description: string;
   amenities: string[];
   cultural_tags: string[];
+  allows_pets: boolean;
+  self_check_in: boolean;
+  accessibility_features: string[];
   base_price_egp: number;
   cleaning_fee_egp: number;
   cancellation_policy: string;
@@ -66,6 +69,9 @@ export interface ListingCreateInput {
   description_en?: string;
   amenities?: string[];
   cultural_tags?: string[];
+  allows_pets?: boolean;
+  self_check_in?: boolean;
+  accessibility_features?: string[];
   base_price_egp: number;
   cleaning_fee_egp?: number;
   cancellation_policy?: string;
@@ -101,6 +107,9 @@ export interface ListingUpdateInput {
   description_en?: string;
   amenities?: string[];
   cultural_tags?: string[];
+  allows_pets?: boolean;
+  self_check_in?: boolean;
+  accessibility_features?: string[];
   base_price_egp?: number;
   cleaning_fee_egp?: number;
   cancellation_policy?: string;

@@ -46,6 +46,18 @@ const AMENITIES = [
   "elevator",
 ];
 
+// Must match app.listings.constants.AccessibilityFeature (DEC-019).
+const ACCESSIBILITY_FEATURES = [
+  { value: "STEP_FREE_ENTRANCE", key: "stepFreeEntrance" },
+  { value: "WIDE_ENTRANCE", key: "wideEntrance" },
+  { value: "STEP_FREE_BEDROOM", key: "stepFreeBedroom" },
+  { value: "ACCESSIBLE_BATHROOM", key: "accessibleBathroom" },
+  { value: "SHOWER_GRAB_BAR", key: "showerGrabBar" },
+];
+
+// Must match app.auth.constants.SpokenLanguage (DEC-019).
+const HOST_LANGUAGES = ["ar", "en", "fr", "de", "ru", "it", "es", "tr"];
+
 export default function SearchPage() {
   const t = useTranslations();
   const searchParams = useSearchParams();
@@ -68,6 +80,10 @@ export default function SearchPage() {
       bathrooms: searchParams.get("bathrooms") || undefined,
       amenities: searchParams.get("amenities") || undefined,
       free_cancellation: searchParams.get("free_cancellation") || undefined,
+      pets: searchParams.get("pets") || undefined,
+      self_check_in: searchParams.get("self_check_in") || undefined,
+      accessibility: searchParams.get("accessibility") || undefined,
+      host_language: searchParams.get("host_language") || undefined,
       sw_lat: searchParams.get("sw_lat") || undefined,
       sw_lng: searchParams.get("sw_lng") || undefined,
       ne_lat: searchParams.get("ne_lat") || undefined,
@@ -85,6 +101,10 @@ export default function SearchPage() {
   const selectedAmenities = useMemo(() => {
     return filters.amenities ? filters.amenities.split(",") : [];
   }, [filters.amenities]);
+
+  const selectedAccessibility = useMemo(() => {
+    return filters.accessibility ? filters.accessibility.split(",") : [];
+  }, [filters.accessibility]);
 
   const toggleTag = (tag: string) => {
     const next = new Set(selectedTags);
@@ -122,6 +142,24 @@ export default function SearchPage() {
     router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
   };
 
+  const toggleAccessibility = (feature: string) => {
+    const next = new Set(selectedAccessibility);
+    if (next.has(feature)) {
+      next.delete(feature);
+    } else {
+      next.add(feature);
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (next.size > 0) {
+      nextParams.set("accessibility", Array.from(next).join(","));
+    } else {
+      nextParams.delete("accessibility");
+    }
+
+    router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
+  };
+
   const updateParam = (key: string, value: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     if (value) {
@@ -135,7 +173,17 @@ export default function SearchPage() {
   };
 
   const hasActiveFilters = Boolean(
-    filters.property_type || filters.min_price || filters.max_price || filters.bedrooms || filters.beds || filters.bathrooms || filters.amenities
+    filters.property_type ||
+      filters.min_price ||
+      filters.max_price ||
+      filters.bedrooms ||
+      filters.beds ||
+      filters.bathrooms ||
+      filters.amenities ||
+      filters.pets ||
+      filters.self_check_in ||
+      filters.accessibility ||
+      filters.host_language
   );
 
   const {
@@ -365,6 +413,10 @@ export default function SearchPage() {
                 nextParams.delete("beds");
                 nextParams.delete("bathrooms");
                 nextParams.delete("amenities");
+                nextParams.delete("pets");
+                nextParams.delete("self_check_in");
+                nextParams.delete("accessibility");
+                nextParams.delete("host_language");
                 router.push(`/${locale}/search?${nextParams.toString()}`, {
                   scroll: false,
                 });
@@ -398,6 +450,120 @@ export default function SearchPage() {
                 aria-pressed={selected}
               >
                 {t(`listingForm.amenities.${amenity}`)}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Discovery filters (DEC-019): pets, self check-in, accessibility, host language */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const nextParams = new URLSearchParams(searchParams.toString());
+              if (filters.pets) {
+                nextParams.delete("pets");
+              } else {
+                nextParams.set("pets", "true");
+              }
+              router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
+            }}
+            className={`
+              rounded-full border px-3 py-1 text-xs font-medium transition
+              ${
+                filters.pets
+                  ? "border-brand-600 bg-brand-600 text-white"
+                  : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
+              }
+            `}
+            aria-pressed={Boolean(filters.pets)}
+          >
+            {t("search.petsAllowed")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const nextParams = new URLSearchParams(searchParams.toString());
+              if (filters.self_check_in) {
+                nextParams.delete("self_check_in");
+              } else {
+                nextParams.set("self_check_in", "true");
+              }
+              router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
+            }}
+            className={`
+              rounded-full border px-3 py-1 text-xs font-medium transition
+              ${
+                filters.self_check_in
+                  ? "border-brand-600 bg-brand-600 text-white"
+                  : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
+              }
+            `}
+            aria-pressed={Boolean(filters.self_check_in)}
+          >
+            {t("search.selfCheckIn")}
+          </button>
+        </div>
+
+        {ACCESSIBILITY_FEATURES.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-neutral-500">
+              {t("search.accessibility")}:
+            </span>
+            {ACCESSIBILITY_FEATURES.map((feature) => {
+              const selected = selectedAccessibility.includes(feature.value);
+              return (
+                <button
+                  key={feature.value}
+                  type="button"
+                  onClick={() => toggleAccessibility(feature.value)}
+                  className={`
+                    rounded-full border px-3 py-1 text-xs font-medium transition
+                    ${
+                      selected
+                        ? "border-brand-600 bg-brand-600 text-white"
+                        : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
+                    }
+                  `}
+                  aria-pressed={selected}
+                >
+                  {t(`search.accessibilityFeatures.${feature.key}`)}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-neutral-500">
+            {t("search.hostLanguage")}:
+          </span>
+          {HOST_LANGUAGES.map((lang) => {
+            const selected = filters.host_language === lang;
+            return (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => {
+                  const nextParams = new URLSearchParams(searchParams.toString());
+                  if (selected) {
+                    nextParams.delete("host_language");
+                  } else {
+                    nextParams.set("host_language", lang);
+                  }
+                  router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
+                }}
+                className={`
+                  rounded-full border px-3 py-1 text-xs font-medium transition
+                  ${
+                    selected
+                      ? "border-brand-600 bg-brand-600 text-white"
+                      : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
+                  }
+                `}
+                aria-pressed={selected}
+              >
+                {t(`search.languages.${lang}`)}
               </button>
             );
           })}

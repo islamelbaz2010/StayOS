@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
@@ -71,6 +72,10 @@ def _make_listing_response(user_id: str | None = None) -> ListingResponse:
         description="وصف",
         amenities=["WIFI"],
         cultural_tags=["FAMILY_ONLY"],
+        allows_pets=False,
+        self_check_in=False,
+        accessibility_features=[],
+        host_languages=[],
         base_price_egp=1500,
         cleaning_fee_egp=0,
         cancellation_policy="FLEXIBLE",
@@ -192,6 +197,119 @@ def test_search_listings_accepts_rating_sort(listings_client: TestClient, monkey
     assert captured.get("sort") == "rating_desc"
 
 
+def test_search_listings_accepts_discovery_filters(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    """Pets / self check-in / accessibility / host language reach the filters (DEC-019)."""
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["pets"] = filters.pets
+        captured["self_check_in"] = filters.self_check_in
+        captured["accessibility"] = filters.accessibility
+        captured["host_language"] = filters.host_language
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get(
+        "/api/v1/listings?pets=true&self_check_in=true"
+        "&accessibility=STEP_FREE_ENTRANCE,WIDE_ENTRANCE&host_language=ar,en"
+    )
+    assert response.status_code == 200
+    assert captured.get("pets") is True
+    assert captured.get("self_check_in") is True
+    assert captured.get("accessibility") == "STEP_FREE_ENTRANCE,WIDE_ENTRANCE"
+    assert captured.get("host_language") == "ar,en"
+
+
+def test_search_listings_discovery_filters_default_to_none(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    """Absent discovery filters must stay None so they never narrow results."""
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["pets"] = filters.pets
+        captured["self_check_in"] = filters.self_check_in
+        captured["accessibility"] = filters.accessibility
+        captured["host_language"] = filters.host_language
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get("/api/v1/listings?city=Cairo")
+    assert response.status_code == 200
+    assert captured.get("pets") is None
+    assert captured.get("self_check_in") is None
+    assert captured.get("accessibility") is None
+    assert captured.get("host_language") is None
+
+
+def test_listing_create_rejects_unknown_accessibility_feature() -> None:
+    from app.listings.schemas import ListingCreate
+
+    with pytest.raises(ValidationError):
+        ListingCreate(
+            property_type="APARTMENT",
+            lat=30.0,
+            lng=31.0,
+            governorate="Cairo",
+            city="Cairo",
+            max_guests=2,
+            bedrooms=1,
+            bathrooms=1,
+            title_ar="شقة",
+            description_ar="وصف",
+            base_price_egp=500,
+            accessibility_features=["TELEPORTER"],
+        )
+
+
+def test_listing_create_normalizes_accessibility_features() -> None:
+    from app.listings.schemas import ListingCreate
+
+    listing = ListingCreate(
+        property_type="APARTMENT",
+        lat=30.0,
+        lng=31.0,
+        governorate="Cairo",
+        city="Cairo",
+        max_guests=2,
+        bedrooms=1,
+        bathrooms=1,
+        title_ar="شقة",
+        description_ar="وصف",
+        base_price_egp=500,
+        accessibility_features=["step_free_entrance", "STEP_FREE_ENTRANCE"],
+    )
+    # Lowercase input is uppercased, and the duplicate is collapsed.
+    assert listing.accessibility_features == ["STEP_FREE_ENTRANCE"]
+    # Booleans default to opt-out.
+    assert listing.allows_pets is False
+    assert listing.self_check_in is False
+
+
+def test_host_profile_update_rejects_unknown_language() -> None:
+    from app.host.schemas import HostProfileUpdate
+
+    with pytest.raises(ValidationError):
+        HostProfileUpdate(languages=["klingon"])
+
+
+def test_host_profile_update_normalizes_languages() -> None:
+    from app.host.schemas import HostProfileUpdate
+
+    update = HostProfileUpdate(languages=["AR", "ar", "En"])
+    assert update.languages == ["ar", "en"]
+
+
 def test_get_listing_required_fields(listings_client: TestClient, monkeypatch) -> None:
     listing = _make_listing_response()
     monkeypatch.setattr(
@@ -210,6 +328,28 @@ def test_get_listing_required_fields(listings_client: TestClient, monkeypatch) -
     assert "cover_image" in data
     assert data["max_guests"] == listing.max_guests
     assert data["property_type"] == listing.property_type
+
+
+def test_get_listing_includes_discovery_fields(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    """Listing detail response exposes DEC-019 discovery attributes (DEC-019)."""
+    listing = _make_listing_response()
+    listing.allows_pets = True
+    listing.self_check_in = True
+    listing.accessibility_features = ["STEP_FREE_ENTRANCE", "WIDE_ENTRANCE"]
+    listing.host_languages = ["ar", "en"]
+    monkeypatch.setattr(
+        "app.listings.router.get_listing_detail", AsyncMock(return_value=listing)
+    )
+
+    response = listings_client.get(f"/api/v1/listings/{listing.id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["allows_pets"] is True
+    assert data["self_check_in"] is True
+    assert data["accessibility_features"] == ["STEP_FREE_ENTRANCE", "WIDE_ENTRANCE"]
+    assert data["host_languages"] == ["ar", "en"]
 
 
 def test_get_listing(listings_client: TestClient, monkeypatch) -> None:

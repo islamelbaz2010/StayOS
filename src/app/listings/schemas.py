@@ -4,6 +4,26 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from .constants import AccessibilityFeature
+
+
+def _validate_accessibility_features(values: list[str]) -> list[str]:
+    """Reject unknown accessibility codes (DEC-019).
+
+    The vocabulary is fixed, so an unrecognised code would silently never
+    match a search filter. Failing loudly at the contract boundary is the
+    only way the host learns their input was wrong.
+    """
+    allowed = {str(feature) for feature in AccessibilityFeature}
+    unknown = [value for value in values if value not in allowed]
+    if unknown:
+        raise ValueError(
+            f"Unknown accessibility features: {', '.join(sorted(unknown))}. "
+            f"Allowed: {', '.join(sorted(allowed))}"
+        )
+    # Preserve host ordering but drop duplicates.
+    return list(dict.fromkeys(values))
+
 
 class ListingCreate(BaseModel):
     property_type: str = Field(..., min_length=1, max_length=50)
@@ -25,6 +45,9 @@ class ListingCreate(BaseModel):
     description_en: str | None = None
     amenities: list[str] = Field(default_factory=list)
     cultural_tags: list[str] = Field(default_factory=list)
+    allows_pets: bool = False
+    self_check_in: bool = False
+    accessibility_features: list[str] = Field(default_factory=list)
     base_price_egp: int = Field(..., ge=100)
     cleaning_fee_egp: int = Field(default=0, ge=0)
     cancellation_policy: str = Field(default="FLEXIBLE", min_length=1, max_length=50)
@@ -57,7 +80,14 @@ class ListingCreate(BaseModel):
             return v.upper()
         return v
 
-    @field_validator("property_type", "cultural_tags", "category", "cancellation_policy", mode="before")
+    @field_validator(
+        "property_type",
+        "cultural_tags",
+        "category",
+        "cancellation_policy",
+        "accessibility_features",
+        mode="before",
+    )
     @classmethod
     def uppercase_strings(cls, v: str | list[str]) -> str | list[str]:
         if isinstance(v, str):
@@ -65,6 +95,11 @@ class ListingCreate(BaseModel):
         if isinstance(v, list):
             return [item.upper() for item in v]
         return v
+
+    @field_validator("accessibility_features")
+    @classmethod
+    def validate_accessibility_features(cls, v: list[str]) -> list[str]:
+        return _validate_accessibility_features(v)
 
     @model_validator(mode="after")
     def validate_nights(self) -> "ListingCreate":
@@ -92,6 +127,9 @@ class ListingUpdate(BaseModel):
     description_en: str | None = None
     amenities: list[str] | None = None
     cultural_tags: list[str] | None = None
+    allows_pets: bool | None = None
+    self_check_in: bool | None = None
+    accessibility_features: list[str] | None = None
     base_price_egp: int | None = Field(None, ge=100)
     cleaning_fee_egp: int | None = Field(None, ge=0)
     cancellation_policy: str | None = Field(None, min_length=1, max_length=50)
@@ -124,12 +162,21 @@ class ListingUpdate(BaseModel):
             return v.upper()
         return v
 
-    @field_validator("amenities", "cultural_tags", mode="before")
+    @field_validator("amenities", "cultural_tags", "accessibility_features", mode="before")
     @classmethod
     def uppercase_lists(cls, v: list[str] | None) -> list[str] | None:
         if isinstance(v, list):
             return [item.upper() for item in v]
         return v
+
+    @field_validator("accessibility_features")
+    @classmethod
+    def validate_update_accessibility_features(
+        cls, v: list[str] | None
+    ) -> list[str] | None:
+        if v is None:
+            return v
+        return _validate_accessibility_features(v)
 
     @field_validator("property_type", "category", "cancellation_policy", mode="before")
     @classmethod
@@ -155,6 +202,7 @@ class ListingResponse(BaseModel):
     host_display_name: str | None = None
     host_kyc_status: str | None = None
     host_joined_at: str | None = None
+    host_languages: list[str] = Field(default_factory=list)
     property_type: str
     status: str
     lat: float
@@ -177,6 +225,9 @@ class ListingResponse(BaseModel):
     description: str
     amenities: list[str]
     cultural_tags: list[str]
+    allows_pets: bool = False
+    self_check_in: bool = False
+    accessibility_features: list[str] = Field(default_factory=list)
     base_price_egp: int
     cleaning_fee_egp: int
     cancellation_policy: str
@@ -252,6 +303,7 @@ class HostProfileResponse(BaseModel):
     display_name: str | None
     kyc_status: str | None
     joined_at: str | None
+    languages: list[str] = Field(default_factory=list)
     listings: list[ListingSearchResult]
 
 
@@ -300,6 +352,13 @@ class ListingSearchFilters(BaseModel):
     cultural_tags: str | None = None
     amenities: str | None = None
     free_cancellation: bool | None = None
+    # Structured discovery filters (DEC-019). Booleans are opt-in only: a
+    # false/absent value must not exclude listings, matching how Airbnb's
+    # filters narrow results rather than invert them.
+    pets: bool | None = None
+    self_check_in: bool | None = None
+    accessibility: str | None = None
+    host_language: str | None = None
     guests: int | None = Field(None, ge=1)
     sort: str | None = None
     cursor: str | None = None

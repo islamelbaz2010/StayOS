@@ -304,6 +304,7 @@ class ListingSearchResult(BaseModel):
     lng: float
     max_guests: int
     bedrooms: int
+    beds: int = 0
     bathrooms: int
     amenities: list[str]
     cultural_tags: list[str]

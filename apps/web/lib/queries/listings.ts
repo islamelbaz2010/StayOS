@@ -125,6 +125,7 @@ function mapSearchResult(item: ApiSearchResult): Listing {
     currency: item.currency,
     maxGuests: item.max_guests,
     bedrooms: item.bedrooms,
+    beds: item.beds ?? 0,
     bathrooms: item.bathrooms,
     coverImage: item.cover_image ?? null,
     hostKycStatus: item.host_kyc_status ?? null,
@@ -288,6 +289,7 @@ export interface HostProfile {
   displayName: string | null;
   kycStatus: string | null;
   joinedAt: string | null;
+  languages: string[];
   listings: Listing[];
 }
 
@@ -301,6 +303,7 @@ export function useHostProfile(hostId: string) {
         displayName: data.display_name,
         kycStatus: data.kyc_status,
         joinedAt: data.joined_at,
+        languages: data.languages ?? [],
         listings: data.listings.map((item) => mapSearchResult(item as unknown as ApiSearchResult)),
       };
     },

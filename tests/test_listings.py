@@ -317,12 +317,14 @@ def test_search_result_includes_category() -> None:
         lng=31.0,
         max_guests=4,
         bedrooms=2,
+        beds=3,
         bathrooms=1,
         amenities=["wifi"],
         cultural_tags=[],
         house_rules=None,
     )
     assert result.category == "PRIVATE_ROOM"
+    assert result.beds == 3
 
 
 def test_listing_create_rejects_unknown_accessibility_feature() -> None:

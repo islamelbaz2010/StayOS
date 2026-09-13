@@ -171,6 +171,7 @@ def _to_search_result(
         "lng": lng,
         "max_guests": unit.max_guests,
         "bedrooms": unit.bedrooms,
+        "beds": unit.beds,
         "bathrooms": unit.bathrooms,
         "amenities": listing.amenities,
         "cultural_tags": listing.cultural_tags,

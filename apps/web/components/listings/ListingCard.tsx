@@ -21,6 +21,7 @@ export interface Listing {
   currency: string;
   maxGuests: number;
   bedrooms?: number;
+  beds?: number;
   bathrooms?: number;
   coverImage: string | null;
   hostKycStatus?: string | null;
@@ -132,6 +133,14 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69 6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 012.25 18v-2.25c0-.596.237-1.176.659-1.6m0 0L9 9.75m0 0l3 3m-3-3l-1.5-1.5M21 18.75V12A2.25 2.25 0 0018.75 9.75h-1.5a1.5 1.5 0 00-1.06.44l-2.12 2.12m4.74 4.74l-2.12-2.12a1.5 1.5 0 00-1.06-.44h-1.5A2.25 2.25 0 0011.25 18v2.25c0 .596-.237 1.176-.659 1.6m0 0L9 21" />
                 </svg>
                 {listing.bedrooms} {t("bedrooms")}
+              </span>
+            )}
+            {listing.beds != null && listing.beds > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5">
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69 6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 012.25 18v-2.25c0-.596.237-1.176.659-1.6m0 0L9 9.75m0 0l3 3m-3-3l-1.5-1.5M21 18.75V12A2.25 2.25 0 0018.75 9.75h-1.5a1.5 1.5 0 00-1.06.44l-2.12 2.12m4.74 4.74l-2.12-2.12a1.5 1.5 0 00-1.06-.44h-1.5A2.25 2.25 0 0011.25 18v2.25c0 .596-.237 1.176-.659 1.6m0 0L9 21" />
+                </svg>
+                {listing.beds} {t("beds")}
               </span>
             )}
             {listing.bathrooms != null && (

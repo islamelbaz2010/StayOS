@@ -2743,6 +2743,11 @@ export interface components {
       max_guests: number;
       /** Bedrooms */
       bedrooms: number;
+      /**
+       * Beds
+       * @default 0
+       */
+      beds?: number;
       /** Bathrooms */
       bathrooms: number;
       /** Amenities */

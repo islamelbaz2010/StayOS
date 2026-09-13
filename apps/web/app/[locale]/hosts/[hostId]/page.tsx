@@ -37,6 +37,7 @@ function HostProfileSkeleton() {
 export default function HostProfilePage() {
   const t = useTranslations("publicHost");
   const tc = useTranslations("common");
+  const tl = useTranslations("listing");
   const params = useParams<{ locale: string; hostId: string }>();
   const hostId = params?.hostId ?? "";
 
@@ -78,6 +79,23 @@ export default function HostProfilePage() {
                     )}
                   </div>
                 </div>
+                {host.languages.length > 0 && (
+                  <div className="mt-4 border-t border-neutral-100 pt-4">
+                    <p className="mb-2 text-sm font-semibold text-neutral-900">
+                      {tl("hostLanguages")}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {host.languages.map((lang) => (
+                        <span
+                          key={lang}
+                          className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-700"
+                        >
+                          {tl(`languages.${lang}`, { default: lang })}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-8">

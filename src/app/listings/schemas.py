@@ -340,6 +340,14 @@ class HostProfileResponse(BaseModel):
     kyc_status: str | None
     joined_at: str | None
     languages: list[str] = Field(default_factory=list)
+    # Response metrics derived from messaging + booking action timestamps
+    # over the last 30 days, matching Airbnb's documented behavior.
+    # ``response_rate`` is the percentage of inquiries and booking requests
+    # the host responded to within 24 hours. ``response_time_hours`` is the
+    # median time-to-first-response in hours. Both are ``None`` when the
+    # host has received no inquiries or requests in the window.
+    response_rate: int | None = None
+    response_time_hours: float | None = None
     listings: list[ListingSearchResult]
 
 

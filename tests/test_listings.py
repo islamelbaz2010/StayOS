@@ -1010,3 +1010,101 @@ def test_approve_listing_forbidden_for_host(
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 403
+
+
+def test_host_profile_response_schema_includes_response_metrics() -> None:
+    """HostProfileResponse must expose response_rate and response_time_hours
+    so the frontend can display Airbnb-style host response metrics."""
+    from app.listings.schemas import HostProfileResponse
+
+    fields = HostProfileResponse.model_fields
+    assert "response_rate" in fields
+    assert "response_time_hours" in fields
+    # Both must default to None when the host has no data in the window.
+    assert fields["response_rate"].default is None
+    assert fields["response_time_hours"].default is None
+
+
+@pytest.mark.asyncio
+async def test_calculate_host_response_metrics_no_data_returns_none() -> None:
+    """When a host has no inquiries or requests in the window, metrics are None."""
+    from unittest.mock import MagicMock
+
+    from app.listings.services import _calculate_host_response_metrics
+
+    session = AsyncMock()
+    # Both queries return empty result sets.
+    mock_result = MagicMock()
+    mock_result.all.return_value = []
+    session.execute = AsyncMock(return_value=mock_result)
+
+    rate, hours = await _calculate_host_response_metrics(session, "host-1")
+    assert rate is None
+    assert hours is None
+
+
+@pytest.mark.asyncio
+async def test_calculate_host_response_metrics_with_data() -> None:
+    """Response rate and median response time are computed from conversation
+    first-response and booking accept/reject timestamps."""
+    from datetime import timedelta as _td
+    from unittest.mock import MagicMock
+
+    from app.listings.services import _calculate_host_response_metrics
+
+    base = datetime(2026, 1, 15, 12, 0, 0)
+    # Two conversations: one responded in 2h, one responded in 48h (outside 24h window).
+    conv_rows = [
+        (base, base + _td(hours=2)),     # responded within 24h
+        (base, base + _td(hours=48)),    # responded outside 24h
+    ]
+    # One booking request accepted in 5h (within 24h).
+    booking_rows = [
+        (base, base + _td(hours=5), None),
+    ]
+
+    session = AsyncMock()
+
+    # session.execute is called twice: once for conversations, once for bookings.
+    conv_result = MagicMock()
+    conv_result.all.return_value = conv_rows
+    booking_result = MagicMock()
+    booking_result.all.return_value = booking_rows
+    session.execute = AsyncMock(side_effect=[conv_result, booking_result])
+
+    rate, hours = await _calculate_host_response_metrics(session, "host-1")
+    # 3 total responses, 2 within 24h → 67%.
+    assert rate == 67
+    # Median of [2, 48, 5] = 5.0 hours.
+    assert hours == 5.0
+
+
+@pytest.mark.asyncio
+async def test_calculate_host_response_metrics_unresponded_inquiry() -> None:
+    """An inquiry with no host reply counts against the response rate but
+    does not contribute to response time."""
+    from datetime import timedelta as _td
+    from unittest.mock import MagicMock
+
+    from app.listings.services import _calculate_host_response_metrics
+
+    base = datetime(2026, 1, 15, 12, 0, 0)
+    # One conversation responded in 1h, one with no response (None).
+    conv_rows = [
+        (base, base + _td(hours=1)),
+        (base, None),
+    ]
+    booking_rows: list[tuple] = []
+
+    session = AsyncMock()
+    conv_result = MagicMock()
+    conv_result.all.return_value = conv_rows
+    booking_result = MagicMock()
+    booking_result.all.return_value = booking_rows
+    session.execute = AsyncMock(side_effect=[conv_result, booking_result])
+
+    rate, hours = await _calculate_host_response_metrics(session, "host-1")
+    # 2 total, 1 within 24h → 50%.
+    assert rate == 50
+    # Only one response time → median is 1.0.
+    assert hours == 1.0

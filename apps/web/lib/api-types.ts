@@ -4135,6 +4135,10 @@ export interface components {
       joined_at: string | null;
       /** Languages */
       languages?: string[];
+      /** Response Rate */
+      response_rate?: number | null;
+      /** Response Time Hours */
+      response_time_hours?: number | null;
       /** Listings */
       listings: components["schemas"]["ListingSearchResult"][];
     };

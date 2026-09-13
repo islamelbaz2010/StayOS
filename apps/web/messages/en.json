@@ -1307,7 +1307,11 @@
     "joinedIn": "Joined in {date}",
     "listings": "Listings by {name}",
     "noListings": "No active listings from this host.",
-    "loadError": "Failed to load host profile."
+    "loadError": "Failed to load host profile.",
+    "responseRate": "Response rate",
+    "responseTime": "Typically responds",
+    "responseWithinHour": "within an hour",
+    "responseWithinHours": "within {hours} hours"
   },
   "adminDiscovery": {
     "title": "Supply Discovery",

@@ -1307,7 +1307,11 @@
     "joinedIn": "انضم في {date}",
     "listings": "عقارات {name}",
     "noListings": "لا توجد عقارات نشطة لهذا المضيف.",
-    "loadError": "تعذّر تحميل ملف المضيف."
+    "loadError": "تعذّر تحميل ملف المضيف.",
+    "responseRate": "معدل الاستجابة",
+    "responseTime": "عادة ما يرد",
+    "responseWithinHour": "خلال ساعة",
+    "responseWithinHours": "خلال {hours} ساعات"
   },
   "adminDiscovery": {
     "title": "اكتشاف المعروض",

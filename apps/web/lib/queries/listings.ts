@@ -292,6 +292,8 @@ export interface HostProfile {
   kycStatus: string | null;
   joinedAt: string | null;
   languages: string[];
+  responseRate: number | null;
+  responseTimeHours: number | null;
   listings: Listing[];
 }
 
@@ -306,6 +308,8 @@ export function useHostProfile(hostId: string) {
         kycStatus: data.kyc_status,
         joinedAt: data.joined_at,
         languages: data.languages ?? [],
+        responseRate: data.response_rate ?? null,
+        responseTimeHours: data.response_time_hours ?? null,
         listings: data.listings.map((item) => mapSearchResult(item as unknown as ApiSearchResult)),
       };
     },

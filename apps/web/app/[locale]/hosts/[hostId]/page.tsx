@@ -96,6 +96,36 @@ export default function HostProfilePage() {
                     </div>
                   </div>
                 )}
+                {(host.responseRate != null || host.responseTimeHours != null) && (
+                  <div className="mt-4 border-t border-neutral-100 pt-4">
+                    <div className="flex flex-wrap gap-6">
+                      {host.responseRate != null && (
+                        <div>
+                          <p className="text-sm font-semibold text-neutral-900">
+                            {t("responseRate")}
+                          </p>
+                          <p className="mt-0.5 text-sm text-neutral-600">
+                            {host.responseRate}%
+                          </p>
+                        </div>
+                      )}
+                      {host.responseTimeHours != null && (
+                        <div>
+                          <p className="text-sm font-semibold text-neutral-900">
+                            {t("responseTime")}
+                          </p>
+                          <p className="mt-0.5 text-sm text-neutral-600">
+                            {host.responseTimeHours <= 1
+                              ? t("responseWithinHour")
+                              : t("responseWithinHours", {
+                                  hours: Math.round(host.responseTimeHours),
+                                })}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-8">

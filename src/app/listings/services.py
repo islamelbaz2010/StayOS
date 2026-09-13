@@ -1,5 +1,6 @@
 import uuid
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from statistics import median
 from typing import Any
 
 import boto3
@@ -11,6 +12,8 @@ from sqlalchemy.orm import selectinload
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.bookings import repository as bookings_repository
+from app.bookings.constants import BookingStatus
+from app.bookings.models import Booking
 from app.config import settings
 from app.host.permissions import (
     assert_can_edit_listing,
@@ -21,6 +24,8 @@ from app.host.permissions import (
 )
 from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
+from app.messages.constants import ConversationType, ParticipantRole
+from app.messages.models import Conversation, ConversationParticipant, Message
 from app.reviews import repository as reviews_repository
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 
@@ -498,6 +503,103 @@ async def search_listings(
     )
 
 
+async def _calculate_host_response_metrics(
+    session: AsyncSession, host_id: str
+) -> tuple[int | None, float | None]:
+    """Compute host response rate (%) and median response time (hours) over
+    the last 30 days, matching Airbnb's documented behavior.
+
+    Counts both pre-booking inquiries (first non-automated host message in
+    a conversation) and booking requests (host accept/reject action) as
+    responses.  Returns ``(None, None)`` when the host has received no
+    inquiries or requests in the window.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=30)
+
+    # Subquery: earliest non-automated host message per conversation.
+    first_host_msg = (
+        select(
+            Message.conversation_id,
+            func.min(Message.created_at).label("first_response_at"),
+        )
+        .where(
+            Message.sender_role == ParticipantRole.HOST,
+            Message.automation_type.is_(None),
+        )
+        .group_by(Message.conversation_id)
+    ).subquery()
+
+    conv_rows = (
+        await session.execute(
+            select(
+                Conversation.created_at,
+                first_host_msg.c.first_response_at,
+            )
+            .select_from(Conversation)
+            .join(
+                ConversationParticipant,
+                ConversationParticipant.conversation_id == Conversation.id,
+            )
+            .outerjoin(first_host_msg, first_host_msg.c.conversation_id == Conversation.id)
+            .where(
+                ConversationParticipant.user_id == host_id,
+                ConversationParticipant.role == ParticipantRole.HOST,
+                Conversation.type.in_(
+                    [ConversationType.INQUIRY, ConversationType.RESERVATION]
+                ),
+                Conversation.created_at >= cutoff,
+            )
+        )
+    ).all()
+
+    booking_rows = (
+        await session.execute(
+            select(
+                Booking.requested_at,
+                Booking.accepted_at,
+                Booking.rejected_at,
+            )
+            .join(Unit, Unit.id == Booking.unit_id)
+            .where(
+                Unit.host_id == host_id,
+                Booking.requested_at >= cutoff,
+                (Booking.accepted_at.is_not(None))
+                | (Booking.rejected_at.is_not(None)),
+            )
+        )
+    ).all()
+
+    response_times_hours: list[float] = []
+    total = 0
+    responded_within_24h = 0
+
+    for created_at, first_response_at in conv_rows:
+        total += 1
+        if first_response_at is not None:
+            delta = first_response_at - created_at
+            hours = delta.total_seconds() / 3600
+            response_times_hours.append(hours)
+            if hours <= 24:
+                responded_within_24h += 1
+
+    for requested_at, accepted_at, rejected_at in booking_rows:
+        total += 1
+        response_at = accepted_at or rejected_at
+        if response_at is not None:
+            delta = response_at - requested_at
+            hours = delta.total_seconds() / 3600
+            response_times_hours.append(hours)
+            if hours <= 24:
+                responded_within_24h += 1
+
+    if total == 0:
+        return None, None
+
+    rate = round((responded_within_24h / total) * 100)
+    med = round(median(response_times_hours), 1) if response_times_hours else None
+    return rate, med
+
+
 async def get_host_profile(
     session: AsyncSession, host_id: str
 ) -> HostProfileResponse:
@@ -520,6 +622,10 @@ async def get_host_profile(
     )
     rows = result.all()
 
+    response_rate, response_time_hours = await _calculate_host_response_metrics(
+        session, host_id
+    )
+
     ratings_map = await reviews_repository.get_rating_aggregates_for_units(
         session, [unit.id for unit, _, _, _ in rows]
     )
@@ -540,6 +646,8 @@ async def get_host_profile(
         kyc_status=host.kyc_status,
         joined_at=str(host.created_at) if host.created_at else None,
         languages=list(host.languages or []),
+        response_rate=response_rate,
+        response_time_hours=response_time_hours,
         listings=listings,
     )
 

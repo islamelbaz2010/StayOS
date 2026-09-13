@@ -297,6 +297,7 @@ type ApiHostProfile = components["schemas"]["app__listings__schemas__HostProfile
 export interface HostProfile {
   id: string;
   displayName: string | null;
+  bio: string | null;
   kycStatus: string | null;
   joinedAt: string | null;
   languages: string[];
@@ -313,6 +314,7 @@ export function useHostProfile(hostId: string) {
       return {
         id: data.id,
         displayName: data.display_name,
+        bio: data.bio ?? null,
         kycStatus: data.kyc_status,
         joinedAt: data.joined_at,
         languages: data.languages ?? [],

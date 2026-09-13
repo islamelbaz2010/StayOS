@@ -1058,6 +1058,7 @@ async def get_host_profile(
     return host_schemas.HostProfileResponse(
         id=user.id,
         display_name=user.display_name,
+        bio=user.bio,
         phone_number=user.phone_number,
         email=user.email,
         kyc_status=user.kyc_status,
@@ -1079,6 +1080,8 @@ async def update_host_profile(
 
     if request.display_name is not None:
         user.display_name = request.display_name
+    if request.bio is not None:
+        user.bio = request.bio
     if request.email is not None:
         user.email = request.email
     if request.locale is not None:

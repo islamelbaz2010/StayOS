@@ -79,6 +79,11 @@ export default function HostProfilePage() {
                     )}
                   </div>
                 </div>
+                {host.bio && (
+                  <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
+                    {host.bio}
+                  </p>
+                )}
                 {host.languages.length > 0 && (
                   <div className="mt-4 border-t border-neutral-100 pt-4">
                     <p className="mb-2 text-sm font-semibold text-neutral-900">

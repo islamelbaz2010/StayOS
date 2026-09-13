@@ -595,6 +595,21 @@ async def test_update_host_profile_invalid_locale(fake_session: AsyncMock) -> No
         await host_services.update_host_profile(fake_session, host, request)
 
 
+@pytest.mark.asyncio
+async def test_update_host_profile_bio(fake_session: AsyncMock, monkeypatch) -> None:
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    fake_session.scalar = AsyncMock(side_effect=[0, 0])
+    monkeypatch.setattr(
+        host_repository,
+        "count_co_hosted_units",
+        AsyncMock(return_value=0),
+    )
+    request = host_schemas.HostProfileUpdate(bio="I host cozy apartments in Cairo.")
+    result = await host_services.update_host_profile(fake_session, host, request)
+    assert result.bio == "I host cozy apartments in Cairo."
+    assert host.bio == "I host cozy apartments in Cairo."
+
+
 # ============================================================
 # HOST CALENDAR
 # ============================================================

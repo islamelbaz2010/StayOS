@@ -662,6 +662,7 @@ async def get_host_profile(
     return HostProfileResponse(
         id=host.id,
         display_name=host.display_name,
+        bio=host.bio,
         kyc_status=host.kyc_status,
         joined_at=str(host.created_at) if host.created_at else None,
         languages=list(host.languages or []),

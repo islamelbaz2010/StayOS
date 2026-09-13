@@ -40,6 +40,7 @@ export default function HostProfilePage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
   const [email, setEmail] = useState("");
   const [languages, setLanguages] = useState<string[]>([]);
 
@@ -69,6 +70,7 @@ export default function HostProfilePage() {
 
   const startEdit = () => {
     setDisplayName(profile.display_name ?? "");
+    setBio(profile.bio ?? "");
     setEmail(profile.email ?? "");
     setLanguages(profile.languages ?? []);
     setIsEditing(true);
@@ -83,6 +85,7 @@ export default function HostProfilePage() {
   const saveEdit = async () => {
     await updateProfile.mutateAsync({
       display_name: displayName.trim() || undefined,
+      bio: bio.trim() || undefined,
       email: email.trim() || undefined,
       languages,
     });
@@ -140,6 +143,23 @@ export default function HostProfilePage() {
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
+                          className="input mt-1 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="bio"
+                          className="block text-sm font-medium text-neutral-700"
+                        >
+                          {t("bio")}
+                        </label>
+                        <textarea
+                          id="bio"
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          maxLength={2000}
+                          rows={4}
+                          placeholder={t("bioPlaceholder")}
                           className="input mt-1 text-sm"
                         />
                       </div>
@@ -202,6 +222,11 @@ export default function HostProfilePage() {
                       <p className="mt-2 text-sm text-neutral-500">
                         {profile.email || t("noEmail")}
                       </p>
+                      {profile.bio && (
+                        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
+                          {profile.bio}
+                        </p>
+                      )}
                       {profile.languages && profile.languages.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {profile.languages.map((lang) => (

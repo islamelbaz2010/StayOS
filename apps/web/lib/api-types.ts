@@ -1892,6 +1892,8 @@ export interface components {
     HostProfileUpdate: {
       /** Display Name */
       display_name?: string | null;
+      /** Bio */
+      bio?: string | null;
       /** Email */
       email?: string | null;
       /** Locale */
@@ -4135,6 +4137,8 @@ export interface components {
       id: string;
       /** Display Name */
       display_name: string | null;
+      /** Bio */
+      bio?: string | null;
       /** Phone Number */
       phone_number: string | null;
       /** Email */
@@ -4205,6 +4209,8 @@ export interface components {
       id: string;
       /** Display Name */
       display_name: string | null;
+      /** Bio */
+      bio?: string | null;
       /** Kyc Status */
       kyc_status: string | null;
       /** Joined At */

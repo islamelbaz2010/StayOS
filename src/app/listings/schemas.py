@@ -409,6 +409,7 @@ class ListingSearchResponse(BaseModel):
 class HostProfileResponse(BaseModel):
     id: str
     display_name: str | None
+    bio: str | None = None
     kyc_status: str | None
     joined_at: str | None
     languages: list[str] = Field(default_factory=list)

@@ -1297,6 +1297,8 @@
     "loadError": "Failed to load profile.",
     "displayName": "Display name",
     "email": "Email",
+    "bio": "About you",
+    "bioPlaceholder": "Tell guests a bit about yourself, your hosting style, and what makes your place special.",
     "noEmail": "No email set",
     "languages": "Languages you speak",
     "edit": "Edit profile",

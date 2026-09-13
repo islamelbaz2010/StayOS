@@ -138,6 +138,7 @@ class HostProfileResponse(BaseModel):
 
     id: str
     display_name: str | None
+    bio: str | None = None
     phone_number: str | None
     email: str | None
     kyc_status: str
@@ -152,6 +153,7 @@ class HostProfileResponse(BaseModel):
 
 class HostProfileUpdate(BaseModel):
     display_name: str | None = Field(None, max_length=255)
+    bio: str | None = Field(None, max_length=2000)
     email: str | None = Field(None, max_length=255)
     locale: str | None = Field(None, max_length=10)
     languages: list[str] | None = None

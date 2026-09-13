@@ -27,3 +27,9 @@ SUBRATING_KEYS = frozenset(s.value for s in ReviewSubRating)
 # Airbnb's simultaneous-publication window: a submitted review is hidden
 # until the other party also submits OR this many days pass.
 PUBLICATION_WINDOW_DAYS = 14
+
+
+# Airbnb's review submission window: a guest or host can leave a review
+# only within this many days after the stay ends (checkout). After the
+# window closes, the review option expires.
+REVIEW_ELIGIBILITY_WINDOW_DAYS = 14

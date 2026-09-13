@@ -3799,6 +3799,11 @@ export interface components {
       arrival: components["schemas"]["StayArrivalInfo"];
       /** Review Eligible */
       review_eligible: boolean;
+      /**
+       * Review Window Expired
+       * @default false
+       */
+      review_window_expired?: boolean;
     };
     /** StayPropertyInfo */
     StayPropertyInfo: {

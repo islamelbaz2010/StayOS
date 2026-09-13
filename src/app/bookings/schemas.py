@@ -154,3 +154,8 @@ class StayInfoResponse(BaseModel):
     host: StayHostInfo
     arrival: StayArrivalInfo
     review_eligible: bool
+    # True when the stay is finished but the 14-day review window has
+    # expired (Airbnb allows reviews only within 14 days of checkout).
+    # Lets the frontend show an explanatory message instead of just
+    # hiding the review form.
+    review_window_expired: bool = False

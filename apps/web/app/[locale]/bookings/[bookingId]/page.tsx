@@ -115,7 +115,7 @@ function TripContent({
     );
   }
 
-  const { booking, property, host, arrival, review_eligible: reviewEligible } = stay;
+  const { booking, property, host, arrival, review_eligible: reviewEligible, review_window_expired: reviewWindowExpired } = stay;
   const phase = booking.stay_phase;
   const terminalReason = booking.cancel_reason || booking.reject_reason;
   const isTerminal =
@@ -520,6 +520,14 @@ function TripContent({
             unitId={booking.unit_id}
             onSubmitted={() => refetch()}
           />
+        )}
+
+        {reviewWindowExpired && (
+          <div className="card border-s-4 border-s-neutral-300 p-5 sm:p-6">
+            <p className="text-sm text-neutral-600">
+              {t("reviewWindowExpired")}
+            </p>
+          </div>
         )}
 
         {CANCELLABLE_PHASES.has(phase) && (

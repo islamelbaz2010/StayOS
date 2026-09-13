@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +9,7 @@ from app.bookings.constants import BookingStatus
 from app.shared.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 
 from . import repository as reviews_repository
+from .constants import REVIEW_ELIGIBILITY_WINDOW_DAYS
 from .models import Review
 from .schemas import (
     GuestReviewListResponse,
@@ -66,6 +67,19 @@ def _to_host_review_response(
     )
 
 
+def _review_window_expired(booking) -> bool:
+    """Airbnb allows reviews only within 14 days after checkout."""
+    reference = booking.checked_out_at or booking.check_out
+    if reference is None:
+        return False
+    if isinstance(reference, datetime):
+        reference_dt = reference if reference.tzinfo else reference.replace(tzinfo=timezone.utc)
+    else:
+        reference_dt = datetime.combine(reference, datetime.min.time(), tzinfo=timezone.utc)
+    deadline = reference_dt + timedelta(days=REVIEW_ELIGIBILITY_WINDOW_DAYS)
+    return datetime.now(timezone.utc) > deadline
+
+
 async def create_review(
     session: AsyncSession, user: User, booking_id: str, request: ReviewCreate
 ) -> ReviewResponse:
@@ -83,6 +97,11 @@ async def create_review(
     )
     if not stay_finished or booking.status == BookingStatus.CANCELLED:
         raise ValidationError("You can only review a stay after it's completed")
+
+    if _review_window_expired(booking):
+        raise ValidationError(
+            f"The {REVIEW_ELIGIBILITY_WINDOW_DAYS}-day review window has expired"
+        )
 
     existing = await reviews_repository.get_guest_review_by_booking(session, booking_id)
     if existing is not None:
@@ -137,6 +156,11 @@ async def create_host_review(
     )
     if not stay_finished or booking.status == BookingStatus.CANCELLED:
         raise ValidationError("You can only review a guest after the stay is completed")
+
+    if _review_window_expired(booking):
+        raise ValidationError(
+            f"The {REVIEW_ELIGIBILITY_WINDOW_DAYS}-day review window has expired"
+        )
 
     existing = await reviews_repository.get_host_review_by_booking(session, booking_id)
     if existing is not None:

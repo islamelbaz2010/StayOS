@@ -774,3 +774,54 @@ async def test_create_host_response_rejects_not_found(fake_session: AsyncMock, m
         await review_services.create_host_response(
             fake_session, host, "nonexistent", HostResponseCreate(response="Response")
         )
+
+
+@pytest.mark.asyncio
+async def test_create_review_rejects_expired_window(fake_session: AsyncMock, monkeypatch) -> None:
+    """Review submission is rejected once the 14-day window after checkout passes."""
+    guest = _make_user()
+    unit = _make_unit()
+    booking = _make_booking(unit, guest)
+    # checkout was 20 days ago — outside the 14-day window
+    booking.check_out = _TODAY - timedelta(days=20)
+    booking.status = BookingStatus.COMPLETED
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(
+        reviews_repository, "get_guest_review_by_booking", AsyncMock(return_value=None)
+    )
+
+    with pytest.raises(ValidationError):
+        await review_services.create_review(
+            fake_session, guest, booking.id, ReviewCreate(rating=5)
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_host_review_rejects_expired_window(fake_session: AsyncMock, monkeypatch) -> None:
+    """Host review submission is rejected once the 14-day window after checkout passes."""
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    guest = _make_user()
+    unit = _make_unit(host_id="host-1")
+    booking = _make_booking(unit, guest)
+    booking.check_out = _TODAY - timedelta(days=20)
+    booking.status = BookingStatus.COMPLETED
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    mock_unit_result = MagicMock()
+    mock_unit_result.scalar_one_or_none.return_value = unit
+    mock_guest_result = MagicMock()
+    mock_guest_result.scalar_one_or_none.return_value = guest
+    fake_session.execute = AsyncMock(side_effect=[mock_unit_result, mock_guest_result])
+    monkeypatch.setattr(
+        reviews_repository, "get_host_review_by_booking", AsyncMock(return_value=None)
+    )
+
+    with pytest.raises(ValidationError):
+        await review_services.create_host_review(
+            fake_session, host, booking.id, ReviewCreate(rating=5)
+        )

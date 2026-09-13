@@ -791,14 +791,30 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
             check_out_time = listing.check_out_time
 
     review_eligible = False
+    review_window_expired = False
     if user.id == booking.guest_id:
         status = BookingStatus(booking.status)
         stay_finished = status == BookingStatus.COMPLETED or booking.checked_out_at is not None
         if stay_finished and status != BookingStatus.CANCELLED:
             from app.reviews import repository as reviews_repository
+            from app.reviews.constants import REVIEW_ELIGIBILITY_WINDOW_DAYS
 
             existing_review = await reviews_repository.get_guest_review_by_booking(session, booking.id)
-            review_eligible = existing_review is None
+            if existing_review is None:
+                # Airbnb only allows reviews within 14 days after checkout.
+                reference = booking.checked_out_at or booking.check_out
+                if reference is not None:
+                    from datetime import datetime, timedelta, timezone
+                    if isinstance(reference, datetime):
+                        ref_dt = reference if reference.tzinfo else reference.replace(tzinfo=timezone.utc)
+                    else:
+                        ref_dt = datetime.combine(reference, datetime.min.time(), tzinfo=timezone.utc)
+                    deadline = ref_dt + timedelta(days=REVIEW_ELIGIBILITY_WINDOW_DAYS)
+                    now_utc = datetime.now(timezone.utc)
+                    review_eligible = now_utc <= deadline
+                    review_window_expired = now_utc > deadline
+                else:
+                    review_eligible = True
 
     cover_image = _unit_cover_image(unit)
 
@@ -828,6 +844,7 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
             default_check_out_time=check_out_time,
         ),
         review_eligible=review_eligible,
+        review_window_expired=review_window_expired,
     )
 
 

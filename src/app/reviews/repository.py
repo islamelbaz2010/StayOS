@@ -156,6 +156,38 @@ async def get_rating_aggregate_for_unit(
     return (round(float(avg_rating), 2) if avg_rating is not None else None, count or 0)
 
 
+async def get_subrating_averages_for_unit(
+    session: AsyncSession, unit_id: str
+) -> dict[str, float]:
+    """Compute the average for each subrating key across all guest reviews.
+
+    Subratings are stored as a JSONB column; we load them and average in
+    Python to stay portable across PostgreSQL versions.
+    """
+    result = await session.execute(
+        select(Review.subratings).where(
+            Review.unit_id == unit_id,
+            Review.reviewer_role == "guest",
+            Review.subratings.is_not(None),
+        )
+    )
+    sums: dict[str, float] = {}
+    counts: dict[str, int] = {}
+    for (subratings,) in result.all():
+        if not subratings:
+            continue
+        for key, value in subratings.items():
+            if not isinstance(value, (int, float)):
+                continue
+            sums[key] = sums.get(key, 0.0) + float(value)
+            counts[key] = counts.get(key, 0) + 1
+    return {
+        key: round(sums[key] / counts[key], 2)
+        for key in sums
+        if counts[key] > 0
+    }
+
+
 async def get_rating_aggregates_for_units(
     session: AsyncSession, unit_ids: list[str]
 ) -> dict[str, tuple[float, int]]:

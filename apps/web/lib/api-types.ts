@@ -3669,6 +3669,10 @@ export interface components {
       average_rating: number | null;
       /** Review Count */
       review_count: number;
+      /** Subrating Averages */
+      subrating_averages?: {
+        [key: string]: number;
+      } | null;
       /** Limit */
       limit: number;
       /** Offset */

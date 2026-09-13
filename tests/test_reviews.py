@@ -194,6 +194,11 @@ async def test_get_listing_reviews_returns_aggregate(
         "get_rating_aggregate_for_unit",
         AsyncMock(return_value=(4.0, 1)),
     )
+    monkeypatch.setattr(
+        reviews_repository,
+        "get_subrating_averages_for_unit",
+        AsyncMock(return_value={}),
+    )
 
     result = await review_services.get_listing_reviews(fake_session, unit.id, limit=10, offset=0)
 
@@ -264,6 +269,30 @@ async def test_get_rating_aggregate_for_unit(fake_session: AsyncMock) -> None:
     avg, count = await reviews_repository.get_rating_aggregate_for_unit(fake_session, "unit-1")
     assert avg == 4.5
     assert count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_subrating_averages_for_unit(fake_session: AsyncMock) -> None:
+    mock_result = MagicMock()
+    mock_result.all.return_value = [
+        ({"cleanliness": 4, "accuracy": 5},),
+        ({"cleanliness": 5, "accuracy": 3},),
+        ({"cleanliness": 3},),
+    ]
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    averages = await reviews_repository.get_subrating_averages_for_unit(fake_session, "unit-1")
+    assert averages["cleanliness"] == 4.0
+    assert averages["accuracy"] == 4.0
+    assert "location" not in averages
+
+
+@pytest.mark.asyncio
+async def test_get_subrating_averages_for_unit_empty(fake_session: AsyncMock) -> None:
+    mock_result = MagicMock()
+    mock_result.all.return_value = []
+    fake_session.execute = AsyncMock(return_value=mock_result)
+    averages = await reviews_repository.get_subrating_averages_for_unit(fake_session, "unit-1")
+    assert averages == {}
 
 
 @pytest.mark.asyncio

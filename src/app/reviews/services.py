@@ -283,10 +283,14 @@ async def get_listing_reviews(
     average_rating, review_count = await reviews_repository.get_rating_aggregate_for_unit(
         session, unit_id
     )
+    subrating_averages = await reviews_repository.get_subrating_averages_for_unit(
+        session, unit_id
+    )
     return ReviewListResponse(
         data=[_to_response(review, guest_name, guest_name) for review, guest_name in rows],
         average_rating=average_rating,
         review_count=review_count,
+        subrating_averages=subrating_averages or None,
         limit=limit,
         offset=offset,
     )

@@ -161,6 +161,22 @@ export function ReviewsSection({ unitId, locale }: { unitId: string; locale: str
         <RatingBadge averageRating={data?.averageRating} reviewCount={totalReviewCount} />
       </div>
 
+      {data?.subratingAverages && Object.keys(data.subratingAverages).length > 0 && (
+        <div className="mb-6 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+          {SUBRATING_KEYS.map((key) => {
+            const value = data.subratingAverages![key];
+            if (value === undefined) return null;
+            return (
+              <SubratingBar
+                key={key}
+                label={t(`subrating_${key}`)}
+                value={value}
+              />
+            );
+          })}
+        </div>
+      )}
+
       {allReviews.length === 0 ? (
         <p className="text-sm text-neutral-500">{t("noReviews")}</p>
       ) : (

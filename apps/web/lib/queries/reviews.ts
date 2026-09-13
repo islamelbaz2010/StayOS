@@ -37,6 +37,7 @@ export interface ReviewList {
   data: Review[];
   averageRating: number | null;
   reviewCount: number;
+  subratingAverages: Partial<Record<SubratingKey, number>> | null;
 }
 
 function mapReview(item: ApiReviewListResponse["data"][number]): Review {
@@ -66,6 +67,7 @@ export function useListingReviews(unitId: string, limit = 10) {
         data: data.data.map(mapReview),
         averageRating: data.average_rating,
         reviewCount: data.review_count,
+        subratingAverages: (data.subrating_averages as Partial<Record<SubratingKey, number>> | null) ?? null,
       };
       return result;
     },

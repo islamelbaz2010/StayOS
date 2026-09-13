@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import { BookingPanel } from "@/components/bookings/BookingPanel";
 import { GuestLayout } from "@/components/layouts";
 import { ContactHostButton } from "@/components/listings/ContactHostButton";
+import { CollapsibleText } from "@/components/listings/CollapsibleText";
 import { DescriptionSection } from "@/components/listings/DescriptionSection";
 import { FavoriteButton } from "@/components/listings/FavoriteButton";
 import { Gallery } from "@/components/listings/Gallery";
@@ -534,9 +535,7 @@ export default function ListingDetailPage() {
                     <h2 className="mb-3 text-lg font-semibold text-brand-900">
                       {t("houseRules")}
                     </h2>
-                    <p className="whitespace-pre-line leading-relaxed text-neutral-700">
-                      {listing.houseRules}
-                    </p>
+                    <CollapsibleText text={listing.houseRules} />
                   </section>
                 )}
 
@@ -545,9 +544,7 @@ export default function ListingDetailPage() {
                     <h2 className="mb-3 text-lg font-semibold text-brand-900">
                       {t("policies")}
                     </h2>
-                    <p className="whitespace-pre-line leading-relaxed text-neutral-700">
-                      {listing.policies}
-                    </p>
+                    <CollapsibleText text={listing.policies} />
                   </section>
                 )}
 

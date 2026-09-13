@@ -473,6 +473,7 @@
     "book": "احجز الآن",
     "checkAvailability": "تحقق من التوفر",
     "amenities": "المرافق",
+    "showAllAmenities": "عرض جميع المرافق البالغ عددها {count}",
     "houseRules": "قواعد المنزل",
     "policies": "سياسات إضافية",
     "culturalTags": "وسوم العقار",

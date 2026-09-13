@@ -473,6 +473,7 @@
     "book": "Book now",
     "checkAvailability": "Check availability",
     "amenities": "Amenities",
+    "showAllAmenities": "Show all {count} amenities",
     "houseRules": "House rules",
     "policies": "Additional policies",
     "culturalTags": "Property tags",

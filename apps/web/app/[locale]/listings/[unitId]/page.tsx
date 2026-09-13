@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 
 import { BookingPanel } from "@/components/bookings/BookingPanel";
 import { GuestLayout } from "@/components/layouts";
+import { AmenitiesSection } from "@/components/listings/AmenitiesSection";
 import { ContactHostButton } from "@/components/listings/ContactHostButton";
 import { CollapsibleText } from "@/components/listings/CollapsibleText";
 import { DescriptionSection } from "@/components/listings/DescriptionSection";
@@ -34,49 +35,6 @@ const ListingMap = dynamic(
     ),
   }
 );
-
-const AMENITY_GROUPS: Record<string, string[]> = {
-  ESSENTIALS: ["wifi", "ac", "air_conditioning", "heating", "towels", "bed_linens", "toiletries"],
-  KITCHEN: ["kitchen", "fridge", "microwave", "stove", "oven", "coffee_machine"],
-  ENTERTAINMENT: ["tv", "pool", "gym", "workspace"],
-  OUTDOOR: ["balcony", "garden", "parking", "bbq"],
-  SAFETY: ["fire_extinguisher", "smoke_detector", "first_aid_kit", "safe"],
-};
-
-const AMENITY_ICONS: Record<string, string> = {
-  wifi: "📶",
-  ac: "❄️",
-  air_conditioning: "❄️",
-  heating: "🔥",
-  towels: "🧺",
-  bed_linens: "🛏️",
-  toiletries: "🧴",
-  kitchen: "🍳",
-  fridge: "🧊",
-  microwave: "⚡",
-  stove: "🔥",
-  oven: "🍞",
-  coffee_machine: "☕",
-  tv: "📺",
-  pool: "🏊",
-  gym: "💪",
-  workspace: "💻",
-  balcony: "🌅",
-  garden: "🌿",
-  parking: "🚗",
-  bbq: "🍖",
-  fire_extinguisher: "🧯",
-  smoke_detector: "🚨",
-  first_aid_kit: "⚕️",
-  safe: "🔒",
-};
-
-function getAmenityGroup(amenity: string): string {
-  for (const [group, amenities] of Object.entries(AMENITY_GROUPS)) {
-    if (amenities.includes(amenity)) return group;
-  }
-  return "OTHER";
-}
 
 function HighlightItem({
   icon,
@@ -358,50 +316,7 @@ export default function ListingDetailPage() {
                 )}
 
                 {listing.amenities.length > 0 && (
-                  <section className="card p-5 sm:p-6">
-                    <h2 className="mb-4 text-lg font-semibold text-brand-900">
-                      {t("amenities")}
-                    </h2>
-                    {(() => {
-                      const grouped = listing.amenities.reduce<Record<string, string[]>>(
-                        (acc, amenity) => {
-                          const group = getAmenityGroup(amenity);
-                          if (!acc[group]) acc[group] = [];
-                          acc[group].push(amenity);
-                          return acc;
-                        },
-                        {}
-                      );
-                      return (
-                        <div className="space-y-6">
-                          {Object.entries(grouped).map(([group, amenities]) => (
-                            <div key={group}>
-                              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                {t(`amenityGroup.${group}`)}
-                              </h3>
-                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                {amenities.map((amenity) => (
-                                  <div
-                                    key={amenity}
-                                    className="flex items-center gap-3 text-sm text-neutral-700"
-                                  >
-                                    <span className="text-lg">
-                                      {AMENITY_ICONS[amenity] ?? "✓"}
-                                    </span>
-                                    <span>
-                                      {t(`amenityLabel.${amenity}`, {
-                                        default: amenity.replace(/_/g, " "),
-                                      })}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </section>
+                  <AmenitiesSection amenities={listing.amenities} />
                 )}
 
                 {(listing.allowsPets || listing.selfCheckIn || listing.accessibilityFeatures.length > 0 || listing.culturalTags.length > 0) && (

@@ -1085,3 +1085,40 @@ async def test_co_host_calendar_only_cannot_upload_photo(
             unit.id,
             PhotoCreate(s3_key="test/key", url="https://example.com/photo.jpg"),
         )
+
+
+# ============================================================
+# PAGINATED HOST BOOKINGS — regression for missing host_permissions import
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_list_paginated_host_bookings_no_units(fake_session: AsyncMock, monkeypatch) -> None:
+    """list_paginated_host_bookings must not raise NameError when calling
+    host_permissions.get_unit_permission_scopes (regression: the module
+    alias was missing, causing a 500 on GET /host/bookings)."""
+    host = _make_user(user_id="host-1")
+    monkeypatch.setattr(
+        host_services,
+        "get_managed_unit_ids",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        "app.host.services.host_permissions.get_unit_permission_scopes",
+        AsyncMock(return_value={}),
+    )
+
+    result = await host_services.list_paginated_host_bookings(
+        fake_session, host, None, None, None, 50, 0
+    )
+    assert result.items == []
+    assert result.total == 0
+
+
+@pytest.mark.asyncio
+async def test_list_paginated_host_bookings_guest_forbidden(fake_session: AsyncMock) -> None:
+    """Guests cannot call list_paginated_host_bookings."""
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    with pytest.raises(AuthorizationError):
+        await host_services.list_paginated_host_bookings(
+            fake_session, guest, None, None, None, 50, 0
+        )

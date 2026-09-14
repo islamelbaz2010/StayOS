@@ -24,6 +24,7 @@ from app.payments import repository as payments_repository
 from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
 
 from . import repository as host_repository
+from . import permissions as host_permissions
 from . import schemas as host_schemas
 from .constants import CoHostPermissionScope, HostTodayItemType, ListingReadinessStatus
 from .permissions import (

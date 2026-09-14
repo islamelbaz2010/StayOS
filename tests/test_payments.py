@@ -1733,3 +1733,33 @@ def test_list_host_payments_route_rejects_guest(
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# REGRESSION: Admin must be able to access /payments/host (route dependency
+# must match service-layer authorization which allows host+admin).
+# Previously the route used require_role("host") which blocked admin at the
+# dependency level, even though list_host_payments() explicitly allows admin.
+# ---------------------------------------------------------------------------
+
+
+def test_list_host_payments_route_allows_admin(
+    payments_client: TestClient, monkeypatch
+) -> None:
+    """Admin must be able to access /payments/host — the service layer
+    list_host_payments explicitly allows admin, and the route dependency
+    must match."""
+    admin = _make_user(role=UserRole.ADMIN)
+    _patch_auth_user(monkeypatch, admin)
+    monkeypatch.setattr(
+        payments_router,
+        "list_host_payments",
+        AsyncMock(return_value=[_make_payment_list_item()]),
+    )
+    token = _token_for(admin)
+    response = payments_client.get(
+        "/api/v1/payments/host",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 1

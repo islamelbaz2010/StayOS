@@ -638,3 +638,68 @@ async def test_list_candidates_all_sort_options_no_typeerror():
         )
         assert total == 0
         assert candidates == []
+
+# ─── API-level regression: GET /discovery/candidates must not return 500 ───
+
+
+class TestDiscoveryCandidatesAPIRoute:
+    """API-level regression: the route must be reachable, authenticate
+    correctly, and return the expected response shape — not 500.
+
+    The original bug was a TypeError in list_candidates() sort handling that
+    surfaced as HTTP 500. These tests prove the route returns 200 with the
+    correct CandidateListResponse shape."""
+
+    def test_candidates_route_returns_200_admin(self, client, mock_redis_client):
+        from app.auth.services import create_access_token
+        from app.discovery import services as discovery_services
+
+        user = type("U", (), {
+            "id": "test-admin-cand-1",
+            "phone_number": "+201000000000",
+            "email": "admin@test.com",
+            "role": "admin",
+            "kyc_status": "VERIFIED",
+            "is_active": True,
+        })()
+        token = create_access_token(user)
+
+        with patch("app.auth.repository.get_user_by_id", new_callable=AsyncMock) as mock_get_user:
+            mock_get_user.return_value = user
+            with patch.object(discovery_services, "list_candidates", new_callable=AsyncMock) as mock_list:
+                mock_list.return_value = ([], 0)
+                response = client.get(
+                    "/api/v1/discovery/candidates?limit=5",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert "data" in data
+                assert "pagination" in data
+                assert data["data"] == []
+                assert data["pagination"]["total"] == 0
+
+    def test_candidates_route_rejects_non_admin(self, client, mock_redis_client):
+        from app.auth.services import create_access_token
+
+        user = type("U", (), {
+            "id": "test-guest-cand-1",
+            "phone_number": "+201000000000",
+            "email": "guest@test.com",
+            "role": "guest",
+            "kyc_status": "VERIFIED",
+            "is_active": True,
+        })()
+        token = create_access_token(user)
+
+        with patch("app.auth.repository.get_user_by_id", new_callable=AsyncMock) as mock_get_user:
+            mock_get_user.return_value = user
+            response = client.get(
+                "/api/v1/discovery/candidates?limit=5",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert response.status_code == 403
+
+    def test_candidates_route_requires_auth(self, client, mock_redis_client):
+        response = client.get("/api/v1/discovery/candidates?limit=5")
+        assert response.status_code == 401

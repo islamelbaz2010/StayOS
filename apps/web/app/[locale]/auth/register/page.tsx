@@ -8,15 +8,8 @@ import type { ConfirmationResult } from "firebase/auth";
 
 import { AuthLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
-import { api } from "@/lib/api";
 
-const DEV_USERS = [
-  { id: "seed-admin-0000-0000-000000000001", label: "Admin" },
-  { id: "seed-host-0000-0000-000000000002", label: "Host" },
-  { id: "seed-guest-000-0000-000000000003", label: "Guest" },
-];
-
-export default function LoginPage() {
+export default function RegisterPage() {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
   const params = useParams<{ locale: string }>();
@@ -25,10 +18,8 @@ export default function LoginPage() {
   const {
     sendOtp,
     confirmOtp,
-    signInWithProvider,
     isLoading,
     isFirebaseConfigured,
-    login,
     sendOtpViaBackend,
     verifyOtpViaBackend,
   } = useAuth();
@@ -42,27 +33,6 @@ export default function LoginPage() {
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [devLoading, setDevLoading] = useState<string | null>(null);
-  const [socialLoading, setSocialLoading] = useState<"google" | "apple" | null>(null);
-
-  async function handleDevLogin(userId: string) {
-    setDevLoading(userId);
-    setError(null);
-    try {
-      const { data } = await api.post<{
-        access_token: string;
-        refresh_token: string;
-        token_type: string;
-        expires_in: number;
-      }>("/auth/dev-token", { user_id: userId });
-      await login(data);
-      router.push(redirect);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Dev login failed");
-    } finally {
-      setDevLoading(null);
-    }
-  }
 
   async function handleSend(event: FormEvent) {
     event.preventDefault();
@@ -101,19 +71,6 @@ export default function LoginPage() {
     }
   }
 
-  async function handleSocialSignIn(provider: "google" | "apple") {
-    setSocialLoading(provider);
-    setError(null);
-    try {
-      await signInWithProvider(provider);
-      router.push(redirect);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("socialSignInFailed"));
-    } finally {
-      setSocialLoading(null);
-    }
-  }
-
   if (isLoading) {
     return (
       <AuthLayout>
@@ -124,33 +81,8 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <h1 className="text-2xl font-bold text-neutral-900">{t("signIn")}</h1>
-      <p className="mt-2 text-sm text-neutral-600">{t("loginSubtitle")}</p>
-
-      <div className="mt-6 space-y-3">
-        <button
-          type="button"
-          onClick={() => handleSocialSignIn("google")}
-          disabled={socialLoading !== null || !isFirebaseConfigured}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 font-semibold text-neutral-800 transition hover:bg-neutral-50 disabled:opacity-60"
-        >
-          {socialLoading === "google" ? t("signingIn") : t("continueWithGoogle")}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSocialSignIn("apple")}
-          disabled={socialLoading !== null || !isFirebaseConfigured}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 font-semibold text-neutral-800 transition hover:bg-neutral-50 disabled:opacity-60"
-        >
-          {socialLoading === "apple" ? t("signingIn") : t("continueWithApple")}
-        </button>
-      </div>
-
-      <div className="relative my-6 flex items-center">
-        <div className="grow border-t border-neutral-200" />
-        <span className="mx-4 text-sm text-neutral-500">{t("or")}</span>
-        <div className="grow border-t border-neutral-200" />
-      </div>
+      <h1 className="text-2xl font-bold text-neutral-900">{t("signUp")}</h1>
+      <p className="mt-2 text-sm text-neutral-600">{t("registerSubtitle")}</p>
 
       {step === "phone" ? (
         <form onSubmit={handleSend} className="mt-6 space-y-4">
@@ -234,35 +166,14 @@ export default function LoginPage() {
       )}
 
       <p className="mt-6 text-center text-sm text-neutral-600">
-        {t("noAccount")}{" "}
+        {t("haveAccount")}{" "}
         <Link
-          href={`/${locale}/auth/register${redirect !== `/${locale}` ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
+          href={`/${locale}/auth/login${redirect !== `/${locale}` ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
           className="font-semibold text-brand-600 hover:text-brand-700"
         >
-          {t("signUp")}
+          {t("signIn")}
         </Link>
       </p>
-
-      {!isFirebaseConfigured && (
-        <div className="mt-6 border-t border-neutral-200 pt-6">
-          <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-neutral-500">
-            {t("devLogin")}
-          </p>
-          <div className="flex flex-col gap-2">
-            {DEV_USERS.map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                disabled={devLoading !== null}
-                onClick={() => handleDevLogin(u.id)}
-                className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-center text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-60"
-              >
-                {devLoading === u.id ? tc("loading") : t("loginAs", { label: u.label })}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </AuthLayout>
   );
 }

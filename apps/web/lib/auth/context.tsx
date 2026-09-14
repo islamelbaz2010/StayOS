@@ -36,6 +36,8 @@ interface AuthContextValue {
   sendOtp: (phone: string, buttonId: string) => Promise<ConfirmationResult>;
   confirmOtp: (confirmation: ConfirmationResult, code: string) => Promise<TokenPair>;
   signInWithProvider: (provider: "google" | "apple") => Promise<TokenPair>;
+  sendOtpViaBackend: (phone: string) => Promise<void>;
+  verifyOtpViaBackend: (phone: string, code: string) => Promise<TokenPair>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -146,6 +148,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [login]
   );
 
+  const sendOtpViaBackend = useCallback(async (phone: string) => {
+    await api.post("/auth/otp/send", { phone_number: phone });
+  }, []);
+
+  const verifyOtpViaBackend = useCallback(
+    async (phone: string, code: string) => {
+      const { data } = await api.post<TokenPair>("/auth/otp/verify", {
+        phone_number: phone,
+        code,
+      });
+      await login(data);
+      return data;
+    },
+    [login]
+  );
+
   const value = useMemo<AuthContextValue>(() => {
     return {
       user,
@@ -159,8 +177,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sendOtp,
       confirmOtp,
       signInWithProvider,
+      sendOtpViaBackend,
+      verifyOtpViaBackend,
     };
-  }, [user, isLoading, login, logout, sendOtp, confirmOtp, signInWithProvider]);
+  }, [user, isLoading, login, logout, sendOtp, confirmOtp, signInWithProvider, sendOtpViaBackend, verifyOtpViaBackend]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

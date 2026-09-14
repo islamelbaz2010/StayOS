@@ -62,7 +62,10 @@
     "or": "أو",
     "socialSignInFailed": "فشل تسجيل الدخول. حاول مرة أخرى.",
     "devLogin": "دخول المطورين",
-    "loginAs": "تسجيل الدخول كـ {label}"
+    "loginAs": "تسجيل الدخول كـ {label}",
+    "noAccount": "ليس لديك حساب؟",
+    "haveAccount": "لديك حساب بالفعل؟",
+    "registerSubtitle": "أنشئ حساباً باستخدام رقم هاتفك"
   },
   "host": {
     "title": "منطقة المضيف",

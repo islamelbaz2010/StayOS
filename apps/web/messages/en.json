@@ -62,7 +62,10 @@
     "or": "or",
     "socialSignInFailed": "Social sign-in failed. Please try again.",
     "devLogin": "Dev Login",
-    "loginAs": "Login as {label}"
+    "loginAs": "Login as {label}",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "registerSubtitle": "Create an account with your phone number"
   },
   "host": {
     "title": "Host area",

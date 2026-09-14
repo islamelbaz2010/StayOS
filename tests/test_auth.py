@@ -529,3 +529,122 @@ def test_delete_me_account(auth_client: TestClient, fake_session: AsyncMock) -> 
     assert user.phone_number is None
     assert user.email is None
     assert user.display_name == "Deleted user"
+
+
+def test_dev_token_success(auth_client: TestClient, monkeypatch) -> None:
+    """Dev-token endpoint issues tokens for a known user in development."""
+    monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    user = _make_user(user_id="seed-guest-000-0000-000000000003")
+    token_pair = TokenPair(access_token="access", refresh_token="refresh", expires_in=900)
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(
+        auth_services, "create_token_pair", AsyncMock(return_value=token_pair)
+    )
+
+    response = auth_client.post(
+        "/api/v1/auth/dev-token",
+        json={"user_id": "seed-guest-000-0000-000000000003"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["access_token"] == "access"
+    assert data["refresh_token"] == "refresh"
+
+
+def test_dev_token_user_not_found(auth_client: TestClient, monkeypatch) -> None:
+    """Dev-token returns 401 for an unknown user ID."""
+    monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=None)
+    )
+
+    response = auth_client.post(
+        "/api/v1/auth/dev-token",
+        json={"user_id": "nonexistent-user-id"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_dev_token_inactive_user(auth_client: TestClient, monkeypatch) -> None:
+    """Dev-token rejects inactive users."""
+    monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    user = _make_user()
+    user.is_active = False
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=user)
+    )
+
+    response = auth_client.post(
+        "/api/v1/auth/dev-token",
+        json={"user_id": user.id},
+    )
+
+    assert response.status_code == 401
+
+
+def test_otp_verify_creates_new_user_as_guest(
+    auth_client: TestClient, monkeypatch
+) -> None:
+    """OTP verification creates a new user with GUEST role (registration flow)."""
+    new_user = _make_user(
+        user_id="new-user-id", phone="+201000000000", role=UserRole.GUEST
+    )
+    token_pair = TokenPair(access_token="access", refresh_token="refresh", expires_in=900)
+    monkeypatch.setattr("app.auth.services.verify_otp", AsyncMock(return_value=True))
+    monkeypatch.setattr(
+        "app.auth.services.get_or_create_user_by_phone", AsyncMock(return_value=new_user)
+    )
+    monkeypatch.setattr(
+        "app.auth.services.create_token_pair", AsyncMock(return_value=token_pair)
+    )
+
+    response = auth_client.post(
+        "/api/v1/auth/otp/verify",
+        json={"phone_number": "+201000000000", "code": "123456"},
+    )
+
+    assert response.status_code == 200
+    # Verify get_or_create_user_by_phone was called (registration = first OTP login)
+    auth_services.get_or_create_user_by_phone.assert_called_once()
+
+
+def test_role_upgrade_to_host_requires_kyc(
+    auth_client: TestClient, monkeypatch
+) -> None:
+    """Role upgrade to host requires KYC verification — no public host registration."""
+    user = _make_user(kyc_status=KycStatus.UNVERIFIED, role=UserRole.GUEST)
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=user)
+    )
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.patch(
+        "/api/v1/auth/me/role",
+        json={"role": "host"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_role_upgrade_to_admin_rejected(
+    auth_client: TestClient, monkeypatch
+) -> None:
+    """Role upgrade to admin is not supported — no privilege escalation."""
+    user = _make_user(kyc_status=KycStatus.VERIFIED, role=UserRole.GUEST)
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=user)
+    )
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.patch(
+        "/api/v1/auth/me/role",
+        json={"role": "admin"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422

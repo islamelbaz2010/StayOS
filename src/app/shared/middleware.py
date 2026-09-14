@@ -20,13 +20,15 @@ _ALLOWED_HEADERS = [
 
 
 def setup_cors(app: FastAPI) -> None:
-    app.add_middleware(
-        CORSMiddleware,
+    kwargs: dict[str, Any] = dict(
         allow_origins=settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=_ALLOWED_METHODS,
         allow_headers=_ALLOWED_HEADERS,
     )
+    if settings.CORS_ORIGIN_REGEX:
+        kwargs["allow_origin_regex"] = settings.CORS_ORIGIN_REGEX
+    app.add_middleware(CORSMiddleware, **kwargs)
 
 
 async def add_request_id(

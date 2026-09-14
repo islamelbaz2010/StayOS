@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     CORS_ORIGINS: str = Field(default="http://localhost:3000", description="Comma-separated CORS origins")
+    CORS_ORIGIN_REGEX: str = Field(default="", description="Regex pattern for allowed CORS origins (e.g. Vercel preview URLs)")
 
     FIREBASE_PROJECT_ID: str = Field(default="", description="Firebase project ID")
     FIREBASE_CLIENT_EMAIL: str = Field(default="", description="Firebase service account email")

@@ -212,3 +212,4 @@ booking_e2e_*/
 evidence/
 *.apk
 *.ipa
+.vercel

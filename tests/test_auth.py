@@ -686,3 +686,40 @@ def test_dev_token_acceptance_guest_is_guest_role(
     # The user object passed to create_token_pair must have guest role
     called_user = auth_services.create_token_pair.call_args[0][1]
     assert called_user.role == UserRole.GUEST
+
+
+# ---------------------------------------------------------------------------
+# REGRESSION: Dev Login must work in staging (Preview) environment
+# and CORS must support regex patterns for Vercel preview URLs.
+# ---------------------------------------------------------------------------
+
+
+def test_dev_token_works_in_staging(auth_client: TestClient, monkeypatch) -> None:
+    """Dev-token must be available in staging environment (used by Vercel
+    Preview which talks to the Railway staging backend)."""
+    monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "staging")
+    user = _make_user(user_id="seed-accept-gues-0000-000000000001", role=UserRole.GUEST)
+    token_pair = TokenPair(access_token="access", refresh_token="refresh", expires_in=900)
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(
+        auth_services, "create_token_pair", AsyncMock(return_value=token_pair)
+    )
+
+    response = auth_client.post(
+        "/api/v1/auth/dev-token",
+        json={"user_id": "seed-accept-gues-0000-000000000001"},
+    )
+    assert response.status_code == 200
+    assert response.json()["access_token"] == "access"
+
+
+def test_dev_token_rejected_in_production_env(auth_client: TestClient, monkeypatch) -> None:
+    """Dev-token must NOT be available in production environment."""
+    monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "production")
+    response = auth_client.post(
+        "/api/v1/auth/dev-token",
+        json={"user_id": "seed-accept-gues-0000-000000000001"},
+    )
+    assert response.status_code == 404

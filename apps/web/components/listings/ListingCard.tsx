@@ -29,6 +29,7 @@ export interface Listing {
   averageRating?: number | null;
   reviewCount?: number;
   availableForDates?: boolean | null;
+  instantBook?: boolean;
   lat?: number;
   lng?: number;
   nights?: number | null;
@@ -79,6 +80,14 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <FavoriteButton unitId={listing.id} className="absolute end-2 top-2" />
+          {listing.instantBook && (
+            <span className="absolute end-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-medium text-white shadow-sm">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {t("instantBook")}
+            </span>
+          )}
           {listing.availableForDates && (
             <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-success-100 px-2 py-0.5 text-xs font-medium text-success-700 shadow-sm">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

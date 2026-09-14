@@ -63,6 +63,7 @@ async def create_listing(
         base_price_egp=request.base_price_egp,
         cleaning_fee_egp=request.cleaning_fee_egp,
         cancellation_policy=request.cancellation_policy,
+        instant_book=request.instant_book,
         category=request.category,
         weekend_mult=request.weekend_mult,
         peak_mult=request.peak_mult,
@@ -242,6 +243,9 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
 
     if filters.free_cancellation:
         stmt = stmt.where(UnitListing.cancellation_policy == "FLEXIBLE")
+
+    if filters.instant_book:
+        stmt = stmt.where(UnitListing.instant_book.is_(True))
 
     if filters.pets:
         stmt = stmt.where(UnitListing.allows_pets.is_(True))

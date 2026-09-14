@@ -110,6 +110,7 @@ class ListingCreate(BaseModel):
     base_price_egp: int = Field(..., ge=100)
     cleaning_fee_egp: int = Field(default=0, ge=0)
     cancellation_policy: str = Field(default="FLEXIBLE", min_length=1, max_length=50)
+    instant_book: bool = False
     weekend_mult: float = Field(default=1.0, ge=0.0)
     peak_mult: float = Field(default=1.0, ge=0.0)
     min_nights: int = Field(default=1, ge=1)
@@ -205,6 +206,7 @@ class ListingUpdate(BaseModel):
     base_price_egp: int | None = Field(None, ge=100)
     cleaning_fee_egp: int | None = Field(None, ge=0)
     cancellation_policy: str | None = Field(None, min_length=1, max_length=50)
+    instant_book: bool | None = None
     category: str | None = Field(None, min_length=1, max_length=50)
     weekend_mult: float | None = Field(None, ge=0.0)
     peak_mult: float | None = Field(None, ge=0.0)
@@ -332,6 +334,7 @@ class ListingResponse(BaseModel):
     base_price_egp: int
     cleaning_fee_egp: int
     cancellation_policy: str
+    instant_book: bool = False
     price: int
     currency: str
     weekend_mult: float
@@ -382,6 +385,7 @@ class ListingSearchResult(BaseModel):
     amenities: list[str]
     cultural_tags: list[str]
     house_rules: str | None
+    instant_book: bool = False
     host_kyc_status: str | None = None
     cover_image: str | None = None
     average_rating: float | None = None
@@ -471,6 +475,9 @@ class ListingSearchFilters(BaseModel):
     cultural_tags: str | None = None
     amenities: str | None = None
     free_cancellation: bool | None = None
+    # Airbnb Instant Book filter: when true, only listings with
+    # instant_book enabled are returned.
+    instant_book: bool | None = None
     # Structured discovery filters (DEC-019). Booleans are opt-in only: a
     # false/absent value must not exclude listings, matching how Airbnb's
     # filters narrow results rather than invert them.

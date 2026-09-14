@@ -153,6 +153,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     base_price_egp: existingListing?.base_price_egp ?? 500,
     cleaning_fee_egp: existingListing?.cleaning_fee_egp ?? 0,
     cancellation_policy: existingListing?.cancellation_policy ?? "FLEXIBLE",
+    instant_book: existingListing?.instant_book ?? false,
     weekend_mult: existingListing?.weekend_mult ?? 1.0,
     peak_mult: existingListing?.peak_mult ?? 1.0,
     min_nights: existingListing?.min_nights ?? 1,
@@ -271,6 +272,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     base_price_egp: form.base_price_egp,
     cleaning_fee_egp: form.cleaning_fee_egp,
     cancellation_policy: form.cancellation_policy,
+    instant_book: form.instant_book,
     category: form.category,
     weekend_mult: form.weekend_mult,
     peak_mult: form.peak_mult,
@@ -913,6 +915,19 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             </select>
           </div>
         </div>
+
+        <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+          <input
+            type="checkbox"
+            checked={form.instant_book ?? false}
+            onChange={(e) => update("instant_book", e.target.checked)}
+            className="h-4 w-4 rounded border-neutral-300 text-accent-600 focus:ring-accent-500"
+          />
+          <span className="text-neutral-700">{t("instantBook")}</span>
+          <span className="ms-auto text-xs text-neutral-500">
+            {t("instantBookHint")}
+          </span>
+        </label>
       </section>
 
       {/* Rules */}

@@ -23,6 +23,7 @@ export interface SearchFilters {
   self_check_in?: string;
   accessibility?: string;
   host_language?: string;
+  instant_book?: string;
   sw_lat?: string;
   sw_lng?: string;
   ne_lat?: string;
@@ -66,6 +67,7 @@ export interface ListingDetail extends Listing {
   accessibilityFeatures: string[];
   sleepingArrangements: Array<{ beds: Array<{ type: string; count: number }> }> | null;
   accessibilityPhotoFeatures: string[];
+  instantBook: boolean;
   category: string;
   lat: number;
   lng: number;
@@ -115,6 +117,7 @@ function mapListingDetail(item: ApiListingResponse): ListingDetail {
     accessibilityFeatures: item.accessibility_features ?? [],
     sleepingArrangements: (item.sleeping_arrangements as Array<{ beds: Array<{ type: string; count: number }> }> | null) ?? null,
     accessibilityPhotoFeatures: (item.accessibility_photo_features as string[]) ?? [],
+    instantBook: item.instant_book ?? false,
     lat: item.lat,
     lng: item.lng,
     district: item.district,
@@ -145,6 +148,7 @@ function mapSearchResult(item: ApiSearchResult): Listing {
     averageRating: item.average_rating ?? null,
     reviewCount: item.review_count ?? 0,
     availableForDates: item.available_for_dates ?? null,
+    instantBook: item.instant_book ?? false,
     lat: item.lat,
     lng: item.lng,
     nights: item.nights ?? null,
@@ -211,6 +215,7 @@ function buildSearchQueryParams(filters: SearchFilters) {
   if (filters.self_check_in) queryParams.self_check_in = filters.self_check_in;
   if (filters.accessibility) queryParams.accessibility = filters.accessibility;
   if (filters.host_language) queryParams.host_language = filters.host_language;
+  if (filters.instant_book) queryParams.instant_book = filters.instant_book;
   if (filters.sw_lat) queryParams.sw_lat = filters.sw_lat;
   if (filters.sw_lng) queryParams.sw_lng = filters.sw_lng;
   if (filters.ne_lat) queryParams.ne_lat = filters.ne_lat;

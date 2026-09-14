@@ -25,17 +25,20 @@ async def create_booking(
     adults: int,
     children: int,
     infants: int,
+    status: str = BookingStatus.REQUESTED,
+    accepted_at: datetime | None = None,
 ) -> Booking:
     booking = Booking(
         id=str(uuid4()),
         unit_id=unit_id,
         guest_id=guest_id,
-        status=BookingStatus.REQUESTED,
+        status=status,
         check_in=check_in,
         check_out=check_out,
         adults=adults,
         children=children,
         infants=infants,
+        accepted_at=accepted_at,
     )
     session.add(booking)
     await session.flush()

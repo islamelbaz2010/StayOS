@@ -188,6 +188,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
     return (
       <BookingSuccess
         booking={createdBooking}
+        instantBook={Boolean(listing.instantBook)}
         onClose={() => {
           setSuccess(false);
           setCreatedBooking(null);
@@ -221,6 +222,15 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
           <span className="text-neutral-400">/ {t("perNight")}</span>
         </p>
       </div>
+
+      {listing.instantBook && (
+        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-success-50 px-3 py-1 text-xs font-medium text-success-700">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          {t("instantBookBadge")}
+        </p>
+      )}
 
       {!isAuthLoading && !isAuthenticated && (
         <div className="mt-4 rounded-lg bg-neutral-50 p-4">
@@ -513,8 +523,16 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
           )}
           aria-busy={createBooking.isPending}
         >
-          {createBooking.isPending ? t("submitting") : t("requestBooking")}
+          {createBooking.isPending
+            ? t("submitting")
+            : listing.instantBook
+              ? t("instantBook")
+              : t("requestBooking")}
         </button>
+
+        <p className="text-center text-xs text-neutral-500">
+          {listing.instantBook ? t("chargedNow") : t("notChargedYet")}
+        </p>
 
         {errors.submit && (
           <p className="text-sm text-danger-600" role="alert">

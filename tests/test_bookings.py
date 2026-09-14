@@ -346,6 +346,110 @@ async def test_create_booking_conflict(fake_session: AsyncMock, monkeypatch) -> 
 
 
 @pytest.mark.asyncio
+async def test_create_instant_book_auto_accepts(fake_session: AsyncMock, monkeypatch) -> None:
+    """Instant Book listings skip the host-approval step: the booking is
+    created directly as ACCEPTED with accepted_at set, and a payment request
+    is created immediately — mirroring what a manual host accept does."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing.instant_book = True
+    booking = _make_booking(unit, guest, status=BookingStatus.ACCEPTED)
+    booking.accepted_at = datetime.now(UTC)
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "list_overlapping_bookings",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "create_booking",
+        AsyncMock(return_value=booking),
+    )
+    payment_spy = AsyncMock()
+    monkeypatch.setattr(
+        "app.payments.services.create_payment_for_booking",
+        payment_spy,
+    )
+
+    conversation_result = MagicMock()
+    conversation_result.scalar_one_or_none.return_value = MagicMock()
+    fake_session.execute = AsyncMock(return_value=conversation_result)
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_3,
+        check_out=_FUTURE_4,
+        adults=2,
+    )
+    response = await booking_services.create_booking(fake_session, guest, request)
+    assert response.status == BookingStatus.ACCEPTED
+    assert response.accepted_at is not None
+    # The repository must have been asked to create an ACCEPTED booking.
+    _, kwargs = bookings_repository.create_booking.call_args
+    assert kwargs["status"] == BookingStatus.ACCEPTED
+    assert kwargs["accepted_at"] is not None
+    # A payment request must be created immediately for instant book.
+    payment_spy.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_create_request_to_book_stays_requested(fake_session: AsyncMock, monkeypatch) -> None:
+    """Non-instant-book listings keep the request-to-book flow: the booking
+    is created as REQUESTED and no payment is created until the host accepts."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing.instant_book = False
+    booking = _make_booking(unit, guest, status=BookingStatus.REQUESTED)
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "list_overlapping_bookings",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "create_booking",
+        AsyncMock(return_value=booking),
+    )
+    payment_spy = AsyncMock()
+    monkeypatch.setattr(
+        "app.payments.services.create_payment_for_booking",
+        payment_spy,
+    )
+
+    conversation_result = MagicMock()
+    conversation_result.scalar_one_or_none.return_value = MagicMock()
+    fake_session.execute = AsyncMock(return_value=conversation_result)
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_3,
+        check_out=_FUTURE_4,
+        adults=2,
+    )
+    response = await booking_services.create_booking(fake_session, guest, request)
+    assert response.status == BookingStatus.REQUESTED
+    _, kwargs = bookings_repository.create_booking.call_args
+    assert kwargs["status"] == BookingStatus.REQUESTED
+    assert kwargs["accepted_at"] is None
+    # No payment for request-to-book until the host accepts.
+    payment_spy.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_get_booking_success(fake_session: AsyncMock, monkeypatch) -> None:
     guest = _make_user(role=UserRole.GUEST)
     host = _make_user(user_id="host-1", role=UserRole.HOST)

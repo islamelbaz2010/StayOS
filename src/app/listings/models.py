@@ -156,6 +156,13 @@ class UnitListing(UUIDMixin, Base):
     cancellation_policy: Mapped[str] = mapped_column(
         String(50), nullable=False, default="FLEXIBLE"
     )
+    # Airbnb Instant Book: when true, guest bookings on this listing are
+    # auto-accepted (skip the REQUESTED host-approval step) and a payment
+    # request is created immediately. Payment still follows the existing
+    # manual-proof + admin-verify contract — no new payment policy.
+    instant_book: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     cover_photo_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("pms.unit_photos.id"), nullable=True
     )

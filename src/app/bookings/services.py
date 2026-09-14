@@ -868,6 +868,16 @@ async def create_booking(
     await listings_repository.lock_unit_for_booking(session, request.unit_id)
     await _assert_no_conflicts(session, request.unit_id, request.check_in, request.check_out)
 
+    # Airbnb Instant Book: when the host has opted the listing into Instant
+    # Book, the booking is auto-accepted (no manual host-approval step) and a
+    # payment request is created immediately. Payment still follows the
+    # existing manual-proof + admin-verify contract — no new payment policy.
+    is_instant_book = bool(unit.listing.instant_book)
+    booking_status = (
+        BookingStatus.ACCEPTED if is_instant_book else BookingStatus.REQUESTED
+    )
+    accepted_at = datetime.now(UTC) if is_instant_book else None
+
     booking = await bookings_repository.create_booking(
         session,
         unit_id=request.unit_id,
@@ -877,6 +887,8 @@ async def create_booking(
         adults=request.adults,
         children=request.children,
         infants=request.infants,
+        status=booking_status,
+        accepted_at=accepted_at,
     )
     booking.unit = unit
 
@@ -889,6 +901,19 @@ async def create_booking(
         guest_id=user.id,
         host_id=unit.host_id,
     )
+
+    # For Instant Book the host-approval step is skipped, so the payment
+    # request is created here — mirroring what `update_booking` does when a
+    # host manually accepts a request-to-book booking.
+    if is_instant_book:
+        from app.payments import services as payment_services
+
+        guest_result = await session.execute(
+            select(User).where(User.id == user.id)
+        )
+        guest = guest_result.scalar_one_or_none()
+        if guest is not None:
+            await payment_services.create_payment_for_booking(session, booking, guest)
 
     return _to_response(booking)
 

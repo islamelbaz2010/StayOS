@@ -227,6 +227,46 @@ def test_search_listings_accepts_discovery_filters(
     assert captured.get("host_language") == "ar,en"
 
 
+def test_search_listings_accepts_instant_book_filter(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    """Instant Book filter reaches the search layer (Airbnb parity)."""
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["instant_book"] = filters.instant_book
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get("/api/v1/listings?instant_book=true")
+    assert response.status_code == 200
+    assert captured.get("instant_book") is True
+
+
+def test_search_listings_instant_book_defaults_to_none(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    """Absent Instant Book filter must stay None so it never narrows results."""
+    captured: dict[str, Any] = {}
+
+    async def _capture_search(session: Any, filters: Any) -> ListingSearchResponse:
+        captured["instant_book"] = filters.instant_book
+        return ListingSearchResponse(
+            data=[],
+            pagination=PaginationInfo(next_cursor=None, has_more=False, total_count=0),
+        )
+
+    monkeypatch.setattr("app.listings.router.search_listings", _capture_search)
+
+    response = listings_client.get("/api/v1/listings?city=Cairo")
+    assert response.status_code == 200
+    assert captured.get("instant_book") is None
+
+
 def test_search_listings_discovery_filters_default_to_none(
     listings_client: TestClient, monkeypatch
 ) -> None:

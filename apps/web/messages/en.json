@@ -132,7 +132,8 @@
     "readinessTitle": "Listing readiness",
     "readinessMissing": "Missing before review: {items}",
     "readOnlyScope": "You can view this listing but your co-host scope does not allow editing it.",
-    "notEditable": "This listing is read-only for your role."
+    "notEditable": "This listing is read-only for your role.",
+    "instantBook": "Instant Book"
   },
   "listingForm": {
     "createTitle": "Create New Listing",
@@ -267,7 +268,9 @@
       "guestsMin": "At least 1 guest",
       "saveFailed": "Failed to save. Please try again.",
       "submitFailed": "Failed to submit. Please try again."
-    }
+    },
+    "instantBook": "Instant Book",
+    "instantBookHint": "Guests are auto-accepted without waiting for approval"
   },
   "adminListings": {
     "pendingTitle": "Pending Listings Review",
@@ -424,7 +427,8 @@
       "ur": "Urdu",
       "vi": "Vietnamese",
       "sign": "Sign language"
-    }
+    },
+    "instantBook": "Instant Book"
   },
   "favorites": {
     "title": "Favorites",
@@ -626,7 +630,9 @@
       "ur": "Urdu",
       "vi": "Vietnamese",
       "sign": "Sign language"
-    }
+    },
+    "instantBook": "Instant Book",
+    "instantBookBadge": "Instant Book"
   },
   "trust": {
     "title": "Trust & Safety",
@@ -792,7 +798,13 @@
     "guestsOnly": "Only guests can request bookings.",
     "kycRequired": "Identity verification is required before you can request a booking.",
     "kycRequiredCta": "Verify your identity",
-    "serviceFeeWaived": "Free during launch"
+    "serviceFeeWaived": "Free during launch",
+    "instantBook": "Instant Book",
+    "instantBookBadge": "Instant Book",
+    "instantBookConfirmed": "Your Instant Book for {title} is confirmed!",
+    "instantBookConfirmedMessage": "Your Instant Book is confirmed!",
+    "notChargedYet": "You won't be charged until the host accepts",
+    "chargedNow": "You'll be charged once you confirm"
   },
   "hostBookings": {
     "title": "Booking requests",
@@ -1072,7 +1084,6 @@
     "paymentDetails": "Payment details",
     "accommodationAmount": "Accommodation amount",
     "cleaningFee": "Cleaning fee",
-    "serviceFee": "Service fee",
     "guestId": "Guest ID",
     "hostId": "Host ID",
     "unitId": "Unit ID",

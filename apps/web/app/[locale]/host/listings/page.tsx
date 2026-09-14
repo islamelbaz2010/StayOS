@@ -219,6 +219,14 @@ function ListingCard({ listing }: { listing: HostListing }) {
           >
             {t(`status.${listing.status.toLowerCase()}`)}
           </span>
+          {listing.instant_book && (
+            <span className="absolute end-2 top-2 inline-flex items-center gap-1 rounded-md bg-brand-600 px-2 py-0.5 text-xs font-medium text-white shadow-sm">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {t("instantBook")}
+            </span>
+          )}
         </div>
       </Link>
       <div className="p-4">

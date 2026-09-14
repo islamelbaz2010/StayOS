@@ -9,12 +9,13 @@ import type { BookingResponse } from "@/lib/queries/bookings";
 
 interface BookingSuccessProps {
   booking: BookingResponse;
+  instantBook?: boolean;
   onClose: () => void;
 }
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
-export function BookingSuccess({ booking, onClose }: BookingSuccessProps) {
+export function BookingSuccess({ booking, instantBook, onClose }: BookingSuccessProps) {
   const t = useTranslations("booking");
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
@@ -41,7 +42,13 @@ export function BookingSuccess({ booking, onClose }: BookingSuccessProps) {
       </h2>
 
       <p className="mt-2 text-success-700">
-        {booking.unit_title ? t("successForListing", { title: booking.unit_title }) : t("successMessage")}
+        {instantBook
+          ? booking.unit_title
+            ? t("instantBookConfirmed", { title: booking.unit_title })
+            : t("instantBookConfirmedMessage")
+          : booking.unit_title
+            ? t("successForListing", { title: booking.unit_title })
+            : t("successMessage")}
       </p>
 
       <p className="mt-1 text-sm text-success-800">

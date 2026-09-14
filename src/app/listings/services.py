@@ -139,6 +139,7 @@ def _to_listing_response(
         base_price_egp=listing.base_price_egp,
         cleaning_fee_egp=listing.cleaning_fee_egp,
         cancellation_policy=listing.cancellation_policy,
+        instant_book=bool(listing.instant_book),
         price=listing.base_price_egp,
         currency=listing.currency,
         weekend_mult=listing.weekend_mult,
@@ -194,6 +195,7 @@ def _to_search_result(
         "amenities": listing.amenities,
         "cultural_tags": listing.cultural_tags,
         "house_rules": listing.house_rules,
+        "instant_book": bool(listing.instant_book),
         "host_kyc_status": host.kyc_status if host else None,
         "cover_image": _cover_image_url(unit, listing),
     }

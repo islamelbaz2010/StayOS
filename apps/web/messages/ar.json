@@ -132,7 +132,8 @@
     "readinessTitle": "جاهزية الإعلان",
     "readinessMissing": "ناقص قبل المراجعة: {items}",
     "readOnlyScope": "يمكنك عرض هذا الإعلان لكن صلاحياتك كمضيف مشارك لا تسمح بتعديله.",
-    "notEditable": "هذا الإعلان للقراءة فقط لدورك."
+    "notEditable": "هذا الإعلان للقراءة فقط لدورك.",
+    "instantBook": "حجز فوري"
   },
   "listingForm": {
     "createTitle": "إضافة عقار جديد",
@@ -267,7 +268,9 @@
       "guestsMin": "ضيف واحد على الأقل",
       "saveFailed": "فشل الحفظ. يرجى المحاولة مرة أخرى.",
       "submitFailed": "فشل الإرسال. يرجى المحاولة مرة أخرى."
-    }
+    },
+    "instantBook": "حجز فوري",
+    "instantBookHint": "يتم قبول الضيوف تلقائيًا دون انتظار الموافقة"
   },
   "adminListings": {
     "pendingTitle": "مراجعة العقارات المعلقة",
@@ -424,7 +427,8 @@
       "ur": "الأردية",
       "vi": "الفيتنامية",
       "sign": "لغة الإشارة"
-    }
+    },
+    "instantBook": "حجز فوري"
   },
   "favorites": {
     "title": "المفضلة",
@@ -626,7 +630,9 @@
       "ur": "الأردية",
       "vi": "الفيتنامية",
       "sign": "لغة الإشارة"
-    }
+    },
+    "instantBook": "حجز فوري",
+    "instantBookBadge": "حجز فوري"
   },
   "trust": {
     "title": "الثقة والأمان",
@@ -792,7 +798,13 @@
     "guestsOnly": "يمكن للضيوف فقط إرسال طلبات الحجز.",
     "kycRequired": "مطلوب التحقق من الهوية قبل إرسال طلب حجز.",
     "kycRequiredCta": "تحقق من هويتك",
-    "serviceFeeWaived": "مجاني خلال الإطلاق"
+    "serviceFeeWaived": "مجاني خلال الإطلاق",
+    "instantBook": "حجز فوري",
+    "instantBookBadge": "حجز فوري",
+    "instantBookConfirmed": "تم تأكيد حجزك الفوري لـ {title}!",
+    "instantBookConfirmedMessage": "تم تأكيد حجزك الفوري!",
+    "notChargedYet": "لن يتم خصم أي مبلغ حتى يقوم المضيف بالقبول",
+    "chargedNow": "سيتم الخصم بمجرد تأكيدك"
   },
   "hostBookings": {
     "title": "طلبات الحجز",
@@ -1072,7 +1084,6 @@
     "paymentDetails": "تفاصيل الدفع",
     "accommodationAmount": "مبلغ الإقامة",
     "cleaningFee": "رسوم التنظيف",
-    "serviceFee": "رسوم الخدمة",
     "guestId": "معرّف الضيف",
     "hostId": "معرّف المضيف",
     "unitId": "معرّف الوحدة",

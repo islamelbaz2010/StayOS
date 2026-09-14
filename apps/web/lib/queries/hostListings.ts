@@ -35,6 +35,7 @@ export interface HostListing {
   base_price_egp: number;
   cleaning_fee_egp: number;
   cancellation_policy: string;
+  instant_book: boolean;
   price: number;
   currency: string;
   weekend_mult: number;
@@ -79,6 +80,7 @@ export interface ListingCreateInput {
   base_price_egp: number;
   cleaning_fee_egp?: number;
   cancellation_policy?: string;
+  instant_book?: boolean;
   weekend_mult?: number;
   peak_mult?: number;
   min_nights?: number;
@@ -121,6 +123,7 @@ export interface ListingUpdateInput {
   cleaning_fee_egp?: number;
   cancellation_policy?: string;
   category?: string;
+  instant_book?: boolean;
   weekend_mult?: number;
   peak_mult?: number;
   min_nights?: number;

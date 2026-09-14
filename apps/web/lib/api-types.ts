@@ -2536,6 +2536,11 @@ export interface components {
        */
       cancellation_policy?: string;
       /**
+       * Instant Book
+       * @default false
+       */
+      instant_book?: boolean;
+      /**
        * Weekend Mult
        * @default 1
        */
@@ -2696,6 +2701,11 @@ export interface components {
       cleaning_fee_egp: number;
       /** Cancellation Policy */
       cancellation_policy: string;
+      /**
+       * Instant Book
+       * @default false
+       */
+      instant_book?: boolean;
       /** Price */
       price: number;
       /** Currency */
@@ -2798,6 +2808,11 @@ export interface components {
       cultural_tags: string[];
       /** House Rules */
       house_rules: string | null;
+      /**
+       * Instant Book
+       * @default false
+       */
+      instant_book?: boolean;
       /** Host Kyc Status */
       host_kyc_status?: string | null;
       /** Cover Image */
@@ -2868,6 +2883,8 @@ export interface components {
       cleaning_fee_egp?: number | null;
       /** Cancellation Policy */
       cancellation_policy?: string | null;
+      /** Instant Book */
+      instant_book?: boolean | null;
       /** Category */
       category?: string | null;
       /** Weekend Mult */
@@ -4723,6 +4740,7 @@ export interface operations {
         cultural_tags?: string | null;
         amenities?: string | null;
         free_cancellation?: boolean | null;
+        instant_book?: boolean | null;
         pets?: boolean | null;
         self_check_in?: boolean | null;
         accessibility?: string | null;

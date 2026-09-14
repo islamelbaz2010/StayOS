@@ -114,6 +114,14 @@ export default function ListingDetailPage() {
                   <h1 className="break-words text-balance text-2xl font-bold text-brand-900 sm:text-3xl lg:text-4xl">
                     {listing.title}
                   </h1>
+                  {listing.instantBook && (
+                    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-success-50 px-3 py-1 text-xs font-medium text-success-700">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      {t("instantBookBadge")}
+                    </p>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <button

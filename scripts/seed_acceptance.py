@@ -164,7 +164,8 @@ async def update_unit_b(session: AsyncSession) -> None:
 
 
 async def add_photos(session: AsyncSession) -> None:
-    """Add additional photos to both listings for a richer gallery."""
+    """Add additional photos to both listings for a richer gallery.
+    Idempotent: checks s3_key before inserting to avoid duplicates."""
     unit_a_photos = [
         ("demo/zamalek-balcony.jpg", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200&q=80", "شرفة بإطلالة على النيل", "Balcony with Nile view", 3),
         ("demo/zamalek-bathroom.jpg", "https://images.unsplash.com/photo-1620626011761-996317b8d101?w=1200&q=80", "حمام حديث", "Modern bathroom", 4),
@@ -174,27 +175,26 @@ async def add_photos(session: AsyncSession) -> None:
         ("demo/maadi-dining.jpg", "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=1200&q=80", "غرفة طعام", "Dining area", 4),
     ]
 
-    for s3_key, url, caption_ar, caption_en, order in unit_a_photos:
-        photo_id = str(uuid.uuid4())
+    async def upsert_photo(unit_id: str, s3_key: str, url: str, caption_ar: str, caption_en: str, order: int) -> None:
+        existing = await session.execute(
+            text("SELECT id FROM pms.unit_photos WHERE unit_id = :unit_id AND s3_key = :s3_key"),
+            {"unit_id": unit_id, "s3_key": s3_key},
+        )
+        if existing.scalar_one_or_none() is not None:
+            return
         await session.execute(
             text("""
                 INSERT INTO pms.unit_photos (id, unit_id, s3_key, url, display_order, is_cover, caption_ar, caption_en)
                 VALUES (:id, :unit_id, :s3_key, :url, :order, false, :caption_ar, :caption_en)
-                ON CONFLICT DO NOTHING
             """),
-            {"id": photo_id, "unit_id": UNIT_A_ID, "s3_key": s3_key, "url": url, "order": order, "caption_ar": caption_ar, "caption_en": caption_en},
+            {"id": str(uuid.uuid4()), "unit_id": unit_id, "s3_key": s3_key, "url": url, "order": order, "caption_ar": caption_ar, "caption_en": caption_en},
         )
 
+    for s3_key, url, caption_ar, caption_en, order in unit_a_photos:
+        await upsert_photo(UNIT_A_ID, s3_key, url, caption_ar, caption_en, order)
+
     for s3_key, url, caption_ar, caption_en, order in unit_b_photos:
-        photo_id = str(uuid.uuid4())
-        await session.execute(
-            text("""
-                INSERT INTO pms.unit_photos (id, unit_id, s3_key, url, display_order, is_cover, caption_ar, caption_en)
-                VALUES (:id, :unit_id, :s3_key, :url, :order, false, :caption_ar, :caption_en)
-                ON CONFLICT DO NOTHING
-            """),
-            {"id": photo_id, "unit_id": UNIT_B_ID, "s3_key": s3_key, "url": url, "order": order, "caption_ar": caption_ar, "caption_en": caption_en},
-        )
+        await upsert_photo(UNIT_B_ID, s3_key, url, caption_ar, caption_en, order)
 
 
 async def update_guest_profile(session: AsyncSession) -> None:

@@ -13,7 +13,7 @@ import { api } from "@/lib/api";
 const DEV_USERS = [
   { id: "seed-admin-0000-0000-000000000001", label: "Admin" },
   { id: "seed-host-0000-0000-000000000002", label: "Host" },
-  { id: "seed-guest-000-0000-000000000003", label: "Guest" },
+  { id: "seed-accept-gues-0000-000000000001", label: "Guest" },
 ];
 
 export default function LoginPage() {

@@ -908,6 +908,10 @@ async def create_booking(
     if request.message and request.message.strip():
         from app.messages.schemas import MessageCreate
 
+        # Refresh the participants relationship so send_message can read
+        # the user's role (participants were added after the conversation
+        # was created and aren't loaded on the in-memory object).
+        await session.refresh(conversation, attribute_names=["participants"])
         await messages_services.send_message(
             session,
             user=user,

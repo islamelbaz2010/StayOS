@@ -171,9 +171,8 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
 
     if filters.lat is not None and filters.lng is not None and filters.radius_km is not None:
         center_wkt = f"SRID=4326;POINT({filters.lng} {filters.lat})"
-        center_geog = func.ST_GeogFromText(center_wkt, 4326)
-        unit_wkt = func.ST_AsText(Unit.coordinates)
-        unit_geog = func.ST_GeogFromText(unit_wkt, 4326)
+        center_geog = func.ST_GeogFromText(center_wkt)
+        unit_geog = func.ST_GeogFromText(func.ST_AsEWKT(Unit.coordinates))
         stmt = stmt.where(
             func.ST_DWithin(unit_geog, center_geog, filters.radius_km * 1000)
         )

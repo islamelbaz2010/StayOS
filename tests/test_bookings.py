@@ -2334,3 +2334,141 @@ async def test_get_stay_info_host_kyc_null_when_unverified(
     result = await booking_services.get_stay_info(fake_session, guest, booking.id)
 
     assert result.host.kyc_status == "unverified"
+
+
+# ---------------------------------------------------------------------------
+# REGRESSION: Host booking ownership routing + authorization
+# Verifies the Guest → Booking → Unit → Host chain is correct and that
+# the host booking endpoint returns 200 (not 500 from missing import).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_host_booking_endpoint_does_not_500(
+    bookings_client: TestClient, monkeypatch
+) -> None:
+    """Regression: GET /host/bookings must not return 500 due to missing
+    host_permissions import in host/services.py."""
+    host = _make_user(role=UserRole.HOST)
+    _patch_auth_user(monkeypatch, host)
+    paginated = {
+        "items": [],
+        "total": 0,
+        "page": 1,
+        "page_size": 50,
+        "total_pages": 0,
+    }
+    monkeypatch.setattr(
+        "app.host.services.list_paginated_host_bookings",
+        AsyncMock(return_value=paginated),
+    )
+    token = _token_for(host)
+    response = bookings_client.get(
+        "/api/v1/host/bookings",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 0
+    assert body["items"] == []
+
+
+@pytest.mark.asyncio
+async def test_host_cannot_access_other_host_booking_detail(
+    bookings_client: TestClient, monkeypatch
+) -> None:
+    """Omar cannot see Test Owner's booking — authorization enforced."""
+    host = _make_user(user_id="host-omar", role=UserRole.HOST)
+    _patch_auth_user(monkeypatch, host)
+    other_booking = _make_booking(
+        unit=_make_unit(host_id="host-other"), guest=_make_user(role=UserRole.GUEST)
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=other_booking),
+    )
+    monkeypatch.setattr(
+        "app.bookings.services._unit_permission_scope",
+        AsyncMock(return_value=None),
+    )
+    token = _token_for(host)
+    response = bookings_client.get(
+        f"/api/v1/bookings/{other_booking.id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_guest_cannot_access_other_guest_booking(
+    bookings_client: TestClient, monkeypatch
+) -> None:
+    """Guest cannot see another guest's booking."""
+    guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, guest)
+    other_guest = _make_user(user_id="guest-2", role=UserRole.GUEST)
+    other_booking = _make_booking(
+        unit=_make_unit(host_id="host-1"), guest=other_guest
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=other_booking),
+    )
+    monkeypatch.setattr(
+        "app.bookings.services._unit_permission_scope",
+        AsyncMock(return_value=None),
+    )
+    token = _token_for(guest)
+    response = bookings_client.get(
+        f"/api/v1/bookings/{other_booking.id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_host_accept_booking_creates_correct_ownership_chain(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Request-to-Book: host accepts → booking accepted_at set → correct
+    ownership chain preserved."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-omar", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.REQUESTED)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+    monkeypatch.setattr(
+        "app.bookings.services._unit_permission_scope",
+        AsyncMock(return_value="owner"),
+    )
+    monkeypatch.setattr(
+        "app.bookings.services._assert_no_conflicts",
+        AsyncMock(return_value=None),
+    )
+    updated_booking = _make_booking(unit, guest, status=BookingStatus.ACCEPTED)
+    monkeypatch.setattr(
+        bookings_repository,
+        "update_booking",
+        AsyncMock(return_value=updated_booking),
+    )
+    monkeypatch.setattr(
+        "app.payments.services.create_payment_for_booking",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        "app.bookings.services._to_response",
+        MagicMock(return_value=_make_booking_response(status=BookingStatus.ACCEPTED)),
+    )
+
+    result = await booking_services.update_booking(
+        fake_session, host, booking.id,
+        BookingUpdate(status=BookingStatus.ACCEPTED),
+    )
+    assert result.status == BookingStatus.ACCEPTED

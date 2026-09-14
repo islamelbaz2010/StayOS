@@ -595,3 +595,46 @@ class TestSourceConfidenceUpdates:
 
     def test_google_places_confidence(self):
         assert compute_source_confidence("google_places") == 0.8
+
+
+# ─── Regression: list_candidates sort must not raise TypeError ───
+
+
+@pytest.mark.asyncio
+async def test_list_candidates_default_sort_no_typeerror():
+    """Regression: list_candidates with default sort_by must not raise
+    TypeError from the `or` operator on SQLAlchemy clauses."""
+    from app.discovery import services as discovery_services
+    from unittest.mock import AsyncMock, MagicMock
+
+    session = MagicMock()
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+    mock_result.scalar_one.return_value = 0
+    session.execute = AsyncMock(return_value=mock_result)
+
+    candidates, total = await discovery_services.list_candidates(
+        session, sort_by='newest'
+    )
+    assert total == 0
+    assert candidates == []
+
+
+@pytest.mark.asyncio
+async def test_list_candidates_all_sort_options_no_typeerror():
+    """Regression: all sort_by options must work without TypeError."""
+    from app.discovery import services as discovery_services
+    from unittest.mock import AsyncMock, MagicMock
+
+    session = MagicMock()
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+    mock_result.scalar_one.return_value = 0
+    session.execute = AsyncMock(return_value=mock_result)
+
+    for sort_by in ('newest', 'highest_score', 'best_completeness', 'source', 'city'):
+        candidates, total = await discovery_services.list_candidates(
+            session, sort_by=sort_by
+        )
+        assert total == 0
+        assert candidates == []

@@ -91,7 +91,7 @@ async def list_candidates(
         "source": DiscoveryCandidate.source.asc(),
         "city": DiscoveryCandidate.city.asc(),
     }
-    stmt = stmt.order_by(sort_map.get(sort_by) or DiscoveryCandidate.discovered_at.desc())
+    stmt = stmt.order_by(sort_map.get(sort_by, DiscoveryCandidate.discovered_at.desc()))
     stmt = stmt.limit(limit).offset(offset)
 
     result = await session.execute(stmt)

@@ -63,6 +63,20 @@ async def get_quote(
         raise to_http_exception(exc) from exc
 
 
+@router.get("/host", response_model=list[PaymentListItem])
+async def list_host_payment_activity(
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    user: User = Depends(auth_dependencies.require_role("host")),
+    session: AsyncSession = Depends(get_session),
+) -> list[PaymentListItem]:
+    try:
+        return await list_host_payments(session, user, status, limit, offset)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
 @router.get("/{payment_id}", response_model=PaymentResponse)
 async def get_payment_detail(
     payment_id: str,
@@ -84,20 +98,6 @@ async def list_my_payments(
 ) -> list[PaymentListItem]:
     try:
         return await list_guest_payments(session, user, limit, offset)
-    except StayOSError as exc:
-        raise to_http_exception(exc) from exc
-
-
-@router.get("/host", response_model=list[PaymentListItem])
-async def list_host_payment_activity(
-    status: str | None = None,
-    limit: int = 50,
-    offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("host")),
-    session: AsyncSession = Depends(get_session),
-) -> list[PaymentListItem]:
-    try:
-        return await list_host_payments(session, user, status, limit, offset)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

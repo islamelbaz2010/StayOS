@@ -1690,3 +1690,46 @@ async def test_upload_proof_rejects_rejected_kyc(fake_session: AsyncMock) -> Non
         await payment_services.upload_proof(
             fake_session, guest, "payment-1", "payments/x/proof.jpg", None
         )
+
+
+# ---------------------------------------------------------------------------
+# REGRESSION: /payments/host route must not be shadowed by /payments/{payment_id}
+# The host route was defined AFTER the {payment_id} route, causing FastAPI to
+# match GET /payments/host as GET /payments/{payment_id} with payment_id="host",
+# returning 404 "Payment not found" instead of the host payment activity list.
+# ---------------------------------------------------------------------------
+
+
+def test_list_host_payments_route_not_shadowed(
+    payments_client: TestClient, monkeypatch
+) -> None:
+    """GET /payments/host must route to list_host_payment_activity, not
+    get_payment_detail with payment_id='host'."""
+    host = _make_user(role=UserRole.HOST)
+    _patch_auth_user(monkeypatch, host)
+    monkeypatch.setattr(
+        payments_router,
+        "list_host_payments",
+        AsyncMock(return_value=[_make_payment_list_item()]),
+    )
+    token = _token_for(host)
+    response = payments_client.get(
+        "/api/v1/payments/host",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_list_host_payments_route_rejects_guest(
+    payments_client: TestClient, monkeypatch
+) -> None:
+    """GET /payments/host must reject guests (require_role host)."""
+    guest = _make_user(role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, guest)
+    token = _token_for(guest)
+    response = payments_client.get(
+        "/api/v1/payments/host",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403

@@ -450,6 +450,107 @@ async def test_create_request_to_book_stays_requested(fake_session: AsyncMock, m
 
 
 @pytest.mark.asyncio
+async def test_create_booking_sends_guest_message_when_provided(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Airbnb: guest can write a message when requesting to book. The message
+    is sent as the first message in the reservation conversation."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing.instant_book = False
+    booking = _make_booking(unit, guest, status=BookingStatus.REQUESTED)
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "list_overlapping_bookings",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "create_booking",
+        AsyncMock(return_value=booking),
+    )
+
+    conversation = MagicMock()
+    conversation.id = "conv-1"
+    conversation_result = MagicMock()
+    conversation_result.scalar_one_or_none.return_value = conversation
+    fake_session.execute = AsyncMock(return_value=conversation_result)
+
+    send_message_spy = AsyncMock()
+    monkeypatch.setattr(
+        "app.messages.services.send_message",
+        send_message_spy,
+    )
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_3,
+        check_out=_FUTURE_4,
+        adults=2,
+        message="Hi! I'll arrive around 6pm.",
+    )
+    await booking_services.create_booking(fake_session, guest, request)
+    send_message_spy.assert_awaited_once()
+    _, kwargs = send_message_spy.call_args
+    assert kwargs["conversation_id"] == "conv-1"
+    assert "Hi! I'll arrive around 6pm." == kwargs["request"].content
+
+
+@pytest.mark.asyncio
+async def test_create_booking_skips_message_when_not_provided(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """When no message is provided, no message is sent to the conversation."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing.instant_book = False
+    booking = _make_booking(unit, guest, status=BookingStatus.REQUESTED)
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "list_overlapping_bookings",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "create_booking",
+        AsyncMock(return_value=booking),
+    )
+
+    conversation_result = MagicMock()
+    conversation_result.scalar_one_or_none.return_value = MagicMock()
+    fake_session.execute = AsyncMock(return_value=conversation_result)
+
+    send_message_spy = AsyncMock()
+    monkeypatch.setattr(
+        "app.messages.services.send_message",
+        send_message_spy,
+    )
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_3,
+        check_out=_FUTURE_4,
+        adults=2,
+    )
+    await booking_services.create_booking(fake_session, guest, request)
+    send_message_spy.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_get_booking_success(fake_session: AsyncMock, monkeypatch) -> None:
     guest = _make_user(role=UserRole.GUEST)
     host = _make_user(user_id="host-1", role=UserRole.HOST)

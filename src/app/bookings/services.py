@@ -834,6 +834,7 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
             name=host_user.display_name if host_user else None,
             phone=host_user.phone_number if host_user and arrival_eligible else None,
             kyc_status=host_user.kyc_status if host_user else None,
+            languages=list(host_user.languages) if host_user and host_user.languages else [],
         ),
         arrival=StayArrivalInfo(
             eligible=arrival_eligible,
@@ -894,13 +895,25 @@ async def create_booking(
 
     # Every booking gets a reservation-linked conversation for guest/host
     # communication. This is the foundation for messaging and later support.
-    await messages_services.ensure_conversation_for_booking(
+    conversation = await messages_services.ensure_conversation_for_booking(
         session,
         booking_id=booking.id,
         unit_id=unit.id,
         guest_id=user.id,
         host_id=unit.host_id,
     )
+
+    # Airbnb: the guest can attach a message when requesting to book. Send
+    # it as the first message in the reservation conversation.
+    if request.message and request.message.strip():
+        from app.messages.schemas import MessageCreate
+
+        await messages_services.send_message(
+            session,
+            user=user,
+            conversation_id=conversation.id,
+            request=MessageCreate(content=request.message.strip()),
+        )
 
     # For Instant Book the host-approval step is skipped, so the payment
     # request is created here — mirroring what `update_booking` does when a

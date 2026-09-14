@@ -632,7 +632,12 @@
       "sign": "Sign language"
     },
     "instantBook": "Instant Book",
-    "instantBookBadge": "Instant Book"
+    "instantBookBadge": "Instant Book",
+    "respondToReview": "Respond",
+    "responsePlaceholder": "Write your response...",
+    "submitResponse": "Submit response",
+    "submitting": "Submitting...",
+    "responseError": "Failed to submit response"
   },
   "trust": {
     "title": "Trust & Safety",
@@ -756,7 +761,8 @@
       "confirmed": "Confirmed",
       "checkedIn": "Checked in",
       "completed": "Completed"
-    }
+    },
+    "hostSpeaks": "Speaks: {languages}"
   },
   "booking": {
     "title": "Request to book",
@@ -804,7 +810,10 @@
     "instantBookConfirmed": "Your Instant Book for {title} is confirmed!",
     "instantBookConfirmedMessage": "Your Instant Book is confirmed!",
     "notChargedYet": "You won't be charged until the host accepts",
-    "chargedNow": "You'll be charged once you confirm"
+    "chargedNow": "You'll be charged once you confirm",
+    "messageToHost": "Message to host",
+    "messageToHostPlaceholder": "Tell the host about your trip...",
+    "messageToHostHint": "Optional — sent to the host with your booking request"
   },
   "hostBookings": {
     "title": "Booking requests",
@@ -911,7 +920,9 @@
     "comment": "Comment (optional)",
     "reviewPlaceholder": "Share your experience with this guest...",
     "submitReview": "Submit review",
-    "reviewError": "Failed to submit review. Please try again."
+    "reviewError": "Failed to submit review. Please try again.",
+    "viewGuestReviews": "View {count} guest review(s)",
+    "hideGuestReviews": "Hide reviews"
   },
   "availability": {
     "title": "Availability",

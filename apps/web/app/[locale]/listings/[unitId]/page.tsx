@@ -429,7 +429,7 @@ export default function ListingDetailPage() {
                   </section>
                 )}
 
-                <ReviewsSection unitId={unitId} locale={params?.locale ?? "ar"} />
+                <ReviewsSection unitId={unitId} locale={params?.locale ?? "ar"} hostId={listing.hostId} />
 
                 <section className="card p-5 sm:p-6">
                   <h2 className="mb-3 text-lg font-semibold text-brand-900">

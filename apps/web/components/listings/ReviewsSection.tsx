@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { useAuth } from "@/lib/auth/useAuth";
 import { RatingBadge } from "@/components/ui/RatingBadge";
 import {
+  useCreateHostResponse,
   useListingReviews,
   fetchMoreReviews,
   type Review,
   type Subratings,
   SUBRATING_KEYS,
 } from "@/lib/queries/reviews";
+import { getApiErrorMessage } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 
@@ -44,13 +47,40 @@ function ReviewCard({
   review,
   locale,
   t,
+  isHost,
+  unitId,
 }: {
   review: Review;
   locale: string;
   t: ReturnType<typeof useTranslations>;
+  isHost: boolean;
+  unitId: string;
 }) {
   const hasSubratings =
     review.subratings && Object.keys(review.subratings).length > 0;
+  const [showResponseForm, setShowResponseForm] = useState(false);
+  const [responseText, setResponseText] = useState("");
+  const [responseError, setResponseError] = useState<string | null>(null);
+  const createHostResponse = useCreateHostResponse();
+
+  const canRespond = isHost && !review.hostResponse;
+
+  const handleSubmitResponse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!responseText.trim()) return;
+    setResponseError(null);
+    try {
+      await createHostResponse.mutateAsync({
+        reviewId: review.id,
+        unitId,
+        response: responseText.trim(),
+      });
+      setShowResponseForm(false);
+      setResponseText("");
+    } catch (err) {
+      setResponseError(getApiErrorMessage(err, t("responseError")));
+    }
+  };
 
   return (
     <div className="rounded-lg bg-neutral-50 p-4">
@@ -104,16 +134,67 @@ function ReviewCard({
           </p>
         </div>
       )}
+
+      {canRespond && !showResponseForm && (
+        <button
+          type="button"
+          onClick={() => setShowResponseForm(true)}
+          className="mt-3 text-sm font-semibold text-accent-600 hover:text-accent-700"
+        >
+          {t("respondToReview")}
+        </button>
+      )}
+
+      {canRespond && showResponseForm && (
+        <form onSubmit={handleSubmitResponse} className="mt-3 space-y-2 border-t border-neutral-200 pt-3">
+          <textarea
+            value={responseText}
+            onChange={(e) => setResponseText(e.target.value)}
+            rows={3}
+            maxLength={2000}
+            className="input w-full text-sm"
+            placeholder={t("responsePlaceholder")}
+          />
+          {responseError && (
+            <p className="text-sm text-danger-600" role="alert">
+              {responseError}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={createHostResponse.isPending || !responseText.trim()}
+              className="btn-primary flex-1 text-sm"
+            >
+              {createHostResponse.isPending ? t("submitting") : t("submitResponse")}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowResponseForm(false);
+                setResponseText("");
+                setResponseError(null);
+              }}
+              className="rounded-lg bg-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700"
+            >
+              {t("cancel")}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
 
-export function ReviewsSection({ unitId, locale }: { unitId: string; locale: string }) {
+export function ReviewsSection({ unitId, locale, hostId }: { unitId: string; locale: string; hostId?: string | null }) {
   const t = useTranslations("listing");
   const tc = useTranslations("common");
+  const { user } = useAuth();
   const { data, isPending, isError, refetch } = useListingReviews(unitId);
   const [extraReviews, setExtraReviews] = useState<Review[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  const isHost = Boolean(hostId && user && user.id === hostId);
 
   const allReviews = [...(data?.data ?? []), ...extraReviews];
   const totalReviewCount = data?.reviewCount ?? 0;
@@ -213,7 +294,7 @@ export function ReviewsSection({ unitId, locale }: { unitId: string; locale: str
         <>
           <div className="grid gap-4 sm:grid-cols-2">
             {allReviews.map((review) => (
-              <ReviewCard key={review.id} review={review} locale={locale} t={t} />
+              <ReviewCard key={review.id} review={review} locale={locale} t={t} isHost={isHost} unitId={unitId} />
             ))}
           </div>
           {hasMore && (

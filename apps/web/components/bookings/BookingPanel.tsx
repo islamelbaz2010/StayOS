@@ -73,6 +73,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<BookingResponse | null>(null);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const checkInDate = new Date(checkIn);
@@ -171,6 +172,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
         adults: guests.adults,
         children: guests.children,
         infants: guests.infants,
+        message: message.trim() || undefined,
       });
       setCreatedBooking(booking);
       setSuccess(true);
@@ -195,6 +197,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
           setCheckIn(toInputDate(tomorrow));
           setCheckOut(toInputDate(dayAfterTomorrow));
           setGuests({ adults: 1, children: 0, infants: 0 });
+          setMessage("");
         }}
       />
     );
@@ -509,6 +512,21 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
           ) : (
             <p className="mt-2 text-sm text-neutral-500">{t("selectDates")}</p>
           )}
+        </div>
+
+        <div className="mt-4">
+          <label className="mb-1 block text-sm font-medium text-neutral-700">
+            {t("messageToHost")}
+          </label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={3}
+            maxLength={4000}
+            className="input w-full text-sm"
+            placeholder={t("messageToHostPlaceholder")}
+          />
+          <p className="mt-1 text-xs text-neutral-500">{t("messageToHostHint")}</p>
         </div>
 
         <button

@@ -822,6 +822,8 @@ export interface components {
        * @default 0
        */
       infants?: number;
+      /** Message */
+      message?: string | null;
     };
     /**
      * BookingQuote
@@ -3815,6 +3817,11 @@ export interface components {
       phone?: string | null;
       /** Kyc Status */
       kyc_status?: string | null;
+      /**
+       * Languages
+       * @default []
+       */
+      languages?: string[];
     };
     /**
      * StayInfoResponse

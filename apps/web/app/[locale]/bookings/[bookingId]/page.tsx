@@ -429,6 +429,11 @@ function TripContent({
               {t("hostVerified")}
             </span>
           )}
+          {host.languages && host.languages.length > 0 && (
+            <p className="mt-1 text-xs text-neutral-500">
+              {t("hostSpeaks", { languages: host.languages.join(", ") })}
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap gap-4">
             {host.phone && (
               <a

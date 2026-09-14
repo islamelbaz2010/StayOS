@@ -632,7 +632,12 @@
       "sign": "لغة الإشارة"
     },
     "instantBook": "حجز فوري",
-    "instantBookBadge": "حجز فوري"
+    "instantBookBadge": "حجز فوري",
+    "respondToReview": "رد",
+    "responsePlaceholder": "اكتب ردك...",
+    "submitResponse": "إرسال الرد",
+    "submitting": "جارٍ الإرسال...",
+    "responseError": "فشل إرسال الرد"
   },
   "trust": {
     "title": "الثقة والأمان",
@@ -756,7 +761,8 @@
       "confirmed": "مؤكد",
       "checkedIn": "تم تسجيل الوصول",
       "completed": "مكتمل"
-    }
+    },
+    "hostSpeaks": "يتحدث: {languages}"
   },
   "booking": {
     "title": "طلب حجز",
@@ -804,7 +810,10 @@
     "instantBookConfirmed": "تم تأكيد حجزك الفوري لـ {title}!",
     "instantBookConfirmedMessage": "تم تأكيد حجزك الفوري!",
     "notChargedYet": "لن يتم خصم أي مبلغ حتى يقوم المضيف بالقبول",
-    "chargedNow": "سيتم الخصم بمجرد تأكيدك"
+    "chargedNow": "سيتم الخصم بمجرد تأكيدك",
+    "messageToHost": "رسالة للمضيف",
+    "messageToHostPlaceholder": "أخبر المضيف عن رحلتك...",
+    "messageToHostHint": "اختياري — تُرسل للمضيف مع طلب الحجز"
   },
   "hostBookings": {
     "title": "طلبات الحجز",
@@ -911,7 +920,9 @@
     "comment": "تعليق (اختياري)",
     "reviewPlaceholder": "شارك تجربتك مع هذا الضيف...",
     "submitReview": "إرسال التقييم",
-    "reviewError": "فشل إرسال التقييم. يرجى المحاولة مرة أخرى."
+    "reviewError": "فشل إرسال التقييم. يرجى المحاولة مرة أخرى.",
+    "viewGuestReviews": "عرض {count} مراجعة للضيف",
+    "hideGuestReviews": "إخفاء المراجعات"
   },
   "availability": {
     "title": "التوفر",

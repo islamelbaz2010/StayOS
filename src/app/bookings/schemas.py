@@ -13,6 +13,9 @@ class BookingCreate(BaseModel):
     adults: int = Field(default=1, ge=1)
     children: int = Field(default=0, ge=0)
     infants: int = Field(default=0, ge=0)
+    # Airbnb: guest can write a message to the host when requesting to book.
+    # Sent as the first message in the reservation conversation.
+    message: str | None = Field(default=None, max_length=4000)
 
     @field_validator("check_out")
     @classmethod
@@ -114,6 +117,9 @@ class StayHostInfo(BaseModel):
     # verified" indicator. Only the status string is exposed, never the
     # underlying KYC documents or internal metadata.
     kyc_status: str | None = None
+    # Languages the host speaks — a trust signal Airbnb shows on the trip
+    # detail so the guest knows what languages they can communicate in.
+    languages: list[str] = []
 
 
 class StayArrivalInfo(BaseModel):

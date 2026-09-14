@@ -14,7 +14,7 @@ import {
   usePaymentProofDownloadUrl,
   type PaymentResponse,
 } from "@/lib/queries/payments";
-import { useCreateHostReview } from "@/lib/queries/reviews";
+import { useCreateHostReview, useGuestReviews } from "@/lib/queries/reviews";
 import { formatDate, formatMoney, getApiErrorMessage } from "@/lib/utils";
 
 import { HostBookingActions } from "./HostBookingActions";
@@ -144,8 +144,13 @@ export function HostBookingDetail({
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [showGuestReviews, setShowGuestReviews] = useState(false);
   const { data: payment } = usePaymentByBooking(booking.id);
   const createHostReview = useCreateHostReview();
+  const guestReviews = useGuestReviews(
+    showGuestReviews ? booking.guest_id : null,
+    5
+  );
 
   const canMessage =
     booking.permission_scope == null ||
@@ -317,6 +322,57 @@ export function HostBookingDetail({
                 </p>
               )}
           </div>
+
+          {booking.guest_reviews_count != null &&
+            booking.guest_reviews_count > 0 && (
+              <div className="mt-2">
+                {!showGuestReviews ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowGuestReviews(true)}
+                    className="text-xs font-semibold text-accent-600 hover:text-accent-700"
+                  >
+                    {t("viewGuestReviews", { count: booking.guest_reviews_count })}
+                  </button>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    {guestReviews.isPending && (
+                      <p className="text-xs text-neutral-500">{t("loading")}</p>
+                    )}
+                    {guestReviews.data?.data.map((review) => (
+                      <div
+                        key={review.id}
+                        className="rounded-md border border-neutral-200 bg-white p-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-neutral-700">
+                            {review.reviewerDisplayName || t("host")}
+                          </p>
+                          <span className="text-xs text-amber-500">
+                            {review.rating} ★
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-neutral-400">
+                          {formatDate(new Date(review.createdAt), dateLocale)}
+                        </p>
+                        {review.comment && (
+                          <p className="mt-1 text-xs leading-relaxed text-neutral-600">
+                            {review.comment}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowGuestReviews(false)}
+                      className="text-xs font-semibold text-neutral-500 hover:text-neutral-700"
+                    >
+                      {t("hideGuestReviews")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
         </div>
       )}
 

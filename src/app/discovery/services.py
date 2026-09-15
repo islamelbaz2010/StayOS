@@ -365,7 +365,7 @@ async def get_stats(session: AsyncSession) -> dict[str, Any]:
     )
     qualified = await session.scalar(
         select(func.count()).select_from(
-            select(DiscoveryCandidate).where(DiscoveryCandidate.qualification_score >= 60).subquery()
+            select(DiscoveryCandidate).where(DiscoveryCandidate.status == CandidateStatus.QUALIFIED).subquery()
         )
     )
     prospects = await session.scalar(

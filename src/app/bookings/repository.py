@@ -102,6 +102,11 @@ async def list_expired_requested_bookings(
     """
     stmt = (
         select(Booking)
+        .options(
+            selectinload(Booking.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo)
+        )
         .where(
             Booking.status == BookingStatus.REQUESTED,
             Booking.requested_at < cutoff,

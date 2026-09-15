@@ -33,6 +33,8 @@ const SPOKEN_LANGUAGES = [
 export default function HostProfilePage() {
   const t = useTranslations("hostProfile");
   const tc = useTranslations("common");
+  const tl = useTranslations("listing");
+  const th = useTranslations("host");
   const { locale = "ar" } = useParams<{ locale: string }>();
   const { data: profile, isLoading, isError, refetch } = useHostProfile();
   const { data: earnings } = useHostEarnings();
@@ -185,7 +187,7 @@ export default function HostProfilePage() {
                                 `}
                                 aria-pressed={selected}
                               >
-                                {tc(`search.languages.${lang}`, { default: lang })}
+                                {tl(`languages.${lang}`, { default: lang })}
                               </button>
                             );
                           })}
@@ -234,7 +236,7 @@ export default function HostProfilePage() {
                               key={lang}
                               className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs text-brand-700"
                             >
-                              {tc(`search.languages.${lang}`, { default: lang })}
+                              {tl(`languages.${lang}`, { default: lang })}
                             </span>
                           ))}
                         </div>
@@ -254,7 +256,7 @@ export default function HostProfilePage() {
                     KYC_COLORS[kycStatus] ?? KYC_COLORS.unverified
                   }`}
                 >
-                  {tc(`kycStatus.${kycStatus}`) ?? kycStatus}
+                  {th(`kycStatus.${kycStatus}`)}
                 </span>
               </div>
 

@@ -2679,3 +2679,36 @@ async def test_host_accept_booking_creates_correct_ownership_chain(
         BookingUpdate(status=BookingStatus.ACCEPTED),
     )
     assert result.status == BookingStatus.ACCEPTED
+
+
+# --- list_expired_requested_bookings eager loading ----------------------------
+
+
+@pytest.mark.asyncio
+async def test_list_expired_requested_bookings_eager_loads_unit(
+    fake_session: AsyncMock,
+) -> None:
+    """The expiration sweep cancels each listed booking in the same session.
+    ``update_booking`` calls ``session.refresh``, which re-runs the
+    *originating* statement's loader options — if the list query does not
+    eager-load ``Booking.unit``, the refresh expires it without reloading
+    and the cancellation path hits a lazy load (MissingGreenlet)."""
+    captured: dict[str, object] = {}
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+
+    async def _execute(stmt):  # type: ignore[no-untyped-def]
+        captured["stmt"] = stmt
+        return mock_result
+
+    fake_session.execute = _execute
+
+    await bookings_repository.list_expired_requested_bookings(
+        fake_session, datetime.now(UTC)
+    )
+
+    stmt = captured["stmt"]
+    assert any(
+        "Booking.unit" in str(getattr(opt, "path", ""))
+        for opt in stmt._with_options
+    ), "list_expired_requested_bookings must eager-load Booking.unit"

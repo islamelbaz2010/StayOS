@@ -35,7 +35,10 @@ export function HostLayout({ children }: { children: ReactNode }) {
           <nav className="p-4">
             <ul className="space-y-1">
               {navItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive =
+                  pathname === item.href ||
+                  (item.href.endsWith("/messages") &&
+                    pathname?.startsWith(item.href));
                 return (
                   <li key={item.href}>
                     <Link

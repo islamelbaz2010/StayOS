@@ -71,6 +71,8 @@ async def list_candidates(
     session: AsyncSession = Depends(get_session),
     source: str | None = Query(None),
     city: str | None = Query(None),
+    zone: str | None = Query(None),
+    governorate: str | None = Query(None),
     property_type: str | None = Query(None),
     status: str | None = Query(None),
     candidate_type: str | None = Query(None),
@@ -86,6 +88,8 @@ async def list_candidates(
         session,
         source=source,
         city=city,
+        zone=zone,
+        governorate=governorate,
         property_type=property_type,
         status=status,
         candidate_type=candidate_type,
@@ -184,6 +188,7 @@ async def trigger_run(
                 "min_price": config.min_price,
                 "max_price": config.max_price,
                 "country": config.country,
+                "max_candidates_per_run": config.max_candidates_per_run,
             }
 
     search_config = DiscoverySearchConfig(
@@ -193,6 +198,7 @@ async def trigger_run(
         property_type=config_dict.get("property_type"),
         min_price=config_dict.get("min_price"),
         max_price=config_dict.get("max_price"),
+        max_candidates=config_dict.get("max_candidates_per_run") or 50,
     )
 
     run = await discovery_services.run_discovery(

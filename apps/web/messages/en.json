@@ -650,7 +650,8 @@
     "responsePlaceholder": "Write your response...",
     "submitResponse": "Submit response",
     "submitting": "Submitting...",
-    "responseError": "Failed to submit response"
+    "responseError": "Failed to submit response",
+    "includesAllFees": "Includes all fees"
   },
   "trust": {
     "title": "Trust & Safety",
@@ -1524,7 +1525,12 @@
     "responded": "Responded",
     "resultCount": "{total} candidates",
     "provenance": "Provenance",
-    "discoveredAt": "Discovered"
+    "discoveredAt": "Discovered",
+    "governorate": "Governorate",
+    "district": "District",
+    "allGovernorates": "All governorates",
+    "allCities": "All cities",
+    "allDistricts": "All districts"
   },
   "gallery": {
     "label": "Gallery",

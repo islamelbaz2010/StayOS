@@ -291,6 +291,13 @@ async def test_search_listings_selected_dates_total_and_nights(fake_session: Asy
         "get_rating_aggregates_for_units",
         AsyncMock(return_value={"unit-1": (None, 0)}),
     )
+    # Alpha free-booking incentive active → guest service fee waived, so the
+    # all-in total equals the accommodation subtotal.
+    monkeypatch.setattr(
+        listings.services.bookings_repository,
+        "count_global_completed_bookings",
+        AsyncMock(return_value=0),
+    )
     fake_session.execute = AsyncMock(return_value=_make_search_session_result())
 
     check_in = date(2026, 8, 1)
@@ -327,6 +334,11 @@ async def test_search_listings_calendar_rule_override_respected(fake_session: As
         "get_rating_aggregates_for_units",
         AsyncMock(return_value={"unit-1": (None, 0)}),
     )
+    monkeypatch.setattr(
+        listings.services.bookings_repository,
+        "count_global_completed_bookings",
+        AsyncMock(return_value=0),
+    )
     fake_session.execute = AsyncMock(return_value=_make_search_session_result())
 
     check_in = date(2026, 8, 1)
@@ -361,6 +373,11 @@ async def test_search_listings_adjacent_blocked_rule_excludes_correctly(fake_ses
         "get_rating_aggregates_for_units",
         AsyncMock(return_value={"unit-1": (None, 0)}),
     )
+    monkeypatch.setattr(
+        listings.services.bookings_repository,
+        "count_global_completed_bookings",
+        AsyncMock(return_value=0),
+    )
     fake_session.execute = AsyncMock(return_value=_make_search_session_result())
 
     # The night of 2026-08-03 is after the blocked rule (which covers 2026-08-01 and 2026-08-02).
@@ -383,6 +400,11 @@ async def test_search_listings_empty_when_no_units_available_for_dates(fake_sess
         listings.services.reviews_repository,
         "get_rating_aggregates_for_units",
         AsyncMock(return_value={}),
+    )
+    monkeypatch.setattr(
+        listings.services.bookings_repository,
+        "count_global_completed_bookings",
+        AsyncMock(return_value=0),
     )
     fake_session.execute = AsyncMock(return_value=_make_search_session_result())
 

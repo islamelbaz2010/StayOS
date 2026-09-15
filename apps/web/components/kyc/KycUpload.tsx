@@ -150,6 +150,11 @@ export function KycUpload() {
         </div>
         <h3 className="text-lg font-bold text-neutral-900">{t("verifiedTitle")}</h3>
         <p className="mt-2 text-sm text-neutral-600">{t("verifiedMessage")}</p>
+        {error && (
+          <p className="mt-3 text-sm text-danger-600" role="alert">
+            {error}
+          </p>
+        )}
         {user?.role === "guest" && (
           <button
             type="button"

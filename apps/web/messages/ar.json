@@ -650,7 +650,8 @@
     "responsePlaceholder": "اكتب ردك...",
     "submitResponse": "إرسال الرد",
     "submitting": "جارٍ الإرسال...",
-    "responseError": "فشل إرسال الرد"
+    "responseError": "فشل إرسال الرد",
+    "includesAllFees": "شامل جميع الرسوم"
   },
   "trust": {
     "title": "الثقة والأمان",
@@ -1524,7 +1525,12 @@
     "responded": "رد",
     "resultCount": "{total} مرشحاً",
     "provenance": "المصدر",
-    "discoveredAt": "تاريخ الاكتشاف"
+    "discoveredAt": "تاريخ الاكتشاف",
+    "governorate": "المحافظة",
+    "district": "الحي / المنطقة",
+    "allGovernorates": "كل المحافظات",
+    "allCities": "كل المدن",
+    "allDistricts": "كل الأحياء"
   },
   "gallery": {
     "label": "معرض الصور",

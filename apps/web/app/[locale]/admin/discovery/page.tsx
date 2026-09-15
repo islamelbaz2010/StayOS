@@ -16,6 +16,7 @@ import {
   type DiscoveryCandidate,
   type CandidateFilters,
 } from "@/lib/queries/discovery";
+import { useLocationTree } from "@/lib/queries/locations";
 
 const STATUS_COLORS: Record<string, string> = {
   DISCOVERED: "badge-neutral",
@@ -77,6 +78,29 @@ export default function AdminDiscoveryPage() {
 
   const { data: stats } = useDiscoveryStats();
   const { data: sources } = useDiscoverySources();
+  const { data: locationTree } = useLocationTree();
+
+  const governorateOptions = useMemo(
+    () => (locationTree ?? []).map((g) => g.name).sort(),
+    [locationTree]
+  );
+  const cityOptions = useMemo(() => {
+    if (!locationTree) return [] as string[];
+    const cities = filters.governorate
+      ? (locationTree.find((g) => g.name === filters.governorate)?.cities ??
+        [])
+      : locationTree.flatMap((g) => g.cities);
+    return [...new Set(cities.map((c) => c.name))].sort();
+  }, [locationTree, filters.governorate]);
+  const zoneOptions = useMemo(() => {
+    if (!locationTree) return [] as string[];
+    const areas = locationTree
+      .filter((g) => !filters.governorate || g.name === filters.governorate)
+      .flatMap((g) => g.cities)
+      .filter((c) => !filters.city || c.name === filters.city)
+      .flatMap((c) => c.areas);
+    return [...new Set(areas.map((a) => a.name_en))].sort();
+  }, [locationTree, filters.governorate, filters.city]);
   const {
     data: candidateData,
     isLoading,
@@ -286,13 +310,62 @@ export default function AdminDiscoveryPage() {
                 ))}
               </select>
 
-              <input
-                type="text"
-                placeholder={td("filterCity")}
-                value={filters.city ?? ""}
-                onChange={(e) => handleFilterChange("city", e.target.value)}
+              <select
+                value={filters.governorate ?? ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    governorate: e.target.value || undefined,
+                    city: undefined,
+                    zone: undefined,
+                    offset: 0,
+                  }))
+                }
                 className="input text-sm"
-              />
+                aria-label={td("governorate")}
+              >
+                <option value="">{td("allGovernorates")}</option>
+                {governorateOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filters.city ?? ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    city: e.target.value || undefined,
+                    zone: undefined,
+                    offset: 0,
+                  }))
+                }
+                className="input text-sm"
+                aria-label={td("city")}
+              >
+                <option value="">{td("allCities")}</option>
+                {cityOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filters.zone ?? ""}
+                onChange={(e) => handleFilterChange("zone", e.target.value)}
+                className="input text-sm"
+                aria-label={td("district")}
+              >
+                <option value="">{td("allDistricts")}</option>
+                {zoneOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
 
               <select
                 value={filters.candidate_type ?? ""}
@@ -623,6 +696,7 @@ export default function AdminDiscoveryPage() {
                           : td("place")
                       }
                     />
+                    <DetailRow label={td("governorate")} value={selected.governorate} />
                     <DetailRow label={td("city")} value={selected.city} />
                     <DetailRow label={td("zone")} value={selected.zone} />
                     <DetailRow

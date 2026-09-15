@@ -1389,6 +1389,8 @@ export interface components {
       city?: string | null;
       /** Zone */
       zone?: string | null;
+      /** Governorate */
+      governorate?: string | null;
       /** Latitude */
       latitude?: number | null;
       /** Longitude */
@@ -4313,6 +4315,11 @@ export interface components {
       kyc_status: components["schemas"]["KycStatus"];
       /** Is Active */
       is_active: boolean;
+      /**
+       * Staff Permissions
+       * @default []
+       */
+      staff_permissions?: string[];
       /**
        * Created At
        * Format: date-time
@@ -7543,6 +7550,8 @@ export interface operations {
       query?: {
         source?: string | null;
         city?: string | null;
+        zone?: string | null;
+        governorate?: string | null;
         property_type?: string | null;
         status?: string | null;
         candidate_type?: string | null;

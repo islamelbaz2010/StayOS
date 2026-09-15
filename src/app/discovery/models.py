@@ -117,6 +117,7 @@ class DiscoveryCandidate(UUIDMixin, TimestampMixin, Base):
     country: Mapped[str | None] = mapped_column(String(100), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     zone: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    governorate: Mapped[str | None] = mapped_column(String(100), nullable=True)
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     property_type: Mapped[str | None] = mapped_column(String(50), nullable=True)

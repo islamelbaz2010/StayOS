@@ -170,9 +170,11 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
           </p>
           {listing.nights != null && listing.totalEgp != null && (
             <p className="mt-1 text-sm text-neutral-700">
-              {formatMoney(listing.totalEgp, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}{" "}
+              <span className="font-semibold">
+                {formatMoney(listing.totalEgp, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}
+              </span>{" "}
               <span className="text-neutral-500">
-                · {listing.nights} {t("nights")}
+                {t("total")} · {listing.nights} {t("nights")} · {t("includesAllFees")}
               </span>
             </p>
           )}

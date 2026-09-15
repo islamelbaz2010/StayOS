@@ -74,6 +74,7 @@ class DiscoveryCandidateResponse(BaseModel):
     country: str | None = None
     city: str | None = None
     zone: str | None = None
+    governorate: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     property_type: str | None = None

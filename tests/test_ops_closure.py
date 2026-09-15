@@ -903,3 +903,179 @@ async def test_location_tree_groups_hierarchy(fake_session: AsyncMock) -> None:
     cairo = next(g for g in tree.governorates if g.name == "Cairo")
     assert cairo.cities[0].name == "Cairo"
     assert {a.name_en for a in cairo.cities[0].areas} == {"Maadi", "Zamalek"}
+
+
+# ---------------------------------------------------------------------------
+# Discovery geo filters + Google Places env wiring
+# ---------------------------------------------------------------------------
+
+
+def test_google_places_adapter_prefers_places_env_var(monkeypatch):
+    """GOOGLE_PLACES_API_KEY (the Railway variable name) must enable the
+    adapter even when GOOGLE_MAPS_API_KEY is unset."""
+    from app.config import settings
+    from app.discovery.adapters.google_places import GooglePlacesAdapter
+    from app.discovery.constants import SourceStatus
+
+    monkeypatch.setattr(settings, "GOOGLE_PLACES_API_KEY", "pk-123")
+    monkeypatch.setattr(settings, "GOOGLE_MAPS_API_KEY", "")
+    adapter = GooglePlacesAdapter()
+    assert adapter.source_status == SourceStatus.ENABLED
+    assert adapter.is_available()
+
+    monkeypatch.setattr(settings, "GOOGLE_PLACES_API_KEY", "")
+    monkeypatch.setattr(settings, "GOOGLE_MAPS_API_KEY", "mk-456")
+    fallback = GooglePlacesAdapter()
+    assert fallback.is_available()
+
+    monkeypatch.setattr(settings, "GOOGLE_MAPS_API_KEY", "")
+    missing = GooglePlacesAdapter()
+    assert missing.source_status == SourceStatus.REQUIRES_CREDENTIALS
+    assert not missing.is_available()
+
+
+@pytest.mark.asyncio
+async def test_list_candidates_governorate_and_zone_filters():
+    """zone and governorate params must produce real persisted-field
+    filters, not frontend-only decoration."""
+    from app.discovery import services as discovery_services
+    from app.discovery.models import DiscoveryCandidate
+
+    fake_session = MagicMock()
+    captured: list = []
+
+    def capture(stmt):
+        captured.append(str(stmt))
+        return _result(scalars_all=[], scalar_one=0)
+
+    fake_session.execute = AsyncMock(side_effect=capture)
+
+    await discovery_services.list_candidates(
+        fake_session, zone="Maadi", governorate="Cairo"
+    )
+    sql = captured[0]
+    assert "zone" in sql
+    assert "governorate" in sql
+
+
+@pytest.mark.asyncio
+async def test_attribute_geo_assigns_nearest_alias():
+    """A candidate with coordinates but garbage/no city should pick up
+    governorate/city/zone from the nearest canonical alias."""
+    from app.discovery import services as discovery_services
+    from app.favorites.models import LocationAlias
+
+    aliases = [
+        LocationAlias(
+            canonical_name_en="Maadi", canonical_name_ar="م", alias="maadi",
+            alias_type="exact", city="Cairo", governorate="Cairo",
+            lat=29.96, lng=31.26,
+        ),
+        LocationAlias(
+            canonical_name_en="Smouha", canonical_name_ar="س", alias="smouha",
+            alias_type="exact", city="Alexandria", governorate="Alexandria",
+            lat=31.21, lng=29.94,
+        ),
+    ]
+    normalized = {"latitude": 29.97, "longitude": 31.25, "city": None, "zone": None}
+    discovery_services._attribute_geo(normalized, aliases, {"Cairo", "Alexandria"})
+    assert normalized["governorate"] == "Cairo"
+    assert normalized["city"] == "Cairo"
+    assert normalized["zone"] == "Maadi"
+
+
+@pytest.mark.asyncio
+async def test_attribute_geo_replaces_noncanonical_city():
+    from app.discovery import services as discovery_services
+    from app.favorites.models import LocationAlias
+
+    aliases = [
+        LocationAlias(
+            canonical_name_en="Dahab", canonical_name_ar="د", alias="dahab",
+            alias_type="exact", city="Dahab", governorate="South Sinai",
+            lat=28.51, lng=34.51,
+        ),
+    ]
+    normalized = {
+        "latitude": 28.51, "longitude": 34.51,
+        "city": "Some Random Street Name 123", "zone": None,
+    }
+    discovery_services._attribute_geo(normalized, aliases, {"Dahab"})
+    assert normalized["city"] == "Dahab"
+    assert normalized["governorate"] == "South Sinai"
+
+
+@pytest.mark.asyncio
+async def test_attribute_geo_far_point_untouched():
+    from app.discovery import services as discovery_services
+    from app.favorites.models import LocationAlias
+
+    aliases = [
+        LocationAlias(
+            canonical_name_en="Maadi", canonical_name_ar="م", alias="maadi",
+            alias_type="exact", city="Cairo", governorate="Cairo",
+            lat=29.96, lng=31.26,
+        ),
+    ]
+    normalized = {"latitude": 51.5, "longitude": -0.12, "city": "London", "zone": None}
+    discovery_services._attribute_geo(normalized, aliases, {"London"})
+    assert "governorate" not in normalized
+    assert normalized["city"] == "London"
+
+
+@pytest.mark.asyncio
+async def test_trigger_run_passes_max_candidates(monkeypatch):
+    """A config's max_candidates_per_run must reach the adapter search
+    config — previously dropped, silently capping every run at 50."""
+    from app.discovery.router import trigger_run
+    from app.discovery.schemas import DiscoveryRunTriggerRequest
+    from app.discovery.adapters.base import registry
+    from app.discovery import services as discovery_services
+
+    adapter = registry.get("overpass_osm") or registry.get("json_api")
+    assert adapter is not None
+
+    config = MagicMock()
+    config.city = "Cairo"
+    config.zone = None
+    config.property_type = None
+    config.min_price = None
+    config.max_price = None
+    config.country = "Egypt"
+    config.max_candidates_per_run = 150
+
+    captured: dict = {}
+
+    async def fake_run(session, adapter_, search_config, config_id=None, config_dict=None):
+        from app.discovery.models import DiscoveryRun
+
+        captured["max_candidates"] = search_config.max_candidates
+        now = datetime.now(UTC)
+        return DiscoveryRun(
+            id=str(uuid.uuid4()),
+            config_id=config_id,
+            source=adapter_.source_name,
+            status="COMPLETED",
+            started_at=now,
+            pages_scanned=0,
+            candidates_found=0,
+            new_candidates=0,
+            duplicates=0,
+            qualified=0,
+            rejected=0,
+            errors=[],
+            run_metadata={},
+            created_at=now,
+            updated_at=now,
+        )
+
+    fake_session = MagicMock()
+    fake_session.execute = AsyncMock(return_value=_result(scalar_one_or_none=config))
+    monkeypatch.setattr(discovery_services, "run_discovery", fake_run)
+
+    await trigger_run(
+        DiscoveryRunTriggerRequest(source=adapter.source_name, config_id="cfg-1"),
+        _=None,
+        session=fake_session,
+    )
+    assert captured["max_candidates"] == 150

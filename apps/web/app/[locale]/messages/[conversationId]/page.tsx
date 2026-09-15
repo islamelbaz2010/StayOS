@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { GuestLayout } from "@/components/layouts";
+import { RoleAwareLayout } from "@/components/layouts/RoleAwareLayout";
 import { useAuth } from "@/lib/auth/useAuth";
 import {
   useMarkRead,
@@ -151,18 +151,11 @@ export default function ConversationPage() {
   const params = useParams<{ locale: string; conversationId: string }>();
   const locale = params?.locale ?? "ar";
   const conversationId = params?.conversationId ?? "";
-  const { user } = useAuth();
   const tc = useTranslations("common");
-  const roleHomeHref =
-    user?.role === "host"
-      ? `/${locale}/host`
-      : user?.role === "admin"
-        ? `/${locale}/admin/pending`
-        : null;
 
   return (
     <ProtectedRoute>
-      <GuestLayout>
+      <RoleAwareLayout>
         <section className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-4 flex items-center gap-3">
             <Link
@@ -171,18 +164,10 @@ export default function ConversationPage() {
             >
               {tc("back")}
             </Link>
-            {roleHomeHref && (
-              <Link
-                href={roleHomeHref}
-                className="text-sm font-medium text-neutral-600 hover:text-accent-600"
-              >
-                {user?.role === "host" ? "Host" : "Admin"}
-              </Link>
-            )}
           </div>
           <ThreadContent conversationId={conversationId} locale={locale} />
         </section>
-      </GuestLayout>
+      </RoleAwareLayout>
     </ProtectedRoute>
   );
 }

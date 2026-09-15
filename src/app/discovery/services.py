@@ -48,6 +48,8 @@ async def list_candidates(
     session: AsyncSession,
     source: str | None = None,
     city: str | None = None,
+    zone: str | None = None,
+    governorate: str | None = None,
     property_type: str | None = None,
     status: str | None = None,
     candidate_type: str | None = None,
@@ -65,6 +67,12 @@ async def list_candidates(
         stmt = stmt.where(DiscoveryCandidate.source == source)
     if city:
         stmt = stmt.where(DiscoveryCandidate.city == city)
+    if zone:
+        stmt = stmt.where(DiscoveryCandidate.zone == zone)
+    if governorate:
+        stmt = stmt.where(
+            func.lower(DiscoveryCandidate.governorate) == governorate.strip().lower()
+        )
     if property_type:
         stmt = stmt.where(DiscoveryCandidate.property_type == property_type)
     if status:
@@ -129,14 +137,62 @@ async def update_candidate_status(
     return candidate
 
 
+_GEO_MAX_DIST_DEG = 0.36
+
+
+async def _load_geo_aliases(session: AsyncSession) -> list[Any]:
+    from app.favorites.models import LocationAlias
+
+    result = await session.execute(
+        select(LocationAlias).where(
+            LocationAlias.lat.is_not(None), LocationAlias.lng.is_not(None)
+        )
+    )
+    return list(result.scalars().all())
+
+
+def _attribute_geo(
+    normalized: dict[str, Any], aliases: list[Any], canonical_cities: set[str]
+) -> None:
+    """Attribute governorate/city/zone from the nearest canonical alias.
+
+    Source data (especially OSM) rarely carries a usable addr:city, so
+    structured geography is derived from coordinates instead. Only fills
+    fields that are missing or non-canonical — never clobbers good data.
+    """
+    lat = normalized.get("latitude")
+    lng = normalized.get("longitude")
+    if lat is None or lng is None or not aliases:
+        return
+
+    nearest = min(
+        aliases,
+        key=lambda a: (a.lat - lat) ** 2 + (a.lng - lng) ** 2,
+    )
+    if (nearest.lat - lat) ** 2 + (nearest.lng - lng) ** 2 > _GEO_MAX_DIST_DEG**2:
+        return
+
+    normalized["governorate"] = nearest.governorate
+    city = normalized.get("city")
+    if not city or city not in canonical_cities:
+        normalized["city"] = nearest.city
+    if not normalized.get("zone"):
+        normalized["zone"] = nearest.canonical_name_en
+
+
 async def _persist_candidate(
     session: AsyncSession,
     raw: RawCandidate,
     run_id: str | None,
     config: dict[str, Any] | None = None,
+    geo_context: tuple[list[Any], set[str]] | None = None,
 ) -> DiscoveryCandidate | None:
     """Normalize, dedup, score, and persist a single raw candidate."""
     normalized = normalize_candidate(raw)
+    if geo_context is None:
+        aliases = await _load_geo_aliases(session)
+        geo_context = (aliases, {a.city for a in aliases})
+    _attribute_geo(normalized, *geo_context)
     completeness = compute_completeness(normalized)
     source_confidence = compute_source_confidence(raw.source)
     contact_status, contact_type, contact_value, contact_confidence = extract_contact(raw.raw_contact)
@@ -164,6 +220,7 @@ async def _persist_candidate(
 
     candidate = DiscoveryCandidate(
         source=raw.source,
+        governorate=normalized.get("governorate"),
         source_url=raw.source_url,
         external_listing_id=raw.external_listing_id,
         candidate_type=candidate_type,
@@ -237,9 +294,14 @@ async def run_discovery(
         raw_candidates = await adapter.search(search_config)
         pages = max(1, len(raw_candidates) // 50)
 
+        geo_aliases = await _load_geo_aliases(session)
+        geo_context = (geo_aliases, {a.city for a in geo_aliases})
+
         for raw in raw_candidates:
             try:
-                candidate = await _persist_candidate(session, raw, run.id, config_dict)
+                candidate = await _persist_candidate(
+                    session, raw, run.id, config_dict, geo_context
+                )
                 if candidate is None:
                     dup_count += 1
                 else:

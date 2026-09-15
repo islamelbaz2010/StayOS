@@ -22,6 +22,7 @@ export interface DiscoveryCandidate {
   country: string | null;
   city: string | null;
   zone: string | null;
+  governorate: string | null;
   latitude: number | null;
   longitude: number | null;
   property_type: string | null;
@@ -104,6 +105,8 @@ export interface DiscoveryRun {
 export interface CandidateFilters {
   source?: string;
   city?: string;
+  zone?: string;
+  governorate?: string;
   property_type?: string;
   status?: string;
   candidate_type?: string;

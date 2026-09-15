@@ -590,6 +590,10 @@ async def search_listings(
         for unit, listing, lat, lng in rows
     ]
     has_search_dates = filters.check_in is not None and filters.check_out is not None
+    alpha_free_bookings_remaining = False
+    if has_search_dates:
+        completed = await bookings_repository.count_global_completed_bookings(session)
+        alpha_free_bookings_remaining = completed < settings.ALPHA_GUEST_FREE_BOOKINGS
     for item, (unit, listing, _, _) in zip(data, rows, strict=True):
         avg_rating, review_count = ratings_map.get(unit.id, (None, 0))
         item["average_rating"] = avg_rating
@@ -601,6 +605,17 @@ async def search_listings(
             item["total_egp"] = pricing.compute_subtotal(
                 listing, unit.calendar_rules, filters.check_in, filters.check_out
             )
+            # Present the all-in trip price (cleaning + guest service fee),
+            # matching the booking quote so the search card total equals
+            # what the guest actually pays at checkout.
+            cleaning = listing.cleaning_fee_egp or 0
+            fee_base = item["total_egp"] + cleaning
+            service_fee = (
+                0
+                if alpha_free_bookings_remaining
+                else int(round(fee_base * settings.GUEST_SERVICE_FEE_PCT))
+            )
+            item["total_egp"] = fee_base + service_fee
     has_more = offset + len(data) < total
     next_cursor = (
         ListingSearchFilters.encode_cursor(offset + filters.limit)

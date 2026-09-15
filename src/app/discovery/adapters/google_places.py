@@ -41,7 +41,7 @@ _PLACES_NEARBY_URL = "https://places.googleapis.com/v1/places:searchNearby"
 _LODGING_TYPES = [
     "lodging",
     "hotel",
-    "motels",
+    "motel",
     "resort_hotel",
     "guest_house",
     "hostel",
@@ -87,20 +87,25 @@ class GooglePlacesAdapter(SourceAdapter):
     source_status: SourceStatus = SourceStatus.REQUIRES_CREDENTIALS
 
     def __init__(self, api_key: str | None = None) -> None:
-        self._api_key = api_key or getattr(settings, "GOOGLE_MAPS_API_KEY", None)
+        self._api_key = (
+            api_key
+            or getattr(settings, "GOOGLE_PLACES_API_KEY", "")
+            or getattr(settings, "GOOGLE_MAPS_API_KEY", "")
+            or None
+        )
         if self._api_key:
             self.source_status = SourceStatus.ENABLED
         else:
             self.source_status = SourceStatus.REQUIRES_CREDENTIALS
 
     def is_available(self) -> bool:
-        return self._api_key is not None and self.source_status == SourceStatus.ENABLED
+        return bool(self._api_key) and self.source_status == SourceStatus.ENABLED
 
     async def search(self, config: DiscoverySearchConfig) -> list[RawCandidate]:
         if not self._api_key:
             logger.warning(
                 "GooglePlacesAdapter: no API key configured — "
-                "BLOCKED: EXTERNAL CREDENTIAL REQUIRED (GOOGLE_MAPS_API_KEY)"
+                "BLOCKED: EXTERNAL CREDENTIAL REQUIRED (GOOGLE_PLACES_API_KEY)"
             )
             return []
 
@@ -204,7 +209,7 @@ class GooglePlacesAdapter(SourceAdapter):
         # Map Google types to StayOS property types
         property_type_map = {
             "hotel": "HOTEL_ROOM",
-            "motels": "HOTEL_ROOM",
+            "motel": "HOTEL_ROOM",
             "resort_hotel": "RESORT_UNIT",
             "guest_house": "APARTMENT",
             "hostel": "APARTMENT",

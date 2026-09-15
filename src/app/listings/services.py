@@ -226,12 +226,16 @@ async def create_listing(
             session, unit, UnitStatus.DRAFT
         )
 
+    # Re-fetch with the listing and photos relationships eagerly loaded
+    # to avoid MissingGreenlet lazy-loads outside the async context.
+    await session.refresh(unit, attribute_names=["listing", "photos"])
     listing = unit.listing
     if listing is None:
         raise NotFoundError("Listing details not found")
 
+    host = await _fetch_host(session, unit.host_id)
     lat, lng = request.lat, request.lng
-    return _to_listing_response(unit, listing, lat, lng)
+    return _to_listing_response(unit, listing, lat, lng, host=host)
 
 
 async def get_listing_detail(
@@ -328,6 +332,12 @@ async def submit_for_review(
     # transition so incomplete listings cannot enter the review queue.
     from app.host import services as host_services
     from app.host.constants import ListingReadinessStatus
+
+    # Refresh to ensure we evaluate the latest persisted state
+    await session.refresh(unit)
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
 
     readiness = await host_services.compute_listing_readiness(session, unit, listing)
     if readiness.status != ListingReadinessStatus.READY:

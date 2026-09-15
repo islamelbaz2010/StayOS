@@ -79,8 +79,8 @@ _DEFAULT_RADIUS = 10000
 class GooglePlacesAdapter(SourceAdapter):
     """Google Places API adapter for accommodation discovery.
 
-    Requires GOOGLE_MAPS_API_KEY in environment.
-    Marked REQUIRES_EXTERNAL_CREDENTIALS when no key is present.
+    Requires GOOGLE_PLACES_API_KEY in environment.
+    Marked REQUIRES_CREDENTIALS when no key is present.
     """
 
     source_name: str = "google_places"

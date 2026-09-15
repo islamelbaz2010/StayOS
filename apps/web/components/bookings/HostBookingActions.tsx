@@ -89,6 +89,15 @@ export function HostBookingActions({
     booking.permission_scope == null ||
     ["owner", "admin", "full_access"].includes(booking.permission_scope);
 
+  // Accept/Reject is a Host booking decision. Admin has no explicit
+  // operational override contract for accept/reject (no audit event,
+  // no documented admin authority). Admin retains full booking
+  // visibility but does not make the host's accept/reject decision.
+  // Admin operational actions (no-show, complete) are explicitly
+  // admin-authorized in the backend and remain available below.
+  const isAdmin = user?.role === "admin";
+  const canAcceptReject = canManageBookings && !isAdmin;
+
   const canCancel = !booking.checked_in_at && !booking.checked_out_at;
 
   if (!canManageBookings) {
@@ -324,7 +333,7 @@ export function HostBookingActions({
         </p>
       )}
 
-      {booking.status === "requested" && (
+      {booking.status === "requested" && canAcceptReject && (
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -353,6 +362,12 @@ export function HostBookingActions({
             </button>
           )}
         </div>
+      )}
+
+      {booking.status === "requested" && !canAcceptReject && (
+        <p className="text-sm text-neutral-500">
+          {t("finalStatus", { status: booking.status })}
+        </p>
       )}
 
       {booking.status === "accepted" && canCancel && (

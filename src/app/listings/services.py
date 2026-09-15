@@ -1,3 +1,4 @@
+import math
 import uuid
 from datetime import date, datetime, timedelta
 from statistics import median
@@ -434,9 +435,17 @@ async def update_listing(
             setattr(unit, field, update_data[field])
 
     if "lat" in update_data and "lng" in update_data:
-        unit.coordinates = WKTElement(
-            f"POINT({update_data['lng']} {update_data['lat']})", srid=4326
-        )
+        lat_val = update_data["lat"]
+        lng_val = update_data["lng"]
+        if (
+            lat_val is not None
+            and lng_val is not None
+            and math.isfinite(float(lat_val))
+            and math.isfinite(float(lng_val))
+        ):
+            unit.coordinates = WKTElement(
+                f"POINT({lng_val} {lat_val})", srid=4326
+            )
     elif "lat" in update_data or "lng" in update_data:
         raise ValidationError("Both lat and lng are required to update coordinates")
 

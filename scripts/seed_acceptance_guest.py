@@ -33,11 +33,29 @@ ACCEPTANCE_GUEST_ID = "seed-accept-gues-0000-000000000001"
 
 async def create_acceptance_guest(session: AsyncSession) -> None:
     result = await session.execute(
-        text("SELECT id FROM auth.users WHERE id = :id"),
+        text("SELECT role, kyc_status FROM auth.users WHERE id = :id"),
         {"id": ACCEPTANCE_GUEST_ID},
     )
-    if result.fetchone():
-        print(f"Acceptance Guest already exists: {ACCEPTANCE_GUEST_ID}")
+    existing = result.fetchone()
+    if existing:
+        # Idempotent repair: the fixture must always be guest/verified.
+        # A previous acceptance session may have upgraded it to host —
+        # restore the intended fixture state without touching anything else.
+        if existing.role != "guest" or existing.kyc_status != "verified":
+            await session.execute(
+                text("""
+                    UPDATE auth.users
+                    SET role = 'guest', kyc_status = 'verified', updated_at = now()
+                    WHERE id = :id
+                    """),
+                {"id": ACCEPTANCE_GUEST_ID},
+            )
+            print(
+                f"Acceptance Guest repaired (was role={existing.role}, "
+                f"kyc={existing.kyc_status}): {ACCEPTANCE_GUEST_ID}"
+            )
+        else:
+            print(f"Acceptance Guest already exists: {ACCEPTANCE_GUEST_ID}")
         return
 
     await session.execute(

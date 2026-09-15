@@ -716,6 +716,10 @@ async def compute_listing_readiness(
             if photo_count == 0:
                 missing_items.append(key)
                 missing_labels[key] = label_en
+        elif attr == "address":
+            # address lives on Unit, not UnitListing — skip the listing
+            # lookup and check unit.address directly below.
+            continue
         else:
             value = getattr(listing, attr, None)
             if attr == "base_price_egp":

@@ -43,3 +43,35 @@ export function usePopularLocations() {
     staleTime: 5 * 60_000,
   });
 }
+
+export interface LocationArea {
+  name_en: string;
+  name_ar: string;
+  lat: number | null;
+  lng: number | null;
+}
+
+export interface LocationCity {
+  name: string;
+  areas: LocationArea[];
+}
+
+export interface LocationGovernorate {
+  name: string;
+  cities: LocationCity[];
+}
+
+interface LocationTreeResponse {
+  governorates: LocationGovernorate[];
+}
+
+export function useLocationTree() {
+  return useQuery({
+    queryKey: ["location-tree"],
+    queryFn: async () => {
+      const { data } = await api.get<LocationTreeResponse>("/locations/tree");
+      return data.governorates;
+    },
+    staleTime: 30 * 60_000,
+  });
+}

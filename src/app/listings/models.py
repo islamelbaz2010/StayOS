@@ -169,6 +169,12 @@ class UnitListing(UUIDMixin, Base):
     cover_photo: Mapped["UnitPhoto | None"] = relationship(
         "UnitPhoto", foreign_keys=[cover_photo_id]
     )
+    # Host-proposed edits to a LISTED listing, held for admin review.
+    # Shape: {"unit": {field: value}, "listing": {field: value},
+    #         "lat": float, "lng": float, "cover_photo_id": str,
+    #         "submitted_by": user_id, "submitted_at": iso}
+    # NULL means nothing is awaiting review.
+    pending_changes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -237,6 +243,12 @@ class UnitPhoto(UUIDMixin, TimestampMixin, Base):
     # photo to the feature so guests can see evidence on listing detail.
     accessibility_feature: Mapped[str | None] = mapped_column(
         String(50), nullable=True
+    )
+    # Photo moderation on LISTED units: 'live' photos are public;
+    # 'pending_add' is host/admin-only until approved; 'pending_remove'
+    # stays public until an admin approves the removal.
+    moderation_state: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="live", server_default="live"
     )
 
     unit: Mapped["Unit"] = relationship("Unit", back_populates="photos")

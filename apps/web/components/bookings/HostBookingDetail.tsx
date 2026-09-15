@@ -18,6 +18,7 @@ import { useCreateHostReview, useGuestReviews } from "@/lib/queries/reviews";
 import { formatDate, formatMoney, getApiErrorMessage } from "@/lib/utils";
 
 import { HostBookingActions } from "./HostBookingActions";
+import { ReportProblem } from "@/components/disputes/ReportProblem";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
@@ -588,6 +589,10 @@ export function HostBookingDetail({
       )}
 
       <HostBookingActions booking={booking} onSuccess={onActionSuccess} />
+
+      <div className="mt-4">
+        <ReportProblem bookingId={booking.id} />
+      </div>
     </section>
   );
 }

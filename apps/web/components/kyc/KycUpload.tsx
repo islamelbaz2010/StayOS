@@ -17,7 +17,7 @@ export function KycUpload() {
   const router = useRouter();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { data: kycStatus, isLoading: statusLoading } = useKycStatus();
   const initiateMutation = useInitiateKyc();
   const submitMutation = useSubmitKyc();
@@ -123,6 +123,9 @@ export function KycUpload() {
   const handleBecomeHost = async () => {
     try {
       await upgradeMutation.mutateAsync();
+      // Refresh the auth user so header/layouts reflect the new host
+      // role immediately instead of waiting for a full reload.
+      await refreshUser();
       router.push(`/${locale}/host`);
     } catch {
       setError(t("upgradeFailed"));

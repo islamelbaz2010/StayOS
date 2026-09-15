@@ -27,7 +27,7 @@ export default function AdminPendingListingsPage() {
   const [rejectReason, setRejectReason] = useState("");
 
   return (
-    <ProtectedRoute allowedRoles={["admin"]}>
+    <ProtectedRoute allowedRoles={["admin", "staff"]}>
       <AdminLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="space-y-6">
@@ -113,7 +113,10 @@ export default function AdminPendingListingsPage() {
                             {listing.title}
                           </h3>
                           <span className="badge-warning shrink-0">
-                            {t("pending")}
+                            {listing.status === "LISTED" &&
+                            listing.has_pending_changes
+                              ? t("pendingEdit")
+                              : t("pending")}
                           </span>
                         </div>
                         <p className="text-sm text-neutral-500">
@@ -346,6 +349,44 @@ export default function AdminPendingListingsPage() {
                       <p className="mt-1 text-sm text-neutral-600">
                         {selected.house_rules}
                       </p>
+                    </div>
+                  )}
+
+                  {selected.pending_changes && (
+                    <div className="mt-4 rounded-lg border border-warning-200 bg-warning-50 p-3">
+                      <span className="font-medium text-warning-800">
+                        {t("pendingChangesTitle")}
+                      </span>
+                      <dl className="mt-2 space-y-1 text-sm">
+                        {Object.entries({
+                          ...(selected.pending_changes.unit ?? {}),
+                          ...(selected.pending_changes.listing ?? {}),
+                          ...(selected.pending_changes.lat != null
+                            ? { lat: selected.pending_changes.lat }
+                            : {}),
+                          ...(selected.pending_changes.lng != null
+                            ? { lng: selected.pending_changes.lng }
+                            : {}),
+                        }).map(([field, value]) => (
+                          <div key={field} className="flex gap-2">
+                            <dt className="min-w-32 font-medium text-neutral-700">
+                              {field}:
+                            </dt>
+                            <dd className="text-neutral-600">
+                              {typeof value === "object"
+                                ? JSON.stringify(value)
+                                : String(value)}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                      {selected.pending_changes.submitted_at && (
+                        <p className="mt-2 text-xs text-neutral-500">
+                          {new Date(
+                            selected.pending_changes.submitted_at
+                          ).toLocaleString()}
+                        </p>
+                      )}
                     </div>
                   )}
 

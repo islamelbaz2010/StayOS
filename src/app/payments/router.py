@@ -145,7 +145,7 @@ async def download_proof(
 @router.post("/{payment_id}/verify", response_model=PaymentResponse)
 async def verify_payment_endpoint(
     payment_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
     session: AsyncSession = Depends(get_session),
 ) -> PaymentResponse:
     try:
@@ -158,7 +158,7 @@ async def verify_payment_endpoint(
 async def reject_payment_endpoint(
     payment_id: str,
     request: PaymentVerifyRequest,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
     session: AsyncSession = Depends(get_session),
 ) -> PaymentResponse:
     try:
@@ -171,7 +171,7 @@ async def reject_payment_endpoint(
 @router.post("/{payment_id}/refund", response_model=PaymentResponse)
 async def refund_payment_endpoint(
     payment_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
     session: AsyncSession = Depends(get_session),
 ) -> PaymentResponse:
     try:
@@ -185,7 +185,7 @@ async def payment_queue(
     status: str | None = None,
     limit: int = 50,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
     session: AsyncSession = Depends(get_session),
 ) -> list[PaymentListItem]:
     try:

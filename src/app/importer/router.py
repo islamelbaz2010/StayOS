@@ -20,7 +20,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 @router.post("/preview", response_model=ImportPreviewResponse)
 async def preview_import(
     file: UploadFile = File(...),
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("listings")),
 ) -> ImportPreviewResponse:
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
@@ -38,7 +38,7 @@ async def preview_import(
 @router.post("/confirm", response_model=ImportSummaryResponse)
 async def confirm_import(
     request: ImportConfirmRequest,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("listings")),
     session: AsyncSession = Depends(get_session),
 ) -> ImportSummaryResponse:
     try:

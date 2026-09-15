@@ -138,6 +138,28 @@ async def get_units_by_status(
     return list(result.scalars().all())
 
 
+async def get_units_with_pending_changes(
+    session: AsyncSession,
+) -> list[Unit]:
+    """LISTED units with a host-submitted edit awaiting admin review —
+    either a stashed field change-set or pending photo changes."""
+    pending_photos = exists().where(
+        UnitPhoto.unit_id == Unit.id,
+        UnitPhoto.moderation_state.in_(["pending_add", "pending_remove"]),
+    )
+    result = await session.execute(
+        select(Unit)
+        .options(selectinload(Unit.listing), selectinload(Unit.photos))
+        .join(UnitListing, Unit.id == UnitListing.unit_id)
+        .where(
+            Unit.status == UnitStatus.LISTED,
+            (UnitListing.pending_changes.isnot(None)) | pending_photos,
+        )
+        .order_by(Unit.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
 async def update_unit_listing(
     session: AsyncSession, unit: Unit, listing: UnitListing, request: ListingUpdate
 ) -> UnitListing:

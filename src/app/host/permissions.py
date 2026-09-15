@@ -35,6 +35,12 @@ async def get_managed_unit_ids(
     if user.role == UserRole.ADMIN:
         all_result = await session.execute(select(Unit.id))
         unit_ids = [row[0] for row in all_result.all()]
+    elif user.role == UserRole.STAFF:
+        from app.auth.staff import has_permission
+
+        if await has_permission(session, user, "operations"):
+            all_result = await session.execute(select(Unit.id))
+            unit_ids = [row[0] for row in all_result.all()]
 
     # Co-hosted units
     cohost_result = await session.execute(
@@ -63,6 +69,11 @@ async def get_unit_permission_scope(
         return "owner"
     if user.role == UserRole.ADMIN:
         return "admin"
+    if user.role == UserRole.STAFF:
+        from app.auth.staff import has_permission
+
+        if await has_permission(session, user, "operations"):
+            return "admin"
     result = await session.execute(
         select(UnitCoHost.permission_scope).where(
             UnitCoHost.unit_id == unit.id,
@@ -87,6 +98,11 @@ async def get_unit_permission_scopes(
     scopes: dict[str, str] = {}
     if user.role == UserRole.ADMIN:
         return {unit_id: "admin" for unit_id in unit_ids}
+    if user.role == UserRole.STAFF:
+        from app.auth.staff import has_permission
+
+        if await has_permission(session, user, "operations"):
+            return {unit_id: "admin" for unit_id in unit_ids}
     owned_result = await session.execute(
         select(Unit.id).where(Unit.id.in_(unit_ids), Unit.host_id == user.id)
     )

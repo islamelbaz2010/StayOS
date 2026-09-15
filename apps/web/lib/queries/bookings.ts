@@ -262,3 +262,52 @@ export function useCompleteBooking() {
     },
   });
 }
+
+export interface BookingTimelineEvent {
+  id: string;
+  event_type: string;
+  occurred_at: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  actor_role: string | null;
+  aggregate_type: string | null;
+  detail: Record<string, unknown>;
+}
+
+export interface BookingTimelineResponse {
+  booking_id: string;
+  events: BookingTimelineEvent[];
+}
+
+export function useBookingTimeline(bookingId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["booking-timeline", bookingId],
+    queryFn: async () => {
+      const { data } = await api.get<BookingTimelineResponse>(
+        `/bookings/admin/${bookingId}/timeline`
+      );
+      return data;
+    },
+    enabled: enabled && Boolean(bookingId),
+  });
+}
+
+export function useAdminContactParticipant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      booking_id: string;
+      target: "guest" | "host";
+      content: string;
+    }) => {
+      const { data } = await api.post<{ id: string }>(
+        "/messages/admin/conversations",
+        payload
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+}

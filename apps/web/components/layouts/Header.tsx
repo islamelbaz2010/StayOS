@@ -171,9 +171,12 @@ export function Header() {
           {t("host")}
         </Link>
       )}
-      {isAuthenticated && user?.role === "admin" && (
+      {isAuthenticated &&
+        (user?.role === "admin" ||
+          user?.role === "staff" ||
+          user?.role === "field_staff") && (
         <Link
-          href={`/${locale}/admin/pending`}
+          href={`/${locale}/admin`}
           className="text-sm font-medium text-accent-600 hover:text-accent-700"
           onClick={() => setMobileOpen(false)}
         >
@@ -339,9 +342,12 @@ export function Header() {
                 {t("host")}
               </Link>
             )}
-            {isAuthenticated && user?.role === "admin" && (
+            {isAuthenticated &&
+              (user?.role === "admin" ||
+                user?.role === "staff" ||
+                user?.role === "field_staff") && (
               <Link
-                href={`/${locale}/admin/pending`}
+                href={`/${locale}/admin`}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >

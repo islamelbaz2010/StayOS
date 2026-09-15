@@ -33,6 +33,7 @@ interface AuthContextValue {
   isFirebaseConfigured: boolean;
   login: (tokens: TokenPair) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   sendOtp: (phone: string, buttonId: string) => Promise<ConfirmationResult>;
   confirmOtp: (confirmation: ConfirmationResult, code: string) => Promise<TokenPair>;
   signInWithProvider: (provider: "google" | "apple") => Promise<TokenPair>;
@@ -174,13 +175,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isFirebaseConfigured,
       login,
       logout,
+      refreshUser: fetchMe,
       sendOtp,
       confirmOtp,
       signInWithProvider,
       sendOtpViaBackend,
       verifyOtpViaBackend,
     };
-  }, [user, isLoading, login, logout, sendOtp, confirmOtp, signInWithProvider, sendOtpViaBackend, verifyOtpViaBackend]);
+  }, [user, isLoading, login, logout, fetchMe, sendOtp, confirmOtp, signInWithProvider, sendOtpViaBackend, verifyOtpViaBackend]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

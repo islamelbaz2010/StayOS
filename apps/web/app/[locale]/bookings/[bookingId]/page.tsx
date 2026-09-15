@@ -12,6 +12,7 @@ import { GuestLayout } from "@/components/layouts";
 import { CancelBookingButton } from "@/components/bookings/CancelBookingButton";
 import { LeaveReviewForm } from "@/components/bookings/LeaveReviewForm";
 import { StayTimeline } from "@/components/bookings/StayTimeline";
+import { ReportProblem } from "@/components/disputes/ReportProblem";
 import {
   useCheckIn,
   useCheckOut,
@@ -538,6 +539,8 @@ function TripContent({
         {CANCELLABLE_PHASES.has(phase) && (
           <CancelBookingButton booking={booking} onCancelled={() => refetch()} />
         )}
+
+        <ReportProblem bookingId={booking.id} />
       </div>
     </div>
   );

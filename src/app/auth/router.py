@@ -99,8 +99,24 @@ async def logout(
 @router.get("/me", response_model=auth_schemas.UserResponse)
 async def get_me(
     user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
 ) -> auth_schemas.UserResponse:
-    return auth_schemas.UserResponse.model_validate(user)
+    response = auth_schemas.UserResponse.model_validate(user)
+    from app.auth.constants import UserRole
+
+    if user.role == UserRole.STAFF:
+        from sqlalchemy import select
+
+        from app.auth.models import StaffPermission
+
+        result = await session.execute(
+            select(StaffPermission.permission).where(
+                StaffPermission.user_id == user.id,
+                StaffPermission.is_active.is_(True),
+            )
+        )
+        response.staff_permissions = list(result.scalars().all())
+    return response
 
 
 @router.get("/me/account", response_model=auth_schemas.AccountResponse)
@@ -161,6 +177,10 @@ async def upgrade_role(
         raise ValidationError("Only upgrade to host role is supported")
     if user.role == UserRole.HOST:
         raise ValidationError("User is already a host")
+    if user.role in (UserRole.ADMIN, UserRole.STAFF, UserRole.FIELD_STAFF):
+        # Internal/operations accounts keep their operational role —
+        # they never become marketplace hosts through self-serve upgrade.
+        raise ValidationError("Operational accounts cannot become hosts")
 
     updated = await auth_repository.update_user(session, user, role=UserRole.HOST)
     await session.commit()

@@ -30,6 +30,12 @@ class Conversation(UUIDMixin, TimestampMixin, Base):
     booking_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("booking.bookings.id"), nullable=True
     )
+    # Booking context for SUPPORT conversations (admin ↔ guest/host).
+    # Separate from booking_id so a support thread does not collide with
+    # the unique per-booking reservation conversation.
+    context_booking_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True
+    )
     unit_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("pms.units.id"), nullable=True
     )

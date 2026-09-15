@@ -6,6 +6,7 @@ import { useParams, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Header } from "./Header";
+import { useAuth } from "@/lib/auth/useAuth";
 import { useHostToday } from "@/lib/queries/hostToday";
 
 export function AdminLayout({ children }: { children: ReactNode }) {
@@ -13,14 +14,27 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const isStaff = user?.role === "staff";
+  const granted = new Set(user?.staff_permissions ?? []);
 
+  // Staff only see the areas their account was granted — enforcement
+  // stays server-side via staff permissions; nav hiding is UX only.
+  const allItems = [
+    { label: t("pending"), href: `/${locale}/admin/pending`, perm: "listings" },
+    { label: t("kyc"), href: `/${locale}/admin/kyc`, perm: "kyc" },
+    { label: t("payments"), href: `/${locale}/admin/payments`, perm: "payments" },
+    { label: t("bookings"), href: `/${locale}/admin/bookings`, perm: "operations" },
+    { label: t("disputes"), href: `/${locale}/admin/disputes`, perm: "disputes" },
+    { label: t("discovery"), href: `/${locale}/admin/discovery`, perm: "discovery" },
+    { label: t("import"), href: `/${locale}/admin/import`, perm: "listings" },
+  ];
   const navItems = [
-    { label: t("pending"), href: `/${locale}/admin/pending` },
-    { label: t("kyc"), href: `/${locale}/admin/kyc` },
-    { label: t("payments"), href: `/${locale}/admin/payments` },
-    { label: t("bookings"), href: `/${locale}/admin/bookings` },
-    { label: t("discovery"), href: `/${locale}/admin/discovery` },
-    { label: t("import"), href: `/${locale}/admin/import` },
+    ...(isStaff ? allItems.filter((i) => granted.has(i.perm)) : allItems),
+    ...(isAdmin
+      ? [{ label: t("staff"), href: `/${locale}/admin/staff` }]
+      : []),
   ];
 
   return (

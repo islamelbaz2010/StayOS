@@ -61,7 +61,7 @@ async def kyc_status(
 async def list_pending_kyc(
     limit: int = 50,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("kyc")),
     session: AsyncSession = Depends(get_session),
 ) -> kyc_schemas.KycPendingListResponse:
     from app.kyc import repository as kyc_repository
@@ -78,7 +78,7 @@ async def list_pending_kyc(
 @router.post("/documents/{document_id}/process", response_model=kyc_schemas.KycDocumentResponse)
 async def process_kyc(
     document_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("kyc")),
     session: AsyncSession = Depends(get_session),
 ) -> kyc_schemas.KycDocumentResponse:
     try:
@@ -91,7 +91,7 @@ async def process_kyc(
 @router.get("/documents/{document_id}/images", response_model=kyc_schemas.KycImageDownloadResponse)
 async def download_kyc_images(
     document_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("kyc")),
     session: AsyncSession = Depends(get_session),
 ) -> kyc_schemas.KycImageDownloadResponse:
     try:
@@ -104,7 +104,7 @@ async def download_kyc_images(
 async def approve_kyc(
     document_id: str,
     request: kyc_schemas.KycApproveRequest,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("kyc")),
     session: AsyncSession = Depends(get_session),
 ) -> kyc_schemas.KycDocumentResponse:
     try:
@@ -120,7 +120,7 @@ async def approve_kyc(
 async def reject_kyc(
     document_id: str,
     request: kyc_schemas.KycRejectRequest,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("kyc")),
     session: AsyncSession = Depends(get_session),
 ) -> kyc_schemas.KycDocumentResponse:
     try:

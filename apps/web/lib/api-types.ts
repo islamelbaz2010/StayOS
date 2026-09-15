@@ -359,6 +359,14 @@ export interface paths {
     /** Complete Booking Endpoint */
     post: operations["complete_booking_endpoint_api_v1_bookings__booking_id__complete_post"];
   };
+  "/api/v1/bookings/admin/{booking_id}/timeline": {
+    /**
+     * Get Booking Timeline Endpoint
+     * @description Admin/staff operational timeline — every recorded lifecycle,
+     * payment, messaging and dispute event for one booking.
+     */
+    get: operations["get_booking_timeline_endpoint_api_v1_bookings_admin__booking_id__timeline_get"];
+  };
   "/api/v1/messages/conversations": {
     /** Get Conversations */
     get: operations["get_conversations_api_v1_messages_conversations_get"];
@@ -389,6 +397,15 @@ export interface paths {
     /** Create Inquiry */
     post: operations["create_inquiry_api_v1_messages_inquiries_post"];
   };
+  "/api/v1/messages/admin/conversations": {
+    /**
+     * Admin Contact Endpoint
+     * @description Admin/staff starts a support conversation with the guest or the
+     * host of a booking. Creates a dedicated SUPPORT thread — it does not
+     * join or expose the private guest↔host conversation.
+     */
+    post: operations["admin_contact_endpoint_api_v1_messages_admin_conversations_post"];
+  };
   "/api/v1/messages/templates": {
     /** Get Message Templates */
     get: operations["get_message_templates_api_v1_messages_templates_get"];
@@ -409,6 +426,10 @@ export interface paths {
      */
     get: operations["get_quote_api_v1_payments_quote_get"];
   };
+  "/api/v1/payments/host": {
+    /** List Host Payment Activity */
+    get: operations["list_host_payment_activity_api_v1_payments_host_get"];
+  };
   "/api/v1/payments/{payment_id}": {
     /** Get Payment Detail */
     get: operations["get_payment_detail_api_v1_payments__payment_id__get"];
@@ -416,10 +437,6 @@ export interface paths {
   "/api/v1/payments": {
     /** List My Payments */
     get: operations["list_my_payments_api_v1_payments_get"];
-  };
-  "/api/v1/payments/host": {
-    /** List Host Payment Activity */
-    get: operations["list_host_payment_activity_api_v1_payments_host_get"];
   };
   "/api/v1/payments/{payment_id}/proof/presign": {
     /** Presign Proof */
@@ -551,6 +568,14 @@ export interface paths {
     /** Location Popular Endpoint */
     get: operations["location_popular_endpoint_api_v1_locations_popular_get"];
   };
+  "/api/v1/locations/tree": {
+    /**
+     * Location Tree Endpoint
+     * @description Structured governorate → city → area data for dependent location
+     * selectors (listing form, filters).
+     */
+    get: operations["location_tree_endpoint_api_v1_locations_tree_get"];
+  };
   "/api/v1/bookings/{booking_id}/reviews": {
     /** Post Booking Review */
     post: operations["post_booking_review_api_v1_bookings__booking_id__reviews_post"];
@@ -623,6 +648,38 @@ export interface paths {
     get: operations["get_host_profile_endpoint_api_v1_host_profile_get"];
     /** Update Host Profile Endpoint */
     patch: operations["update_host_profile_endpoint_api_v1_host_profile_patch"];
+  };
+  "/api/v1/disputes": {
+    /** Get My Disputes */
+    get: operations["get_my_disputes_api_v1_disputes_get"];
+    /** Post Dispute */
+    post: operations["post_dispute_api_v1_disputes_post"];
+  };
+  "/api/v1/disputes/admin/all": {
+    /** Get Admin Disputes */
+    get: operations["get_admin_disputes_api_v1_disputes_admin_all_get"];
+  };
+  "/api/v1/disputes/{dispute_id}": {
+    /** Get Dispute */
+    get: operations["get_dispute_api_v1_disputes__dispute_id__get"];
+  };
+  "/api/v1/disputes/admin/{dispute_id}": {
+    /** Patch Dispute Admin */
+    patch: operations["patch_dispute_admin_api_v1_disputes_admin__dispute_id__patch"];
+  };
+  "/api/v1/admin/staff": {
+    /** List Staff Endpoint */
+    get: operations["list_staff_endpoint_api_v1_admin_staff_get"];
+    /** Create Staff Endpoint */
+    post: operations["create_staff_endpoint_api_v1_admin_staff_post"];
+  };
+  "/api/v1/admin/staff/{user_id}": {
+    /** Update Staff Endpoint */
+    patch: operations["update_staff_endpoint_api_v1_admin_staff__user_id__patch"];
+  };
+  "/api/v1/admin/staff/{user_id}/permissions": {
+    /** Set Permissions Endpoint */
+    put: operations["set_permissions_endpoint_api_v1_admin_staff__user_id__permissions_put"];
   };
   "/health": {
     /** Health Check */
@@ -701,6 +758,18 @@ export interface components {
       address?: {
         [key: string]: unknown;
       } | null;
+    };
+    /**
+     * AdminContactCreate
+     * @description Admin/staff operational contact with one side of a booking.
+     */
+    AdminContactCreate: {
+      /** Booking Id */
+      booking_id: string;
+      /** Target */
+      target: string;
+      /** Content */
+      content: string;
     };
     /** AutomatedMessageSend */
     AutomatedMessageSend: {
@@ -937,6 +1006,43 @@ export interface components {
      * @enum {string}
      */
     BookingStatus: "requested" | "accepted" | "confirmed" | "completed" | "rejected" | "cancelled" | "no_show";
+    /**
+     * BookingTimelineEvent
+     * @description One entry in the admin operational timeline for a booking.
+     */
+    BookingTimelineEvent: {
+      /** Id */
+      id: string;
+      /** Event Type */
+      event_type: string;
+      /**
+       * Occurred At
+       * Format: date-time
+       */
+      occurred_at: string;
+      /** Actor Id */
+      actor_id?: string | null;
+      /** Actor Name */
+      actor_name?: string | null;
+      /** Actor Role */
+      actor_role?: string | null;
+      /** Aggregate Type */
+      aggregate_type?: string | null;
+      /**
+       * Detail
+       * @default {}
+       */
+      detail?: {
+        [key: string]: unknown;
+      };
+    };
+    /** BookingTimelineResponse */
+    BookingTimelineResponse: {
+      /** Booking Id */
+      booking_id: string;
+      /** Events */
+      events: components["schemas"]["BookingTimelineEvent"][];
+    };
     /** BookingUpdate */
     BookingUpdate: {
       status: components["schemas"]["BookingStatus"];
@@ -1559,6 +1665,72 @@ export interface components {
        */
       contactable_candidates?: number;
     };
+    /** DisputeAdminUpdate */
+    DisputeAdminUpdate: {
+      status?: components["schemas"]["DisputeStatus"] | null;
+      /** Admin Notes */
+      admin_notes?: string | null;
+    };
+    /**
+     * DisputeCategory
+     * @enum {string}
+     */
+    DisputeCategory: "booking" | "payment" | "property" | "host" | "guest" | "other";
+    /** DisputeCreate */
+    DisputeCreate: {
+      /** Booking Id */
+      booking_id: string;
+      category: components["schemas"]["DisputeCategory"];
+      /** Description */
+      description: string;
+    };
+    /** DisputeListResponse */
+    DisputeListResponse: {
+      /** Data */
+      data: components["schemas"]["DisputeResponse"][];
+      /** Total */
+      total: number;
+    };
+    /** DisputeResponse */
+    DisputeResponse: {
+      /** Id */
+      id: string;
+      /** Reporter Id */
+      reporter_id: string;
+      /** Reporter Name */
+      reporter_name?: string | null;
+      /** Reporter Role */
+      reporter_role?: string | null;
+      /** Booking Id */
+      booking_id: string;
+      /** Category */
+      category: string;
+      /** Description */
+      description: string;
+      /** Status */
+      status: string;
+      /** Admin Notes */
+      admin_notes?: string | null;
+      /** Resolved By */
+      resolved_by?: string | null;
+      /** Resolved At */
+      resolved_at?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /**
+     * DisputeStatus
+     * @enum {string}
+     */
+    DisputeStatus: "open" | "in_review" | "resolved" | "closed";
     /** EscrowListResponse */
     EscrowListResponse: {
       /**
@@ -2751,6 +2923,15 @@ export interface components {
       permission_scope?: string | null;
       /** Rejection Reason */
       rejection_reason?: string | null;
+      /**
+       * Has Pending Changes
+       * @default false
+       */
+      has_pending_changes?: boolean;
+      /** Pending Changes */
+      pending_changes?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ListingSearchResponse */
     ListingSearchResponse: {
@@ -2920,10 +3101,38 @@ export interface components {
       /** Cover Photo Id */
       cover_photo_id?: string | null;
     };
+    /**
+     * LocationArea
+     * @description A canonical district/area inside a city.
+     */
+    LocationArea: {
+      /** Name En */
+      name_en: string;
+      /** Name Ar */
+      name_ar: string;
+      /** Lat */
+      lat?: number | null;
+      /** Lng */
+      lng?: number | null;
+    };
     /** LocationAutocompleteResponse */
     LocationAutocompleteResponse: {
       /** Suggestions */
       suggestions: components["schemas"]["LocationSuggestion"][];
+    };
+    /** LocationCity */
+    LocationCity: {
+      /** Name */
+      name: string;
+      /** Areas */
+      areas: components["schemas"]["LocationArea"][];
+    };
+    /** LocationGovernorate */
+    LocationGovernorate: {
+      /** Name */
+      name: string;
+      /** Cities */
+      cities: components["schemas"]["LocationCity"][];
     };
     /** LocationSuggestion */
     LocationSuggestion: {
@@ -2939,6 +3148,14 @@ export interface components {
       lat?: number | null;
       /** Lng */
       lng?: number | null;
+    };
+    /**
+     * LocationTreeResponse
+     * @description Structured Egypt location data for dependent selectors.
+     */
+    LocationTreeResponse: {
+      /** Governorates */
+      governorates: components["schemas"]["LocationGovernorate"][];
     };
     /** MaintenanceRequestCreate */
     MaintenanceRequestCreate: {
@@ -3455,6 +3672,11 @@ export interface components {
       caption: string | null;
       /** Accessibility Feature */
       accessibility_feature?: string | null;
+      /**
+       * Moderation State
+       * @default live
+       */
+      moderation_state?: string;
     };
     /**
      * PowSolution
@@ -3785,11 +4007,56 @@ export interface components {
       /** Version */
       version: string;
     };
+    /** StaffCreateRequest */
+    StaffCreateRequest: {
+      /** Phone Number */
+      phone_number: string;
+      /** Display Name */
+      display_name: string;
+      /** Email */
+      email?: string | null;
+      /** Permissions */
+      permissions?: string[];
+    };
+    /** StaffPermissionsUpdate */
+    StaffPermissionsUpdate: {
+      /** Permissions */
+      permissions?: string[];
+    };
+    /** StaffResponse */
+    StaffResponse: {
+      /** Id */
+      id: string;
+      /** Phone Number */
+      phone_number?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Display Name */
+      display_name?: string | null;
+      /** Role */
+      role: string;
+      /** Is Active */
+      is_active: boolean;
+      /** Permissions */
+      permissions: string[];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
     /**
      * StaffRole
      * @enum {string}
      */
     StaffRole: "CLEANER" | "INSPECTOR" | "MAINTENANCE" | "OPERATIONS";
+    /** StaffUpdateRequest */
+    StaffUpdateRequest: {
+      /** Is Active */
+      is_active?: boolean | null;
+      /** Display Name */
+      display_name?: string | null;
+    };
     /**
      * StayArrivalInfo
      * @description Time-gated arrival/access information.
@@ -4061,7 +4328,7 @@ export interface components {
      * UserRole
      * @enum {string}
      */
-    UserRole: "guest" | "host" | "field_staff" | "admin";
+    UserRole: "guest" | "host" | "field_staff" | "staff" | "admin";
     /** ValidationError */
     ValidationError: {
       /** Location */
@@ -6369,6 +6636,32 @@ export interface operations {
       };
     };
   };
+  /**
+   * Get Booking Timeline Endpoint
+   * @description Admin/staff operational timeline — every recorded lifecycle,
+   * payment, messaging and dispute event for one booking.
+   */
+  get_booking_timeline_endpoint_api_v1_bookings_admin__booking_id__timeline_get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingTimelineResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Conversations */
   get_conversations_api_v1_messages_conversations_get: {
     parameters: {
@@ -6551,6 +6844,33 @@ export interface operations {
       };
     };
   };
+  /**
+   * Admin Contact Endpoint
+   * @description Admin/staff starts a support conversation with the guest or the
+   * host of a booking. Creates a dedicated SUPPORT thread — it does not
+   * join or expose the private guest↔host conversation.
+   */
+  admin_contact_endpoint_api_v1_messages_admin_conversations_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminContactCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["ConversationResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Message Templates */
   get_message_templates_api_v1_messages_templates_get: {
     parameters: {
@@ -6650,6 +6970,30 @@ export interface operations {
       };
     };
   };
+  /** List Host Payment Activity */
+  list_host_payment_activity_api_v1_payments_host_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Payment Detail */
   get_payment_detail_api_v1_payments__payment_id__get: {
     parameters: {
@@ -6676,30 +7020,6 @@ export interface operations {
   list_my_payments_api_v1_payments_get: {
     parameters: {
       query?: {
-        limit?: number;
-        offset?: number;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["PaymentListItem"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /** List Host Payment Activity */
-  list_host_payment_activity_api_v1_payments_host_get: {
-    parameters: {
-      query?: {
-        status?: string | null;
         limit?: number;
         offset?: number;
       };
@@ -7450,6 +7770,21 @@ export interface operations {
       };
     };
   };
+  /**
+   * Location Tree Endpoint
+   * @description Structured governorate → city → area data for dependent location
+   * selectors (listing form, filters).
+   */
+  location_tree_endpoint_api_v1_locations_tree_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["LocationTreeResponse"];
+        };
+      };
+    };
+  };
   /** Post Booking Review */
   post_booking_review_api_v1_bookings__booking_id__reviews_post: {
     parameters: {
@@ -7871,6 +8206,199 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["app__host__schemas__HostProfileResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get My Disputes */
+  get_my_disputes_api_v1_disputes_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DisputeListResponse"];
+        };
+      };
+    };
+  };
+  /** Post Dispute */
+  post_dispute_api_v1_disputes_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DisputeCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["DisputeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Admin Disputes */
+  get_admin_disputes_api_v1_disputes_admin_all_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DisputeListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Dispute */
+  get_dispute_api_v1_disputes__dispute_id__get: {
+    parameters: {
+      path: {
+        dispute_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DisputeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Patch Dispute Admin */
+  patch_dispute_admin_api_v1_disputes_admin__dispute_id__patch: {
+    parameters: {
+      path: {
+        dispute_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DisputeAdminUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DisputeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Staff Endpoint */
+  list_staff_endpoint_api_v1_admin_staff_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StaffResponse"][];
+        };
+      };
+    };
+  };
+  /** Create Staff Endpoint */
+  create_staff_endpoint_api_v1_admin_staff_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["StaffResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Staff Endpoint */
+  update_staff_endpoint_api_v1_admin_staff__user_id__patch: {
+    parameters: {
+      path: {
+        user_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StaffResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Set Permissions Endpoint */
+  set_permissions_endpoint_api_v1_admin_staff__user_id__permissions_put: {
+    parameters: {
+      path: {
+        user_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffPermissionsUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["StaffResponse"];
         };
       };
       /** @description Validation Error */

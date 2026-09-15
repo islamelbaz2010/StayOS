@@ -611,3 +611,66 @@ async def process_scheduled_messages(session: AsyncSession) -> int:
                 sent += 1
 
     return sent
+
+
+async def admin_contact_participant(
+    session: AsyncSession,
+    staff_user: User,
+    booking_id: str,
+    target: str,
+    content: str,
+) -> ConversationResponse:
+    """Admin/staff opens an operational SUPPORT thread with one side of a
+    booking (guest or host). Uses the existing conversation contract — the
+    target is a real participant and can reply; no private guest↔host
+    conversation is exposed to staff.
+    """
+    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
+    if target == "guest":
+        target_user_id = booking.guest_id
+        target_role = ParticipantRole.GUEST
+    else:
+        if booking.unit is None:
+            raise NotFoundError("Unit not found")
+        target_user_id = booking.unit.host_id
+        target_role = ParticipantRole.HOST
+
+    if target_user_id == staff_user.id:
+        raise ValidationError("Cannot open a support conversation with yourself")
+
+    conversation = await messages_repository.get_or_create_support_conversation(
+        session,
+        context_booking_id=booking.id,
+        unit_id=booking.unit_id,
+        staff_user_id=staff_user.id,
+        target_user_id=target_user_id,
+        target_role=target_role,
+    )
+
+    message = await messages_repository.create_message(
+        session,
+        conversation_id=conversation.id,
+        sender_id=staff_user.id,
+        sender_role=ParticipantRole.SUPPORT,
+        content=content,
+        status=MessageStatus.SENT,
+    )
+
+    conversation.updated_at = datetime.now(UTC)
+    session.add(conversation)
+    await session.flush()
+
+    await _notify_message_recipients(session, conversation, staff_user, message)
+
+    return ConversationResponse(
+        id=conversation.id,
+        booking_id=conversation.booking_id,
+        unit_id=conversation.unit_id,
+        type=conversation.type,
+        status=conversation.status,
+        participants=[
+            ParticipantResponse.model_validate(p) for p in conversation.participants
+        ],
+        created_at=conversation.created_at,
+        updated_at=conversation.updated_at,
+    )

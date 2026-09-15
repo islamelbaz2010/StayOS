@@ -14,6 +14,7 @@ from .schemas import (
     BookingCancelRequest,
     BookingCreate,
     BookingResponse,
+    BookingTimelineResponse,
     BookingUpdate,
     StayInfoResponse,
 )
@@ -24,6 +25,7 @@ from .services import (
     complete_booking,
     create_booking,
     get_booking,
+    get_booking_timeline,
     get_stay_info,
     list_guest_bookings,
     list_host_bookings,
@@ -52,7 +54,11 @@ async def get_host_bookings(
     status: str | None = None,
     limit: int = 50,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    user: User = Depends(
+        auth_dependencies.require_staff_permission(
+            "operations", allow_roles=("host",)
+        )
+    ),
     session: AsyncSession = Depends(get_session),
 ) -> list[BookingResponse]:
     try:
@@ -151,7 +157,7 @@ async def post_check_out(
 @router.post("/{booking_id}/no-show", response_model=BookingResponse)
 async def post_no_show(
     booking_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("operations")),
     session: AsyncSession = Depends(get_session),
 ) -> BookingResponse:
     try:
@@ -176,10 +182,28 @@ async def patch_booking(
 @router.post("/{booking_id}/complete", response_model=BookingResponse)
 async def complete_booking_endpoint(
     booking_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("operations")),
     session: AsyncSession = Depends(get_session),
 ) -> BookingResponse:
     try:
         return await complete_booking(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get(
+    "/admin/{booking_id}/timeline", response_model=BookingTimelineResponse
+)
+async def get_booking_timeline_endpoint(
+    booking_id: str,
+    user: User = Depends(
+        auth_dependencies.require_staff_permission("operations")
+    ),
+    session: AsyncSession = Depends(get_session),
+) -> BookingTimelineResponse:
+    """Admin/staff operational timeline — every recorded lifecycle,
+    payment, messaging and dispute event for one booking."""
+    try:
+        return await get_booking_timeline(session, user, booking_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc

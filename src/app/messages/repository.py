@@ -170,6 +170,66 @@ async def get_or_create_inquiry_conversation(
     return await create_inquiry_conversation(session, unit_id, guest_id, host_id)
 
 
+async def get_or_create_support_conversation(
+    session: AsyncSession,
+    context_booking_id: str,
+    unit_id: str | None,
+    staff_user_id: str,
+    target_user_id: str,
+    target_role: str,
+) -> Conversation:
+    """Admin/staff ↔ participant operational thread for a booking.
+
+    Reuses an existing support conversation for the same booking context
+    and the same two participants so repeat contact stays in one thread.
+    """
+    result = await session.execute(
+        select(Conversation)
+        .options(
+            selectinload(Conversation.participants),
+            selectinload(Conversation.messages),
+        )
+        .where(
+            Conversation.type == ConversationType.SUPPORT,
+            Conversation.context_booking_id == context_booking_id,
+        )
+    )
+    for conv in result.scalars().all():
+        participant_ids = {p.user_id for p in conv.participants}
+        if participant_ids == {staff_user_id, target_user_id}:
+            return conv
+
+    conversation = Conversation(
+        id=str(uuid4()),
+        booking_id=None,
+        context_booking_id=context_booking_id,
+        unit_id=unit_id,
+        type=ConversationType.SUPPORT,
+        status=ConversationStatus.ACTIVE,
+    )
+    session.add(conversation)
+    await session.flush()
+    await session.refresh(conversation)
+
+    session.add_all(
+        [
+            ConversationParticipant(
+                conversation_id=conversation.id,
+                user_id=staff_user_id,
+                role=ParticipantRole.SUPPORT,
+            ),
+            ConversationParticipant(
+                conversation_id=conversation.id,
+                user_id=target_user_id,
+                role=target_role,
+            ),
+        ]
+    )
+    await session.flush()
+    await session.refresh(conversation, attribute_names=["participants"])
+    return conversation
+
+
 async def is_conversation_participant(
     session: AsyncSession, conversation_id: str, user_id: str
 ) -> bool:

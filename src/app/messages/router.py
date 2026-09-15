@@ -8,6 +8,7 @@ from app.shared.exceptions import StayOSError, to_http_exception
 
 from . import services as messages_services
 from .schemas import (
+    AdminContactCreate,
     AutomatedMessageSend,
     ConversationDetailResponse,
     ConversationListItem,
@@ -124,6 +125,27 @@ async def create_inquiry(
         raise to_http_exception(exc) from exc
 
 
+@router.post(
+    "/admin/conversations", response_model=ConversationResponse, status_code=201
+)
+async def admin_contact_endpoint(
+    request: AdminContactCreate,
+    user: User = Depends(
+        auth_dependencies.require_staff_permission("operations")
+    ),
+    session: AsyncSession = Depends(get_session),
+) -> ConversationResponse:
+    """Admin/staff starts a support conversation with the guest or the
+    host of a booking. Creates a dedicated SUPPORT thread — it does not
+    join or expose the private guest↔host conversation."""
+    try:
+        return await messages_services.admin_contact_participant(
+            session, user, request.booking_id, request.target, request.content
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
 @router.get("/templates", response_model=list[MessageTemplateResponse])
 async def get_message_templates(
     locale: str = "ar",
@@ -139,7 +161,7 @@ async def get_message_templates(
 async def post_automated_message(
     conversation_id: str,
     request: AutomatedMessageSend,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("operations")),
     session: AsyncSession = Depends(get_session),
 ) -> MessageResponse | None:
     try:

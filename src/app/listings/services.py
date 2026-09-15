@@ -87,12 +87,16 @@ def _to_listing_response(
     host: User | None = None, permission_scope: str | None = None,
     host_response_rate: int | None = None,
     host_response_time_hours: float | None = None,
+    include_pending: bool = False,
 ) -> ListingResponse:
     # Extract accessibility features that have at least one evidence photo.
+    # Pending-add photos are not public yet, so they don't count as
+    # published evidence.
     accessibility_photo_features = sorted({
         photo.accessibility_feature
         for photo in (unit.photos or [])
         if photo.accessibility_feature
+        and getattr(photo, "moderation_state", "live") != "pending_add"
     })
     return ListingResponse(
         id=unit.id,
@@ -153,6 +157,12 @@ def _to_listing_response(
         rejection_reason=unit.rejection_reason
         if isinstance(unit.rejection_reason, str)
         else None,
+        has_pending_changes=bool(listing.pending_changes)
+        or any(
+            getattr(p, "moderation_state", "live") in ("pending_add", "pending_remove")
+            for p in (unit.photos or [])
+        ),
+        pending_changes=listing.pending_changes if include_pending else None,
     )
 
 
@@ -360,33 +370,50 @@ async def submit_for_review(
 async def get_pending_listings(
     session: AsyncSession, user: User
 ) -> list[ListingResponse]:
-    if user.role != UserRole.ADMIN:
+    if user.role not in (UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only admins can view pending listings")
     units = await listings_repository.get_units_by_status(
         session, UnitStatus.PENDING_VERIFICATION
     )
+    # Listings with a pending edit change-set are also awaiting review.
+    units += await listings_repository.get_units_with_pending_changes(session)
     results: list[ListingResponse] = []
     for unit in units:
         listing = unit.listing
         if listing is None:
             continue
         lat, lng = await _fetch_coordinates(session, unit)
-        results.append(_to_listing_response(unit, listing, lat, lng))
+        results.append(
+            _to_listing_response(unit, listing, lat, lng, include_pending=True)
+        )
     return results
 
 
 async def approve_listing(
     session: AsyncSession, user: User, unit_id: str
 ) -> ListingResponse:
-    if user.role != UserRole.ADMIN:
+    if user.role not in (UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only admins can approve listings")
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.status != UnitStatus.PENDING_VERIFICATION:
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+
+    if unit.status == UnitStatus.LISTED:
+        # Published listing with a pending edit change-set — approval
+        # publishes the stashed changes; the unit stays LISTED.
+        from . import moderation
+
+        applied = await moderation.apply_pending_changes(session, unit, listing)
+        if not applied:
+            raise ValidationError("No pending changes to approve")
+    elif unit.status == UnitStatus.PENDING_VERIFICATION:
+        unit = await listings_repository.set_unit_status(session, unit, UnitStatus.LISTED)
+    else:
         raise ValidationError("Only pending listings can be approved")
 
-    unit = await listings_repository.set_unit_status(session, unit, UnitStatus.LISTED)
     listing = unit.listing
     if listing is None:
         raise NotFoundError("Listing details not found")
@@ -397,16 +424,32 @@ async def approve_listing(
 async def reject_listing(
     session: AsyncSession, user: User, unit_id: str, reason: str | None = None
 ) -> ListingResponse:
-    if user.role != UserRole.ADMIN:
+    if user.role not in (UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only admins can reject listings")
     unit = await listings_repository.get_unit_with_listing(session, unit_id)
     if unit is None:
         raise NotFoundError("Listing not found")
-    if unit.status != UnitStatus.PENDING_VERIFICATION:
+    listing = unit.listing
+    if listing is None:
+        raise NotFoundError("Listing details not found")
+
+    if unit.status == UnitStatus.LISTED:
+        # Published listing with pending edits — rejection discards the
+        # change-set; the approved version stays live.
+        from . import moderation
+
+        discarded = await moderation.discard_pending_changes(session, unit, listing)
+        if not discarded:
+            raise ValidationError("No pending changes to reject")
+        unit.rejection_reason = reason or None
+        session.add(unit)
+        await session.flush()
+    elif unit.status == UnitStatus.PENDING_VERIFICATION:
+        unit.rejection_reason = reason or None
+        unit = await listings_repository.set_unit_status(session, unit, UnitStatus.REJECTED)
+    else:
         raise ValidationError("Only pending listings can be rejected")
 
-    unit.rejection_reason = reason or None
-    unit = await listings_repository.set_unit_status(session, unit, UnitStatus.REJECTED)
     listing = unit.listing
     if listing is None:
         raise NotFoundError("Listing details not found")
@@ -427,6 +470,37 @@ async def update_listing(
         raise NotFoundError("Listing not found")
 
     update_data = request.model_dump(exclude_unset=True)
+
+    # Post-publication moderation: on a LISTED unit, edits by the host go
+    # into a reviewable change-set; the published version stays live until
+    # an admin approves. Admins edit the live record directly. Only
+    # public-facing fields are held — internal operational fields
+    # (check-in instructions, pre-arrival timing) apply immediately.
+    is_listed_edit = (
+        unit.status == UnitStatus.LISTED and user.role != UserRole.ADMIN
+    )
+    if is_listed_edit:
+        from . import moderation
+
+        _unit_changes, _reviewed, direct = moderation.split_update_for_moderation(
+            update_data
+        )
+        stashed = moderation.stash_pending_changes(
+            unit, listing, update_data, submitted_by=user.id
+        )
+        if direct:
+            for field, value in direct.items():
+                if hasattr(unit, field):
+                    setattr(unit, field, value)
+                elif hasattr(listing, field):
+                    setattr(listing, field, value)
+            session.add(unit)
+        session.add(listing)
+        await session.flush()
+        lat, lng = await _fetch_coordinates(session, unit)
+        return _to_listing_response(
+            unit, listing, lat, lng, include_pending=stashed or listing.pending_changes is not None
+        )
 
     unit_fields = {
         "property_type",
@@ -1118,6 +1192,7 @@ async def generate_photo_presigned_url(
 
 
 def _to_photo_response(photo: Any) -> PhotoResponse:
+    state = getattr(photo, "moderation_state", "live")
     return PhotoResponse(
         id=photo.id,
         unit_id=photo.unit_id,
@@ -1127,6 +1202,7 @@ def _to_photo_response(photo: Any) -> PhotoResponse:
         is_cover=photo.is_cover,
         caption=photo.caption_ar,
         accessibility_feature=photo.accessibility_feature,
+        moderation_state=state if isinstance(state, str) else "live",
     )
 
 
@@ -1141,7 +1217,13 @@ async def create_photo(
         raise NotFoundError("Listing not found")
     await assert_can_edit_listing(session, user, unit)
 
-    if request.is_cover:
+    # Photos on a LISTED unit are moderated: the new photo stays hidden
+    # from guests until an admin approves the pending change-set.
+    is_listed_edit = (
+        unit.status == UnitStatus.LISTED and user.role != UserRole.ADMIN
+    )
+
+    if request.is_cover and not is_listed_edit:
         await listings_repository.clear_cover_flags(session, unit_id)
 
     photo = await listings_repository.create_photo(
@@ -1150,13 +1232,30 @@ async def create_photo(
         s3_key=request.s3_key,
         url=request.url,
         caption_ar=request.caption,
-        is_cover=request.is_cover,
+        is_cover=request.is_cover if not is_listed_edit else False,
         display_order=request.display_order,
         accessibility_feature=request.accessibility_feature,
     )
+    if is_listed_edit:
+        photo.moderation_state = "pending_add"
+        session.add(photo)
 
     if request.is_cover:
-        await listings_repository.set_listing_cover_photo(session, unit_id, photo.id)
+        if is_listed_edit:
+            from . import moderation
+
+            moderation.stash_pending_changes(
+                unit,
+                unit.listing,
+                {"cover_photo_id": photo.id},
+                submitted_by=user.id,
+            )
+            session.add(unit.listing)
+            await session.flush()
+        else:
+            await listings_repository.set_listing_cover_photo(
+                session, unit_id, photo.id
+            )
 
     return _to_photo_response(photo)
 
@@ -1164,9 +1263,49 @@ async def create_photo(
 async def list_photos(
     session: AsyncSession,
     unit_id: str,
+    viewer: User | None = None,
 ) -> list[PhotoResponse]:
+    """Photos for a unit.
+
+    Public viewers only see approved photos (pending_add hidden; a photo
+    pending removal still shows until the removal is approved). The owner,
+    co-hosts and admins see the full set with moderation_state so the UI
+    can badge pending items.
+    """
     photos = await listings_repository.get_photos_by_unit(session, unit_id)
-    return [_to_photo_response(p) for p in photos]
+    include_pending = False
+    if viewer is not None:
+        if viewer.role == UserRole.ADMIN:
+            include_pending = True
+        elif viewer.role == UserRole.STAFF:
+            from app.auth.staff import has_permission
+
+            include_pending = await has_permission(
+                session, viewer, "listings"
+            )
+        else:
+            unit_result = await session.execute(
+                select(Unit.host_id).where(Unit.id == unit_id)
+            )
+            host_id = unit_result.scalar_one_or_none()
+            if host_id == viewer.id:
+                include_pending = True
+            elif host_id is not None:
+                from app.listings.cohost_models import UnitCoHost
+
+                cohost = await session.execute(
+                    select(UnitCoHost.id).where(
+                        UnitCoHost.unit_id == unit_id,
+                        UnitCoHost.co_host_user_id == viewer.id,
+                        UnitCoHost.is_active.is_(True),
+                    )
+                )
+                include_pending = cohost.first() is not None
+    return [
+        _to_photo_response(p)
+        for p in photos
+        if include_pending or p.moderation_state != "pending_add"
+    ]
 
 
 async def set_cover_photo(
@@ -1183,6 +1322,24 @@ async def set_cover_photo(
     photo = await listings_repository.get_photo_by_id(session, unit_id, photo_id)
     if photo is None:
         raise NotFoundError("Photo not found")
+
+    is_listed_edit = (
+        unit.status == UnitStatus.LISTED and user.role != UserRole.ADMIN
+    )
+    if is_listed_edit:
+        # Cover changes are guest-facing — stash for admin review.
+        from . import moderation
+
+        moderation.stash_pending_changes(
+            unit,
+            unit.listing,
+            {"cover_photo_id": photo.id},
+            submitted_by=user.id,
+        )
+        session.add(unit.listing)
+        await session.flush()
+        await session.refresh(photo)
+        return _to_photo_response(photo)
 
     await listings_repository.clear_cover_flags(session, unit_id)
     photo.is_cover = True
@@ -1239,6 +1396,17 @@ async def delete_photo(
     photo = await listings_repository.get_photo_by_id(session, unit_id, photo_id)
     if photo is None:
         raise NotFoundError("Photo not found")
+
+    is_listed_edit = (
+        unit.status == UnitStatus.LISTED and user.role != UserRole.ADMIN
+    )
+    if is_listed_edit:
+        # Removal on a published listing is moderated: the photo stays
+        # public until an admin approves the removal.
+        photo.moderation_state = "pending_remove"
+        session.add(photo)
+        await session.flush()
+        return
 
     if photo.is_cover:
         await listings_repository.clear_listing_cover_photo(session, unit_id, photo_id)

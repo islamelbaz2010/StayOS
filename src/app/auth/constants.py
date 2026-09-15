@@ -5,7 +5,24 @@ class UserRole(StrEnum):
     GUEST = "guest"
     HOST = "host"
     FIELD_STAFF = "field_staff"
+    STAFF = "staff"
     ADMIN = "admin"
+
+
+class StaffPermission(StrEnum):
+    """Scoped operational permissions grantable to internal staff.
+
+    Admin holds all of them implicitly. Staff users only receive the
+    areas explicitly granted through staff management — they can never
+    grant permissions themselves (staff management is admin-only).
+    """
+
+    LISTINGS = "listings"
+    KYC = "kyc"
+    PAYMENTS = "payments"
+    OPERATIONS = "operations"
+    DISPUTES = "disputes"
+    DISCOVERY = "discovery"
 
 
 class KycStatus(StrEnum):

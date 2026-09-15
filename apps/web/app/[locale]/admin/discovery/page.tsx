@@ -155,7 +155,7 @@ export default function AdminDiscoveryPage() {
       : status.replace(/_/g, " ").toLowerCase();
 
   return (
-    <ProtectedRoute allowedRoles={["admin"]}>
+    <ProtectedRoute allowedRoles={["admin", "staff"]}>
       <AdminLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="space-y-6">
@@ -324,7 +324,29 @@ export default function AdminDiscoveryPage() {
                   </option>
                 ))}
               </select>
+
+              <select
+                value={filters.contact_status ?? ""}
+                onChange={(e) =>
+                  handleFilterChange("contact_status", e.target.value)
+                }
+                className="input text-sm"
+                aria-label={td("contact")}
+              >
+                <option value="">{td("allContact")}</option>
+                <option value="AVAILABLE">{td("contactable")}</option>
+                <option value="NOT_AVAILABLE">{td("notAvailable")}</option>
+                <option value="CONTACTED">{td("contacted")}</option>
+                <option value="RESPONDED">{td("responded")}</option>
+              </select>
             </div>
+
+            {/* Truthful result count */}
+            {pagination && (
+              <p className="text-xs text-neutral-500">
+                {td("resultCount", { total: pagination.total })}
+              </p>
+            )}
 
             {/* Candidates table */}
             {isLoading && (
@@ -642,6 +664,24 @@ export default function AdminDiscoveryPage() {
                           ? `${selected.contact_type}: ${selected.contact_value}`
                           : td("notAvailable")
                       }
+                    />
+                    <DetailRow
+                      label={td("provenance")}
+                      value={`${selected.source}${
+                        selected.external_listing_id
+                          ? ` · ${selected.external_listing_id}`
+                          : ""
+                      }${
+                        selected.run_id
+                          ? ` · run ${selected.run_id.slice(0, 8)}`
+                          : ""
+                      }`}
+                    />
+                    <DetailRow
+                      label={td("discoveredAt")}
+                      value={new Date(
+                        selected.discovered_at
+                      ).toLocaleString(dateLocale)}
                     />
                     <DetailRow
                       label={td("duplicate")}

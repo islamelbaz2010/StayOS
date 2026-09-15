@@ -14,8 +14,12 @@ from app.shared.exceptions import NotFoundError
 from .schemas import (
     FavoriteListResponse,
     FavoriteToggleResponse,
+    LocationArea,
     LocationAutocompleteResponse,
+    LocationCity,
+    LocationGovernorate,
     LocationSuggestion,
+    LocationTreeResponse,
 )
 
 
@@ -202,3 +206,52 @@ async def location_popular(
             break
 
     return LocationAutocompleteResponse(suggestions=suggestions)
+
+
+async def location_tree(session: AsyncSession) -> LocationTreeResponse:
+    """Structured governorate → city → area hierarchy for selectors.
+
+    Built from canonical ('exact') alias rows — one entry per canonical
+    area, grouped by its city and governorate.
+    """
+    result = await session.execute(
+        select(LocationAlias)
+        .where(LocationAlias.alias_type == "exact")
+        .order_by(
+            LocationAlias.governorate,
+            LocationAlias.city,
+            LocationAlias.canonical_name_en,
+        )
+    )
+    rows = result.scalars().all()
+
+    governorates: dict[str, dict[str, list[LocationArea]]] = {}
+    seen_areas: set[tuple[str, str, str]] = set()
+    for row in rows:
+        key = (row.governorate, row.city, row.canonical_name_en)
+        if key in seen_areas:
+            continue
+        seen_areas.add(key)
+        governorates.setdefault(row.governorate, {}).setdefault(
+            row.city, []
+        ).append(
+            LocationArea(
+                name_en=row.canonical_name_en,
+                name_ar=row.canonical_name_ar,
+                lat=row.lat,
+                lng=row.lng,
+            )
+        )
+
+    return LocationTreeResponse(
+        governorates=[
+            LocationGovernorate(
+                name=gov,
+                cities=[
+                    LocationCity(name=city, areas=areas)
+                    for city, areas in sorted(cities.items())
+                ],
+            )
+            for gov, cities in sorted(governorates.items())
+        ]
+    )

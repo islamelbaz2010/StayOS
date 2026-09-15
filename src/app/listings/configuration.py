@@ -38,8 +38,16 @@ def validate_image_url(url: str) -> bool:
 
 
 def resolve_cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
-    """Return the configured cover photo URL with sensible fallbacks."""
-    photos = getattr(unit, "photos", None) or []
+    """Return the configured cover photo URL with sensible fallbacks.
+
+    Photos pending moderation (pending_add) are never shown as cover
+    until approved.
+    """
+    photos = [
+        p
+        for p in (getattr(unit, "photos", None) or [])
+        if getattr(p, "moderation_state", "live") != "pending_add"
+    ]
 
     if listing.cover_photo_id:
         for photo in photos:

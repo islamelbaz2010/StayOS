@@ -12,11 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import router as auth_router
 from app.auth import services as auth_services
+from app.auth import staff_router as staff_router
 from app.availability import router as availability_router
 from app.bookings import router as bookings_router
 from app.config import settings
 from app.database import get_session
 from app.discovery import router as discovery_router
+from app.disputes import router as disputes_router
 from app.favorites import router as favorites_router
 from app.finance import router as finance_router
 from app.host import router as host_router
@@ -192,6 +194,8 @@ app.include_router(discovery_router.router, prefix="/api/v1")
 app.include_router(favorites_router.router, prefix="/api/v1")
 app.include_router(reviews_router.router, prefix="/api/v1")
 app.include_router(host_router.router, prefix="/api/v1")
+app.include_router(disputes_router.router, prefix="/api/v1")
+app.include_router(staff_router.router, prefix="/api/v1")
 
 
 async def _db_status(session: AsyncSession) -> str:

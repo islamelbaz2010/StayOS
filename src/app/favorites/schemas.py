@@ -24,3 +24,28 @@ class LocationSuggestion(BaseModel):
 
 class LocationAutocompleteResponse(BaseModel):
     suggestions: list[LocationSuggestion]
+
+
+class LocationArea(BaseModel):
+    """A canonical district/area inside a city."""
+
+    name_en: str
+    name_ar: str
+    lat: float | None = None
+    lng: float | None = None
+
+
+class LocationCity(BaseModel):
+    name: str
+    areas: list[LocationArea]
+
+
+class LocationGovernorate(BaseModel):
+    name: str
+    cities: list[LocationCity]
+
+
+class LocationTreeResponse(BaseModel):
+    """Structured Egypt location data for dependent selectors."""
+
+    governorates: list[LocationGovernorate]

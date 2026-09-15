@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
+from app.auth.staff import has_permission
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.bookings import repository as bookings_repository
@@ -159,16 +160,16 @@ def _assert_guest(user: User) -> None:
 
 
 def _assert_admin(user: User) -> None:
-    if user.role != UserRole.ADMIN:
+    if user.role not in (UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only admins can verify payments")
 
 
-def _assert_authorized_to_view(payment: Payment, user: User) -> None:
-    if payment.guest_id == user.id:
+async def _assert_authorized_to_view(
+    session: AsyncSession, payment: Payment, user: User
+) -> None:
+    if payment.guest_id == user.id or payment.host_id == user.id:
         return
-    if payment.host_id == user.id:
-        return
-    if user.role == UserRole.ADMIN:
+    if await has_permission(session, user, "payments"):
         return
     raise AuthorizationError("Not authorized to view this payment")
 
@@ -341,7 +342,7 @@ async def get_payment(
     session: AsyncSession, user: User, payment_id: str
 ) -> PaymentResponse:
     payment = await payments_repository.get_payment_or_raise(session, payment_id)
-    _assert_authorized_to_view(payment, user)
+    await _assert_authorized_to_view(session, payment, user)
     return _to_response(payment)
 
 
@@ -350,7 +351,9 @@ async def get_payment_by_booking(
 ) -> PaymentResponse:
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
 
-    if booking.guest_id != user.id and user.role != UserRole.ADMIN:
+    if booking.guest_id != user.id and not await has_permission(
+        session, user, "payments"
+    ):
         unit = booking.unit
         if unit is None or unit.host_id != user.id:
             raise AuthorizationError("Not authorized to view this booking")
@@ -370,7 +373,9 @@ async def presign_proof_upload(
 ) -> PaymentProofPresignResponse:
     await auth_dependencies.require_kyc_verified(user)
     payment = await payments_repository.get_payment_or_raise(session, payment_id)
-    if payment.guest_id != user.id and user.role != UserRole.ADMIN:
+    if payment.guest_id != user.id and not await has_permission(
+        session, user, "payments"
+    ):
         raise AuthorizationError("Only the guest or admin can upload proof")
 
     if payment.status not in (PaymentStatus.PENDING, PaymentStatus.REJECTED):
@@ -406,7 +411,9 @@ async def presign_proof_download(
     payment_id: str,
 ) -> PaymentProofDownloadResponse:
     payment = await payments_repository.get_payment_or_raise(session, payment_id)
-    if payment.guest_id != user.id and user.role != UserRole.ADMIN:
+    if payment.guest_id != user.id and not await has_permission(
+        session, user, "payments"
+    ):
         if payment.host_id != user.id:
             raise AuthorizationError("Not authorized to view this payment proof")
 

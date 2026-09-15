@@ -13,6 +13,7 @@ import {
   type ListingUpdateInput,
 } from "@/lib/queries/hostListings";
 import { LocationPicker } from "@/components/listings/LocationPicker";
+import { useLocationTree } from "@/lib/queries/locations";
 
 const PROPERTY_TYPES = [
   { value: "APARTMENT", labelKey: "apartment" },
@@ -125,6 +126,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   const createMutation = useCreateListing();
   const updateMutation = useUpdateListing();
   const submitMutation = useSubmitForReview();
+  const { data: locationTree } = useLocationTree();
 
   const isEdit = Boolean(existingListing);
   // Submit-for-review is only valid for DRAFT, REJECTED, or UNLISTED
@@ -511,11 +513,20 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             <label className={labelClass}>{t("governorate")}</label>
             <select
               value={form.governorate}
-              onChange={(e) => update("governorate", e.target.value)}
+              onChange={(e) => {
+                update("governorate", e.target.value);
+                update("city", "");
+                update("district", "");
+              }}
               className={inputClass}
             >
               <option value="">{t("placeholders.selectGovernorate")}</option>
-              {EGYPT_GOVERNORATES.map((g) => (
+              {Array.from(
+                new Set([
+                  ...EGYPT_GOVERNORATES,
+                  ...(locationTree ?? []).map((g) => g.name),
+                ])
+              ).map((g) => (
                 <option key={g} value={g}>
                   {g}
                 </option>
@@ -528,25 +539,93 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
 
           <div>
             <label className={labelClass}>{t("city")}</label>
-            <input
-              type="text"
-              value={form.city}
-              onChange={(e) => update("city", e.target.value)}
-              className={inputClass}
-              placeholder={t("placeholders.city")}
-            />
+            {(() => {
+              const cities =
+                locationTree?.find((g) => g.name === form.governorate)
+                  ?.cities ?? [];
+              if (cities.length > 0) {
+                return (
+                  <select
+                    value={form.city}
+                    onChange={(e) => {
+                      update("city", e.target.value);
+                      update("district", "");
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">{t("placeholders.selectCity")}</option>
+                    {cities.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                    {form.city &&
+                      !cities.some((c) => c.name === form.city) && (
+                        <option value={form.city}>{form.city}</option>
+                      )}
+                  </select>
+                );
+              }
+              return (
+                <input
+                  type="text"
+                  value={form.city}
+                  onChange={(e) => update("city", e.target.value)}
+                  className={inputClass}
+                  placeholder={t("placeholders.city")}
+                />
+              );
+            })()}
             {errors.city && <p className={errorClass}>{errors.city}</p>}
           </div>
 
           <div>
             <label className={labelClass}>{t("district")}</label>
-            <input
-              type="text"
-              value={form.district ?? ""}
-              onChange={(e) => update("district", e.target.value)}
-              className={inputClass}
-              placeholder={t("placeholders.district")}
-            />
+            {(() => {
+              const gov = locationTree?.find(
+                (g) => g.name === form.governorate
+              );
+              const areas =
+                gov?.cities.find((c) => c.name === form.city)?.areas ?? [];
+              if (areas.length > 0) {
+                return (
+                  <select
+                    value={form.district ?? ""}
+                    onChange={(e) => {
+                      const area = areas.find(
+                        (a) => a.name_en === e.target.value
+                      );
+                      update("district", e.target.value);
+                      if (area?.lat != null && area?.lng != null) {
+                        update("lat", area.lat);
+                        update("lng", area.lng);
+                      }
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">{t("placeholders.selectDistrict")}</option>
+                    {areas.map((a) => (
+                      <option key={a.name_en} value={a.name_en}>
+                        {locale === "ar" ? a.name_ar : a.name_en}
+                      </option>
+                    ))}
+                    {form.district &&
+                      !areas.some((a) => a.name_en === form.district) && (
+                        <option value={form.district}>{form.district}</option>
+                      )}
+                  </select>
+                );
+              }
+              return (
+                <input
+                  type="text"
+                  value={form.district ?? ""}
+                  onChange={(e) => update("district", e.target.value)}
+                  className={inputClass}
+                  placeholder={t("placeholders.district")}
+                />
+              );
+            })()}
           </div>
 
           <div className="sm:col-span-2">

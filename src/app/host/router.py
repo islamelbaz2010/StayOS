@@ -40,7 +40,11 @@ async def list_host_bookings_paginated(
     search: str | None = None,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    user: User = Depends(
+        auth_dependencies.require_staff_permission(
+            "operations", allow_roles=("host",)
+        )
+    ),
     session: AsyncSession = Depends(get_session),
 ) -> host_schemas.PaginatedHostBookings:
     try:

@@ -165,3 +165,21 @@ class StayInfoResponse(BaseModel):
     # Lets the frontend show an explanatory message instead of just
     # hiding the review form.
     review_window_expired: bool = False
+
+
+class BookingTimelineEvent(BaseModel):
+    """One entry in the admin operational timeline for a booking."""
+
+    id: str
+    event_type: str
+    occurred_at: datetime
+    actor_id: str | None = None
+    actor_name: str | None = None
+    actor_role: str | None = None
+    aggregate_type: str | None = None
+    detail: dict[str, Any] = {}
+
+
+class BookingTimelineResponse(BaseModel):
+    booking_id: str
+    events: list[BookingTimelineEvent]

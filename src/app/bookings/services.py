@@ -638,7 +638,7 @@ async def mark_guest_no_show(
     the service fee: the property was held for the guest, so the VERIFIED
     payment is left untouched.
     """
-    if user.role != UserRole.ADMIN:
+    if user.role not in (UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only admins can confirm a no-show")
 
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
@@ -899,6 +899,24 @@ async def create_booking(
     )
     booking.unit = unit
 
+    await write_event(
+        session,
+        aggregate_type="Booking",
+        aggregate_id=UUID(booking.id),
+        event_type="booking.created",
+        payload={
+            "booking_id": booking.id,
+            "unit_id": booking.unit_id,
+            "guest_id": user.id,
+            "host_id": unit.host_id,
+            "check_in": request.check_in.isoformat(),
+            "check_out": request.check_out.isoformat(),
+            "status": booking_status.value,
+            "instant_book": is_instant_book,
+            "actor_id": user.id,
+        },
+    )
+
     # Every booking gets a reservation-linked conversation for guest/host
     # communication. This is the foundation for messaging and later support.
     conversation = await messages_services.ensure_conversation_for_booking(
@@ -947,7 +965,7 @@ async def get_booking(
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
     await _assert_authorized_to_view(session, booking, user)
     scope: str | None = None
-    if user.role in (UserRole.HOST, UserRole.ADMIN) and booking.guest_id != user.id:
+    if user.role in (UserRole.HOST, UserRole.ADMIN, UserRole.STAFF) and booking.guest_id != user.id:
         scope = await _unit_permission_scope(session, booking, user)
     # When the viewer is an authorized host/co-host, populate the
     # guest trust context (name, verification status, member-since,
@@ -1020,6 +1038,24 @@ async def update_booking(
 
     updated = await bookings_repository.update_booking(session, booking, **update_fields)
 
+    await write_event(
+        session,
+        aggregate_type="Booking",
+        aggregate_id=UUID(booking.id),
+        event_type=(
+            "booking.accepted"
+            if request.status == BookingStatus.ACCEPTED
+            else "booking.rejected"
+        ),
+        payload={
+            "booking_id": booking.id,
+            "unit_id": booking.unit_id,
+            "host_id": booking.unit.host_id if booking.unit is not None else None,
+            "actor_id": user.id,
+            "reject_reason": request.reject_reason,
+        },
+    )
+
     if request.status == BookingStatus.ACCEPTED:
         from app.payments import services as payment_services
 
@@ -1040,7 +1076,7 @@ async def list_host_bookings(
     limit: int = 50,
     offset: int = 0,
 ) -> list[BookingResponse]:
-    if user.role not in (UserRole.HOST, UserRole.ADMIN):
+    if user.role not in (UserRole.HOST, UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only hosts can view their bookings")
 
     unit_ids = await host_permissions.get_managed_unit_ids(session, user)
@@ -1101,7 +1137,7 @@ async def complete_booking(
     This triggers the finance ledger entry and host wallet crediting,
     applying the Alpha commercial rule based on completed booking counts.
     """
-    if user.role != UserRole.ADMIN:
+    if user.role not in (UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only admins can complete bookings")
 
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
@@ -1128,3 +1164,121 @@ async def complete_booking(
         )
 
     return _to_response(updated)
+
+
+# Payload keys that carry the acting user's ID on outbox events.
+_ACTOR_KEYS = (
+    "actor_id",
+    "cancelled_by",
+    "confirmed_by",
+    "changed_by",
+    "sender_id",
+    "reporter_id",
+    "created_by",
+    "verified_by",
+    "guest_id",
+    "host_id",
+)
+
+
+def _event_actor(payload: dict[str, Any]) -> str | None:
+    for key in _ACTOR_KEYS:
+        value = payload.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+async def get_booking_timeline(
+    session: AsyncSession, user: User, booking_id: str
+) -> "BookingTimelineResponse":
+    """Operational event timeline for dispute reconstruction (admin/staff).
+
+    Sources the existing outbox event contract — Booking, Payment,
+    EscrowAccount, Conversation and Dispute aggregates all link back via
+    payload booking_id/reservation_id. Never fabricates events: entries
+    exist only where the data model recorded them. Bookings created before
+    the ``booking.created`` event existed get a synthesized entry from the
+    authoritative booking row itself.
+    """
+    from app.shared.models import OutboxEvent
+
+    from .schemas import BookingTimelineEvent, BookingTimelineResponse
+
+    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
+
+    # payload is stored as JSON — cast to jsonb so ->> extraction works
+    # without touching the existing outbox schema.
+    from sqlalchemy import cast
+    from sqlalchemy.dialects.postgresql import JSONB
+
+    payload_jsonb = cast(OutboxEvent.payload, JSONB)
+    stmt = select(OutboxEvent).where(
+        (OutboxEvent.aggregate_id == booking.id)
+        | (payload_jsonb.op("->>")("booking_id") == booking.id)
+        | (payload_jsonb.op("->>")("reservation_id") == booking.id)
+    )
+    result = await session.execute(stmt)
+    rows = list(result.scalars().all())
+
+    has_created = any(r.event_type == "booking.created" for r in rows)
+    if not has_created:
+        rows.append(
+            OutboxEvent(
+                id=f"created-{booking.id}",
+                aggregate_type="Booking",
+                aggregate_id=booking.id,
+                event_type="booking.created",
+                payload={
+                    "actor_id": booking.guest_id,
+                    "status": booking.status,
+                },
+                created_at=booking.created_at,
+            )
+        )
+
+    rows.sort(key=lambda r: (r.created_at or datetime.min.replace(tzinfo=UTC), r.id))
+
+    actor_ids = {
+        actor
+        for r in rows
+        if isinstance(r.payload, dict)
+        for actor in [_event_actor(r.payload)]
+        if actor
+    }
+    actors: dict[str, User] = {}
+    if actor_ids:
+        users_result = await session.execute(
+            select(User).where(User.id.in_(actor_ids))
+        )
+        actors = {u.id: u for u in users_result.scalars().all()}
+
+    events: list[BookingTimelineEvent] = []
+    for row in rows:
+        payload = row.payload if isinstance(row.payload, dict) else {}
+        actor_id = _event_actor(payload)
+        actor = actors.get(actor_id) if actor_id else None
+        events.append(
+            BookingTimelineEvent(
+                id=row.id,
+                event_type=row.event_type,
+                occurred_at=row.created_at,
+                actor_id=actor_id,
+                actor_name=actor.display_name if actor else None,
+                actor_role=actor.role if actor else None,
+                aggregate_type=row.aggregate_type,
+                detail={
+                    k: v
+                    for k, v in payload.items()
+                    if k
+                    not in {
+                        "recipients",
+                        "guest_email",
+                        "guest_phone",
+                        "locale",
+                    }
+                },
+            )
+        )
+
+    return BookingTimelineResponse(booking_id=booking.id, events=events)

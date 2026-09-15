@@ -30,6 +30,8 @@
     "signOut": "Sign out",
     "admin": "Admin",
     "becomeHost": "Become a host",
+    "myListings": "My listings",
+    "pendingListings": "Pending listings",
     "kycReview": "KYC Review",
     "profile": "Profile",
     "bulkImport": "Bulk Import",
@@ -136,7 +138,8 @@
     "readinessMissing": "Missing before review: {items}",
     "readOnlyScope": "You can view this listing but your co-host scope does not allow editing it.",
     "notEditable": "This listing is read-only for your role.",
-    "instantBook": "Instant Book"
+    "instantBook": "Instant Book",
+    "pendingReview": "Changes pending review"
   },
   "listingForm": {
     "createTitle": "Create New Listing",
@@ -228,7 +231,9 @@
       "checkInInstructions": "How to get the keys, etc.",
       "policies": "Additional policies",
       "preArrivalInfoReleaseHours": "48",
-      "selectGovernorate": "Select governorate"
+      "selectGovernorate": "Select governorate",
+      "selectCity": "Select city",
+      "selectDistrict": "Select area"
     },
     "hints": {
       "preArrivalInfoReleaseHours": "Hours before check-in when the host's phone and check-in instructions become visible to the guest. Leave empty to use the platform default."
@@ -304,7 +309,9 @@
     "houseRules": "House Rules",
     "egp": "EGP",
     "discovery": "Supply Discovery",
-    "rejectReasonPlaceholder": "Reason for rejection (shared with the host)"
+    "rejectReasonPlaceholder": "Reason for rejection (shared with the host)",
+    "pendingEdit": "Edit awaiting review",
+    "pendingChangesTitle": "Pending changes submitted by host"
   },
   "search": {
     "title": "Search",
@@ -432,7 +439,9 @@
       "vi": "Vietnamese",
       "sign": "Sign language"
     },
-    "instantBook": "Instant Book"
+    "instantBook": "Instant Book",
+    "bookingOptions": "Booking options",
+    "showResults": "Show {count} results"
   },
   "favorites": {
     "title": "Favorites",
@@ -1508,7 +1517,14 @@
     "candidateTypes": {
       "PLACE": "Place",
       "SUPPLY_LEAD": "Supply Lead"
-    }
+    },
+    "allContact": "All contact",
+    "contactable": "Contactable",
+    "contacted": "Contacted",
+    "responded": "Responded",
+    "resultCount": "{total} candidates",
+    "provenance": "Provenance",
+    "discoveredAt": "Discovered"
   },
   "gallery": {
     "label": "Gallery",
@@ -1529,7 +1545,15 @@
       "checkIn": "Needs check-in",
       "checkOut": "Needs check-out",
       "complete": "Needs completion"
-    }
+    },
+    "timeline": "Timeline",
+    "noEvents": "No recorded events yet.",
+    "contactGuest": "Message guest",
+    "contactHost": "Message host",
+    "messagePlaceholder": "Write a message…",
+    "send": "Send",
+    "sent": "Message sent.",
+    "sendFailed": "Could not send message."
   },
   "adminNav": {
     "adminConsole": "Admin Console",
@@ -1538,6 +1562,70 @@
     "payments": "Payment Queue",
     "bookings": "Operations",
     "discovery": "Supply Discovery",
-    "import": "Bulk Import"
+    "import": "Bulk Import",
+    "disputes": "Disputes",
+    "staff": "Staff"
+  },
+  "adminDisputes": {
+    "title": "Disputes",
+    "subtitle": "Review guest and host reports and move them through the resolution queue.",
+    "all": "All",
+    "empty": "No disputes in this queue.",
+    "booking": "Booking",
+    "adminNotes": "Admin notes",
+    "status": {
+      "open": "Open",
+      "in_review": "In review",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "category": {
+      "booking": "Booking",
+      "payment": "Payment",
+      "property": "Property",
+      "host": "Host",
+      "guest": "Guest",
+      "other": "Other"
+    }
+  },
+  "adminStaff": {
+    "title": "Staff",
+    "subtitle": "Create internal staff accounts and manage their operational permissions.",
+    "addStaff": "Add staff",
+    "empty": "No staff accounts yet.",
+    "inactive": "Inactive",
+    "editPermissions": "Edit permissions",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "namePlaceholder": "Display name",
+    "phonePlaceholder": "Phone number",
+    "emailPlaceholder": "Email (optional)",
+    "permissions": "Permissions",
+    "create": "Create",
+    "createFailed": "Could not create staff account.",
+    "permission": {
+      "listings": "Listings",
+      "kyc": "KYC",
+      "payments": "Payments",
+      "operations": "Operations",
+      "disputes": "Disputes",
+      "discovery": "Discovery"
+    }
+  },
+  "disputes": {
+    "reportProblem": "Report a problem",
+    "intro": "Tell our team what went wrong with this booking.",
+    "descriptionPlaceholder": "Describe the problem (at least 10 characters)…",
+    "submit": "Submit report",
+    "submitted": "Report submitted. Our team will review it.",
+    "submitFailed": "Could not submit the report.",
+    "category": {
+      "booking": "Booking",
+      "payment": "Payment",
+      "property": "Property",
+      "host": "Host",
+      "guest": "Guest",
+      "other": "Other"
+    }
   }
 }

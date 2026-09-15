@@ -69,7 +69,7 @@ async def get_reservation_detail(
 async def post_confirm_reservation(
     reservation_id: str,
     request: PaymentConfirmationRequest,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("operations")),
     session: AsyncSession = Depends(get_session),
 ) -> ReservationResponse:
     try:

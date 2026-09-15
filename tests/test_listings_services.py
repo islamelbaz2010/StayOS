@@ -605,7 +605,11 @@ async def test_create_photo_with_cover(fake_session: AsyncMock, monkeypatch) -> 
         is_cover=True,
         display_order=0,
     )
-    result = await create_photo(fake_session, _make_user(), "unit-1", request)
+    # Admin edits publish immediately — host edits on a LISTED unit are
+    # moderated and covered by the pending-changes tests.
+    result = await create_photo(
+        fake_session, _make_user(role=UserRole.ADMIN), "unit-1", request
+    )
     assert result.is_cover is True
     listings.repository.clear_cover_flags.assert_called_once_with(fake_session, "unit-1")
     listings.repository.set_listing_cover_photo.assert_called_once()
@@ -671,7 +675,11 @@ async def test_set_cover_photo(fake_session: AsyncMock, monkeypatch) -> None:
 
     from app.listings.services import set_cover_photo
 
-    result = await set_cover_photo(fake_session, _make_user(), "unit-1", "photo-2")
+    # Admin applies cover changes immediately; host cover changes on a
+    # LISTED unit are stashed for moderation.
+    result = await set_cover_photo(
+        fake_session, _make_user(role=UserRole.ADMIN), "unit-1", "photo-2"
+    )
     assert result.is_cover is True
     assert photo.is_cover is True
 
@@ -716,7 +724,11 @@ async def test_delete_photo(fake_session: AsyncMock, monkeypatch) -> None:
 
     from app.listings.services import delete_photo
 
-    await delete_photo(fake_session, _make_user(), "unit-1", "photo-1")
+    # Admin removal is immediate; host removal on a LISTED unit is
+    # moderated (pending_remove) and covered separately.
+    await delete_photo(
+        fake_session, _make_user(role=UserRole.ADMIN), "unit-1", "photo-1"
+    )
     listings.repository.delete_photo.assert_called_once()
 
 
@@ -744,7 +756,9 @@ async def test_delete_cover_photo_clears_listing(
 
     from app.listings.services import delete_photo
 
-    await delete_photo(fake_session, _make_user(), "unit-1", "photo-1")
+    await delete_photo(
+        fake_session, _make_user(role=UserRole.ADMIN), "unit-1", "photo-1"
+    )
     listings.repository.clear_listing_cover_photo.assert_called_once_with(
         fake_session, "unit-1", "photo-1"
     )

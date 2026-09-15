@@ -1,4 +1,4 @@
-export type UserRole = "guest" | "host" | "field_staff" | "admin";
+export type UserRole = "guest" | "host" | "field_staff" | "admin" | "staff";
 
 export interface User {
   id: string;
@@ -10,6 +10,7 @@ export interface User {
   role: UserRole;
   kyc_status: string;
   is_active: boolean;
+  staff_permissions?: string[];
   created_at: string;
   updated_at: string;
 }

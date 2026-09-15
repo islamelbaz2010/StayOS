@@ -28,14 +28,14 @@ router = APIRouter(prefix="/discovery", tags=["discovery"])
 
 @router.get("/sources")
 async def list_sources(
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
 ) -> list[dict[str, str]]:
     return registry.list_sources()
 
 
 @router.get("/stats", response_model=DiscoveryStatsResponse)
 async def get_discovery_stats(
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
 ) -> DiscoveryStatsResponse:
     stats = await discovery_services.get_stats(session)
@@ -47,7 +47,7 @@ async def get_discovery_stats(
 @router.post("/configs", response_model=DiscoveryConfigResponse)
 async def create_config(
     request: DiscoveryConfigCreate,
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
 ) -> DiscoveryConfigResponse:
     config = await discovery_services.create_config(session, request.model_dump())
@@ -56,7 +56,7 @@ async def create_config(
 
 @router.get("/configs", response_model=list[DiscoveryConfigResponse])
 async def list_configs(
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
 ) -> list[DiscoveryConfigResponse]:
     configs = await discovery_services.list_configs(session)
@@ -67,7 +67,7 @@ async def list_configs(
 
 @router.get("/candidates", response_model=CandidateListResponse)
 async def list_candidates(
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
     source: str | None = Query(None),
     city: str | None = Query(None),
@@ -111,7 +111,7 @@ async def list_candidates(
 @router.get("/candidates/{candidate_id}", response_model=DiscoveryCandidateResponse)
 async def get_candidate(
     candidate_id: str,
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
 ) -> DiscoveryCandidateResponse:
     candidate = await discovery_services.get_candidate(session, candidate_id)
@@ -122,7 +122,7 @@ async def get_candidate(
 async def update_candidate_status(
     candidate_id: str,
     request: CandidateStatusUpdate,
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
 ) -> DiscoveryCandidateResponse:
     candidate = await discovery_services.update_candidate_status(
@@ -135,7 +135,7 @@ async def update_candidate_status(
 async def import_candidate(
     candidate_id: str,
     request: CandidateImportRequest,
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
     unit_id = await discovery_services.import_candidate(
@@ -154,7 +154,7 @@ async def import_candidate(
 @router.post("/runs", response_model=DiscoveryRunResponse)
 async def trigger_run(
     request: DiscoveryRunTriggerRequest,
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
 ) -> DiscoveryRunResponse:
     source = request.source or "json_api"
@@ -203,7 +203,7 @@ async def trigger_run(
 
 @router.get("/runs", response_model=list[DiscoveryRunResponse])
 async def list_runs(
-    _: User = Depends(auth_dependencies.require_role("admin")),
+    _: User = Depends(auth_dependencies.require_staff_permission("discovery")),
     session: AsyncSession = Depends(get_session),
     limit: int = Query(20, ge=1, le=100),
 ) -> list[DiscoveryRunResponse]:

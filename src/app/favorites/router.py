@@ -10,8 +10,9 @@ from .schemas import (
     FavoriteListResponse,
     FavoriteToggleResponse,
     LocationAutocompleteResponse,
+    LocationTreeResponse,
 )
-from .services import get_user_favorites, location_autocomplete, location_popular, toggle_favorite
+from .services import get_user_favorites, location_autocomplete, location_popular, location_tree, toggle_favorite
 
 router = APIRouter(tags=["favorites", "locations"])
 
@@ -51,3 +52,12 @@ async def location_popular_endpoint(
     session: AsyncSession = Depends(get_session),
 ) -> LocationAutocompleteResponse:
     return await location_popular(session, limit)
+
+
+@router.get("/locations/tree", response_model=LocationTreeResponse)
+async def location_tree_endpoint(
+    session: AsyncSession = Depends(get_session),
+) -> LocationTreeResponse:
+    """Structured governorate → city → area data for dependent location
+    selectors (listing form, filters)."""
+    return await location_tree(session)

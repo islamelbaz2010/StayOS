@@ -52,6 +52,17 @@ export interface HostListing {
   cover_image: string | null;
   permission_scope?: string | null;
   rejection_reason?: string | null;
+  /** True when the host has an edit change-set awaiting admin review. */
+  has_pending_changes?: boolean;
+  /** The stashed change-set (only present for owner/admin viewers). */
+  pending_changes?: {
+    unit?: Record<string, unknown>;
+    listing?: Record<string, unknown>;
+    lat?: number | null;
+    lng?: number | null;
+    submitted_by?: string;
+    submitted_at?: string;
+  } | null;
 }
 
 export interface ListingCreateInput {

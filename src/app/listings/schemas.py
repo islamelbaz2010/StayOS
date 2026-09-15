@@ -360,6 +360,10 @@ class ListingResponse(BaseModel):
     # viewing their own managed inventory.
     permission_scope: str | None = None
     rejection_reason: str | None = None
+    # Edit-moderation context — populated only for host/admin views.
+    # pending_changes holds the stashed host edit awaiting admin review.
+    has_pending_changes: bool = False
+    pending_changes: dict | None = None
 
 
 class ListingSearchResult(BaseModel):
@@ -653,6 +657,9 @@ class PhotoResponse(BaseModel):
     is_cover: bool
     caption: str | None
     accessibility_feature: str | None = None
+    # 'live' | 'pending_add' | 'pending_remove' — surfaced so host/admin
+    # views can badge photos awaiting moderation.
+    moderation_state: str = "live"
 
 
 class PhotoOrderItem(BaseModel):

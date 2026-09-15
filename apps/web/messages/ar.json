@@ -30,6 +30,8 @@
     "signOut": "تسجيل الخروج",
     "admin": "الإدارة",
     "becomeHost": "أصبح مضيفاً",
+    "myListings": "إعلاناتي",
+    "pendingListings": "إعلانات قيد المراجعة",
     "kycReview": "مراجعة الهويات",
     "profile": "الملف الشخصي",
     "bulkImport": "استيراد بالجملة",
@@ -136,7 +138,8 @@
     "readinessMissing": "ناقص قبل المراجعة: {items}",
     "readOnlyScope": "يمكنك عرض هذا الإعلان لكن صلاحياتك كمضيف مشارك لا تسمح بتعديله.",
     "notEditable": "هذا الإعلان للقراءة فقط لدورك.",
-    "instantBook": "حجز فوري"
+    "instantBook": "حجز فوري",
+    "pendingReview": "تعديلات بانتظار المراجعة"
   },
   "listingForm": {
     "createTitle": "إضافة عقار جديد",
@@ -228,7 +231,9 @@
       "checkInInstructions": "كيفية استلام المفاتيح، إلخ.",
       "policies": "سياسات إضافية",
       "preArrivalInfoReleaseHours": "48",
-      "selectGovernorate": "اختر المحافظة"
+      "selectGovernorate": "اختر المحافظة",
+      "selectCity": "اختر المدينة",
+      "selectDistrict": "اختر المنطقة"
     },
     "hints": {
       "preArrivalInfoReleaseHours": "عدد الساعات قبل تسجيل الوصول التي تصبح فيها معلومات المضيف وتعليمات تسجيل الوصول مرئية للضيف. اتركه فارغًا لاستخدام الإعداد الافتراضي."
@@ -304,7 +309,9 @@
     "houseRules": "قواعد المنزل",
     "egp": "ج.م",
     "discovery": "اكتشاف المعروض",
-    "rejectReasonPlaceholder": "سبب الرفض (يظهر للمضيف)"
+    "rejectReasonPlaceholder": "سبب الرفض (يظهر للمضيف)",
+    "pendingEdit": "تعديل بانتظار المراجعة",
+    "pendingChangesTitle": "تعديلات مرسلة من المضيف بانتظار المراجعة"
   },
   "search": {
     "title": "بحث",
@@ -432,7 +439,9 @@
       "vi": "الفيتنامية",
       "sign": "لغة الإشارة"
     },
-    "instantBook": "حجز فوري"
+    "instantBook": "حجز فوري",
+    "bookingOptions": "خيارات الحجز",
+    "showResults": "عرض {count} نتيجة"
   },
   "favorites": {
     "title": "المفضلة",
@@ -1508,7 +1517,14 @@
     "candidateTypes": {
       "PLACE": "مكان",
       "SUPPLY_LEAD": "عميل معروض"
-    }
+    },
+    "allContact": "كل جهات الاتصال",
+    "contactable": "قابل للتواصل",
+    "contacted": "تم التواصل",
+    "responded": "رد",
+    "resultCount": "{total} مرشحاً",
+    "provenance": "المصدر",
+    "discoveredAt": "تاريخ الاكتشاف"
   },
   "gallery": {
     "label": "معرض الصور",
@@ -1529,7 +1545,15 @@
       "checkIn": "تحتاج تسجيل وصول",
       "checkOut": "تحتاج تسجيل مغادرة",
       "complete": "تحتاج إكمالاً"
-    }
+    },
+    "timeline": "السجل الزمني",
+    "noEvents": "لا توجد أحداث مسجلة بعد.",
+    "contactGuest": "مراسلة الضيف",
+    "contactHost": "مراسلة المضيف",
+    "messagePlaceholder": "اكتب رسالة…",
+    "send": "إرسال",
+    "sent": "تم إرسال الرسالة.",
+    "sendFailed": "تعذر إرسال الرسالة."
   },
   "adminNav": {
     "adminConsole": "لوحة الإدارة",
@@ -1538,6 +1562,70 @@
     "payments": "قائمة المدفوعات",
     "bookings": "العمليات",
     "discovery": "اكتشاف المعروضات",
-    "import": "استيراد جماعي"
+    "import": "استيراد جماعي",
+    "disputes": "النزاعات",
+    "staff": "الموظفون"
+  },
+  "adminDisputes": {
+    "title": "النزاعات",
+    "subtitle": "راجع بلاغات الضيوف والمضيفين وتابعها حتى الحل.",
+    "all": "الكل",
+    "empty": "لا توجد نزاعات في هذه القائمة.",
+    "booking": "الحجز",
+    "adminNotes": "ملاحظات الإدارة",
+    "status": {
+      "open": "مفتوح",
+      "in_review": "قيد المراجعة",
+      "resolved": "تم الحل",
+      "closed": "مغلق"
+    },
+    "category": {
+      "booking": "حجز",
+      "payment": "دفع",
+      "property": "عقار",
+      "host": "مضيف",
+      "guest": "ضيف",
+      "other": "أخرى"
+    }
+  },
+  "adminStaff": {
+    "title": "الموظفون",
+    "subtitle": "أنشئ حسابات موظفين داخلية وأدر صلاحياتهم التشغيلية.",
+    "addStaff": "إضافة موظف",
+    "empty": "لا توجد حسابات موظفين بعد.",
+    "inactive": "غير نشط",
+    "editPermissions": "تعديل الصلاحيات",
+    "deactivate": "تعطيل",
+    "activate": "تفعيل",
+    "namePlaceholder": "الاسم المعروض",
+    "phonePlaceholder": "رقم الهاتف",
+    "emailPlaceholder": "البريد الإلكتروني (اختياري)",
+    "permissions": "الصلاحيات",
+    "create": "إنشاء",
+    "createFailed": "تعذر إنشاء حساب الموظف.",
+    "permission": {
+      "listings": "الإعلانات",
+      "kyc": "التحقق",
+      "payments": "المدفوعات",
+      "operations": "العمليات",
+      "disputes": "النزاعات",
+      "discovery": "اكتشاف المعروض"
+    }
+  },
+  "disputes": {
+    "reportProblem": "الإبلاغ عن مشكلة",
+    "intro": "أخبر فريقنا بما حدث في هذا الحجز.",
+    "descriptionPlaceholder": "صف المشكلة (10 أحرف على الأقل)…",
+    "submit": "إرسال البلاغ",
+    "submitted": "تم إرسال البلاغ. سيراجعه فريقنا.",
+    "submitFailed": "تعذر إرسال البلاغ.",
+    "category": {
+      "booking": "حجز",
+      "payment": "دفع",
+      "property": "عقار",
+      "host": "مضيف",
+      "guest": "ضيف",
+      "other": "أخرى"
+    }
   }
 }

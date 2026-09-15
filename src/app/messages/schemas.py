@@ -90,3 +90,11 @@ class AutomatedMessageSend(BaseModel):
 class InquiryCreate(BaseModel):
     unit_id: str
     content: str = Field(..., min_length=1, max_length=4000)
+
+
+class AdminContactCreate(BaseModel):
+    """Admin/staff operational contact with one side of a booking."""
+
+    booking_id: str
+    target: str = Field(..., pattern="^(guest|host)$")
+    content: str = Field(..., min_length=1, max_length=4000)

@@ -192,7 +192,7 @@ async def post_submit_for_review(
 
 @router.get("/admin/pending", response_model=list[ListingResponse])
 async def get_admin_pending_endpoint(
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("listings")),
     session: AsyncSession = Depends(get_session),
 ) -> list[ListingResponse]:
     try:
@@ -204,7 +204,7 @@ async def get_admin_pending_endpoint(
 @router.post("/admin/{unit_id}/approve", response_model=ListingResponse)
 async def post_approve_listing(
     unit_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("listings")),
     session: AsyncSession = Depends(get_session),
 ) -> ListingResponse:
     try:
@@ -217,7 +217,7 @@ async def post_approve_listing(
 async def post_reject_listing(
     unit_id: str,
     payload: ListingRejectRequest | None = None,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("listings")),
     session: AsyncSession = Depends(get_session),
 ) -> ListingResponse:
     try:
@@ -310,10 +310,11 @@ async def post_photo(
 async def get_photos(
     unit_id: str,
     _: None = Depends(listings_rate_limit),
+    viewer: User | None = Depends(auth_dependencies.get_optional_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[PhotoResponse]:
     try:
-        return await list_photos(session, unit_id)
+        return await list_photos(session, unit_id, viewer)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

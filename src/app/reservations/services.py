@@ -115,9 +115,16 @@ def _assert_kyc_verified(user: User) -> None:
         raise ConflictError("KYC verification required to make a booking")
 
 
-def _assert_authorized_to_view(reservation: Reservation, user: User) -> None:
-    if reservation.guest_id == user.id or user.role == UserRole.ADMIN:
+async def _assert_authorized_to_view(
+    session: AsyncSession, reservation: Reservation, user: User
+) -> None:
+    if reservation.guest_id == user.id:
         return
+    if user.role in (UserRole.ADMIN, UserRole.STAFF):
+        from app.auth.staff import has_permission
+
+        if await has_permission(session, user, "operations"):
+            return
     if user.role == UserRole.HOST:
         # ownership is verified by the caller when needed.
         return
@@ -134,8 +141,17 @@ async def _require_host_or_staff_for_unit(
         raise NotFoundError("Unit not found")
     if user.role == UserRole.HOST and unit.host_id != user.id:
         raise AuthorizationError("Not authorized to manage this reservation")
-    if user.role not in (UserRole.HOST, UserRole.FIELD_STAFF, UserRole.ADMIN):
+    if user.role not in (
+        UserRole.HOST, UserRole.FIELD_STAFF, UserRole.ADMIN, UserRole.STAFF
+    ):
         raise AuthorizationError("Not authorized to manage this reservation")
+    if user.role == UserRole.STAFF:
+        from app.auth.staff import has_permission
+
+        if not await has_permission(session, user, "operations"):
+            raise AuthorizationError(
+                "Not authorized to manage this reservation"
+            )
 
 
 async def _get_host_id_for_reservation(
@@ -296,7 +312,7 @@ async def get_reservation(
     if reservation is None:
         raise NotFoundError("Reservation not found")
 
-    _assert_authorized_to_view(reservation, user)
+    await _assert_authorized_to_view(session, reservation, user)
     if user.role in (UserRole.HOST, UserRole.FIELD_STAFF):
         unit = await listings_repository.get_unit_with_listing(
             session, reservation.unit_id
@@ -316,6 +332,11 @@ async def list_reservations(
         unit_ids = await listings_repository.get_host_unit_ids(session, user.id)
     elif user.role in (UserRole.GUEST,):
         guest_id = user.id
+    elif user.role == UserRole.STAFF:
+        from app.auth.staff import has_permission
+
+        if not await has_permission(session, user, "operations"):
+            raise AuthorizationError("Not authorized to list reservations")
     elif user.role != UserRole.ADMIN:
         raise AuthorizationError("Not authorized to list reservations")
 
@@ -638,6 +659,11 @@ async def _authorize_cancellation(
         return
     if user.role == UserRole.ADMIN:
         return
+    if user.role == UserRole.STAFF:
+        from app.auth.staff import has_permission
+
+        if await has_permission(session, user, "operations"):
+            return
     raise AuthorizationError("Not authorized to cancel this reservation")
 
 

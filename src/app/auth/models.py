@@ -1,7 +1,19 @@
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import ARRAY, JSON, Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import (
+    ARRAY,
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.models import Base, TimestampMixin, UUIDMixin
@@ -100,3 +112,31 @@ class DeviceToken(UUIDMixin, TimestampMixin, Base):
     )
 
     user: Mapped["User"] = relationship("User", back_populates="device_tokens")
+
+
+class StaffPermission(UUIDMixin, Base):
+    """A scoped operational permission granted to a staff account.
+
+    One row per (user_id, permission). Rows are never deleted — access is
+    revoked via ``is_active = False`` so grants remain auditable.
+    """
+
+    __tablename__ = "staff_permissions"
+    __table_args__ = (
+        UniqueConstraint("user_id", "permission", name="uq_staff_permission"),
+        Index("idx_staff_permissions_user", "user_id"),
+        {"schema": "auth"},
+    )
+
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("auth.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    permission: Mapped[str] = mapped_column(String(50), nullable=False)
+    granted_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )

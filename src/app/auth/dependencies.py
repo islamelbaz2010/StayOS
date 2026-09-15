@@ -43,6 +43,23 @@ async def get_current_user(
     return user
 
 
+async def get_optional_user(
+    session: AsyncSession = Depends(get_session),
+    token: Any = Depends(security),
+) -> User | None:
+    """Authenticate when a bearer token is present; anonymous otherwise.
+
+    Used by public endpoints that show extra data to privileged viewers
+    (e.g. pending photos to the listing owner).
+    """
+    if token is None or not token.credentials:
+        return None
+    try:
+        return await get_current_user(session=session, token=token)
+    except AuthenticationError:
+        return None
+
+
 async def require_active_user(
     user: User = Depends(get_current_user),
 ) -> User:
@@ -64,6 +81,43 @@ async def require_kyc_verified(
     if user.kyc_status != KycStatus.VERIFIED:
         raise ValidationError("KYC verification required")
     return user
+
+
+def require_staff_permission(
+    permission: str, *, allow_roles: tuple[str, ...] = ()
+) -> Callable[..., Any]:
+    """Allow admins, or staff users holding an active permission grant.
+
+    ``allow_roles`` additionally admits non-staff roles that legitimately
+    use the same endpoint (e.g. hosts listing their own bookings).
+
+    Enforced server-side on every protected endpoint — frontend route
+    hiding is never the authorization boundary.
+    """
+    from sqlalchemy import select
+
+    from app.auth.constants import UserRole
+    from app.auth.models import StaffPermission
+
+    async def _permission_checker(
+        user: User = Depends(get_current_user),
+        session: AsyncSession = Depends(get_session),
+    ) -> User:
+        if user.role == UserRole.ADMIN or user.role in allow_roles:
+            return user
+        if user.role == UserRole.STAFF:
+            result = await session.execute(
+                select(StaffPermission.id).where(
+                    StaffPermission.user_id == user.id,
+                    StaffPermission.permission == permission,
+                    StaffPermission.is_active.is_(True),
+                )
+            )
+            if result.scalar_one_or_none() is not None:
+                return user
+        raise AuthorizationError("Insufficient permissions")
+
+    return _permission_checker
 
 
 def get_public_key() -> str:

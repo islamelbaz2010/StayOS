@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     role: UserRole
     kyc_status: KycStatus
     is_active: bool
+    staff_permissions: list[str] = []
     created_at: datetime
     updated_at: datetime
 

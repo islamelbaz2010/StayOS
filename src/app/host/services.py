@@ -35,7 +35,7 @@ from .permissions import (
 
 
 def _assert_host_or_cohost(user: User) -> None:
-    if user.role not in (UserRole.HOST, UserRole.ADMIN):
+    if user.role not in (UserRole.HOST, UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only hosts can access the host dashboard")
 
 

@@ -124,7 +124,7 @@ async def get_escrow(
 @router.post("/escrow/{escrow_id}/release")
 async def release_escrow_endpoint(
     escrow_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     try:
@@ -138,7 +138,7 @@ async def release_escrow_endpoint(
 async def hold_escrow_endpoint(
     escrow_id: str,
     hold_hours: int = 24,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     try:
@@ -194,7 +194,7 @@ async def list_payouts(
 async def process_payout_endpoint(
     payout_id: str,
     request: PayoutProcessRequest,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
     session: AsyncSession = Depends(get_session),
 ) -> PayoutRequestResponse:
     try:

@@ -181,15 +181,26 @@ function HostPaymentStatusBadge({
   status: string;
   t: (key: string) => string;
 }) {
-  const key = `paymentStatuses.${status.toLowerCase()}`;
-  const label = t(key);
+  // The `payment` namespace uses statusPending, statusVerified, etc.
+  // rather than a nested paymentStatuses.* object.
+  const STATUS_KEY_MAP: Record<string, string> = {
+    pending: "statusPending",
+    proof_uploaded: "statusProofUploaded",
+    verified: "statusVerified",
+    rejected: "statusRejected",
+    cancelled: "statusCancelled",
+    refund_pending: "statusRefundPending",
+    refunded: "statusRefunded",
+  };
+  const key = STATUS_KEY_MAP[status.toLowerCase()] ?? "";
+  const label = key ? t(key) : status.toUpperCase();
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
         HOST_STATUS_COLORS[status.toLowerCase()] || "bg-neutral-100 text-neutral-700"
       }`}
     >
-      {label === key ? status.toUpperCase() : label}
+      {label}
     </span>
   );
 }

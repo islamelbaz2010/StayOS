@@ -152,9 +152,9 @@ function TodayItem({
   // are unit titles (not English status sentences).
   const itemTitle =
     item.item_type === "unread_message"
-      ? t("items.unreadMessage")
+      ? t("items.unread_message")
       : item.item_type === "incomplete_listing"
-        ? t("items.incompleteListing")
+        ? t("items.incomplete_listing")
         : item.guest_name && t.has(`items.${item.item_type}`)
           ? t(`items.${item.item_type}`, { name: item.guest_name })
           : item.title;

@@ -12,6 +12,7 @@ import {
   type ListingCreateInput,
   type ListingUpdateInput,
 } from "@/lib/queries/hostListings";
+import { LocationPicker } from "@/components/listings/LocationPicker";
 
 const PROPERTY_TYPES = [
   { value: "APARTMENT", labelKey: "apartment" },
@@ -126,6 +127,13 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   const submitMutation = useSubmitForReview();
 
   const isEdit = Boolean(existingListing);
+  // Submit-for-review is only valid for DRAFT, REJECTED, or UNLISTED
+  // listings. LISTED/ARCHIVED listings are already published or retired
+  // and the API rejects submit attempts with a validation error.
+  const canSubmitForReview =
+    !isEdit ||
+    !existingListing?.status ||
+    ["DRAFT", "REJECTED", "UNLISTED"].includes(existingListing.status);
 
   const [form, setForm] = useState<ListingCreateInput>({
     property_type: existingListing?.property_type ?? "APARTMENT",
@@ -302,8 +310,11 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       isDirtyRef.current = false;
       setAutosave("saved");
       router.push(`/${locale}/host/listings`);
-    } catch {
-      setErrors({ submit: t("errors.saveFailed") });
+    } catch (err) {
+      const detail = (
+        err as { response?: { data?: { error?: { message?: string } } } }
+      )?.response?.data?.error?.message;
+      setErrors({ submit: detail || t("errors.saveFailed") });
     }
   };
 
@@ -327,8 +338,11 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       setIsDirty(false);
       isDirtyRef.current = false;
       router.push(`/${locale}/host/listings`);
-    } catch {
-      setErrors({ submit: t("errors.submitFailed") });
+    } catch (err) {
+      const detail = (
+        err as { response?: { data?: { error?: { message?: string } } } }
+      )?.response?.data?.error?.message;
+      setErrors({ submit: detail || t("errors.submitFailed") });
     }
   };
 
@@ -546,25 +560,17 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             />
           </div>
 
-          <div>
-            <label className={labelClass}>{t("latitude")}</label>
-            <input
-              type="number"
-              step="any"
-              value={form.lat}
-              onChange={(e) => update("lat", parseFloat(e.target.value))}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>{t("longitude")}</label>
-            <input
-              type="number"
-              step="any"
-              value={form.lng}
-              onChange={(e) => update("lng", parseFloat(e.target.value))}
-              className={inputClass}
+          <div className="sm:col-span-2">
+            <LocationPicker
+              lat={form.lat}
+              lng={form.lng}
+              address={form.address ?? ""}
+              city={form.city}
+              governorate={form.governorate}
+              onLocationChange={(newLat, newLng) => {
+                update("lat", newLat);
+                update("lng", newLng);
+              }}
             />
           </div>
         </div>
@@ -1046,16 +1052,18 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             disabled={isLoading}
             className="btn-secondary text-sm disabled:opacity-50"
           >
-            {isLoading ? tc("loading") : t("saveDraft")}
+            {isLoading ? tc("loading") : isEdit ? t("saveChanges") : t("saveDraft")}
           </button>
-          <button
-            type="button"
-            onClick={handleSubmitForReview}
-            disabled={isLoading}
-            className="btn-primary text-sm disabled:opacity-50"
-          >
-            {isLoading ? tc("loading") : t("submitForReview")}
-          </button>
+          {canSubmitForReview && (
+            <button
+              type="button"
+              onClick={handleSubmitForReview}
+              disabled={isLoading}
+              className="btn-primary text-sm disabled:opacity-50"
+            >
+              {isLoading ? tc("loading") : t("submitForReview")}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -262,6 +262,7 @@ function CheckoutContent({
               {payment.amount_egp.toLocaleString(dateLocale)} {t("egp")}
             </dd>
           </div>
+          <p className="mt-1 text-xs text-neutral-500">{t("includesAllFees")}</p>
         </dl>
       </div>
 

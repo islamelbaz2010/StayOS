@@ -963,6 +963,39 @@ def test_submit_for_review_forbidden_for_guest(
     assert response.status_code == 403
 
 
+def test_submit_for_review_rejects_listed_listing(
+    listings_client: TestClient, monkeypatch
+) -> None:
+    """Regression: submitting a LISTED listing for review must fail.
+
+    The ListingForm previously showed the Submit-for-Review button
+    unconditionally, causing a 422 validation error when hosts edited
+    already-published listings. The API must reject submit attempts for
+    listings in LISTED status (only DRAFT/REJECTED/UNLISTED are eligible).
+    """
+    from app.shared.exceptions import ValidationError
+
+    host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
+    _patch_auth_user(monkeypatch, host)
+
+    async def _raise_validation(*args, **kwargs):
+        raise ValidationError(
+            "Only draft or rejected listings can be submitted for review"
+        )
+
+    monkeypatch.setattr(
+        "app.listings.router.submit_for_review", _raise_validation
+    )
+
+    token = auth_services.create_access_token(host)
+    response = listings_client.post(
+        "/api/v1/listings/unit-1/submit",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 422
+    assert "draft or rejected" in response.json()["error"]["message"]
+
+
 def test_get_admin_pending_listings(
     listings_client: TestClient, monkeypatch
 ) -> None:

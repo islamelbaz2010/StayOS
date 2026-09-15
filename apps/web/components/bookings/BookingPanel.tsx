@@ -507,6 +507,9 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
                   <span>{t("total")}</span>
                   <span>{formatMoney(grandTotal, listing.currency, moneyLocale)}</span>
                 </div>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {t("includesAllFees")}
+                </p>
               </div>
             </div>
           ) : (

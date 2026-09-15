@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
+import { useAuth } from "@/lib/auth/useAuth";
 import { useConversations } from "@/lib/queries/messages";
 import type { ConversationListItem } from "@/lib/queries/messages";
 
@@ -76,6 +77,13 @@ export default function MessagesPage() {
   const tc = useTranslations("common");
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
+  const { user } = useAuth();
+  const roleHomeHref =
+    user?.role === "host"
+      ? `/${locale}/host`
+      : user?.role === "admin"
+        ? `/${locale}/admin/pending`
+        : null;
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { data: conversations, isLoading, error, refetch } = useConversations();
 
@@ -83,6 +91,17 @@ export default function MessagesPage() {
     <ProtectedRoute>
       <GuestLayout>
         <section className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+          {roleHomeHref && (
+            <Link
+              href={roleHomeHref}
+              className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-600 hover:text-accent-600"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              {tc("back")}
+            </Link>
+          )}
           <h1 className="mb-6 text-2xl font-bold text-neutral-900">
             {t("inboxTitle")}
           </h1>

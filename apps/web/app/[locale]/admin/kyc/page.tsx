@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-import { HostLayout } from "@/components/layouts";
+import { AdminLayout } from "@/components/layouts";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import {
   useApproveKyc,
@@ -42,7 +42,7 @@ export default function AdminKycPage() {
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <HostLayout>
+      <AdminLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="space-y-6">
             <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
@@ -177,7 +177,7 @@ export default function AdminKycPage() {
             )}
           </div>
         </section>
-      </HostLayout>
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

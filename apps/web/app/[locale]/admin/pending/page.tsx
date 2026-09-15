@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { HostLayout } from "@/components/layouts";
+import { AdminLayout } from "@/components/layouts";
 import {
   usePendingListings,
   useApproveListing,
@@ -28,7 +28,7 @@ export default function AdminPendingListingsPage() {
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <HostLayout>
+      <AdminLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="space-y-6">
             <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
@@ -430,7 +430,7 @@ export default function AdminPendingListingsPage() {
             )}
           </div>
         </section>
-      </HostLayout>
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

@@ -21,6 +21,7 @@ vi.mock("@/components/auth/ProtectedRoute", () => ({
 }));
 
 vi.mock("@/components/layouts", () => ({
+  AdminLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   HostLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 

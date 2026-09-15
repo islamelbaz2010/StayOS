@@ -162,7 +162,7 @@ export function Header() {
           enabled={isAuthenticated}
         />
       )}
-      {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
+      {isAuthenticated && user?.role === "host" && (
         <Link
           href={`/${locale}/host`}
           className="text-sm font-medium text-neutral-700 hover:text-accent-600"
@@ -172,50 +172,13 @@ export function Header() {
         </Link>
       )}
       {isAuthenticated && user?.role === "admin" && (
-        <>
-          <Link
-            href={`/${locale}/admin/pending`}
-            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-            onClick={() => setMobileOpen(false)}
-          >
-            {t("admin")}
-          </Link>
-          <Link
-            href={`/${locale}/admin/kyc`}
-            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-            onClick={() => setMobileOpen(false)}
-          >
-            {t("kycReview")}
-          </Link>
-          <Link
-            href={`/${locale}/admin/import`}
-            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-            onClick={() => setMobileOpen(false)}
-          >
-            {t("bulkImport")}
-          </Link>
-          <Link
-            href={`/${locale}/admin/payments`}
-            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-            onClick={() => setMobileOpen(false)}
-          >
-            {t("paymentQueue")}
-          </Link>
-          <Link
-            href={`/${locale}/admin/bookings`}
-            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-            onClick={() => setMobileOpen(false)}
-          >
-            {t("operations")}
-          </Link>
-          <Link
-            href={`/${locale}/admin/discovery`}
-            className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-            onClick={() => setMobileOpen(false)}
-          >
-            {t("discovery")}
-          </Link>
-        </>
+        <Link
+          href={`/${locale}/admin/pending`}
+          className="text-sm font-medium text-accent-600 hover:text-accent-700"
+          onClick={() => setMobileOpen(false)}
+        >
+          {t("admin")}
+        </Link>
       )}
       {isAuthenticated && (
         <Link
@@ -367,7 +330,7 @@ export function Header() {
                 enabled={isAuthenticated}
               />
             )}
-            {isAuthenticated && (user?.role === "host" || user?.role === "admin") && (
+            {isAuthenticated && user?.role === "host" && (
               <Link
                 href={`/${locale}/host`}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
@@ -377,29 +340,13 @@ export function Header() {
               </Link>
             )}
             {isAuthenticated && user?.role === "admin" && (
-              <>
-                <Link
-                  href={`/${locale}/admin/pending`}
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {t("admin")}
-                </Link>
-                <Link
-                  href={`/${locale}/admin/kyc`}
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {t("kycReview")}
-                </Link>
-                <Link
-                  href={`/${locale}/admin/import`}
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {t("bulkImport")}
-                </Link>
-              </>
+              <Link
+                href={`/${locale}/admin/pending`}
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
+                onClick={() => setMobileOpen(false)}
+              >
+                {t("admin")}
+              </Link>
             )}
             {isAuthenticated && (
               <Link

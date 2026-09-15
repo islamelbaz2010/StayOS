@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { HostLayout } from "@/components/layouts";
+import { AdminLayout } from "@/components/layouts";
 import {
   usePaymentQueue,
   useVerifyPayment,
@@ -301,7 +301,7 @@ export default function AdminPaymentQueuePage() {
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <HostLayout>
+      <AdminLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <h1 className="mb-6 text-2xl font-bold text-brand-900 sm:text-3xl">
             {t("queueTitle")}
@@ -373,7 +373,7 @@ export default function AdminPaymentQueuePage() {
             </div>
           )}
         </section>
-      </HostLayout>
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

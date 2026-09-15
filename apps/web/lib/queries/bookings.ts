@@ -145,9 +145,18 @@ export function useBooking(bookingId: string) {
 }
 
 export function useUpdateBooking() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ bookingId, payload }: { bookingId: string; payload: BookingUpdate }) =>
       updateBooking(bookingId, payload),
+    onSuccess: (_data, { bookingId }) => {
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["host-bookings-paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["host-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["stay-info", bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["host-today"] });
+    },
   });
 }
 
@@ -211,6 +220,7 @@ export function useCheckIn() {
       queryClient.invalidateQueries({ queryKey: ["stay-info", bookingId] });
       queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["host-today"] });
     },
   });
 }
@@ -228,6 +238,7 @@ export function useCheckOut() {
       queryClient.invalidateQueries({ queryKey: ["stay-info", bookingId] });
       queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["host-today"] });
     },
   });
 }
@@ -247,6 +258,7 @@ export function useCompleteBooking() {
       queryClient.invalidateQueries({ queryKey: ["host-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+      queryClient.invalidateQueries({ queryKey: ["host-today"] });
     },
   });
 }

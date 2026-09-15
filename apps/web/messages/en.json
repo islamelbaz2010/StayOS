@@ -1527,5 +1527,14 @@
       "checkOut": "Needs check-out",
       "complete": "Needs completion"
     }
+  },
+  "adminNav": {
+    "adminConsole": "Admin Console",
+    "pending": "Pending Listings",
+    "kyc": "KYC Review",
+    "payments": "Payment Queue",
+    "bookings": "Operations",
+    "discovery": "Supply Discovery",
+    "import": "Bulk Import"
   }
 }

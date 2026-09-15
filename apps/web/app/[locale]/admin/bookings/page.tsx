@@ -8,7 +8,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostBookingDetail } from "@/components/bookings/HostBookingDetail";
 import { HostBookingList } from "@/components/bookings/HostBookingList";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { HostLayout } from "@/components/layouts";
+import { AdminLayout } from "@/components/layouts";
 import { useBooking, useHostBookings } from "@/lib/queries/bookings";
 import type { BookingResponse } from "@/lib/queries/bookings";
 import { cn } from "@/lib/utils";
@@ -75,7 +75,7 @@ export default function AdminBookingsPage() {
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <HostLayout>
+      <AdminLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
@@ -174,7 +174,7 @@ export default function AdminBookingsPage() {
             </div>
           )}
         </section>
-      </HostLayout>
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

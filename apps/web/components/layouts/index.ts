@@ -1,3 +1,4 @@
+export { AdminLayout } from "./AdminLayout";
 export { AuthLayout } from "./AuthLayout";
 export { Footer } from "./Footer";
 export { GuestLayout } from "./GuestLayout";

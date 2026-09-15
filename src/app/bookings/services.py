@@ -286,9 +286,15 @@ async def _assert_authorized_to_update(
     is_guest = booking.guest_id == user.id
 
     if new_status in (BookingStatus.ACCEPTED, BookingStatus.REJECTED):
-        if not can_manage:
+        # Accept/Reject is the Host's Request-to-Book decision. Admin scope
+        # grants operational visibility across the marketplace but no
+        # host-decision authority: unlike cancellation (booking.cancelled
+        # event carrying cancelled_by) or no-show (admin-only endpoint),
+        # accept/reject has no admin operational contract or audit event.
+        # Only the unit owner or a full-access co-host may respond.
+        if scope not in ("owner", CoHostPermissionScope.FULL_ACCESS):
             raise AuthorizationError(
-                "Only the host or an admin can accept or reject a booking"
+                "Only the host or an authorized co-host can accept or reject a booking"
             )
 
     if new_status == BookingStatus.CANCELLED:

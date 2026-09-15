@@ -979,6 +979,165 @@ async def test_update_booking_invalid_transition(fake_session: AsyncMock, monkey
         )
 
 
+@pytest.mark.asyncio
+async def test_update_booking_admin_cannot_accept(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Accept/Reject is the Host's Request-to-Book decision. Admin scope
+    grants operational visibility, not host-decision authority — there is
+    no admin operational override contract for accept/reject (unlike
+    cancel/no-show which emit audited events)."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+
+    request = BookingUpdate(status=BookingStatus.ACCEPTED)
+    with pytest.raises(AuthorizationError):
+        await booking_services.update_booking(
+            fake_session, admin, booking.id, request
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_booking_admin_cannot_reject(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+
+    request = BookingUpdate(
+        status=BookingStatus.REJECTED, reject_reason="Admin override attempt"
+    )
+    with pytest.raises(AuthorizationError):
+        await booking_services.update_booking(
+            fake_session, admin, booking.id, request
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_booking_guest_cannot_reject(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+
+    request = BookingUpdate(
+        status=BookingStatus.REJECTED, reject_reason="Guest override attempt"
+    )
+    with pytest.raises(AuthorizationError):
+        await booking_services.update_booking(
+            fake_session, guest, booking.id, request
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_booking_other_host_cannot_accept(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A host who does not own/manage the unit must not accept its
+    bookings (cross-host isolation)."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    other_host = _make_user(user_id="host-2", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+
+    request = BookingUpdate(status=BookingStatus.ACCEPTED)
+    with pytest.raises(AuthorizationError):
+        await booking_services.update_booking(
+            fake_session, other_host, booking.id, request
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_booking_other_host_cannot_reject(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    other_host = _make_user(user_id="host-2", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+
+    request = BookingUpdate(
+        status=BookingStatus.REJECTED, reject_reason="Cross-host attempt"
+    )
+    with pytest.raises(AuthorizationError):
+        await booking_services.update_booking(
+            fake_session, other_host, booking.id, request
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_booking_admin_can_view_operationally(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Admin retains read visibility over any booking for operational
+    support/dispute handling, and viewing does not alter the admin's role."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+    _stub_user_lookup(fake_session, guest)
+    monkeypatch.setattr(
+        "app.reviews.repository.count_reviews_by_guest",
+        AsyncMock(return_value=0),
+    )
+    monkeypatch.setattr(
+        "app.reviews.repository.get_guest_rating_aggregate",
+        AsyncMock(return_value=(None, 0)),
+    )
+
+    response = await booking_services.get_booking(fake_session, admin, booking.id)
+    assert response.id == booking.id
+    assert response.permission_scope == "admin"
+    assert admin.role == str(UserRole.ADMIN)
+
+
 def _make_booking_response(status: str = "requested") -> BookingResponse:
     now = datetime.now(UTC)
     return BookingResponse(
@@ -1087,6 +1246,54 @@ def test_update_booking_route_rejects_unauthenticated(bookings_client: TestClien
         "/api/v1/bookings/123", json={"status": "accepted"}
     )
     assert response.status_code == 401
+
+
+def test_update_booking_route_denies_admin_accept(
+    bookings_client: TestClient, monkeypatch
+) -> None:
+    """API boundary: admin Accept must return 403 — the host's
+    Request-to-Book decision is not an admin operational action."""
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    _patch_auth_user(monkeypatch, admin)
+    monkeypatch.setattr(
+        "app.bookings.router.update_booking",
+        AsyncMock(
+            side_effect=AuthorizationError(
+                "Only the host or an authorized co-host can accept or reject a booking"
+            )
+        ),
+    )
+
+    token = _token_for(admin)
+    response = bookings_client.patch(
+        "/api/v1/bookings/booking-1",
+        json={"status": "accepted"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
+def test_update_booking_route_denies_admin_reject(
+    bookings_client: TestClient, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    _patch_auth_user(monkeypatch, admin)
+    monkeypatch.setattr(
+        "app.bookings.router.update_booking",
+        AsyncMock(
+            side_effect=AuthorizationError(
+                "Only the host or an authorized co-host can accept or reject a booking"
+            )
+        ),
+    )
+
+    token = _token_for(admin)
+    response = bookings_client.patch(
+        "/api/v1/bookings/booking-1",
+        json={"status": "rejected", "reject_reason": "Admin override attempt"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
 
 
 def test_list_host_bookings_route_allows_admin(bookings_client: TestClient, monkeypatch) -> None:

@@ -81,6 +81,7 @@ export function useUpdateDispute() {
       dispute_id: string;
       status?: DisputeStatus;
       admin_notes?: string;
+      reply?: string;
     }) => {
       const { dispute_id, ...body } = payload;
       const { data } = await api.patch<Dispute>(

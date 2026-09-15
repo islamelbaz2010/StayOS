@@ -32,6 +32,9 @@ class DisputeResponse(BaseModel):
 class DisputeAdminUpdate(BaseModel):
     status: DisputeStatus | None = None
     admin_notes: str | None = Field(None, max_length=5000)
+    # User-facing reply — delivered to the reporter's Messages via a
+    # support conversation. Separate from admin_notes, which stays internal.
+    reply: str | None = Field(None, min_length=1, max_length=5000)
 
 
 class DisputeListResponse(BaseModel):

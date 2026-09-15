@@ -77,11 +77,14 @@ export default function EditListingPage({
               </div>
             )}
 
-            {listing && listing.status === "REJECTED" && detail?.rejection_reason && (
+            {listing && detail?.rejection_reason && !listing.has_pending_changes && (
               <div className="card border-s-4 border-s-danger-500 p-5">
                 <p className="text-sm text-neutral-700">
                   <span className="font-semibold text-danger-700">
-                    {th("rejectionReason")}:
+                    {listing.status === "REJECTED"
+                      ? th("rejectionReason")
+                      : th("changesRejected")}
+                    :
                   </span>{" "}
                   {detail.rejection_reason}
                 </p>

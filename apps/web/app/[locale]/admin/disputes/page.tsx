@@ -30,6 +30,7 @@ export default function AdminDisputesPage() {
   );
   const [selected, setSelected] = useState<Dispute | null>(null);
   const [notes, setNotes] = useState("");
+  const [reply, setReply] = useState("");
 
   const { data, isPending, isError, refetch } = useAdminDisputes(statusFilter);
   const updateMutation = useUpdateDispute();
@@ -42,8 +43,18 @@ export default function AdminDisputesPage() {
         dispute_id: dispute.id,
         status,
         admin_notes: notes || undefined,
+        reply: reply.trim() || undefined,
       },
       { onSuccess: () => setSelected(null) }
+    );
+  };
+
+  const sendReply = (dispute: Dispute) => {
+    const text = reply.trim();
+    if (!text) return;
+    updateMutation.mutate(
+      { dispute_id: dispute.id, reply: text, admin_notes: notes || undefined },
+      { onSuccess: () => { setReply(""); } }
     );
   };
 
@@ -107,6 +118,7 @@ export default function AdminDisputesPage() {
                   onClick={() => {
                     setSelected(d);
                     setNotes(d.admin_notes ?? "");
+                    setReply("");
                   }}
                   className="card w-full p-4 text-start transition hover:shadow-md"
                 >
@@ -177,7 +189,29 @@ export default function AdminDisputesPage() {
                   className="input mt-1 w-full text-sm"
                 />
 
+                <label className="mt-4 block text-sm font-medium text-neutral-700">
+                  {t("replyToReporter")}
+                </label>
+                <textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  rows={3}
+                  placeholder={t("replyPlaceholder")}
+                  className="input mt-1 w-full text-sm"
+                />
+                <p className="mt-1 text-xs text-neutral-500">
+                  {t("replyHint")}
+                </p>
+
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    disabled={updateMutation.isPending || !reply.trim()}
+                    onClick={() => sendReply(selected)}
+                    className="btn-primary rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+                  >
+                    {t("sendReply")}
+                  </button>
                   {NEXT_STATUSES[selected.status]?.map((s) => (
                     <button
                       key={s}

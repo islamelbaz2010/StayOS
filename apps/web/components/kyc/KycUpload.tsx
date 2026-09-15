@@ -37,6 +37,10 @@ export function KycUpload() {
 
   const currentStatus = kycStatus?.kyc_status ?? user?.kyc_status ?? "unverified";
   const latestDoc = kycStatus?.documents?.[0];
+  // Host onboarding requires a document that completed review — a verified
+  // flag without one (e.g. a seeded account) must still submit documents.
+  const hasVerifiedDoc =
+    kycStatus?.documents?.some((d) => d.status === "verified") ?? false;
 
   const validateFile = (file: File): string | null => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -140,7 +144,10 @@ export function KycUpload() {
     );
   }
 
-  if (currentStatus === "verified") {
+  if (
+    currentStatus === "verified" &&
+    (user?.role !== "guest" || hasVerifiedDoc)
+  ) {
     return (
       <div className="rounded-xl bg-success-50 p-6 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success-100">

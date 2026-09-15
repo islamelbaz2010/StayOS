@@ -182,6 +182,18 @@ async def upgrade_role(
         # they never become marketplace hosts through self-serve upgrade.
         raise ValidationError("Operational accounts cannot become hosts")
 
+    from app.kyc import repository as kyc_repository
+
+    # The verified flag alone is not sufficient — becoming a host requires
+    # an identity document that completed the review workflow (submitted
+    # and approved via /kyc), so every host transition is backed by a
+    # submission admins can review.
+    documents = await kyc_repository.get_kyc_documents_by_user_id(session, user.id)
+    if not any(d.status == "verified" for d in documents):
+        raise ValidationError(
+            "Identity verification requires a reviewed document before becoming a host"
+        )
+
     updated = await auth_repository.update_user(session, user, role=UserRole.HOST)
     await session.commit()
     return auth_schemas.RoleUpgradeResponse.model_validate(updated)

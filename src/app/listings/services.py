@@ -409,6 +409,11 @@ async def approve_listing(
         applied = await moderation.apply_pending_changes(session, unit, listing)
         if not applied:
             raise ValidationError("No pending changes to approve")
+        if unit.rejection_reason:
+            # Approval resolves any outstanding rejection record.
+            unit.rejection_reason = None
+            session.add(unit)
+            await session.flush()
     elif unit.status == UnitStatus.PENDING_VERIFICATION:
         unit = await listings_repository.set_unit_status(session, unit, UnitStatus.LISTED)
     else:
@@ -488,6 +493,11 @@ async def update_listing(
         stashed = moderation.stash_pending_changes(
             unit, listing, update_data, submitted_by=user.id
         )
+        if stashed and unit.rejection_reason:
+            # A prior change-set rejection is superseded once the host
+            # submits a new change-set for review.
+            unit.rejection_reason = None
+            session.add(unit)
         if direct:
             for field, value in direct.items():
                 if hasattr(unit, field):

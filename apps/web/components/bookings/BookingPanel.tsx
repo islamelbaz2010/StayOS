@@ -107,7 +107,6 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
   const totalPrice = quote?.accommodation_egp ?? listing.price * nights;
   const cleaningFee = quote?.cleaning_fee_egp ?? listing.cleaningFee ?? 0;
   const serviceFee = quote?.service_fee_egp ?? 0;
-  const serviceFeeWaived = quote?.service_fee_waived ?? false;
   const grandTotal = quote?.total_egp ?? totalPrice + cleaningFee + serviceFee;
 
   function validate(): boolean {
@@ -471,29 +470,6 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
                 </span>
                 <span className="font-medium text-brand-900">
                   {formatMoney(totalPrice, listing.currency, moneyLocale)}
-                </span>
-              </div>
-
-              {cleaningFee > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-neutral-600">{t("cleaningFee")}</span>
-                  <span className="font-medium text-brand-900">
-                    {formatMoney(cleaningFee, listing.currency, moneyLocale)}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex justify-between">
-                <span className="text-neutral-600">
-                  {t("serviceFee")}
-                  {serviceFeeWaived && (
-                    <span className="ms-1 text-xs text-success-600">
-                      ({t("serviceFeeWaived")})
-                    </span>
-                  )}
-                </span>
-                <span className="font-medium text-brand-900">
-                  {formatMoney(serviceFee, listing.currency, moneyLocale)}
                 </span>
               </div>
 

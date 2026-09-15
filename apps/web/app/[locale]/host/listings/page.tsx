@@ -250,9 +250,11 @@ function ListingCard({ listing }: { listing: HostListing }) {
           <span className="text-neutral-400"> / {t("night")}</span>
         </p>
 
-        {isRejected && listing.rejection_reason && (
+        {listing.rejection_reason && !listing.has_pending_changes && (
           <p className="mt-2 rounded-md bg-danger-50 p-2 text-xs text-danger-700">
-            <span className="font-semibold">{t("rejectionReason")}: </span>
+            <span className="font-semibold">
+              {isRejected ? t("rejectionReason") : t("changesRejected")}:{" "}
+            </span>
             {listing.rejection_reason}
           </p>
         )}

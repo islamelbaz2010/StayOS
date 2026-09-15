@@ -67,7 +67,12 @@ async def _reporter_role_for_booking(
     raise AuthorizationError("Not authorized to report a problem on this booking")
 
 
-def _to_response(dispute: Dispute, reporter: User | None = None, role: str | None = None) -> DisputeResponse:
+def _to_response(
+    dispute: Dispute,
+    reporter: User | None = None,
+    role: str | None = None,
+    include_internal: bool = False,
+) -> DisputeResponse:
     return DisputeResponse(
         id=dispute.id,
         reporter_id=dispute.reporter_id,
@@ -77,7 +82,8 @@ def _to_response(dispute: Dispute, reporter: User | None = None, role: str | Non
         category=dispute.category,
         description=dispute.description,
         status=dispute.status,
-        admin_notes=dispute.admin_notes,
+        # Internal staff notes are never exposed to reporters/hosts.
+        admin_notes=dispute.admin_notes if include_internal else None,
         resolved_by=dispute.resolved_by,
         resolved_at=dispute.resolved_at,
         # server_default columns are None until refresh on a fresh row.
@@ -167,7 +173,7 @@ async def get_dispute(
             select(User).where(User.id == dispute.reporter_id)
         )
         reporter = rep_result.scalar_one_or_none()
-    return _to_response(dispute, reporter=reporter)
+    return _to_response(dispute, reporter=reporter, include_internal=is_admin)
 
 
 async def list_disputes_admin(
@@ -195,7 +201,10 @@ async def list_disputes_admin(
         )
         reporters = {u.id: u for u in rep_result.scalars().all()}
 
-    return [_to_response(d, reporter=reporters.get(d.reporter_id)) for d in disputes], total
+    return [
+        _to_response(d, reporter=reporters.get(d.reporter_id), include_internal=True)
+        for d in disputes
+    ], total
 
 
 async def update_dispute_admin(
@@ -243,4 +252,69 @@ async def update_dispute_admin(
     rep_result = await session.execute(
         select(User).where(User.id == dispute.reporter_id)
     )
-    return _to_response(dispute, reporter=rep_result.scalar_one_or_none())
+    reporter = rep_result.scalar_one_or_none()
+
+    if request.reply:
+        await _deliver_reply(session, admin, dispute, reporter, request.reply)
+
+    return _to_response(
+        dispute, reporter=reporter, include_internal=True
+    )
+
+
+async def _deliver_reply(
+    session: AsyncSession,
+    admin: User,
+    dispute: Dispute,
+    reporter: User | None,
+    reply_text: str,
+) -> None:
+    """Deliver an admin/staff reply to the dispute reporter's Messages.
+
+    Uses the existing SUPPORT conversation contract: the reporter is a real
+    participant, so the reply appears in their Messages list and participates
+    in the existing unread/notification path. Only the user-facing reply is
+    delivered — admin_notes remain internal to the dispute record.
+    """
+    from app.messages import repository as messages_repository
+    from app.messages import services as messages_services
+    from app.messages.constants import MessageStatus, ParticipantRole
+
+    if reporter is None or reporter.id == admin.id:
+        return
+
+    booking = await _get_booking(session, dispute.booking_id)
+    try:
+        reporter_role = await _reporter_role_for_booking(session, reporter, booking)
+    except AuthorizationError:
+        # Reporter's booking relationship changed since filing — still
+        # deliver the reply to their Messages as a guest-side thread.
+        reporter_role = "guest"
+
+    conversation = await messages_repository.get_or_create_support_conversation(
+        session,
+        context_booking_id=booking.id,
+        unit_id=booking.unit_id,
+        staff_user_id=admin.id,
+        target_user_id=reporter.id,
+        target_role=(
+            ParticipantRole.HOST if reporter_role == "host" else ParticipantRole.GUEST
+        ),
+    )
+
+    message = await messages_repository.create_message(
+        session,
+        conversation_id=conversation.id,
+        sender_id=admin.id,
+        sender_role=ParticipantRole.SUPPORT,
+        content=reply_text,
+        status=MessageStatus.SENT,
+    )
+
+    conversation.updated_at = datetime.now(UTC)
+    session.add(conversation)
+    await session.flush()
+
+    await messages_services._notify_message_recipients(
+        session, conversation, admin, message
+    )

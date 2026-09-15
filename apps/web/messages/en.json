@@ -139,7 +139,8 @@
     "readOnlyScope": "You can view this listing but your co-host scope does not allow editing it.",
     "notEditable": "This listing is read-only for your role.",
     "instantBook": "Instant Book",
-    "pendingReview": "Changes pending review"
+    "pendingReview": "Changes pending review",
+    "changesRejected": "Changes rejected"
   },
   "listingForm": {
     "createTitle": "Create New Listing",
@@ -780,6 +781,7 @@
   },
   "booking": {
     "title": "Request to book",
+    "perNight": "per night",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "guests": "Guests",
@@ -1592,7 +1594,11 @@
       "host": "Host",
       "guest": "Guest",
       "other": "Other"
-    }
+    },
+    "replyToReporter": "Reply to reporter",
+    "replyPlaceholder": "Write a reply the guest/host will see in their Messages…",
+    "replyHint": "Sent to the reporter's Messages. Admin notes above stay internal.",
+    "sendReply": "Send reply"
   },
   "adminStaff": {
     "title": "Staff",

@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 
 const DEV_USERS = [
   { id: "seed-admin-0000-0000-000000000001", label: "Admin" },
+  { id: "seed-staff-0000-0000-000000000001", label: "Staff" },
   { id: "seed-host-0000-0000-000000000002", label: "Host" },
   { id: "seed-accept-gues-0000-000000000001", label: "Guest" },
 ];

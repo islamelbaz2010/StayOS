@@ -126,6 +126,14 @@ async def test_create_listing(fake_session: AsyncMock, monkeypatch) -> None:
     monkeypatch.setattr(
         listings.repository, "create_listing", AsyncMock(return_value=unit)
     )
+    # session.refresh is a no-op on the mock session — the unit already
+    # has listing/photos populated via _make_unit().
+    fake_session.refresh = AsyncMock(return_value=None)
+    # _fetch_host returns a User for _to_listing_response.
+    host = _make_user()
+    monkeypatch.setattr(
+        "app.listings.services._fetch_host", AsyncMock(return_value=host)
+    )
 
     request = ListingCreate(
         property_type="APARTMENT",

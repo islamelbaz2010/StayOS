@@ -923,10 +923,13 @@ def test_google_places_adapter_prefers_places_env_var(monkeypatch):
     assert adapter.source_status == SourceStatus.ENABLED
     assert adapter.is_available()
 
+    # No silent fallback: a Maps credential alone must not enable the
+    # server-side Places adapter (the two keys are intentionally separate).
     monkeypatch.setattr(settings, "GOOGLE_PLACES_API_KEY", "")
     monkeypatch.setattr(settings, "GOOGLE_MAPS_API_KEY", "mk-456")
-    fallback = GooglePlacesAdapter()
-    assert fallback.is_available()
+    no_fallback = GooglePlacesAdapter()
+    assert no_fallback.source_status == SourceStatus.REQUIRES_CREDENTIALS
+    assert not no_fallback.is_available()
 
     monkeypatch.setattr(settings, "GOOGLE_MAPS_API_KEY", "")
     missing = GooglePlacesAdapter()

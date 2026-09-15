@@ -87,11 +87,12 @@ class GooglePlacesAdapter(SourceAdapter):
     source_status: SourceStatus = SourceStatus.REQUIRES_CREDENTIALS
 
     def __init__(self, api_key: str | None = None) -> None:
+        # Server-side Places credential only. No fallback to
+        # GOOGLE_MAPS_API_KEY: the two credentials are intentionally
+        # separate (the Maps key may be browser-restricted and the map
+        # surfaces use keyless Leaflet/Nominatim anyway).
         self._api_key = (
-            api_key
-            or getattr(settings, "GOOGLE_PLACES_API_KEY", "")
-            or getattr(settings, "GOOGLE_MAPS_API_KEY", "")
-            or None
+            api_key or getattr(settings, "GOOGLE_PLACES_API_KEY", "") or None
         )
         if self._api_key:
             self.source_status = SourceStatus.ENABLED

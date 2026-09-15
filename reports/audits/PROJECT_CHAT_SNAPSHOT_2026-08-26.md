@@ -2340,7 +2340,7 @@ File
 
 ملحوظة فقط
 بالنسبة ل Real phone → OTP → verification ممكن نستخدم akedly
-Google Maps API key=AIzaSyCGpKjWlaUZucxHVfP7NEyNzsZDOQLb-PI
+Google Maps API key=<redacted>
 خد انت قرارك زي متشوفه مناسب عشان منسرحش في خطوات مش مهمه حاليا وابعتلي ببرومبت 
 STAYOS_V1_RELEASE_AND_COMMERCIAL_READINESS_2026-08-23.md
 File
@@ -5392,7 +5392,7 @@ File
 
 ملحوظة فقط
 بالنسبة ل Real phone → OTP → verification ممكن نستخدم akedly
-Google Maps API key=AIzaSyCGpKjWlaUZucxHVfP7NEyNzsZDOQLb-PI
+Google Maps API key=<redacted>
 خد انت قرارك زي متشوفه مناسب عشان منسرحش في خطوات مش مهمه حاليا وابعتلي ببرومبت 
 STAYOS_V1_RELEASE_AND_COMMERCIAL_READINESS_2026-08-23.md
 File

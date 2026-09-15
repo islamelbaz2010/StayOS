@@ -137,9 +137,18 @@ export function Header() {
           {t("becomeHost")}
         </Link>
       )}
-      {isAuthenticated && (
+      {isAuthenticated && user?.role === "guest" && (
         <Link
           href={`/${locale}/payments`}
+          className="text-sm font-medium text-neutral-700 hover:text-accent-600"
+          onClick={() => setMobileOpen(false)}
+        >
+          {t("payments")}
+        </Link>
+      )}
+      {isAuthenticated && user?.role === "host" && (
+        <Link
+          href={`/${locale}/host/earnings`}
           className="text-sm font-medium text-neutral-700 hover:text-accent-600"
           onClick={() => setMobileOpen(false)}
         >
@@ -333,9 +342,18 @@ export function Header() {
                 {t("becomeHost")}
               </Link>
             )}
-            {isAuthenticated && (
+            {isAuthenticated && user?.role === "guest" && (
               <Link
                 href={`/${locale}/payments`}
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                onClick={() => setMobileOpen(false)}
+              >
+                {t("payments")}
+              </Link>
+            )}
+            {isAuthenticated && user?.role === "host" && (
+              <Link
+                href={`/${locale}/host/earnings`}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >

@@ -645,3 +645,98 @@ async def test_role_upgrade_rejects_operational_accounts(
             await upgrade_role(
                 RoleUpgradeRequest(role=UserRole.HOST), user, fake_session
             )
+
+
+# ============================================================
+# KYC INITIATE — NO LAZY RELATIONSHIP IO
+# ============================================================
+
+
+@pytest.mark.asyncio
+async def test_initiate_kyc_fetches_account_without_lazy_load(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """``user.account`` is a lazy relationship — reading it inside the async
+    session raises MissingGreenlet (the production 500 behind the reported
+    CORS failure). The service must fetch the account via the repository."""
+    from app.auth.models import Account
+    from app.kyc import services as kyc_services
+    from app.kyc.schemas import KycInitiateRequest
+
+    user = _make_user(role=UserRole.GUEST)
+
+    account = Account(id="acct-1", user_id=user.id)
+    get_account = AsyncMock(return_value=account)
+    monkeypatch.setattr(
+        "app.auth.repository.get_account_by_user_id", get_account
+    )
+    document = KycDocument(
+        id=str(uuid.uuid4()),
+        user_id=user.id,
+        account_id=account.id,
+        document_type="national_id",
+        document_number=None,
+        status="unverified",
+    )
+    create_doc = AsyncMock(return_value=document)
+    monkeypatch.setattr(
+        "app.kyc.repository.create_kyc_document", create_doc
+    )
+    monkeypatch.setattr(
+        "app.kyc.repository.update_kyc_document", AsyncMock(return_value=document)
+    )
+    monkeypatch.setattr(
+        kyc_services,
+        "_generate_presigned_put_url",
+        lambda bucket, key: "https://s3.example.com/presigned",
+    )
+
+    result = await kyc_services.initiate_kyc_document(
+        fake_session, user, KycInitiateRequest(document_type="national_id")
+    )
+
+    get_account.assert_awaited_once()
+    assert get_account.await_args.args[1] == user.id
+    assert create_doc.await_args.kwargs["account_id"] == "acct-1"
+    assert result.document_id == document.id
+
+
+@pytest.mark.asyncio
+async def test_initiate_kyc_allows_missing_account(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Users without an Account row still initiate KYC (account_id=None)."""
+    from app.kyc import services as kyc_services
+    from app.kyc.schemas import KycInitiateRequest
+
+    user = _make_user(role=UserRole.GUEST)
+    monkeypatch.setattr(
+        "app.auth.repository.get_account_by_user_id", AsyncMock(return_value=None)
+    )
+    document = KycDocument(
+        id=str(uuid.uuid4()),
+        user_id=user.id,
+        account_id=None,
+        document_type="national_id",
+        document_number=None,
+        status="unverified",
+    )
+    create_doc = AsyncMock(return_value=document)
+    monkeypatch.setattr(
+        "app.kyc.repository.create_kyc_document", create_doc
+    )
+    monkeypatch.setattr(
+        "app.kyc.repository.update_kyc_document", AsyncMock(return_value=document)
+    )
+    monkeypatch.setattr(
+        kyc_services,
+        "_generate_presigned_put_url",
+        lambda bucket, key: "https://s3.example.com/presigned",
+    )
+
+    result = await kyc_services.initiate_kyc_document(
+        fake_session, user, KycInitiateRequest(document_type="national_id")
+    )
+
+    assert create_doc.await_args.kwargs["account_id"] is None
+    assert result.document_id == document.id

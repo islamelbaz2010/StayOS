@@ -88,6 +88,9 @@ def test_initiate_kyc(kyc_client: TestClient, monkeypatch) -> None:
     monkeypatch.setattr(
         "app.auth.repository.get_user_by_id", AsyncMock(return_value=user)
     )
+    monkeypatch.setattr(
+        "app.auth.repository.get_account_by_user_id", AsyncMock(return_value=None)
+    )
 
     token = auth_services.create_access_token(user)
     response = kyc_client.post(

@@ -72,12 +72,15 @@ async def initiate_kyc_document(
     user: User,
     request: KycInitiateRequest,
 ) -> KycInitiateResponse:
+    # ``user.account`` is a lazy relationship — accessing it here would run
+    # sync IO inside the async session (MissingGreenlet). Fetch explicitly.
+    account = await auth_repository.get_account_by_user_id(session, user.id)
     document = await kyc_repository.create_kyc_document(
         session,
         user_id=user.id,
         document_type=request.document_type,
         document_number=request.document_number,
-        account_id=user.account.id if user.account else None,
+        account_id=account.id if account else None,
     )
 
     front_key = _kyc_object_key(user.id, document.id, "front")

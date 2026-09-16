@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any, cast
@@ -144,12 +145,38 @@ def _validation_error_handler(request: Request[Any], exc: Exception) -> JSONResp
     )
 
 
+def _cors_headers_for_origin(request: Request[Any]) -> dict[str, str]:
+    """Reflect CORS headers for an allowed Origin.
+
+    Handlers for ``Exception`` run in Starlette's outermost
+    ``ServerErrorMiddleware`` — outside ``CORSMiddleware`` — so unhandled
+    500s would otherwise lack ``Access-Control-Allow-Origin`` and browsers
+    would report a misleading CORS failure instead of the real error.
+    """
+    origin = request.headers.get("origin")
+    if not origin:
+        return {}
+    allowed = origin in settings.cors_origins_list
+    if not allowed and settings.CORS_ORIGIN_REGEX:
+        allowed = re.fullmatch(settings.CORS_ORIGIN_REGEX, origin) is not None
+    if not allowed:
+        return {}
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Vary": "Origin",
+    }
+
+
 def _generic_exception_handler(request: Request[Any], exc: Exception) -> JSONResponse:
-    return _error_response(
+    response = _error_response(
         "INTERNAL_ERROR",
         "Internal server error",
         status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
+    for key, value in _cors_headers_for_origin(request).items():
+        response.headers[key] = value
+    return response
 
 
 app.add_exception_handler(StayOSError, _stayos_error_handler)

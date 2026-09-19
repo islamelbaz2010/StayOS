@@ -233,6 +233,7 @@ Documents covering the technical build, standards, and architecture.
 | [`docs/02_product/ENGINEERING_BACKLOG.md`](02_product/ENGINEERING_BACKLOG.md) | Epic-level Phase 1 engineering tasks | Ph1 | Active |
 | [`docs/02_product/FEATURE_DEPENDENCY_MAP.md`](02_product/FEATURE_DEPENDENCY_MAP.md) | Feature build order and dependencies | Ph1 | Active |
 | [`docs/architecture/adr/ADR-template.md`](architecture/adr/ADR-template.md) | Architecture Decision Record template | Ph1+ | Template |
+| [`docs/RELEASE_TECHNICAL_HANDOFF.md`](RELEASE_TECHNICAL_HANDOFF.md) | Evidence-based release handoff: environments, URLs, providers, security, blockers, onboarding | Ph0→Ph1 | Active |
 | [`docs/phase--1/risks/08_TECHNICAL_RISKS.md`](phase--1/risks/08_TECHNICAL_RISKS.md) | 100 technical risks to plan against | Ph-1 | Complete |
 | [`archive/legacy/phase-3-customer/ENGINEERING_BACKLOG.md`](../archive/legacy/phase-3-customer/ENGINEERING_BACKLOG.md) | Legacy engineering backlog — superseded | Archive | Archive |
 

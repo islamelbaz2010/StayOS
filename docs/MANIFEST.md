@@ -998,4 +998,21 @@ This manifest lists every document in the StayOS repository. It is the source of
 
 ---
 
+## Release / Handoff
+
+### docs/RELEASE_TECHNICAL_HANDOFF.md
+
+| Field | Value |
+|-------|-------|
+| **Path** | `docs/RELEASE_TECHNICAL_HANDOFF.md` |
+| **Domain** | Engineering / Release |
+| **Phase** | Phase 0 → Phase 1 transition |
+| **Status** | Active — canonical evidence-based release handoff |
+| **Purpose** | Complete technical handoff for a senior developer or technical reviewer before public launch: project identity, URL inventory, environment matrix, architecture, database, API inventory, test accounts, seed data, deployment/CI-CD, mobile, external services, security, manual actions, release blockers, developer onboarding. Evidence-only; unknowns marked explicitly. |
+| **Owner** | Founder → Engineering |
+| **Dependencies** | `MASTER_CONTEXT.md`, `DECISION_LOG.md`, `TECH_STACK.md`, `docs/legal/*`, `.ai/CURRENT/*`, `infra/terraform/*`, Railway/Vercel deployment state |
+| **Consumers** | Incoming senior developers, technical reviewers, release managers |
+
+---
+
 **This manifest is the authoritative record of what exists in this repository. Update it whenever a document is added, removed, or changes status.**

@@ -284,6 +284,7 @@ Documents the engineering team executes against and contributes to.
 | `docs/03_customer_experience/EXPERIENCE_RULES.md` | Founder → Product | Engineering |
 | `docs/03_customer_experience/DELIGHT_ENGINE.md` | Founder → Design | Product |
 | `docs/architecture/adr/ADR-template.md` | Founder → CTO | — |
+| `docs/RELEASE_TECHNICAL_HANDOFF.md` | Founder → Engineering | CTO, Legal |
 | `docs/standards/*` (6 files) | Founder → CTO | Engineering |
 | `docs/templates/prompt_template.md` | Founder → AI | — |
 | `research/*` (5 templates) | Founder (Research) | — |

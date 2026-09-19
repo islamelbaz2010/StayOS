@@ -19,7 +19,12 @@ from app.payments import services as payment_services
 from app.payments.constants import PaymentMethod, PaymentStatus
 from app.payments.models import Payment
 from app.payments.schemas import PaymentListItem, PaymentProofPresignResponse, PaymentResponse
-from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
+from app.shared.exceptions import (
+    AuthorizationError,
+    NotFoundError,
+    ServiceUnavailableError,
+    ValidationError,
+)
 
 
 def test_build_instructions_uses_settings_payment_destination(monkeypatch) -> None:
@@ -314,6 +319,46 @@ async def test_presign_proof_invalid_content_type(fake_session: AsyncMock, monke
     with pytest.raises(ValidationError):
         await payment_services.presign_proof_upload(
             fake_session, guest, payment.id, "receipt.txt", "text/plain"
+        )
+
+
+@pytest.mark.asyncio
+async def test_presign_proof_storage_unconfigured(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Same production failure class as KYC: Railway defines the AWS/S3
+    variables but leaves them empty, so boto3 built `https://s3..amazonaws.com`
+    and crashed with an unhandled ValueError → HTTP 500. Presign upload and
+    download must fail fast with a controlled ServiceUnavailableError
+    (→ HTTP 503)."""
+    from app.config import settings
+
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest)
+    payment = _make_payment(booking, guest, host)
+    payment.proof_s3_key = "payments/x/proof_abc.jpg"
+
+    monkeypatch.setattr(
+        "app.payments.services.payments_repository.get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+    for name in (
+        "S3_PAYMENT_PROOF_BUCKET",
+        "AWS_REGION",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+    ):
+        monkeypatch.setattr(settings, name, "")
+
+    with pytest.raises(ServiceUnavailableError):
+        await payment_services.presign_proof_upload(
+            fake_session, guest, payment.id, "receipt.jpg", "image/jpeg"
+        )
+    with pytest.raises(ServiceUnavailableError):
+        await payment_services.presign_proof_download(
+            fake_session, guest, payment.id
         )
 
 

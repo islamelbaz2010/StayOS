@@ -18,7 +18,12 @@ from app.listings import repository as listings_repository
 from app.listings import pricing
 from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing, UnitPhoto
-from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
+from app.shared.exceptions import (
+    AuthorizationError,
+    NotFoundError,
+    ServiceUnavailableError,
+    ValidationError,
+)
 from app.shared.models import OutboxEvent
 
 from . import repository as payments_repository
@@ -60,7 +65,26 @@ def _manual_instructions_en() -> str:
     )
 
 
+def _require_storage_config() -> None:
+    missing = [
+        name
+        for name in (
+            "S3_PAYMENT_PROOF_BUCKET",
+            "AWS_REGION",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+        )
+        if not getattr(settings, name)
+    ]
+    if missing:
+        raise ServiceUnavailableError(
+            "Payment proof storage is not configured "
+            f"(missing: {', '.join(missing)})"
+        )
+
+
 def _s3_client() -> Any:
+    _require_storage_config()
     return boto3.client(
         "s3",
         region_name=settings.AWS_REGION,

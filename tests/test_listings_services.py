@@ -553,6 +553,67 @@ async def test_generate_photo_presigned_url_admin(
     assert result.photo_key.endswith(".png")
 
 
+@pytest.mark.asyncio
+async def test_generate_photo_presigned_url_storage_unconfigured(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Same production failure class as KYC: Railway defines the AWS/S3
+    variables but leaves them empty, so boto3 built `https://s3..amazonaws.com`
+    and crashed with an unhandled ValueError → HTTP 500 on /photos/presign.
+    Presigning must fail fast with a controlled ServiceUnavailableError
+    (→ HTTP 503) instead."""
+    from app import listings
+    from app.config import settings
+    from app.shared.exceptions import ServiceUnavailableError
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    for name in (
+        "S3_LISTINGS_BUCKET",
+        "AWS_REGION",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+    ):
+        monkeypatch.setattr(settings, name, "")
+
+    from app.listings.services import generate_photo_presigned_url
+
+    with pytest.raises(ServiceUnavailableError):
+        await generate_photo_presigned_url(
+            fake_session, _make_user(), "unit-1", "photo.jpg", "image/jpeg"
+        )
+
+
+@pytest.mark.asyncio
+async def test_generate_photo_presigned_url_rejects_unsupported_mime(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """The frontend only accepts jpeg/png/webp; the presign endpoint must
+    enforce the same allowlist server-side so a caller cannot sign an
+    arbitrary Content-Type (e.g. text/html) into the listings bucket."""
+    from app import listings
+    from app.shared.exceptions import ValidationError
+
+    unit = _make_unit()
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    mock_s3 = MagicMock()
+    monkeypatch.setattr(
+        "app.listings.services._s3_client", MagicMock(return_value=mock_s3)
+    )
+
+    from app.listings.services import generate_photo_presigned_url
+
+    with pytest.raises(ValidationError):
+        await generate_photo_presigned_url(
+            fake_session, _make_user(), "unit-1", "page.html", "text/html"
+        )
+    mock_s3.generate_presigned_url.assert_not_called()
+
+
 def _make_photo(
     photo_id: str = "photo-1",
     unit_id: str = "unit-1",

@@ -28,7 +28,12 @@ from app.listings.models import Unit, UnitListing
 from app.messages.constants import ConversationType, ParticipantRole
 from app.messages.models import Conversation, ConversationParticipant, Message
 from app.reviews import repository as reviews_repository
-from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
+from app.shared.exceptions import (
+    AuthorizationError,
+    NotFoundError,
+    ServiceUnavailableError,
+    ValidationError,
+)
 
 from . import configuration as listing_configuration
 from . import pricing
@@ -59,9 +64,29 @@ from .schemas import (
 )
 
 _PHOTO_UPLOAD_TTL_SECONDS = 900
+_PHOTO_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+def _require_storage_config() -> None:
+    missing = [
+        name
+        for name in (
+            "S3_LISTINGS_BUCKET",
+            "AWS_REGION",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+        )
+        if not getattr(settings, name)
+    ]
+    if missing:
+        raise ServiceUnavailableError(
+            "Listing photo storage is not configured "
+            f"(missing: {', '.join(missing)})"
+        )
 
 
 def _s3_client() -> Any:
+    _require_storage_config()
     return boto3.client(
         "s3",
         region_name=settings.AWS_REGION,
@@ -1198,6 +1223,9 @@ async def generate_photo_presigned_url(
     if unit is None:
         raise NotFoundError("Listing not found")
     await assert_can_edit_listing(session, user, unit)
+
+    if content_type not in _PHOTO_CONTENT_TYPES:
+        raise ValidationError("Only JPG, PNG or WebP images are accepted")
 
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
     photo_key = f"listings/{unit_id}/photo_{uuid.uuid4().hex}.{ext}"

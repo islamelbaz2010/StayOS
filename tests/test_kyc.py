@@ -105,6 +105,68 @@ def test_initiate_kyc(kyc_client: TestClient, monkeypatch) -> None:
     assert data["upload_urls"]["front"] == "https://s3.example.com/presigned"
 
 
+def test_initiate_kyc_returns_503_when_storage_unconfigured(
+    kyc_client: TestClient, monkeypatch
+) -> None:
+    """Production regression: Railway has the AWS/S3 variables defined but
+    empty, so boto3 built `https://s3..amazonaws.com` and crashed with an
+    unhandled ValueError → HTTP 500. The endpoint must instead fail fast
+    with a controlled 503 before writing an orphan KYC document row."""
+    user = _make_user()
+
+    for name in (
+        "S3_KYC_BUCKET",
+        "AWS_REGION",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+    ):
+        monkeypatch.setattr(f"app.config.settings.{name}", "")
+
+    create_doc = AsyncMock()
+    monkeypatch.setattr("app.kyc.repository.create_kyc_document", create_doc)
+    monkeypatch.setattr(
+        "app.auth.repository.get_user_by_id", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(
+        "app.auth.repository.get_account_by_user_id", AsyncMock(return_value=None)
+    )
+
+    token = auth_services.create_access_token(user)
+    response = kyc_client.post(
+        "/api/v1/kyc/initiate",
+        json={"document_type": "national_id"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 503
+    create_doc.assert_not_awaited()
+
+
+def test_get_kyc_image_downloads_503_when_storage_unconfigured(
+    monkeypatch,
+) -> None:
+    from app.shared.exceptions import ServiceUnavailableError
+
+    for name in (
+        "S3_KYC_BUCKET",
+        "AWS_REGION",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+    ):
+        monkeypatch.setattr(f"app.config.settings.{name}", "")
+
+    document = _make_document("user-1")
+    monkeypatch.setattr(
+        "app.kyc.repository.get_kyc_document_by_id",
+        AsyncMock(return_value=document),
+    )
+
+    import asyncio
+
+    with pytest.raises(ServiceUnavailableError):
+        asyncio.run(kyc_services.get_kyc_document_image_downloads(None, document.id))
+
+
 def test_submit_kyc(kyc_client: TestClient, monkeypatch) -> None:
     user = _make_user()
     document = _make_document(user.id)

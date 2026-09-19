@@ -33,6 +33,10 @@ class PaymentError(StayOSError):
     pass
 
 
+class ServiceUnavailableError(StayOSError):
+    pass
+
+
 def to_http_exception(exc: StayOSError) -> HTTPException:
     if isinstance(exc, NotFoundError):
         return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
@@ -48,5 +52,7 @@ def to_http_exception(exc: StayOSError) -> HTTPException:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     if isinstance(exc, PaymentError):
         return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
+    if isinstance(exc, ServiceUnavailableError):
+        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
     return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))

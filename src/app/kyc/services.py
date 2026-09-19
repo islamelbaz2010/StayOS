@@ -12,13 +12,36 @@ from app.kyc import repository as kyc_repository
 from app.kyc import schemas as kyc_schemas
 from app.kyc.models import KycDocument
 from app.kyc.schemas import KycInitiateRequest, KycInitiateResponse, KycUploadUrls
-from app.shared.exceptions import NotFoundError, ValidationError
+from app.shared.exceptions import (
+    NotFoundError,
+    ServiceUnavailableError,
+    ValidationError,
+)
 
 _UPLOAD_TTL_SECONDS = 900
 _DOWNLOAD_TTL_SECONDS = 900
 
 
+def _require_storage_config() -> None:
+    missing = [
+        name
+        for name in (
+            "S3_KYC_BUCKET",
+            "AWS_REGION",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+        )
+        if not getattr(settings, name)
+    ]
+    if missing:
+        raise ServiceUnavailableError(
+            "KYC document storage is not configured "
+            f"(missing: {', '.join(missing)})"
+        )
+
+
 def _s3_client() -> Any:
+    _require_storage_config()
     return boto3.client(
         "s3",
         region_name=settings.AWS_REGION,
@@ -72,6 +95,10 @@ async def initiate_kyc_document(
     user: User,
     request: KycInitiateRequest,
 ) -> KycInitiateResponse:
+    # Fail fast before writing a KYC document row when storage is not
+    # configured — otherwise presigning crashes (500) and orphans the row.
+    _require_storage_config()
+
     # ``user.account`` is a lazy relationship — accessing it here would run
     # sync IO inside the async session (MissingGreenlet). Fetch explicitly.
     account = await auth_repository.get_account_by_user_id(session, user.id)

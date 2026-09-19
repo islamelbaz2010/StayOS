@@ -121,3 +121,38 @@ def test_generic_500_omits_acao_without_origin() -> None:
 
     response = _generic_exception_handler(_request_with_origin(None), Exception())
     assert "access-control-allow-origin" not in response.headers
+
+
+def test_project_specific_regex_allows_current_preview() -> None:
+    from app.main import _cors_headers_for_origin
+    from app.shared.middleware import setup_cors
+    from fastapi import FastAPI
+
+    origin = "https://stayos-814l6q390-islam-elbaz-s-projects.vercel.app"
+    with patch.object(settings, "CORS_ORIGINS", ""), patch.object(
+        settings,
+        "CORS_ORIGIN_REGEX",
+        r"https://stayos-[^.]+-islam-elbaz-s-projects\.vercel\.app",
+    ):
+        headers = _cors_headers_for_origin(_request_with_origin(origin))
+        assert headers["Access-Control-Allow-Origin"] == origin
+        assert headers["Access-Control-Allow-Credentials"] == "true"
+        # Verify the same regex is wired through setup_cors to the middleware.
+        app = FastAPI()
+        setup_cors(app)
+        mw = next(m for m in app.user_middleware if m.cls.__name__ == "CORSMiddleware")
+        assert mw.kwargs["allow_origin_regex"] == settings.CORS_ORIGIN_REGEX
+
+
+def test_project_specific_regex_rejects_arbitrary_vercel_subdomain() -> None:
+    from app.main import _cors_headers_for_origin
+
+    with patch.object(settings, "CORS_ORIGINS", ""), patch.object(
+        settings,
+        "CORS_ORIGIN_REGEX",
+        r"https://stayos-[^.]+-islam-elbaz-s-projects\.vercel\.app",
+    ):
+        headers = _cors_headers_for_origin(
+            _request_with_origin("https://evil-attacker.vercel.app")
+        )
+    assert not headers

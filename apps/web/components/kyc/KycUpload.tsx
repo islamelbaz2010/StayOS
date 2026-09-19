@@ -113,6 +113,8 @@ export function KycUpload() {
     try {
       const initiate = await initiateMutation.mutateAsync({
         document_type: "national_id",
+        front_content_type: frontFile.type,
+        selfie_content_type: selfieFile.type,
       });
 
       await uploadToS3(initiate.upload_urls.front, frontFile, "front");

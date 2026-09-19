@@ -82,6 +82,9 @@ export function useInitiateKyc() {
     mutationFn: async (payload: {
       document_type: string;
       document_number?: string;
+      front_content_type?: string;
+      back_content_type?: string;
+      selfie_content_type?: string;
     }) => {
       const { data } = await api.post<KycInitiateResponse>("/kyc/initiate", payload);
       return data;

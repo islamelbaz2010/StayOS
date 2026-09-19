@@ -72,11 +72,11 @@ def _kyc_object_key(user_id: str, document_id: str, side: str) -> str:
     return f"kyc/{user_id}/{document_id}/{side}.jpg"
 
 
-def _generate_presigned_put_url(bucket: str, key: str) -> str:
+def _generate_presigned_put_url(bucket: str, key: str, content_type: str) -> str:
     client = _s3_client()
     return client.generate_presigned_url(
         "put_object",
-        Params={"Bucket": bucket, "Key": key, "ContentType": "image/jpeg"},
+        Params={"Bucket": bucket, "Key": key, "ContentType": content_type},
         ExpiresIn=_UPLOAD_TTL_SECONDS,
     )
 
@@ -114,9 +114,15 @@ async def initiate_kyc_document(
     back_key = _kyc_object_key(user.id, document.id, "back")
     selfie_key = _kyc_object_key(user.id, document.id, "selfie")
 
-    front_url = _generate_presigned_put_url(settings.S3_KYC_BUCKET, front_key)
-    back_url = _generate_presigned_put_url(settings.S3_KYC_BUCKET, back_key)
-    selfie_url = _generate_presigned_put_url(settings.S3_KYC_BUCKET, selfie_key)
+    front_url = _generate_presigned_put_url(
+        settings.S3_KYC_BUCKET, front_key, request.front_content_type
+    )
+    back_url = _generate_presigned_put_url(
+        settings.S3_KYC_BUCKET, back_key, request.back_content_type
+    )
+    selfie_url = _generate_presigned_put_url(
+        settings.S3_KYC_BUCKET, selfie_key, request.selfie_content_type
+    )
 
     await kyc_repository.update_kyc_document(
         session,

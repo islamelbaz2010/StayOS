@@ -688,7 +688,7 @@ async def test_initiate_kyc_fetches_account_without_lazy_load(
     monkeypatch.setattr(
         kyc_services,
         "_generate_presigned_put_url",
-        lambda bucket, key: "https://s3.example.com/presigned",
+        lambda bucket, key, content_type: "https://s3.example.com/presigned",
     )
 
     result = await kyc_services.initiate_kyc_document(
@@ -731,7 +731,7 @@ async def test_initiate_kyc_allows_missing_account(
     monkeypatch.setattr(
         kyc_services,
         "_generate_presigned_put_url",
-        lambda bucket, key: "https://s3.example.com/presigned",
+        lambda bucket, key, content_type: "https://s3.example.com/presigned",
     )
 
     result = await kyc_services.initiate_kyc_document(

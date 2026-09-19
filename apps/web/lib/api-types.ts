@@ -1672,6 +1672,8 @@ export interface components {
       status?: components["schemas"]["DisputeStatus"] | null;
       /** Admin Notes */
       admin_notes?: string | null;
+      /** Reply */
+      reply?: string | null;
     };
     /**
      * DisputeCategory
@@ -2547,6 +2549,24 @@ export interface components {
       document_type: components["schemas"]["KycDocumentType"];
       /** Document Number */
       document_number?: string | null;
+      /**
+       * Front Content Type
+       * @default image/jpeg
+       * @enum {string}
+       */
+      front_content_type?: "image/jpeg" | "image/png" | "image/webp";
+      /**
+       * Back Content Type
+       * @default image/jpeg
+       * @enum {string}
+       */
+      back_content_type?: "image/jpeg" | "image/png" | "image/webp";
+      /**
+       * Selfie Content Type
+       * @default image/jpeg
+       * @enum {string}
+       */
+      selfie_content_type?: "image/jpeg" | "image/png" | "image/webp";
     };
     /** KycInitiateResponse */
     KycInitiateResponse: {

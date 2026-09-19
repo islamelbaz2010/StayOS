@@ -142,6 +142,114 @@ def test_initiate_kyc_returns_503_when_storage_unconfigured(
     create_doc.assert_not_awaited()
 
 
+@pytest.mark.parametrize(
+    "content_type", ["image/jpeg", "image/png", "image/webp"]
+)
+def test_initiate_kyc_presigns_with_requested_content_type(
+    kyc_client: TestClient, monkeypatch, content_type: str
+) -> None:
+    """The presigned PUT must carry the exact MIME type the browser will
+    send — S3 signs ContentType, so a mismatch yields SignatureDoesNotMatch."""
+    user = _make_user()
+    document = _make_document(user.id)
+    captured: list[dict] = []
+
+    presign_client = MagicMock()
+    presign_client.generate_presigned_url = (
+        lambda operation, Params, ExpiresIn: captured.append(Params)
+        or "https://s3.example.com/presigned"
+    )
+
+    monkeypatch.setattr(
+        "app.kyc.repository.create_kyc_document", AsyncMock(return_value=document)
+    )
+    monkeypatch.setattr(
+        "app.kyc.repository.update_kyc_document", AsyncMock(return_value=document)
+    )
+    monkeypatch.setattr(
+        "app.kyc.services.boto3.client", lambda *a, **k: presign_client
+    )
+    monkeypatch.setattr(
+        "app.auth.repository.get_user_by_id", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(
+        "app.auth.repository.get_account_by_user_id", AsyncMock(return_value=None)
+    )
+
+    token = auth_services.create_access_token(user)
+    response = kyc_client.post(
+        "/api/v1/kyc/initiate",
+        json={
+            "document_type": "national_id",
+            "front_content_type": content_type,
+            "back_content_type": content_type,
+            "selfie_content_type": content_type,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert len(captured) == 3
+    assert all(p["ContentType"] == content_type for p in captured)
+
+
+def test_initiate_kyc_rejects_unsupported_content_type(
+    kyc_client: TestClient, monkeypatch
+) -> None:
+    user = _make_user()
+    monkeypatch.setattr(
+        "app.auth.repository.get_user_by_id", AsyncMock(return_value=user)
+    )
+
+    token = auth_services.create_access_token(user)
+    response = kyc_client.post(
+        "/api/v1/kyc/initiate",
+        json={
+            "document_type": "national_id",
+            "front_content_type": "image/gif",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_process_kyc_document_ml_failure_keeps_pending(
+    monkeypatch,
+) -> None:
+    """When Textract/Rekognition are unreachable (e.g. unavailable in the
+    deployment region) the document must stay `pending` for manual admin
+    review — never falsely verified, never deleted."""
+    user = _make_user()
+    document = _make_document(user.id, status="pending")
+
+    update_doc = AsyncMock()
+    update_user = AsyncMock()
+    monkeypatch.setattr(
+        "app.kyc.repository.get_kyc_document_by_id",
+        AsyncMock(return_value=document),
+    )
+    monkeypatch.setattr("app.kyc.repository.update_kyc_document", update_doc)
+    monkeypatch.setattr("app.auth.repository.update_user", update_user)
+
+    textract_mock = MagicMock()
+    textract_mock.analyze_id.side_effect = Exception(
+        "Could not connect to the endpoint URL"
+    )
+    monkeypatch.setattr(
+        "app.kyc.services.boto3.client", lambda *a, **k: textract_mock
+    )
+
+    import asyncio
+
+    with pytest.raises(Exception, match="Could not connect"):
+        asyncio.run(kyc_services.process_kyc_document(None, document.id))
+
+    assert document.status == "pending"
+    update_doc.assert_not_awaited()
+    update_user.assert_not_awaited()
+
+
 def test_get_kyc_image_downloads_503_when_storage_unconfigured(
     monkeypatch,
 ) -> None:

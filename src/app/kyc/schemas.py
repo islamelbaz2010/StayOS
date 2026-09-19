@@ -1,13 +1,22 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
 from app.auth.constants import KycDocumentType, KycStatus
 
+KycImageContentType = Literal["image/jpeg", "image/png", "image/webp"]
+
 
 class KycInitiateRequest(BaseModel):
     document_type: KycDocumentType
     document_number: str | None = None
+    # Declared per-side MIME types are signed into the presigned PUT URLs;
+    # the browser must send the identical Content-Type or S3 rejects the
+    # upload (SignatureDoesNotMatch). Defaults keep existing clients valid.
+    front_content_type: KycImageContentType = "image/jpeg"
+    back_content_type: KycImageContentType = "image/jpeg"
+    selfie_content_type: KycImageContentType = "image/jpeg"
 
 
 class KycUploadUrls(BaseModel):

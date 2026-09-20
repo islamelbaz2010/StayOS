@@ -234,6 +234,8 @@ Documents covering the technical build, standards, and architecture.
 | [`docs/02_product/FEATURE_DEPENDENCY_MAP.md`](02_product/FEATURE_DEPENDENCY_MAP.md) | Feature build order and dependencies | Ph1 | Active |
 | [`docs/architecture/adr/ADR-template.md`](architecture/adr/ADR-template.md) | Architecture Decision Record template | Ph1+ | Template |
 | [`docs/RELEASE_TECHNICAL_HANDOFF.md`](RELEASE_TECHNICAL_HANDOFF.md) | Evidence-based release handoff: environments, URLs, providers, security, blockers, onboarding | Ph0→Ph1 | Active |
+| [`docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md`](benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md) | Airbnb 1:1 benchmark closure register — 204 requirements, statuses, gap classification, gate result | Ph0→Ph1 | Active |
+| [`docs/benchmark/STAYOS_DIFFERENTIATION_GATE.md`](benchmark/STAYOS_DIFFERENTIATION_GATE.md) | Differentiation gate rule + blank founder-idea framework | Ph1+ | Active (gated) |
 | [`docs/phase--1/risks/08_TECHNICAL_RISKS.md`](phase--1/risks/08_TECHNICAL_RISKS.md) | 100 technical risks to plan against | Ph-1 | Complete |
 | [`archive/legacy/phase-3-customer/ENGINEERING_BACKLOG.md`](../archive/legacy/phase-3-customer/ENGINEERING_BACKLOG.md) | Legacy engineering backlog — superseded | Archive | Archive |
 

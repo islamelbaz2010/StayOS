@@ -100,6 +100,25 @@ docs/03_customer_experience/CUSTOMER_JOURNEY_BIBLE.md
 
 ---
 
+## Benchmark Tree
+
+```
+docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md (benchmark register)
+│   (external authority: Airbnb documented product behavior;
+│    internal evidence: repository implementation on product-completion-review)
+│
+└── docs/benchmark/STAYOS_DIFFERENTIATION_GATE.md
+    (depends on: FINAL_AIRBNB_BENCHMARK_CLOSURE — gate opens when
+     no unresolved implementable benchmark gaps remain)
+
+docs/RELEASE_TECHNICAL_HANDOFF.md
+└── "FINAL PRODUCT BENCHMARK STATUS" section
+    (depends on: FINAL_AIRBNB_BENCHMARK_CLOSURE for product-gap state;
+     release blockers stay in the handoff itself)
+```
+
+---
+
 ## Cross-Domain Dependency Matrix
 
 | Document | Depends On | Consumed By |

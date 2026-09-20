@@ -1015,4 +1015,34 @@ This manifest lists every document in the StayOS repository. It is the source of
 
 ---
 
+## Benchmark
+
+### docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md
+
+| Field | Value |
+|-------|-------|
+| **Path** | `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` |
+| **Domain** | Product / Benchmark |
+| **Phase** | Phase 0 → Phase 1 transition |
+| **Status** | Active — authoritative Airbnb benchmark requirement register |
+| **Purpose** | Final closure register for the Airbnb 1:1 behavioral/product-depth benchmark: 204 requirements across 14 domains with per-requirement evidence, status categories, gap classification (implementable gaps / founder decisions / non-product blockers), and the gate result. |
+| **Owner** | Founder → Product Engineering |
+| **Dependencies** | Airbnb documented product behavior (external benchmark), repository implementation evidence, `docs/RELEASE_TECHNICAL_HANDOFF.md` |
+| **Consumers** | Founder, product engineering, technical reviewers |
+
+### docs/benchmark/STAYOS_DIFFERENTIATION_GATE.md
+
+| Field | Value |
+|-------|-------|
+| **Path** | `docs/benchmark/STAYOS_DIFFERENTIATION_GATE.md` |
+| **Domain** | Product / Strategy |
+| **Phase** | Phase 1+ |
+| **Status** | Active — gated framework, no ideas populated |
+| **Purpose** | Gate for founder differentiation work plus a blank structured framework for future founder ideas. Unlocks only when the benchmark register contains no unresolved implementable gaps. |
+| **Owner** | Founder |
+| **Dependencies** | `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` |
+| **Consumers** | Founder, product engineering |
+
+---
+
 **This manifest is the authoritative record of what exists in this repository. Update it whenever a document is added, removed, or changes status.**

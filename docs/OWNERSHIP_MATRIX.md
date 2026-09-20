@@ -285,6 +285,8 @@ Documents the engineering team executes against and contributes to.
 | `docs/03_customer_experience/DELIGHT_ENGINE.md` | Founder → Design | Product |
 | `docs/architecture/adr/ADR-template.md` | Founder → CTO | — |
 | `docs/RELEASE_TECHNICAL_HANDOFF.md` | Founder → Engineering | CTO, Legal |
+| `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` | Founder → Product Engineering | CTO |
+| `docs/benchmark/STAYOS_DIFFERENTIATION_GATE.md` | Founder | Product, CTO |
 | `docs/standards/*` (6 files) | Founder → CTO | Engineering |
 | `docs/templates/prompt_template.md` | Founder → AI | — |
 | `research/*` (5 templates) | Founder (Research) | — |

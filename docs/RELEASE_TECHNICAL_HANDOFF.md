@@ -371,6 +371,18 @@ Live DB fixture state is **PARTIALLY VERIFIED** — the seeds ran previously aga
 
 ---
 
+## FINAL PRODUCT BENCHMARK STATUS
+
+- **Benchmark status**: **PASSED — subject to founder decisions.** The Airbnb 1:1 behavioral/product-depth register is closed with **0 unresolved implementable benchmark gaps**. The two implementable gaps found during the closure audit (listing-page availability calendar; review keyword search) were implemented, tested, and verified in the same pass.
+- **Benchmark closure document**: `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` — 204 requirements across 14 domains; companion gate: `docs/benchmark/STAYOS_DIFFERENTIATION_GATE.md` (framework prepared, no ideas populated).
+- **Remaining product gaps**: none implementable. All remaining product-level items are founder decisions (LIST 3 of the register): guest-type split occupancy semantics, booking alterations, pre-approval, special offers, review report/moderation policy, length-of-stay discounts, smart pricing, multi-currency, KYC-ML architecture, Paymob-vs-Stripe processor choice.
+- **Founder decisions**: unchanged in nature from SECTION 13/14 — the register records them under LIST 3; none were decided by engineering.
+- **Non-product release blockers**: unchanged — see SECTION 14 (real collection account, AWS storage config incl. `S3_PAYMENT_PROOF_BUCKET`, legal entity + CBE/PDPL counsel, processor decision, OTP verification, mobile P0s + ADR-016, `ENVIRONMENT=production`, prod domain/backups/Sentry). These are deliberately excluded from the product benchmark.
+- **LEGAL/ACCOUNTING REVIEW ITEM**: the closure pass produced no new technical evidence affecting payment flow, money custody, KYC processing, personal data, hosting/transfer, marketplace role, or invoicing beyond what SECTION 12–14 already records. Review search and the availability calendar introduce no regulated-data change.
+- **Benchmark verification this pass**: 1160 backend tests / 80.60% coverage; frontend typecheck + lint + 12 Vitest + production build green; OpenAPI regenerated with the new `q` param (no drift); mobile unchanged.
+
+---
+
 ## EVIDENCE NOTES & KNOWN UNKNOWNS
 
 - Live verification this session: `/health` ok, `/docs` 200, preview 302, `/kyc/initiate` 503 (unconfigured storage), `image/gif` → 422, Railway deployments for `3129415` SUCCESS on all 3 services.

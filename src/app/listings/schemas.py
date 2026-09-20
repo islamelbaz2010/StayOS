@@ -291,6 +291,15 @@ class ListingUpdate(BaseModel):
         return self
 
 
+class PendingPhotoRef(BaseModel):
+    """A photo awaiting moderation, surfaced on admin/host pending views."""
+
+    id: str
+    url: str
+    moderation_state: str  # 'pending_add' | 'pending_remove'
+    is_cover: bool = False
+
+
 class ListingResponse(BaseModel):
     id: str
     host_id: str
@@ -364,6 +373,7 @@ class ListingResponse(BaseModel):
     # pending_changes holds the stashed host edit awaiting admin review.
     has_pending_changes: bool = False
     pending_changes: dict | None = None
+    pending_photos: list[PendingPhotoRef] = Field(default_factory=list)
 
 
 class ListingSearchResult(BaseModel):

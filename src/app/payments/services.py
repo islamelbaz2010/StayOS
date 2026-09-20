@@ -110,8 +110,10 @@ def _payment_unit_context(payment: Payment) -> tuple[str | None, str | None]:
     if isinstance(unit, Unit) and unit.listing is not None:
         listing = unit.listing
         unit_title = listing.title_en or listing.title_ar
-        if isinstance(listing.cover_photo, UnitPhoto):
-            unit_cover_image = listing.cover_photo.url
+        # Canonical cover resolution — same fallbacks as search/detail.
+        from app.listings.configuration import resolve_cover_image_url
+
+        unit_cover_image = resolve_cover_image_url(unit, listing)
     return unit_title, unit_cover_image
 
 

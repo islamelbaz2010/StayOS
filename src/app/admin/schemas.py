@@ -70,6 +70,7 @@ class BookingFinancialContextResponse(BaseModel):
     unit_title: str | None
     unit_city: str | None
     unit_governorate: str | None
+    unit_cover_image: str | None
     payment_id: str | None
     payment_status: str | None
     payment_method: str | None

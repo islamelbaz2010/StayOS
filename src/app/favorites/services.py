@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.models import User
 from app.favorites.models import LocationAlias, UserFavorite
+from app.listings import configuration as listing_configuration
 from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.reviews import repository as reviews_repository
@@ -60,7 +61,10 @@ async def get_user_favorites(
 
     result = await session.execute(
         select(Unit, UnitListing, lat_col, lng_col)
-        .options(selectinload(UnitListing.cover_photo))
+        .options(
+            selectinload(UnitListing.cover_photo),
+            selectinload(Unit.photos),
+        )
         .join(UserFavorite, UserFavorite.unit_id == Unit.id)
         .join(UnitListing, Unit.id == UnitListing.unit_id)
         .where(UserFavorite.user_id == user.id, Unit.status == UnitStatus.LISTED)
@@ -90,7 +94,9 @@ async def get_user_favorites(
             "max_guests": unit.max_guests,
             "bedrooms": unit.bedrooms,
             "bathrooms": unit.bathrooms,
-            "cover_image": listing.cover_photo.url if listing.cover_photo else None,
+            "cover_image": listing_configuration.resolve_cover_image_url(
+                unit, listing
+            ),
             "amenities": listing.amenities,
             "average_rating": avg_rating,
             "review_count": review_count,

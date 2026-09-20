@@ -40,10 +40,14 @@ export function useMyDisputes() {
       const { data } = await api.get<DisputeListResponse>("/disputes");
       return data;
     },
+    refetchInterval: 30_000,
   });
 }
 
-export function useAdminDisputes(status?: string) {
+export function useAdminDisputes(
+  status?: string,
+  options: { enabled?: boolean } = {}
+) {
   return useQuery({
     queryKey: ["admin-disputes", status ?? "all"],
     queryFn: async () => {
@@ -53,6 +57,8 @@ export function useAdminDisputes(status?: string) {
       );
       return data;
     },
+    refetchInterval: 30_000,
+    enabled: options.enabled ?? true,
   });
 }
 

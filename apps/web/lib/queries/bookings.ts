@@ -75,10 +75,15 @@ export function useCreateBooking() {
   });
 }
 
-export function useHostBookings(status: string | null = null) {
+export function useHostBookings(
+  status: string | null = null,
+  options: { enabled?: boolean } = {}
+) {
   return useQuery({
     queryKey: ["host-bookings", status],
     queryFn: () => getHostBookings(status),
+    refetchInterval: 30_000,
+    enabled: options.enabled ?? true,
   });
 }
 
@@ -126,6 +131,7 @@ export function useHostBookingsPaginated(
   return useQuery({
     queryKey: ["host-bookings-paginated", params],
     queryFn: () => getHostBookingsPaginated(params),
+    refetchInterval: 30_000,
   });
 }
 
@@ -133,6 +139,7 @@ export function useGuestBookings(status: string | null = null) {
   return useQuery({
     queryKey: ["guest-bookings", status],
     queryFn: () => getGuestBookings(status),
+    refetchInterval: 30_000,
   });
 }
 

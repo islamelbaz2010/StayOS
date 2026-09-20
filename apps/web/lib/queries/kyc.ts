@@ -110,13 +110,15 @@ export function useSubmitKyc() {
   });
 }
 
-export function usePendingKyc() {
+export function usePendingKyc(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["kyc-pending"],
     queryFn: async () => {
       const { data } = await api.get<KycPendingListResponse>("/kyc/pending");
       return data;
     },
+    refetchInterval: 30_000,
+    enabled: options.enabled ?? true,
   });
 }
 

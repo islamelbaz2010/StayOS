@@ -7,6 +7,8 @@ import { useParams, useRouter, usePathname } from "next/navigation";
 
 import { useAuth } from "@/lib/auth/useAuth";
 import { useUnreadCount } from "@/lib/queries/messages";
+import { useHostBookings } from "@/lib/queries/bookings";
+import { usePendingListings } from "@/lib/queries/hostListings";
 
 function MessagesLink({
   className,
@@ -30,11 +32,63 @@ function MessagesLink({
     >
       <span className="inline-flex items-center gap-1.5">
         {t("messages")}
-        {count > 0 && (
-          <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold leading-none text-white">
-            {count > 99 ? "99+" : count}
-          </span>
-        )}
+        {count > 0 && <CountBadge count={count} />}
+      </span>
+    </Link>
+  );
+}
+
+function CountBadge({ count }: { count: number }) {
+  return (
+    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold leading-none text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+function HostLink({
+  className,
+  onClick,
+  enabled,
+}: {
+  className: string;
+  onClick?: () => void;
+  enabled: boolean;
+}) {
+  const t = useTranslations("nav");
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
+  const { data } = useHostBookings("pending", { enabled });
+  const pendingCount = enabled ? (data ?? []).length : 0;
+  return (
+    <Link href={`/${locale}/host`} className={className} onClick={onClick}>
+      <span className="inline-flex items-center gap-1.5">
+        {t("host")}
+        {pendingCount > 0 && <CountBadge count={pendingCount} />}
+      </span>
+    </Link>
+  );
+}
+
+function AdminLink({
+  className,
+  onClick,
+  enabled,
+}: {
+  className: string;
+  onClick?: () => void;
+  enabled: boolean;
+}) {
+  const t = useTranslations("nav");
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? "ar";
+  const { data } = usePendingListings({ enabled });
+  const pendingCount = enabled ? (data?.length ?? 0) : 0;
+  return (
+    <Link href={`/${locale}/admin`} className={className} onClick={onClick}>
+      <span className="inline-flex items-center gap-1.5">
+        {t("admin")}
+        {pendingCount > 0 && <CountBadge count={pendingCount} />}
       </span>
     </Link>
   );
@@ -163,25 +217,21 @@ export function Header() {
         />
       )}
       {isAuthenticated && user?.role === "host" && (
-        <Link
-          href={`/${locale}/host`}
+        <HostLink
           className="text-sm font-medium text-neutral-700 hover:text-accent-600"
           onClick={() => setMobileOpen(false)}
-        >
-          {t("host")}
-        </Link>
+          enabled={isAuthenticated && user?.role === "host"}
+        />
       )}
       {isAuthenticated &&
         (user?.role === "admin" ||
           user?.role === "staff" ||
           user?.role === "field_staff") && (
-        <Link
-          href={`/${locale}/admin`}
+        <AdminLink
           className="text-sm font-medium text-accent-600 hover:text-accent-700"
           onClick={() => setMobileOpen(false)}
-        >
-          {t("admin")}
-        </Link>
+          enabled={isAuthenticated && user?.role === "admin"}
+        />
       )}
       {isAuthenticated && (
         <Link
@@ -334,25 +384,21 @@ export function Header() {
               />
             )}
             {isAuthenticated && user?.role === "host" && (
-              <Link
-                href={`/${locale}/host`}
+              <HostLink
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
-              >
-                {t("host")}
-              </Link>
+                enabled={isAuthenticated && user?.role === "host"}
+              />
             )}
             {isAuthenticated &&
               (user?.role === "admin" ||
                 user?.role === "staff" ||
                 user?.role === "field_staff") && (
-              <Link
-                href={`/${locale}/admin`}
+              <AdminLink
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
-              >
-                {t("admin")}
-              </Link>
+                enabled={isAuthenticated && user?.role === "admin"}
+              />
             )}
             {isAuthenticated && (
               <Link

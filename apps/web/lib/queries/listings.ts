@@ -1,4 +1,9 @@
-import { useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+  type InfiniteData,
+} from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 import type { components } from "@/lib/api-types";
@@ -326,6 +331,7 @@ export function useListingAvailability(unitId: string, checkIn: string, checkOut
     },
     enabled: Boolean(unitId && checkIn && checkOut && checkOut > checkIn),
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
   });
 }
 

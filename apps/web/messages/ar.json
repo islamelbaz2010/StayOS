@@ -326,7 +326,10 @@
     "eventRejected": "تم طلب تعديلات",
     "eventListingSubmitted": "تم تقديم الإعلان",
     "eventListingApproved": "تم اعتماد الإعلان",
-    "eventListingRejected": "تم رفض الإعلان"
+    "eventListingRejected": "تم رفض الإعلان",
+    "photoPendingAdd": "صورة جديدة",
+    "photoPendingRemove": "محذوفة",
+    "cover": "الغلاف"
   },
   "search": {
     "title": "بحث",
@@ -352,7 +355,6 @@
     "viewAll": "عرض الكل",
     "tags": {
       "familyOnly": "عائلات فقط",
-      "halalCertified": "حلال",
       "mixed": "مختلط",
       "couplesWelcome": "مرحب بالأزواج"
     },
@@ -858,7 +860,9 @@
     "chargedNow": "سيتم الخصم بمجرد تأكيدك",
     "messageToHost": "رسالة للمضيف",
     "messageToHostPlaceholder": "أخبر المضيف عن رحلتك...",
-    "messageToHostHint": "اختياري — تُرسل للمضيف مع طلب الحجز"
+    "messageToHostHint": "اختياري — تُرسل للمضيف مع طلب الحجز",
+    "prevMonth": "الشهر السابق",
+    "nextMonth": "الشهر التالي"
   },
   "hostBookings": {
     "title": "طلبات الحجز",

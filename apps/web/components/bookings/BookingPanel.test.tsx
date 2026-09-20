@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 
@@ -87,5 +87,54 @@ describe("BookingPanel guest-facing summary", () => {
 
     // 4,000 accommodation + 300 cleaning + 0 service = EGP 4,300.
     expect(screen.getByText(/4,300/)).toBeInTheDocument();
+  });
+});
+
+describe("BookingPanel date validation feedback", () => {
+  it("shows a live error when check-out is not after check-in", () => {
+    renderPanel();
+
+    const checkInInput = screen.getByLabelText("Check-in") as HTMLInputElement;
+    const checkOutInput = screen.getByLabelText("Check-out") as HTMLInputElement;
+
+    fireEvent.change(checkInInput, { target: { value: "2030-02-10" } });
+    fireEvent.change(checkOutInput, { target: { value: "2030-02-05" } });
+
+    expect(
+      screen.getByText("Check-out must be after check-in.")
+    ).toBeInTheDocument();
+  });
+
+  it("auto-bumps check-out when check-in moves past it", () => {
+    renderPanel();
+
+    const checkInInput = screen.getByLabelText("Check-in") as HTMLInputElement;
+    const checkOutInput = screen.getByLabelText("Check-out") as HTMLInputElement;
+
+    fireEvent.change(checkInInput, { target: { value: "2030-03-20" } });
+
+    expect(checkOutInput.value).toBe("2030-03-21");
+  });
+
+  it("shows a live min-nights error instead of silently disabling submit", () => {
+    const minNightsListing = { ...listing, minNights: 3 } as ListingDetail;
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <NextIntlClientProvider locale="en" messages={messages}>
+          <BookingPanel
+            listing={minNightsListing}
+            initialCheckIn="2030-01-10"
+            initialCheckOut="2030-01-11"
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>
+    );
+
+    expect(
+      screen.getByText("Minimum stay is 3 nights.")
+    ).toBeInTheDocument();
   });
 });

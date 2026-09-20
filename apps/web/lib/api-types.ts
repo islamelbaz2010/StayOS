@@ -1044,6 +1044,8 @@ export interface components {
       unit_city: string | null;
       /** Unit Governorate */
       unit_governorate: string | null;
+      /** Unit Cover Image */
+      unit_cover_image: string | null;
       /** Payment Id */
       payment_id: string | null;
       /** Payment Status */
@@ -3192,6 +3194,8 @@ export interface components {
       pending_changes?: {
         [key: string]: unknown;
       } | null;
+      /** Pending Photos */
+      pending_photos?: components["schemas"]["PendingPhotoRef"][];
     };
     /** ListingSearchResponse */
     ListingSearchResponse: {
@@ -3873,6 +3877,23 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+    };
+    /**
+     * PendingPhotoRef
+     * @description A photo awaiting moderation, surfaced on admin/host pending views.
+     */
+    PendingPhotoRef: {
+      /** Id */
+      id: string;
+      /** Url */
+      url: string;
+      /** Moderation State */
+      moderation_state: string;
+      /**
+       * Is Cover
+       * @default false
+       */
+      is_cover?: boolean;
     };
     /** PhotoCreate */
     PhotoCreate: {

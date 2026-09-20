@@ -106,13 +106,17 @@ def _arrival_info_eligible(booking: Booking, listing: Any | None = None) -> bool
 
 
 def _unit_cover_image(unit: Any | None) -> str | None:
+    """Canonical cover resolution — same rules as search/listing detail
+    (cover_photo_id → is_cover flag → first valid photo, pending_add
+    photos excluded). Requires unit.photos to be eager-loaded."""
     if unit is None:
         return None
     listing = getattr(unit, "listing", None)
     if listing is None:
         return None
-    cover = getattr(listing, "cover_photo", None)
-    return cover.url if cover is not None else None
+    from app.listings.configuration import resolve_cover_image_url
+
+    return resolve_cover_image_url(unit, listing)
 
 
 def _to_response(

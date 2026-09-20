@@ -39,7 +39,6 @@ const LISTING_CATEGORIES = [
 
 const CULTURAL_TAGS = [
   { value: "FAMILY_ONLY", key: "familyOnly" },
-  { value: "HALAL_CERTIFIED", key: "halalCertified" },
   { value: "MIXED", key: "mixed" },
   { value: "COUPLES_WELCOME", key: "couplesWelcome" },
 ];

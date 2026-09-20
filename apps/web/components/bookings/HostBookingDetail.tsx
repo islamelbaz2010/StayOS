@@ -354,7 +354,7 @@ export function HostBookingDetail({
                           </span>
                         </div>
                         <p className="mt-1 text-xs text-neutral-400">
-                          {formatDate(new Date(review.createdAt), dateLocale)}
+                          {formatDate(review.createdAt, dateLocale)}
                         </p>
                         {review.comment && (
                           <p className="mt-1 text-xs leading-relaxed text-neutral-600">
@@ -381,13 +381,13 @@ export function HostBookingDetail({
         <div>
           <dt className="text-sm text-neutral-500">{t("checkIn")}</dt>
           <dd className="text-sm font-medium text-brand-900">
-            {formatDate(new Date(booking.check_in), dateLocale)}
+            {formatDate(booking.check_in, dateLocale)}
           </dd>
         </div>
         <div>
           <dt className="text-sm text-neutral-500">{t("checkOut")}</dt>
           <dd className="text-sm font-medium text-brand-900">
-            {formatDate(new Date(booking.check_out), dateLocale)}
+            {formatDate(booking.check_out, dateLocale)}
           </dd>
         </div>
         <div>

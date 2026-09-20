@@ -1,20 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useLocale, useTranslations } from "next-intl";
 
 import { useListingAvailability } from "@/lib/queries/listings";
-import { cn } from "@/lib/utils";
+import { cn, parseInputDate, toInputDate } from "@/lib/utils";
 
-const WINDOW_DAYS = 62;
-
-function toInputDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+const MAX_WINDOW_DAYS = 90;
 
 function addDays(date: Date, days: number): Date {
   const next = new Date(date);
@@ -22,8 +15,16 @@ function addDays(date: Date, days: number): Date {
   return next;
 }
 
+function addMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
 function monthStart(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function monthEnd(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
 }
 
 interface AvailabilityCalendarProps {
@@ -51,7 +52,30 @@ export function AvailabilityCalendar({
     return d;
   }, []);
   const todayStr = toInputDate(today);
-  const windowEnd = useMemo(() => addDays(today, WINDOW_DAYS), [today]);
+
+  const [offset, setOffset] = useState(0);
+
+  const months = useMemo(() => {
+    const first = monthStart(today);
+    const base = addMonths(first, offset);
+    return [base, addMonths(base, 1)];
+  }, [today, offset]);
+
+  const maxOffset = useMemo(() => {
+    const first = monthStart(today);
+    let next = 0;
+    while (true) {
+      const second = addMonths(first, next + 1);
+      const lastVisible = monthEnd(second);
+      if ((lastVisible.getTime() - today.getTime()) / 86400000 > MAX_WINDOW_DAYS) {
+        break;
+      }
+      next += 1;
+    }
+    return next;
+  }, [today]);
+
+  const windowEnd = useMemo(() => addDays(monthEnd(months[1]), 1), [months]);
 
   const { data } = useListingAvailability(unitId, todayStr, toInputDate(windowEnd));
 
@@ -70,14 +94,10 @@ export function AvailabilityCalendar({
     );
   }, [dateLocale]);
 
-  const months = useMemo(() => {
-    const first = monthStart(today);
-    return [first, new Date(first.getFullYear(), first.getMonth() + 1, 1)];
-  }, [today]);
-
   const rangeBlocked = (start: string, end: string): boolean => {
-    let cur = new Date(start);
-    const endDate = new Date(end);
+    let cur = parseInputDate(start);
+    const endDate = parseInputDate(end);
+    if (!cur || !endDate) return true;
     while (cur < endDate) {
       const day = statusByDate.get(toInputDate(cur));
       if (!day || day.status !== "AVAILABLE") return true;
@@ -103,6 +123,30 @@ export function AvailabilityCalendar({
 
   return (
     <div>
+      <div className="mb-2 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setOffset((value) => Math.max(0, value - 1))}
+          disabled={disabled || offset === 0}
+          aria-label={t("prevMonth")}
+          className="rounded-md p-1.5 text-neutral-600 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300"
+        >
+          <svg className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => setOffset((value) => Math.min(maxOffset, value + 1))}
+          disabled={disabled || offset >= maxOffset}
+          aria-label={t("nextMonth")}
+          className="rounded-md p-1.5 text-neutral-600 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300"
+        >
+          <svg className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {months.map((month) => {
           const daysInMonth = new Date(
@@ -112,7 +156,7 @@ export function AvailabilityCalendar({
           ).getDate();
           const leading = month.getDay();
           return (
-            <div key={month.toISOString()}>
+            <div key={`${month.getFullYear()}-${month.getMonth()}`}>
               <p className="mb-2 text-center text-xs font-semibold text-neutral-700">
                 {month.toLocaleDateString(dateLocale, {
                   month: "long",
@@ -143,6 +187,8 @@ export function AvailabilityCalendar({
                     !disabled &&
                     dateStr >= todayStr &&
                     day?.status === "AVAILABLE";
+                  const knownUnavailable =
+                    day !== undefined && day.status !== "AVAILABLE";
                   const isEndpoint = dateStr === checkIn || dateStr === checkOut;
                   const inRange =
                     Boolean(checkIn && checkOut) &&
@@ -162,7 +208,9 @@ export function AvailabilityCalendar({
                         inRange && "bg-brand-50 text-brand-900",
                         !selectable &&
                           !isEndpoint &&
-                          "text-neutral-300 line-through",
+                          (knownUnavailable
+                            ? "text-neutral-300 line-through"
+                            : "text-neutral-300"),
                         selectable &&
                           !isEndpoint &&
                           "text-neutral-800 hover:bg-neutral-100"

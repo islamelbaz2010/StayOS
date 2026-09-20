@@ -177,12 +177,12 @@ function TodayItem({
             <p className="text-sm text-neutral-500">
               {item.check_in && (
                 <>
-                  {t("checkIn")}: {formatDate(new Date(item.check_in), dateLocale)}{" "}
+                  {t("checkIn")}: {formatDate(item.check_in, dateLocale)}{" "}
                 </>
               )}
               {item.check_out && (
                 <>
-                  {t("checkOut")}: {formatDate(new Date(item.check_out), dateLocale)}
+                  {t("checkOut")}: {formatDate(item.check_out, dateLocale)}
                 </>
               )}
             </p>

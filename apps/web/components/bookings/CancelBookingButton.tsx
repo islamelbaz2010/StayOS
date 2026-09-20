@@ -85,8 +85,8 @@ export function CancelBookingButton({
             {booking.unit_title ?? t("untitledListing")}
           </p>
           <p className="mt-1 text-xs text-neutral-500">
-            {formatDate(new Date(booking.check_in), dateLocale)} →{" "}
-            {formatDate(new Date(booking.check_out), dateLocale)}
+            {formatDate(booking.check_in, dateLocale)} →{" "}
+            {formatDate(booking.check_out, dateLocale)}
           </p>
           <p className="mt-0.5 text-xs text-neutral-500">
             {t(`status.${booking.status}`)}

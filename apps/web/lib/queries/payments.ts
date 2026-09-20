@@ -205,6 +205,7 @@ export function useMyPayments() {
   return useQuery({
     queryKey: ["my-payments"],
     queryFn: getMyPayments,
+    refetchInterval: 30_000,
   });
 }
 
@@ -212,13 +213,19 @@ export function useHostPayments(status?: string) {
   return useQuery({
     queryKey: ["host-payments", status],
     queryFn: () => getHostPayments(status),
+    refetchInterval: 30_000,
   });
 }
 
-export function usePaymentQueue(status?: string) {
+export function usePaymentQueue(
+  status?: string,
+  options: { enabled?: boolean } = {}
+) {
   return useQuery({
     queryKey: ["payment-queue", status],
     queryFn: () => getPaymentQueue(status),
+    refetchInterval: 30_000,
+    enabled: options.enabled ?? true,
   });
 }
 

@@ -52,7 +52,8 @@ async def get_booking(session: AsyncSession, booking_id: str) -> Booking | None:
         .options(
             selectinload(Booking.unit)
             .selectinload(Unit.listing)
-            .selectinload(UnitListing.cover_photo)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Booking.unit).selectinload(Unit.photos)
         )
         .where(Booking.id == booking_id)
     )
@@ -105,7 +106,8 @@ async def list_expired_requested_bookings(
         .options(
             selectinload(Booking.unit)
             .selectinload(Unit.listing)
-            .selectinload(UnitListing.cover_photo)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Booking.unit).selectinload(Unit.photos)
         )
         .where(
             Booking.status == BookingStatus.REQUESTED,
@@ -139,7 +141,8 @@ async def list_guest_bookings(
         .options(
             selectinload(Booking.unit)
             .selectinload(Unit.listing)
-            .selectinload(UnitListing.cover_photo)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Booking.unit).selectinload(Unit.photos)
         )
         .where(Booking.guest_id == guest_id)
         .order_by(Booking.created_at.desc(), Booking.id.desc())
@@ -172,6 +175,7 @@ async def list_host_bookings(
             selectinload(Booking.unit)
             .selectinload(Unit.listing)
             .selectinload(UnitListing.cover_photo),
+            selectinload(Booking.unit).selectinload(Unit.photos),
             selectinload(Booking.guest),
         )
         .join(Unit, Booking.unit_id == Unit.id)
@@ -208,6 +212,7 @@ async def list_paginated_host_bookings(
             selectinload(Booking.unit)
             .selectinload(Unit.listing)
             .selectinload(UnitListing.cover_photo),
+            selectinload(Booking.unit).selectinload(Unit.photos),
             selectinload(Booking.guest),
         )
         .where(Booking.unit_id.in_(unit_ids))

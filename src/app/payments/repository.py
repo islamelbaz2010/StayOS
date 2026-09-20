@@ -97,7 +97,8 @@ async def list_pending_payments(
         .options(
             selectinload(Payment.unit)
             .selectinload(Unit.listing)
-            .selectinload(UnitListing.cover_photo)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Payment.unit).selectinload(Unit.photos)
         )
         .order_by(Payment.created_at.desc(), Payment.id.desc())
         .offset(offset)
@@ -151,7 +152,8 @@ async def list_guest_payments(
         .options(
             selectinload(Payment.unit)
             .selectinload(Unit.listing)
-            .selectinload(UnitListing.cover_photo)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Payment.unit).selectinload(Unit.photos)
         )
         .where(Payment.guest_id == guest_id)
         .order_by(Payment.created_at.desc(), Payment.id.desc())
@@ -174,7 +176,8 @@ async def list_host_payments(
         .options(
             selectinload(Payment.unit)
             .selectinload(Unit.listing)
-            .selectinload(UnitListing.cover_photo)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Payment.unit).selectinload(Unit.photos)
         )
         .where(Payment.host_id == host_id)
         .order_by(Payment.created_at.desc(), Payment.id.desc())

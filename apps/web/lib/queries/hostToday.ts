@@ -15,5 +15,6 @@ export function useHostToday() {
   return useQuery({
     queryKey: ["host-today"],
     queryFn: getHostToday,
+    refetchInterval: 30_000,
   });
 }

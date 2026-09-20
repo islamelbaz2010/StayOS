@@ -110,8 +110,8 @@ export function HostBookingList({
             </div>
 
             <p className="mt-2 text-sm text-neutral-700">
-              {formatDate(new Date(booking.check_in), dateLocale)} —{" "}
-              {formatDate(new Date(booking.check_out), dateLocale)}
+              {formatDate(booking.check_in, dateLocale)} —{" "}
+              {formatDate(booking.check_out, dateLocale)}
             </p>
 
             <p className="mt-1 text-sm text-neutral-500">

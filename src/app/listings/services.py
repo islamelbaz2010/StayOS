@@ -63,6 +63,7 @@ from .schemas import (
     PhotoCreate,
     PhotoPresignResponse,
     PhotoReorderRequest,
+    PendingPhotoRef,
     PhotoResponse,
 )
 
@@ -212,6 +213,19 @@ def _to_listing_response(
             for p in (unit.photos or [])
         ),
         pending_changes=listing.pending_changes if include_pending else None,
+        pending_photos=[
+            PendingPhotoRef(
+                id=p.id,
+                url=p.url,
+                moderation_state=getattr(p, "moderation_state", "live"),
+                is_cover=bool(p.is_cover),
+            )
+            for p in (unit.photos or [])
+            if getattr(p, "moderation_state", "live")
+            in ("pending_add", "pending_remove")
+        ]
+        if include_pending
+        else [],
     )
 
 

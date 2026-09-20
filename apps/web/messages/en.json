@@ -326,7 +326,10 @@
     "eventRejected": "Changes requested back",
     "eventListingSubmitted": "Listing submitted",
     "eventListingApproved": "Listing approved",
-    "eventListingRejected": "Listing rejected"
+    "eventListingRejected": "Listing rejected",
+    "photoPendingAdd": "New photo",
+    "photoPendingRemove": "Removed",
+    "cover": "Cover"
   },
   "search": {
     "title": "Search",
@@ -352,7 +355,6 @@
     "viewAll": "View all",
     "tags": {
       "familyOnly": "Family only",
-      "halalCertified": "Halal certified",
       "mixed": "Mixed",
       "couplesWelcome": "Couples welcome"
     },
@@ -858,7 +860,9 @@
     "chargedNow": "You'll be charged once you confirm",
     "messageToHost": "Message to host",
     "messageToHostPlaceholder": "Tell the host about your trip...",
-    "messageToHostHint": "Optional — sent to the host with your booking request"
+    "messageToHostHint": "Optional — sent to the host with your booking request",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "hostBookings": {
     "title": "Booking requests",

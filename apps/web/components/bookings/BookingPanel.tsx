@@ -11,7 +11,7 @@ import type { BookingResponse } from "@/lib/queries/bookings";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useBookingQuote, useCreateBooking } from "@/lib/queries/bookings";
 import { useListingAvailability } from "@/lib/queries/listings";
-import { cn, formatMoney } from "@/lib/utils";
+import { cn, formatMoney, parseInputDate, toInputDate } from "@/lib/utils";
 
 import { AvailabilityCalendar } from "./AvailabilityCalendar";
 import { BookingSuccess } from "./BookingSuccess";
@@ -28,13 +28,6 @@ interface GuestCounts {
   infants: number;
 }
 
-function toInputDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function addDays(date: Date, days: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
@@ -42,9 +35,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 function isValidIsoDate(value: string | undefined): value is string {
-  if (!value) return false;
-  const d = new Date(value);
-  return !Number.isNaN(d.getTime()) && value.length >= 10;
+  return parseInputDate(value) !== null;
 }
 
 export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: BookingPanelProps) {
@@ -77,10 +68,11 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const checkInDate = new Date(checkIn);
-    const checkOutDate = new Date(checkOut);
-    if (checkOutDate <= checkInDate) {
-      setCheckOut(toInputDate(addDays(checkInDate, 1)));
+    if (checkIn && checkOut && checkOut <= checkIn) {
+      const checkInDate = parseInputDate(checkIn);
+      if (checkInDate) {
+        setCheckOut(toInputDate(addDays(checkInDate, 1)));
+      }
     }
   }, [checkIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -97,13 +89,27 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
 
   const totalGuests = guests.adults + guests.children + guests.infants;
   const nights = useMemo(() => {
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
+    const start = parseInputDate(checkIn);
+    const end = parseInputDate(checkOut);
+    if (!start || !end) return 0;
     const diff = Math.round(
       (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
     );
     return Math.max(0, diff);
   }, [checkIn, checkOut]);
+
+  const liveDateError = useMemo(() => {
+    if (!checkIn || !checkOut) return null;
+    if (checkOut <= checkIn) return t("checkOutAfterCheckIn");
+    if (checkIn < todayStr) return t("checkInPast");
+    if (nights > 0 && listing.minNights > 0 && nights < listing.minNights) {
+      return t("minNightsRequired", { min: listing.minNights });
+    }
+    if (nights > 0 && listing.maxNights > 0 && nights > listing.maxNights) {
+      return t("maxNightsExceeded", { max: listing.maxNights });
+    }
+    return null;
+  }, [checkIn, checkOut, nights, todayStr, listing.minNights, listing.maxNights, t]);
 
   const totalPrice = quote?.accommodation_egp ?? listing.price * nights;
   const cleaningFee = quote?.cleaning_fee_egp ?? listing.cleaningFee ?? 0;
@@ -115,20 +121,14 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
 
     if (!checkIn) {
       nextErrors.checkIn = t("checkInRequired");
-    } else {
-      const checkInDate = new Date(checkIn);
-      const todayMidnight = new Date(todayStr);
-      if (checkInDate < todayMidnight) {
-        nextErrors.checkIn = t("checkInPast");
-      }
+    } else if (checkIn < todayStr) {
+      nextErrors.checkIn = t("checkInPast");
     }
 
     if (!checkOut) {
       nextErrors.checkOut = t("checkOutRequired");
     } else if (checkIn) {
-      const checkInDate = new Date(checkIn);
-      const checkOutDate = new Date(checkOut);
-      if (checkOutDate <= checkInDate) {
+      if (checkOut <= checkIn) {
         nextErrors.checkOut = t("checkOutAfterCheckIn");
       } else if (blockedDatesInRange.length > 0) {
         nextErrors.checkOut = t("datesUnavailable");
@@ -307,7 +307,11 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
               id="check-out"
               type="date"
               value={checkOut}
-              min={toInputDate(addDays(new Date(checkIn), 1))}
+              min={
+                parseInputDate(checkIn)
+                  ? toInputDate(addDays(parseInputDate(checkIn)!, 1))
+                  : todayStr
+              }
               onChange={(e) => setCheckOut(e.target.value)}
               className={cn(
                 "input mt-1 text-sm",
@@ -323,7 +327,12 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
                 {errors.checkOut}
               </p>
             )}
-            {!errors.checkOut && nights > 0 && blockedDatesInRange.length > 0 && (
+            {!errors.checkOut && liveDateError && (
+              <p className="mt-1 text-sm text-danger-600" role="alert">
+                {liveDateError}
+              </p>
+            )}
+            {!errors.checkOut && !liveDateError && nights > 0 && blockedDatesInRange.length > 0 && (
               <p className="mt-1 text-sm text-danger-600" role="alert">
                 {t("datesUnavailable")}
               </p>

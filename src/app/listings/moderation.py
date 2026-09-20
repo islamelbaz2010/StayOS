@@ -112,9 +112,28 @@ def stash_pending_changes(
 async def apply_pending_changes(
     session: AsyncSession, unit: Unit, listing: UnitListing
 ) -> bool:
-    """Publish stashed host changes. Returns True when changes existed."""
+    """Publish stashed host changes. Returns True when changes existed.
+
+    A change-set can be field-only, photo-only, or both — the admin
+    pending queue lists units on either signal, so approval must publish
+    whichever is present."""
     pending = listing.pending_changes or {}
-    if not pending:
+
+    # Photos: pending_add -> live, pending_remove -> deleted.
+    photos_changed = False
+    photos_result = await session.execute(
+        select(UnitPhoto).where(UnitPhoto.unit_id == unit.id)
+    )
+    for photo in photos_result.scalars().all():
+        if photo.moderation_state == PHOTO_PENDING_ADD:
+            photo.moderation_state = PHOTO_LIVE
+            session.add(photo)
+            photos_changed = True
+        elif photo.moderation_state == PHOTO_PENDING_REMOVE:
+            await session.delete(photo)
+            photos_changed = True
+
+    if not pending and not photos_changed:
         return False
 
     for field, value in (pending.get("unit") or {}).items():
@@ -136,17 +155,6 @@ async def apply_pending_changes(
             listing.cover_photo_id = value
         elif hasattr(listing, field):
             setattr(listing, field, value)
-
-    # Photos: pending_add -> live, pending_remove -> deleted.
-    photos_result = await session.execute(
-        select(UnitPhoto).where(UnitPhoto.unit_id == unit.id)
-    )
-    for photo in photos_result.scalars().all():
-        if photo.moderation_state == PHOTO_PENDING_ADD:
-            photo.moderation_state = PHOTO_LIVE
-            session.add(photo)
-        elif photo.moderation_state == PHOTO_PENDING_REMOVE:
-            await session.delete(photo)
 
     listing.pending_changes = None
     session.add(unit)

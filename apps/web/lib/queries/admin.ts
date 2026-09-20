@@ -84,6 +84,7 @@ export function useAdminOverview() {
       return data;
     },
     staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 }
 

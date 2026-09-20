@@ -150,8 +150,8 @@ function TripContent({
               </h2>
             )}
             <p className="mt-1 text-sm text-neutral-600">
-              {formatDate(new Date(booking.check_in), dateLocale)} →{" "}
-              {formatDate(new Date(booking.check_out), dateLocale)}
+              {formatDate(booking.check_in, dateLocale)} →{" "}
+              {formatDate(booking.check_out, dateLocale)}
             </p>
             <p className="mt-1 text-sm text-neutral-500">
               {booking.adults} {t("adults")}

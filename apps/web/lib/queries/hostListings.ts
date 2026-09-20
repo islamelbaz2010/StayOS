@@ -63,6 +63,13 @@ export interface HostListing {
     submitted_by?: string;
     submitted_at?: string;
   } | null;
+  /** Photos awaiting moderation (only present for owner/admin viewers). */
+  pending_photos?: {
+    id: string;
+    url: string;
+    moderation_state: string;
+    is_cover: boolean;
+  }[];
 }
 
 export interface ListingCreateInput {
@@ -228,6 +235,7 @@ export function useHostListings() {
   return useQuery({
     queryKey: ["host-listings"],
     queryFn: getHostListings,
+    refetchInterval: 30_000,
   });
 }
 
@@ -235,6 +243,7 @@ export function useHostListing(unitId: string) {
   return useQuery({
     queryKey: ["host-listing", unitId],
     queryFn: () => getHostListing(unitId),
+    refetchInterval: 30_000,
     enabled: Boolean(unitId),
   });
 }
@@ -338,10 +347,12 @@ export function useArchiveListing() {
   });
 }
 
-export function usePendingListings() {
+export function usePendingListings(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["admin-pending-listings"],
     queryFn: getPendingListings,
+    refetchInterval: 30_000,
+    enabled: options.enabled ?? true,
   });
 }
 

@@ -151,7 +151,7 @@ function CheckoutContent({
               {booking.unit_title ?? t("untitledListing")}
             </p>
             <p className="mt-1 text-sm text-neutral-600">
-              {formatDate(new Date(booking.check_in), dateLocale)} - {formatDate(new Date(booking.check_out), dateLocale)}
+              {formatDate(booking.check_in, dateLocale)} - {formatDate(booking.check_out, dateLocale)}
             </p>
           </div>
         </div>
@@ -210,13 +210,13 @@ function CheckoutContent({
           <div className="flex justify-between">
             <dt className="text-neutral-600">{t("checkIn")}</dt>
             <dd className="font-medium text-brand-900">
-              {formatDate(new Date(booking.check_in), dateLocale)}
+              {formatDate(booking.check_in, dateLocale)}
             </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-neutral-600">{t("checkOut")}</dt>
             <dd className="font-medium text-brand-900">
-              {formatDate(new Date(booking.check_out), dateLocale)}
+              {formatDate(booking.check_out, dateLocale)}
             </dd>
           </div>
           <div className="flex justify-between">

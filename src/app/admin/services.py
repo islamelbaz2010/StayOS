@@ -11,6 +11,7 @@ from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.auth.constants import KycStatus, StaffPermission, UserRole
 from app.auth.models import User
@@ -26,6 +27,7 @@ from app.finance.models import (
     PayoutRequest,
 )
 from app.kyc.models import KycDocument
+from app.listings import configuration as listing_configuration
 from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.operations.constants import MaintenanceRequestStatus, TaskStatus
@@ -250,7 +252,11 @@ async def get_booking_financial_context(
     if booking is None:
         raise NotFoundError("Booking not found")
 
-    unit = await session.scalar(select(Unit).where(Unit.id == booking.unit_id))
+    unit = await session.scalar(
+        select(Unit)
+        .options(selectinload(Unit.photos))
+        .where(Unit.id == booking.unit_id)
+    )
     listing = None
     if unit is not None:
         listing = await session.scalar(
@@ -346,6 +352,11 @@ async def get_booking_financial_context(
         ),
         unit_city=unit.city if unit else None,
         unit_governorate=unit.governorate if unit else None,
+        unit_cover_image=(
+            listing_configuration.resolve_cover_image_url(unit, listing)
+            if unit is not None and listing is not None
+            else None
+        ),
         payment_id=payment.id if payment else None,
         payment_status=payment.status if payment else None,
         payment_method=payment.method if payment else None,

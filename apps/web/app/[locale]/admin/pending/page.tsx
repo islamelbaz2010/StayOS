@@ -539,6 +539,32 @@ export default function AdminPendingListingsPage() {
                     </div>
                   )}
 
+                  {(selected.pending_photos?.length ?? 0) > 0 && (
+                    <div className="mt-4 rounded-lg border border-warning-200 bg-warning-50 p-3">
+                      <span className="font-medium text-warning-800">
+                        {t("pendingPhotos")}
+                      </span>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selected.pending_photos!.map((photo) => (
+                          <figure key={photo.id} className="w-24">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={photo.url}
+                              alt={photo.moderation_state ?? ""}
+                              className="h-20 w-24 rounded-md object-cover"
+                            />
+                            <figcaption className="mt-1 text-center text-[10px] font-medium text-neutral-600">
+                              {photo.moderation_state === "pending_remove"
+                                ? t("photoPendingRemove")
+                                : t("photoPendingAdd")}
+                              {photo.is_cover ? ` · ${t("cover")}` : ""}
+                            </figcaption>
+                          </figure>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <ChangeHistory unitId={selected.id} />
 
                   <div className="mt-6 flex justify-end gap-3">

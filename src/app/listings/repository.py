@@ -153,7 +153,11 @@ async def get_units_with_pending_changes(
         .join(UnitListing, Unit.id == UnitListing.unit_id)
         .where(
             Unit.status == UnitStatus.LISTED,
-            (UnitListing.pending_changes.isnot(None)) | pending_photos,
+            # A real change-set is a JSONB object — IS NOT NULL alone also
+            # matches a legacy JSON 'null' literal, which would queue the
+            # unit forever with nothing reviewable.
+            (func.jsonb_typeof(UnitListing.pending_changes) == "object")
+            | pending_photos,
         )
         .order_by(Unit.created_at.desc())
     )

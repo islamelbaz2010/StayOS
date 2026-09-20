@@ -270,6 +270,44 @@ async def test_approve_listed_edit_publishes_changes(
 
 
 @pytest.mark.asyncio
+async def test_approve_photo_only_edit_publishes_photos(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: a photo-only change-set (pending_changes NULL) must still
+    be approvable — previously it 400'd while sitting in the pending queue."""
+    unit = _make_unit(status=UnitStatus.LISTED)
+    unit.listing.pending_changes = None
+    pending_photo = UnitPhoto(
+        id="pp",
+        unit_id="unit-1",
+        s3_key="k",
+        url="https://x/p",
+        display_order=3,
+        is_cover=False,
+        moderation_state="pending_add",
+    )
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    fake_session.execute = AsyncMock(
+        side_effect=[
+            _result(scalars_all=[pending_photo]),  # photos for apply
+            _result(one=MagicMock(lat=30.0, lng=31.0)),  # coordinates
+        ]
+    )
+
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    result = await listings_services.approve_listing(
+        fake_session, admin, "unit-1"
+    )
+    assert pending_photo.moderation_state == "live"
+    assert unit.listing.pending_changes is None
+    assert result.status == UnitStatus.LISTED
+
+
+@pytest.mark.asyncio
 async def test_reject_listed_edit_discards_changes(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
@@ -310,6 +348,9 @@ async def test_approve_listed_without_changes_fails(
         listings_repository,
         "get_unit_with_listing",
         AsyncMock(return_value=unit),
+    )
+    fake_session.execute = AsyncMock(
+        return_value=_result(scalars_all=[])  # no pending photos
     )
     admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
     with pytest.raises(ValidationError):

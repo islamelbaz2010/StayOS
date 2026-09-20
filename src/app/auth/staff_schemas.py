@@ -13,6 +13,16 @@ class StaffCreateRequest(BaseModel):
         None, max_length=255, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
     )
     permissions: list[str] = Field(default_factory=list)
+    # FD-18: optional role group template — its permission set is merged
+    # with (never replaces) any explicit per-user grants.
+    role_group: str | None = None
+
+
+class RoleGroupResponse(BaseModel):
+    key: str
+    label_en: str
+    label_ar: str
+    permissions: list[str]
 
 
 class StaffUpdateRequest(BaseModel):

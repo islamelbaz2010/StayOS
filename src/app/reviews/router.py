@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
+from app.auth.constants import StaffPermission
 from app.auth.models import User
 from app.database import get_session
 from app.shared.exceptions import StayOSError, to_http_exception
@@ -12,6 +13,10 @@ from .schemas import (
     HostReviewResponse,
     ReviewCreate,
     ReviewListResponse,
+    ReviewReportAdminUpdate,
+    ReviewReportCreate,
+    ReviewReportListResponse,
+    ReviewReportResponse,
     ReviewResponse,
 )
 from .services import (
@@ -20,6 +25,9 @@ from .services import (
     create_review,
     get_guest_reviews,
     get_listing_reviews,
+    list_review_reports_admin,
+    report_review,
+    update_review_report_admin,
 )
 
 router = APIRouter(tags=["reviews"])
@@ -69,6 +77,65 @@ async def post_host_response(
     """Host writes a public response to a guest review (Airbnb behavior)."""
     try:
         return await create_host_response(session, user, review_id, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post(
+    "/reviews/{review_id}/report",
+    response_model=ReviewReportResponse,
+    status_code=201,
+)
+async def post_review_report(
+    review_id: str,
+    request: ReviewReportCreate,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ReviewReportResponse:
+    """FD-04: flag a review → admin moderation queue (no AI moderation)."""
+    try:
+        result = await report_review(session, user, review_id, request)
+        await session.commit()
+        return result
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get(
+    "/reviews/admin/reports",
+    response_model=ReviewReportListResponse,
+)
+async def get_review_reports_admin(
+    status: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    _: User = Depends(
+        auth_dependencies.require_staff_permission(StaffPermission.DISPUTES)
+    ),
+    session: AsyncSession = Depends(get_session),
+) -> ReviewReportListResponse:
+    data, total = await list_review_reports_admin(session, status, limit, offset)
+    return ReviewReportListResponse(data=data, total=total)
+
+
+@router.patch(
+    "/reviews/admin/reports/{report_id}",
+    response_model=ReviewReportResponse,
+)
+async def patch_review_report_admin(
+    report_id: str,
+    request: ReviewReportAdminUpdate,
+    admin: User = Depends(
+        auth_dependencies.require_staff_permission(StaffPermission.DISPUTES)
+    ),
+    session: AsyncSession = Depends(get_session),
+) -> ReviewReportResponse:
+    try:
+        result = await update_review_report_admin(
+            session, admin, report_id, request
+        )
+        await session.commit()
+        return result
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

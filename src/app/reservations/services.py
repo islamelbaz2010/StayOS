@@ -46,7 +46,12 @@ from .schemas import (
 logger = logging.getLogger(__name__)
 
 
-def _to_response(reservation: Reservation) -> ReservationResponse:
+def _to_response(
+    reservation: Reservation, viewer: User | None = None
+) -> ReservationResponse:
+    # FD-19: internal economics (platform share, host net, fee allocation)
+    # are host/admin-visible only — the guest never sees them.
+    include_breakdown = viewer is None or viewer.id != reservation.guest_id
     paymob_iframe_url: str | None = None
     for pi in reservation.payment_intents:
         if pi.provider == "paymob" and isinstance(pi.provider_metadata, dict):
@@ -64,9 +69,15 @@ def _to_response(reservation: Reservation) -> ReservationResponse:
         children=reservation.children,
         infants=reservation.infants,
         total_amount_egp=reservation.total_amount_egp,
-        host_amount_egp=reservation.host_amount_egp,
-        platform_fee_egp=reservation.platform_fee_egp,
-        guest_fee_egp=reservation.guest_fee_egp,
+        host_amount_egp=(
+            reservation.host_amount_egp if include_breakdown else None
+        ),
+        platform_fee_egp=(
+            reservation.platform_fee_egp if include_breakdown else None
+        ),
+        guest_fee_egp=(
+            reservation.guest_fee_egp if include_breakdown else None
+        ),
         payment_method=reservation.payment_method,
         checked_in_at=reservation.checked_in_at,
         checked_out_at=reservation.checked_out_at,
@@ -88,20 +99,26 @@ def _to_response(reservation: Reservation) -> ReservationResponse:
 
 
 def _calculate_amounts(subtotal_egp: int, discount_pct: float = 0.0) -> dict[str, int]:
+    """Canonical all-inclusive economics (FD-19).
+
+    The guest pays the discounted accommodation total — nothing is added
+    on top. The platform's 12% share is allocated internally from that
+    total; the host receives the remainder. ``guest_fee`` stays 0 for all
+    new reservations (the column survives only for legacy rows recorded
+    under the pre-all-inclusive model).
+    """
+    from app.finance.commercial import compute_booking_economics
+
     discount_amount = int(round(subtotal_egp * discount_pct))
     discounted = subtotal_egp - discount_amount
-    guest_fee = int(round(discounted * settings.GUEST_SERVICE_FEE_PCT))
-    platform_fee = int(round(discounted * settings.PLATFORM_TAKE_RATE_PCT))
-    host_commission = int(round(discounted * settings.HOST_COMMISSION_PCT))
-    host_amount = discounted - host_commission - platform_fee
-    total = discounted + guest_fee
+    economics = compute_booking_economics(discounted)
     return {
         "subtotal": discounted,
         "discount_amount": discount_amount,
-        "guest_fee": guest_fee,
-        "platform_fee": platform_fee,
-        "host_amount": host_amount,
-        "total": total,
+        "guest_fee": 0,
+        "platform_fee": economics.platform_share_egp,
+        "host_amount": economics.host_net_egp,
+        "total": economics.guest_total_egp,
     }
 
 
@@ -203,7 +220,8 @@ async def create_reservation(
             f"Stay must be between {listing.min_nights} and {listing.max_nights} nights"
         )
 
-    total_guests = request.adults + request.children + request.infants
+    # FD-03: adults + children count toward max_guests; infants do not.
+    total_guests = request.adults + request.children
     if total_guests > unit.max_guests:
         raise ValidationError(
             f"Maximum {unit.max_guests} guests allowed for this unit"
@@ -300,7 +318,7 @@ async def create_reservation(
         },
     )
 
-    return _to_response(reservation)
+    return _to_response(reservation, user)
 
 
 async def get_reservation(
@@ -320,7 +338,7 @@ async def get_reservation(
         if unit is None or unit.host_id != user.id:
             raise AuthorizationError("Not authorized to view this reservation")
 
-    return _to_response(reservation)
+    return _to_response(reservation, user)
 
 
 async def list_reservations(
@@ -356,7 +374,7 @@ async def list_reservations(
     )
 
     return ReservationListResponse(
-        data=[_to_response(row) for row in rows],
+        data=[_to_response(row, user) for row in rows],
         pagination=PaginationInfo(
             next_cursor=next_cursor,
             has_more=has_more,
@@ -602,7 +620,7 @@ async def cancel_reservation(
         },
     )
 
-    return _to_response(reservation)
+    return _to_response(reservation, user)
 
 
 async def _issue_refund(intent: Any, refund_amount: int, total_amount: int) -> PaymentStatus:
@@ -727,7 +745,7 @@ async def check_in_reservation(
         },
     )
 
-    return _to_response(reservation)
+    return _to_response(reservation, user)
 
 
 async def check_out_reservation(
@@ -764,7 +782,7 @@ async def check_out_reservation(
         },
     )
 
-    return _to_response(reservation)
+    return _to_response(reservation, user)
 
 
 async def apply_promo_code(
@@ -813,4 +831,4 @@ async def apply_promo_code(
     )
     await session.flush()
 
-    return _to_response(reservation)
+    return _to_response(reservation, user)

@@ -163,7 +163,6 @@ export function PaymentScreen() {
     ? new Date(payment.payment_deadline_at).toLocaleString(dateLocale)
     : null;
   const attemptsRemaining = Math.max(0, 3 - (payment.proof_rejection_count ?? 0));
-  const showFee = (payment.guest_service_fee_egp ?? 0) > 0;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -205,24 +204,13 @@ export function PaymentScreen() {
         <Row label={t("payCheckIn")} value={booking.check_in} />
         <Row label={t("payCheckOut")} value={booking.check_out} />
         <Row label={t("payNights")} value={String(payment.nights)} />
-        {payment.accommodation_amount_egp != null && (
-          <Row
-            label={t("payAccommodation")}
-            value={`${payment.accommodation_amount_egp.toLocaleString()} ${t("egp")}`}
-          />
-        )}
-        {showFee && (
-          <Row
-            label={t("payServiceFee")}
-            value={`${payment.guest_service_fee_egp?.toLocaleString()} ${t("egp")}`}
-          />
-        )}
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>{t("payTotal")}</Text>
           <Text style={styles.totalValue}>
             {payment.amount_egp.toLocaleString()} {t("egp")}
           </Text>
         </View>
+        <Text style={styles.metaText}>{t("includesAllFees")}</Text>
       </View>
 
       {/* Instructions */}

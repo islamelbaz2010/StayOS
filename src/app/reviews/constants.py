@@ -33,3 +33,19 @@ PUBLICATION_WINDOW_DAYS = 14
 # only within this many days after the stay ends (checkout). After the
 # window closes, the review option expires.
 REVIEW_ELIGIBILITY_WINDOW_DAYS = 14
+
+
+class ReviewReportReason(StrEnum):
+    """Report reason vocabulary for FD-04 review moderation."""
+
+    INAPPROPRIATE = "inappropriate"
+    FALSE_OR_MISLEADING = "false_or_misleading"
+    SPAM = "spam"
+    PRIVACY = "privacy"
+    OTHER = "other"
+
+
+class ReviewReportStatus(StrEnum):
+    OPEN = "open"
+    RESOLVED = "resolved"  # action taken (e.g. review hidden)
+    DISMISSED = "dismissed"  # reviewed, no action

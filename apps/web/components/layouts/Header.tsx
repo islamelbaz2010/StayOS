@@ -240,15 +240,6 @@ export function Header() {
           enabled={isAuthenticated && canModerateListings}
         />
       )}
-      {isAuthenticated && (
-        <Link
-          href={`/${locale}/profile`}
-          className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-          onClick={() => setMobileOpen(false)}
-        >
-          {t("account")}
-        </Link>
-      )}
       <Link
         href={`/${locale}/support`}
         className="text-sm font-medium text-neutral-700 hover:text-accent-600"
@@ -276,9 +267,23 @@ export function Header() {
           <LanguageSwitcher />
           {isLoading ? null : isAuthenticated && user ? (
             <>
-              <span className="hidden text-sm text-neutral-700 sm:inline">
-                {user.display_name || user.phone_number || user.email || user.id}
-              </span>
+              {/* FD-17: profile is reached through the account/avatar
+                  affordance — it is not a primary nav destination. */}
+              <Link
+                href={`/${locale}/profile`}
+                aria-label={t("account")}
+                className="hidden items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm text-neutral-700 hover:bg-neutral-100 sm:inline-flex"
+              >
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                  {(user.display_name || user.phone_number || user.email || "?")
+                    .charAt(0)
+                    .toUpperCase()}
+                </span>
+                {user.display_name ||
+                  user.phone_number ||
+                  user.email ||
+                  t("account")}
+              </Link>
               <button
                 type="button"
                 onClick={async () => {

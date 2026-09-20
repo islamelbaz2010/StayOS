@@ -102,6 +102,35 @@ async def get_host_earnings_endpoint(
         raise to_http_exception(exc) from exc
 
 
+@router.post(
+    "/earnings/simulate",
+    response_model=host_schemas.EarningsSimulateResponse,
+)
+async def simulate_earnings_endpoint(
+    request: host_schemas.EarningsSimulateRequest,
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+) -> host_schemas.EarningsSimulateResponse:
+    """Host earnings simulator (FD-21) — canonical pricing engine,
+    host-side economics only."""
+    try:
+        return await host_services.simulate_earnings(user, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/performance", response_model=host_schemas.HostPerformanceResponse)
+async def get_host_performance_endpoint(
+    days: int = Query(default=90, ge=7, le=365),
+    user: User = Depends(auth_dependencies.require_role("host", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> host_schemas.HostPerformanceResponse:
+    """Host Performance Center (FD-23) — canonical aggregates."""
+    try:
+        return await host_services.get_host_performance(session, user, days)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
 # ============================================================
 # HOST CALENDAR
 # ============================================================

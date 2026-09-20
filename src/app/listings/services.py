@@ -193,6 +193,9 @@ def _to_listing_response(
         sleeping_arrangements=listing.sleeping_arrangements,
         base_price_egp=listing.base_price_egp,
         cleaning_fee_egp=listing.cleaning_fee_egp,
+        listing_discount_pct=int(listing.listing_discount_pct or 0),
+        weekly_discount_pct=int(listing.weekly_discount_pct or 0),
+        monthly_discount_pct=int(listing.monthly_discount_pct or 0),
         cancellation_policy=listing.cancellation_policy,
         instant_book=bool(listing.instant_book),
         price=listing.base_price_egp,
@@ -717,10 +720,6 @@ async def search_listings(
         for unit, listing, lat, lng in rows
     ]
     has_search_dates = filters.check_in is not None and filters.check_out is not None
-    alpha_free_bookings_remaining = False
-    if has_search_dates:
-        completed = await bookings_repository.count_global_completed_bookings(session)
-        alpha_free_bookings_remaining = completed < settings.ALPHA_GUEST_FREE_BOOKINGS
     for item, (unit, listing, _, _) in zip(data, rows, strict=True):
         avg_rating, review_count = ratings_map.get(unit.id, (None, 0))
         item["average_rating"] = avg_rating
@@ -729,20 +728,17 @@ async def search_listings(
         if has_search_dates:
             nights = (filters.check_out - filters.check_in).days
             item["nights"] = nights
-            item["total_egp"] = pricing.compute_subtotal(
+            accommodation = pricing.compute_subtotal(
                 listing, unit.calendar_rules, filters.check_in, filters.check_out
             )
-            # Present the all-in trip price (cleaning + guest service fee),
-            # matching the booking quote so the search card total equals
-            # what the guest actually pays at checkout.
+            # All-inclusive pricing (Founder commercial decision): the
+            # search-card total is the final guest price — the applicable
+            # host discount applied, cleaning included, no added fee.
+            discount_pct = pricing.applicable_discount_pct(listing, nights)
+            accommodation -= int(round(accommodation * discount_pct / 100))
             cleaning = listing.cleaning_fee_egp or 0
-            fee_base = item["total_egp"] + cleaning
-            service_fee = (
-                0
-                if alpha_free_bookings_remaining
-                else int(round(fee_base * settings.GUEST_SERVICE_FEE_PCT))
-            )
-            item["total_egp"] = fee_base + service_fee
+            fee_base = accommodation + cleaning
+            item["total_egp"] = fee_base
             effective_nightly = int(round(fee_base / nights)) if nights else None
             item["effective_nightly_egp"] = effective_nightly
             item["discounted"] = bool(

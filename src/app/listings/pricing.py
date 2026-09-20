@@ -32,6 +32,27 @@ def get_day_price(
     return price
 
 
+# Length-of-stay thresholds for host promotions (FD-08). Exactly one
+# discount applies per booking — the most specific applicable one.
+WEEKLY_DISCOUNT_MIN_NIGHTS = 7
+MONTHLY_DISCOUNT_MIN_NIGHTS = 28
+
+
+def applicable_discount_pct(listing: UnitListing, nights: int) -> int:
+    """The single applicable promotional discount for a stay length.
+
+    Precedence: a general listing promotion beats length-of-stay
+    discounts; monthly beats weekly. No stacking (alpha rule).
+    """
+    if listing.listing_discount_pct:
+        return int(listing.listing_discount_pct)
+    if nights >= MONTHLY_DISCOUNT_MIN_NIGHTS and listing.monthly_discount_pct:
+        return int(listing.monthly_discount_pct)
+    if nights >= WEEKLY_DISCOUNT_MIN_NIGHTS and listing.weekly_discount_pct:
+        return int(listing.weekly_discount_pct)
+    return 0
+
+
 def compute_subtotal(
     listing: UnitListing,
     rules: list[CalendarRule],

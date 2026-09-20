@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from app.auth.constants import KycStatus, UserRole
 
@@ -31,6 +31,9 @@ class UserResponse(BaseModel):
     # True when a password is set (email+password login enabled). Derived in
     # the route — the ORM exposes password_hash, never serialized here.
     has_password: bool = False
+    # StayOS Local Fit (FD-24): the guest's stay preferences, a list of
+    # supported rule keys. Empty/null means matching is not shown.
+    guest_preferences: list[str] | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -41,6 +44,36 @@ class AccountUpdate(BaseModel):
     date_of_birth: date | None = None
     tax_id: str | None = None
     address: dict[str, Any] | None = None
+    # Host payout preferences (FD-26) — collection only. Payout execution
+    # stays gated on provider/legal prerequisites; these fields are the
+    # host's declared destination, not a live disbursement mandate.
+    payout_method: str | None = Field(default=None, max_length=30)
+    payout_bank_name: str | None = Field(default=None, max_length=100)
+    payout_account_number: str | None = Field(default=None, max_length=100)
+    payout_wallet_msisdn: str | None = Field(default=None, max_length=30)
+    payout_holder_name: str | None = Field(default=None, max_length=255)
+
+    @field_validator("payout_method")
+    @classmethod
+    def _valid_payout_method(cls, v: str | None) -> str | None:
+        # FD-26 supported channels: bank account / IBAN, Egyptian mobile
+        # wallet, Paymob payout channel. Execution stays provider-gated.
+        allowed = {"bank", "iban", "wallet", "paymob"}
+        if v is not None and v not in allowed:
+            raise ValueError(f"payout_method must be one of {sorted(allowed)}")
+        return v
+
+
+class GuestPreferencesUpdate(BaseModel):
+    guest_preferences: list[str] = Field(default_factory=list)
+
+
+def _mask_payout(value: str | None) -> str | None:
+    """Never serialize full payout destination details — last four only."""
+    if not value:
+        return value
+    tail = value[-4:] if len(value) > 4 else value
+    return f"••••{tail}"
 
 
 class AccountResponse(BaseModel):
@@ -53,8 +86,17 @@ class AccountResponse(BaseModel):
     date_of_birth: date | None
     tax_id: str | None
     address: dict[str, Any] | None
+    payout_method: str | None = None
+    payout_bank_name: str | None = None
+    payout_account_number: str | None = None
+    payout_wallet_msisdn: str | None = None
+    payout_holder_name: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    @field_serializer("payout_account_number", "payout_wallet_msisdn")
+    def _serialize_payout(self, value: str | None) -> str | None:
+        return _mask_payout(value)
 
 
 class UserExportResponse(BaseModel):

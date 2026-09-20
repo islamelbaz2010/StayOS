@@ -109,6 +109,9 @@ class ListingCreate(BaseModel):
     accessibility_features: list[str] = Field(default_factory=list)
     base_price_egp: int = Field(..., ge=100)
     cleaning_fee_egp: int = Field(default=0, ge=0)
+    listing_discount_pct: int = Field(default=0, ge=0, le=90)
+    weekly_discount_pct: int = Field(default=0, ge=0, le=90)
+    monthly_discount_pct: int = Field(default=0, ge=0, le=90)
     cancellation_policy: str = Field(default="FLEXIBLE", min_length=1, max_length=50)
     instant_book: bool = False
     weekend_mult: float = Field(default=1.0, ge=0.0)
@@ -205,6 +208,9 @@ class ListingUpdate(BaseModel):
     accessibility_features: list[str] | None = None
     base_price_egp: int | None = Field(None, ge=100)
     cleaning_fee_egp: int | None = Field(None, ge=0)
+    listing_discount_pct: int | None = Field(None, ge=0, le=90)
+    weekly_discount_pct: int | None = Field(None, ge=0, le=90)
+    monthly_discount_pct: int | None = Field(None, ge=0, le=90)
     cancellation_policy: str | None = Field(None, min_length=1, max_length=50)
     instant_book: bool | None = None
     category: str | None = Field(None, min_length=1, max_length=50)
@@ -342,6 +348,9 @@ class ListingResponse(BaseModel):
     accessibility_features: list[str] = Field(default_factory=list)
     base_price_egp: int
     cleaning_fee_egp: int
+    listing_discount_pct: int = 0
+    weekly_discount_pct: int = 0
+    monthly_discount_pct: int = 0
     cancellation_policy: str
     instant_book: bool = False
     price: int
@@ -482,6 +491,24 @@ class CalendarDay(BaseModel):
     status: str
     block_type: str | None = None
     price_egp: int
+
+
+class ListingFitCheck(BaseModel):
+    """One explainable Local Fit rule outcome."""
+
+    key: str
+    label_en: str
+    label_ar: str
+    passed: bool
+
+
+class ListingFitResponse(BaseModel):
+    """Rule-based guest↔listing match (FD-24). ``match_pct`` is null when
+    the guest has no saved/evaluable preferences."""
+
+    unit_id: str
+    match_pct: int | None
+    checks: list[ListingFitCheck]
 
 
 class AvailabilityResponse(BaseModel):

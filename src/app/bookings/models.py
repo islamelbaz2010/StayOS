@@ -12,6 +12,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     SmallInteger,
     String,
     Text,
@@ -74,6 +75,12 @@ class Booking(UUIDMixin, TimestampMixin, Base):
     )
     reject_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     cancel_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Host custom offer (FD-07): when set, this all-inclusive total
+    # overrides listing pricing for the booking's payment.
+    custom_total_egp: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
+    offer_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
     unit: Mapped[Unit] = relationship("Unit")
     guest: Mapped["User"] = relationship(
@@ -81,4 +88,48 @@ class Booking(UUIDMixin, TimestampMixin, Base):
         primaryjoin="Booking.guest_id == User.id",
         foreign_keys=[guest_id],
         lazy="raise",
+    )
+
+
+class BookingOffer(UUIDMixin, TimestampMixin, Base):
+    """Host custom offer attached to an inquiry conversation (FD-07).
+
+    The host proposes an all-inclusive total for a date range; the guest
+    can accept — which creates a booking priced at the offer — or decline.
+    One active (pending) offer per conversation keeps the flow simple.
+    """
+
+    __tablename__ = "booking_offers"
+    __table_args__ = (
+        CheckConstraint("check_out > check_in", name="chk_offer_date_range"),
+        CheckConstraint("total_price_egp > 0", name="chk_offer_price_positive"),
+        Index("idx_booking_offers_conversation", "conversation_id"),
+        {"schema": "booking"},
+    )
+
+    conversation_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("messaging.conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    unit_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("pms.units.id"), nullable=False
+    )
+    host_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("auth.users.id"), nullable=False
+    )
+    guest_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("auth.users.id"), nullable=False
+    )
+    check_in: Mapped[date] = mapped_column(Date, nullable=False)
+    check_out: Mapped[date] = mapped_column(Date, nullable=False)
+    # All-inclusive guest price for the whole stay (EGP). Economics are
+    # derived by the canonical engine — never supplied by the client.
+    total_price_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending"
+    )  # pending | accepted | declined | expired | superseded
+    booking_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
     )

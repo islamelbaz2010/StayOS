@@ -8,7 +8,9 @@ from app.auth import dependencies as auth_dependencies
 from app.auth.models import User
 from app.database import get_session
 from app.security.rate_limit import listings_rate_limit
-from app.shared.exceptions import StayOSError, to_http_exception
+from app.shared.exceptions import NotFoundError, StayOSError, to_http_exception
+
+from . import repository as listings_repository
 
 from .schemas import (
     AvailabilityResponse,
@@ -22,6 +24,8 @@ from .schemas import (
     HostReservationCalendarResponse,
     ListingChangeEvent,
     ListingCreate,
+    ListingFitCheck,
+    ListingFitResponse,
     ListingRejectRequest,
     ListingResponse,
     ListingSearchFilters,
@@ -451,6 +455,37 @@ async def post_bulk_pricing(
 ) -> list[CalendarRuleResponse]:
     try:
         return await bulk_update_pricing(session, user, unit_id, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/{unit_id}/fit", response_model=ListingFitResponse)
+async def get_listing_fit_endpoint(
+    unit_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ListingFitResponse:
+    """StayOS Local Fit — explainable rule-based match between the guest's
+    saved preferences and this listing's canonical attributes."""
+    from . import fit as fit_module
+
+    try:
+        unit = await listings_repository.get_unit_with_listing(session, unit_id)
+        if unit is None or unit.listing is None:
+            raise NotFoundError("Listing not found")
+        match_pct, checks = await fit_module.get_listing_fit(
+            session, unit, unit.listing, user
+        )
+        return ListingFitResponse(
+            unit_id=unit_id,
+            match_pct=match_pct,
+            checks=[
+                ListingFitCheck(
+                    key=c.key, label_en=c.label_en, label_ar=c.label_ar, passed=c.passed
+                )
+                for c in checks
+            ],
+        )
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

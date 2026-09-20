@@ -145,10 +145,9 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
     return null;
   }, [checkIn, checkOut, nights, todayStr, listing.minNights, listing.maxNights, t]);
 
-  const totalPrice = quote?.accommodation_egp ?? listing.price * nights;
-  const cleaningFee = quote?.cleaning_fee_egp ?? listing.cleaningFee ?? 0;
-  const serviceFee = quote?.service_fee_egp ?? 0;
-  const grandTotal = quote?.total_egp ?? totalPrice + cleaningFee + serviceFee;
+  // All-inclusive pricing (FD-19): guests see the final total only — the
+  // quote contract no longer exposes accommodation/fee components.
+  const grandTotal = quote?.total_egp ?? listing.price * nights;
 
   function validate(): boolean {
     const nextErrors: Record<string, string> = {};
@@ -528,9 +527,6 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
               <div className="flex justify-between">
                 <span className="text-neutral-600">
                   {formatMoney(quote?.nightly_rate_egp ?? listing.price, listing.currency, moneyLocale)} × {nights} {t("nights")}
-                </span>
-                <span className="font-medium text-brand-900">
-                  {formatMoney(totalPrice, listing.currency, moneyLocale)}
                 </span>
               </div>
 

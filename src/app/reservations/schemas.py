@@ -75,9 +75,11 @@ class ReservationResponse(BaseModel):
     children: int
     infants: int
     total_amount_egp: int
-    host_amount_egp: int
-    platform_fee_egp: int
-    guest_fee_egp: int
+    # Internal economics — populated for host/staff/admin viewers only;
+    # always null on guest-facing responses (FD-19 all-inclusive pricing).
+    host_amount_egp: int | None = None
+    platform_fee_egp: int | None = None
+    guest_fee_egp: int | None = None
     payment_method: str
     checked_in_at: datetime | None
     checked_out_at: datetime | None

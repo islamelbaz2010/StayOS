@@ -1050,8 +1050,8 @@ This manifest lists every document in the StayOS repository. It is the source of
 | **Path** | `docs/release/FOUNDER_DECISION_REGISTER.md` |
 | **Domain** | Product / Governance |
 | **Phase** | Phase 0 → Phase 1 transition |
-| **Status** | Active — canonical register of open founder decisions |
-| **Purpose** | Consolidates every decision requiring founder input (FD-01..FD-16 plus deferred-by-governance items): current implementation, why a decision is required, repository-evidenced options, dependencies, impact of deferral. Options are listed without ranking; engineering does not decide. |
+| **Status** | Closed — all decisions resolved or explicitly blocked per the 2026-09-21 MASTER FOUNDER DECISION CLOSURE |
+| **Purpose** | Consolidates every decision requiring founder input (FD-01..FD-27 plus deferred-by-governance items): current implementation, final status, repository-evidenced options, dependencies, external blockers. |
 | **Owner** | Founder |
 | **Dependencies** | `DECISION_LOG.md`, `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` (LIST 3), ADRs |
 | **Consumers** | Founder, product engineering |
@@ -1068,6 +1068,19 @@ This manifest lists every document in the StayOS repository. It is the source of
 | **Owner** | Founder |
 | **Dependencies** | Deployed web preview, `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` |
 | **Consumers** | Founder, product engineering |
+
+### docs/STAYOS_PAYMENT_AND_COMMERCIAL_MODEL.md
+
+| Field | Value |
+|-------|-------|
+| **Path** | `docs/STAYOS_PAYMENT_AND_COMMERCIAL_MODEL.md` |
+| **Domain** | Product / Finance |
+| **Phase** | Phase 1 |
+| **Status** | Canonical — commercial + payment flow contract |
+| **Purpose** | Single source for the 12% all-inclusive commercial model (6% host + 6% guest internal allocation), guest-facing total-only pricing rule, payment → funds-held → check-in → protection window → payout flow, state machine, discounts/offers, and external legal/provider blockers. |
+| **Owner** | Founder |
+| **Dependencies** | `src/app/finance/commercial.py`, `src/app/config.py`, `docs/release/FOUNDER_DECISION_REGISTER.md` |
+| **Consumers** | Engineering, finance, counsel |
 
 ---
 

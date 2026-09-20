@@ -2,7 +2,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
-from .constants import SUBRATING_KEYS
+from .constants import (
+    SUBRATING_KEYS,
+    ReviewReportReason,
+    ReviewReportStatus,
+)
 
 
 def _validate_subratings(
@@ -98,3 +102,37 @@ class ReviewListResponse(BaseModel):
 class RatingAggregate(BaseModel):
     average_rating: float | None
     review_count: int
+
+
+class ReviewReportCreate(BaseModel):
+    """FD-04: flag a review for admin moderation."""
+
+    reason: ReviewReportReason
+    details: str | None = Field(None, max_length=2000)
+
+
+class ReviewReportResponse(BaseModel):
+    id: str
+    review_id: str
+    reporter_id: str
+    reason: str
+    details: str | None
+    status: str
+    admin_notes: str | None = None
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ReviewReportAdminUpdate(BaseModel):
+    status: ReviewReportStatus | None = None
+    admin_notes: str | None = Field(None, max_length=5000)
+    # Moderation action: hide the reported review from public surfaces.
+    hide_review: bool = False
+
+
+class ReviewReportListResponse(BaseModel):
+    data: list[ReviewReportResponse]
+    total: int

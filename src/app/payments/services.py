@@ -26,11 +26,14 @@ from app.shared.exceptions import (
 )
 from app.shared.models import OutboxEvent
 
+from app.finance import commercial
+
 from . import repository as payments_repository
 from .constants import PaymentStatus
 from .models import Payment
 from .schemas import (
     BookingQuote,
+    InternalQuote,
     PaymentListItem,
     PaymentProofDownloadResponse,
     PaymentProofPresignResponse,
@@ -117,7 +120,7 @@ def _payment_unit_context(payment: Payment) -> tuple[str | None, str | None]:
     return unit_title, unit_cover_image
 
 
-def _to_response(payment: Payment) -> PaymentResponse:
+def _to_response(payment: Payment, *, include_breakdown: bool = False) -> PaymentResponse:
     unit_title, unit_cover_image = _payment_unit_context(payment)
     return PaymentResponse(
         id=payment.id,
@@ -128,8 +131,15 @@ def _to_response(payment: Payment) -> PaymentResponse:
         status=payment.status,
         method=payment.method,
         amount_egp=payment.amount_egp,
-        accommodation_amount_egp=payment.accommodation_amount_egp,
-        guest_service_fee_egp=payment.guest_service_fee_egp,
+        accommodation_amount_egp=(
+            payment.accommodation_amount_egp if include_breakdown else None
+        ),
+        guest_service_fee_egp=(
+            payment.guest_service_fee_egp if include_breakdown else None
+        ),
+        cleaning_fee_egp=(
+            payment.cleaning_fee_egp if include_breakdown else None
+        ),
         refund_amount_egp=payment.refund_amount_egp,
         nights=payment.nights,
         reference_number=payment.reference_number,
@@ -243,8 +253,18 @@ async def get_booking_quote(
     if unit.status != UnitStatus.LISTED:
         raise ValidationError("Unit is not available for booking")
     nights = (check_out - check_in).days
-    return await compute_booking_quote(
+    internal = await compute_booking_quote(
         session, unit_id, check_in.isoformat(), check_out.isoformat(), listing, nights
+    )
+    # Guest-facing contract: total-only. Internal components never leave
+    # this function on the public path.
+    return BookingQuote(
+        unit_id=internal.unit_id,
+        check_in=internal.check_in,
+        check_out=internal.check_out,
+        nights=internal.nights,
+        nightly_rate_egp=internal.nightly_rate_egp,
+        total_egp=internal.total_egp,
     )
 
 
@@ -255,7 +275,7 @@ async def compute_booking_quote(
     check_out: str,
     listing: UnitListing,
     nights: int,
-) -> BookingQuote:
+) -> "InternalQuote":
     """Single source of truth for guest pricing: nightly base + cleaning fee
     + the V1 guest service fee (waived while the alpha free-booking
     incentive still applies). Shared by the quote endpoint and payment
@@ -273,27 +293,33 @@ async def compute_booking_quote(
     accommodation_egp = pricing.compute_subtotal(
         listing, rules, check_in_date, check_out_date
     )
+    discount_pct = pricing.applicable_discount_pct(listing, nights)
+    discount_egp = int(round(accommodation_egp * discount_pct / 100))
+    discounted_accommodation_egp = accommodation_egp - discount_egp
     nightly_rate_egp = (
-        accommodation_egp // nights if nights > 0 else listing.base_price_egp
+        discounted_accommodation_egp // nights
+        if nights > 0
+        else listing.base_price_egp
     )
     cleaning_fee_egp = listing.cleaning_fee_egp or 0
-    subtotal = accommodation_egp + cleaning_fee_egp
 
-    global_completed = await bookings_repository.count_global_completed_bookings(session)
-    waived = global_completed < settings.ALPHA_GUEST_FREE_BOOKINGS
-    service_fee_egp = 0 if waived else int(round(subtotal * settings.GUEST_SERVICE_FEE_PCT))
+    # All-inclusive guest pricing (Founder commercial decision): the guest
+    # total is the discounted accommodation amount plus host-set charges
+    # like cleaning. StayOS's 12% economics come OUT of this amount via the
+    # canonical engine — never on top, never as a guest-facing line item.
+    economics = commercial.compute_booking_economics(
+        discounted_accommodation_egp, cleaning_fee_egp
+    )
 
-    return BookingQuote(
+    return InternalQuote(
         unit_id=unit_id,
         check_in=check_in,
         check_out=check_out,
         nights=nights,
         nightly_rate_egp=nightly_rate_egp,
-        accommodation_egp=accommodation_egp,
+        accommodation_egp=discounted_accommodation_egp,
         cleaning_fee_egp=cleaning_fee_egp,
-        service_fee_egp=service_fee_egp,
-        service_fee_waived=waived,
-        total_egp=subtotal + service_fee_egp,
+        total_egp=economics.guest_total_egp,
     )
 
 
@@ -318,9 +344,16 @@ async def create_payment_for_booking(
         listing,
         nights,
     )
-    subtotal = quote.accommodation_egp + quote.cleaning_fee_egp
-    guest_fee = quote.service_fee_egp
-    amount = quote.total_egp
+    # A host custom offer (FD-07) overrides the listing-priced quote: the
+    # offered total IS the all-inclusive guest price.
+    if booking.custom_total_egp is not None:
+        subtotal = booking.custom_total_egp
+        cleaning_fee = 0
+        amount = subtotal
+    else:
+        subtotal = quote.accommodation_egp + quote.cleaning_fee_egp
+        cleaning_fee = quote.cleaning_fee_egp
+        amount = quote.total_egp
 
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()
@@ -337,8 +370,10 @@ async def create_payment_for_booking(
         unit_id=booking.unit_id,
         amount_egp=amount,
         accommodation_amount_egp=subtotal,
-        guest_service_fee_egp=guest_fee,
-        cleaning_fee_egp=quote.cleaning_fee_egp,
+        # New commercial model: there is no guest service fee. The column is
+        # kept for legacy rows whose stored value still drives refund math.
+        guest_service_fee_egp=0,
+        cleaning_fee_egp=cleaning_fee,
         nights=nights,
         reference_number=reference,
         instructions=instructions,
@@ -364,12 +399,20 @@ async def create_payment_for_booking(
     return _to_response(payment)
 
 
+async def _can_view_breakdown(session: AsyncSession, user: User) -> bool:
+    """Only admin/staff holding the payments permission may see internal
+    amount breakdowns — guests and hosts get total-only responses."""
+    return await has_permission(session, user, "payments")
+
+
 async def get_payment(
     session: AsyncSession, user: User, payment_id: str
 ) -> PaymentResponse:
     payment = await payments_repository.get_payment_or_raise(session, payment_id)
     await _assert_authorized_to_view(session, payment, user)
-    return _to_response(payment)
+    return _to_response(
+        payment, include_breakdown=await _can_view_breakdown(session, user)
+    )
 
 
 async def get_payment_by_booking(
@@ -387,7 +430,9 @@ async def get_payment_by_booking(
     payment = await payments_repository.get_payment_by_booking(session, booking_id)
     if payment is None:
         raise NotFoundError("Payment not found for this booking")
-    return _to_response(payment)
+    return _to_response(
+        payment, include_breakdown=await _can_view_breakdown(session, user)
+    )
 
 
 async def presign_proof_upload(
@@ -581,7 +626,30 @@ async def verify_payment(
         },
     )
 
-    return _to_response(updated)
+    # Founder payment model: a verified payment means funds are collected
+    # and HELD under StayOS control — create the escrow record now so the
+    # host cannot be paid before the check-in protection window elapses.
+    # The finance consumer splits host net / platform share at release.
+    await _emit_outbox_event(
+        session,
+        aggregate_id=payment.id,
+        event_type="booking.payment_confirmed",
+        payload={
+            "reservation_id": payment.booking_id,
+            "booking_id": payment.booking_id,
+            "payment_id": payment.id,
+            "amount_egp": payment.amount_egp,
+            "host_id": payment.host_id,
+            "accommodation_egp": (
+                payment.accommodation_amount_egp
+                if payment.accommodation_amount_egp is not None
+                else payment.amount_egp - (payment.cleaning_fee_egp or 0)
+            ),
+            "cleaning_fee_egp": payment.cleaning_fee_egp or 0,
+        },
+    )
+
+    return _to_response(updated, include_breakdown=True)
 
 
 async def refund_payment(
@@ -622,7 +690,7 @@ async def refund_payment(
         },
     )
 
-    return _to_response(updated)
+    return _to_response(updated, include_breakdown=True)
 
 
 async def reject_payment(
@@ -690,7 +758,7 @@ async def reject_payment(
             reason="payment_proof_resubmission_exhausted",
         )
 
-    return _to_response(updated)
+    return _to_response(updated, include_breakdown=True)
 
 
 async def list_pending_payments(

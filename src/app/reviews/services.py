@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
@@ -9,8 +9,8 @@ from app.bookings.constants import BookingStatus
 from app.shared.exceptions import AuthorizationError, ConflictError, NotFoundError, ValidationError
 
 from . import repository as reviews_repository
-from .constants import REVIEW_ELIGIBILITY_WINDOW_DAYS
-from .models import Review
+from .constants import REVIEW_ELIGIBILITY_WINDOW_DAYS, ReviewReportStatus
+from .models import Review, ReviewReport
 from .schemas import (
     GuestReviewListResponse,
     HostReviewResponse,
@@ -18,6 +18,9 @@ from .schemas import (
     RatingAggregate,
     ReviewCreate,
     ReviewListResponse,
+    ReviewReportAdminUpdate,
+    ReviewReportCreate,
+    ReviewReportResponse,
     ReviewResponse,
 )
 
@@ -311,3 +314,97 @@ async def get_listing_rating(session: AsyncSession, unit_id: str) -> RatingAggre
         session, unit_id
     )
     return RatingAggregate(average_rating=average_rating, review_count=review_count)
+
+
+async def report_review(
+    session: AsyncSession,
+    user: User,
+    review_id: str,
+    request: ReviewReportCreate,
+) -> ReviewReportResponse:
+    """FD-04: any signed-in user can flag a review → admin moderation queue."""
+    review = await reviews_repository.get_review_by_id(session, review_id)
+    if review is None:
+        raise NotFoundError("Review not found")
+    if review.reviewer_id == user.id:
+        raise ValidationError("You cannot report your own review")
+
+    existing = await session.execute(
+        select(ReviewReport).where(
+            ReviewReport.review_id == review_id,
+            ReviewReport.reporter_id == user.id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise ConflictError("You have already reported this review")
+
+    report = ReviewReport(
+        review_id=review_id,
+        reporter_id=user.id,
+        reason=request.reason.value,
+        details=request.details,
+        status=ReviewReportStatus.OPEN.value,
+    )
+    session.add(report)
+    await session.flush()
+    await session.refresh(report)
+    return ReviewReportResponse.model_validate(report)
+
+
+async def list_review_reports_admin(
+    session: AsyncSession,
+    status: str | None,
+    limit: int,
+    offset: int,
+) -> tuple[list[ReviewReportResponse], int]:
+    """Admin/staff moderation queue for reported reviews (FD-04)."""
+    stmt = select(ReviewReport).order_by(ReviewReport.created_at.desc())
+    if status:
+        stmt = stmt.where(ReviewReport.status == status)
+    count_result = await session.execute(
+        select(func.count()).select_from(stmt.subquery())
+    )
+    total = count_result.scalar_one()
+    result = await session.execute(stmt.limit(limit).offset(offset))
+    reports = result.scalars().all()
+    return [ReviewReportResponse.model_validate(r) for r in reports], total
+
+
+async def update_review_report_admin(
+    session: AsyncSession,
+    admin: User,
+    report_id: str,
+    request: ReviewReportAdminUpdate,
+) -> ReviewReportResponse:
+    """Resolve/dismiss a report; optionally hide the reported review."""
+    result = await session.execute(
+        select(ReviewReport).where(ReviewReport.id == report_id)
+    )
+    report = result.scalar_one_or_none()
+    if report is None:
+        raise NotFoundError("Review report not found")
+
+    if request.hide_review:
+        review = await reviews_repository.get_review_by_id(
+            session, report.review_id
+        )
+        if review is not None:
+            review.is_hidden = True
+            session.add(review)
+
+    if request.status is not None:
+        report.status = request.status.value
+        if request.status != ReviewReportStatus.OPEN:
+            report.resolved_by = admin.id
+            report.resolved_at = datetime.now(timezone.utc)
+    elif request.hide_review:
+        report.status = ReviewReportStatus.RESOLVED.value
+        report.resolved_by = admin.id
+        report.resolved_at = datetime.now(timezone.utc)
+    if request.admin_notes is not None:
+        report.admin_notes = request.admin_notes
+
+    session.add(report)
+    await session.flush()
+    await session.refresh(report)
+    return ReviewReportResponse.model_validate(report)

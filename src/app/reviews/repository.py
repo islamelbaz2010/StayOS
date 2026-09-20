@@ -121,6 +121,7 @@ async def list_reviews_for_unit(
         .where(
             Review.unit_id == unit_id,
             Review.reviewer_role == "guest",
+            Review.is_hidden == False,  # noqa: E712
         )
         .order_by(Review.created_at.desc())
         .limit(limit)
@@ -161,6 +162,7 @@ async def get_rating_aggregate_for_unit(
         select(func.avg(Review.rating), func.count(Review.id)).where(
             Review.unit_id == unit_id,
             Review.reviewer_role == "guest",
+            Review.is_hidden == False,  # noqa: E712
         )
     )
     avg_rating, count = result.one()
@@ -179,6 +181,7 @@ async def get_subrating_averages_for_unit(
         select(Review.subratings).where(
             Review.unit_id == unit_id,
             Review.reviewer_role == "guest",
+            Review.is_hidden == False,  # noqa: E712
             Review.subratings.is_not(None),
         )
     )
@@ -207,6 +210,7 @@ async def get_rating_distribution_for_unit(
         select(Review.rating, func.count(Review.id)).where(
             Review.unit_id == unit_id,
             Review.reviewer_role == "guest",
+            Review.is_hidden == False,  # noqa: E712
         ).group_by(Review.rating)
     )
     counts = {row[0]: row[1] for row in result.all()}
@@ -223,6 +227,7 @@ async def get_rating_aggregates_for_units(
         .where(
             Review.unit_id.in_(unit_ids),
             Review.reviewer_role == "guest",
+            Review.is_hidden == False,  # noqa: E712
         )
         .group_by(Review.unit_id)
     )
@@ -238,6 +243,7 @@ async def count_reviews_by_guest(session: AsyncSession, guest_id: str) -> int:
         select(func.count(Review.id)).where(
             Review.guest_id == guest_id,
             Review.reviewer_role == "guest",
+            Review.is_hidden == False,  # noqa: E712
         )
     )
     return result.scalar_one()
@@ -254,6 +260,7 @@ async def count_reviews_by_guests(
         .where(
             Review.guest_id.in_(guest_ids),
             Review.reviewer_role == "guest",
+            Review.is_hidden == False,  # noqa: E712
         )
         .group_by(Review.guest_id)
     )
@@ -270,6 +277,7 @@ async def list_host_reviews_for_guest(
         .where(
             Review.guest_id == guest_id,
             Review.reviewer_role == "host",
+            Review.is_hidden == False,  # noqa: E712
         )
         .order_by(Review.created_at.desc())
         .limit(limit)
@@ -286,6 +294,7 @@ async def get_guest_rating_aggregate(
         select(func.avg(Review.rating), func.count(Review.id)).where(
             Review.guest_id == guest_id,
             Review.reviewer_role == "host",
+            Review.is_hidden == False,  # noqa: E712
         )
     )
     avg_rating, count = result.one()
@@ -303,6 +312,7 @@ async def get_guest_rating_aggregates(
         .where(
             Review.guest_id.in_(guest_ids),
             Review.reviewer_role == "host",
+            Review.is_hidden == False,  # noqa: E712
         )
         .group_by(Review.guest_id)
     )

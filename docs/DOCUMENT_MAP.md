@@ -236,7 +236,8 @@ Documents covering the technical build, standards, and architecture.
 | [`docs/RELEASE_TECHNICAL_HANDOFF.md`](RELEASE_TECHNICAL_HANDOFF.md) | Evidence-based release handoff: environments, URLs, providers, security, blockers, onboarding | Ph0→Ph1 | Active |
 | [`docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md`](benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md) | Airbnb 1:1 benchmark closure register — 204 requirements, statuses, gap classification, gate result | Ph0→Ph1 | Active |
 | [`docs/benchmark/STAYOS_DIFFERENTIATION_GATE.md`](benchmark/STAYOS_DIFFERENTIATION_GATE.md) | Differentiation gate rule + blank founder-idea framework | Ph1+ | Active (gated) |
-| [`docs/release/FOUNDER_DECISION_REGISTER.md`](release/FOUNDER_DECISION_REGISTER.md) | Canonical open founder decisions (FD-01..FD-16) w/ repo-evidenced options | Ph0→Ph1 | Active |
+| [`docs/release/FOUNDER_DECISION_REGISTER.md`](release/FOUNDER_DECISION_REGISTER.md) | Founder decisions (FD-01..FD-27) — CLOSED per 2026-09-21 closure | Ph0→Ph1 | Closed |
+| [`docs/STAYOS_PAYMENT_AND_COMMERCIAL_MODEL.md`](STAYOS_PAYMENT_AND_COMMERCIAL_MODEL.md) | Canonical 12% all-inclusive commercial model + payment/escrow/payout flow | Ph1 | Active |
 | [`docs/release/FOUNDER_WEB_ACCEPTANCE_REGISTER.md`](release/FOUNDER_WEB_ACCEPTANCE_REGISTER.md) | Founder web acceptance review surfaces + hardening results (engineering-verified vs Founder-accepted) + observation register | Ph0→Ph1 | Active |
 | [`docs/phase--1/risks/08_TECHNICAL_RISKS.md`](phase--1/risks/08_TECHNICAL_RISKS.md) | 100 technical risks to plan against | Ph-1 | Complete |
 | [`archive/legacy/phase-3-customer/ENGINEERING_BACKLOG.md`](../archive/legacy/phase-3-customer/ENGINEERING_BACKLOG.md) | Legacy engineering backlog — superseded | Archive | Archive |

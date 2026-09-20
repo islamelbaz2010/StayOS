@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import repository as auth_repository
-from app.auth.constants import StaffPermission, UserRole
+from app.auth.constants import STAFF_ROLE_GROUPS, StaffPermission, UserRole
 from app.auth.models import StaffPermission as StaffPermissionRow
 from app.auth.models import User
 from app.shared.exceptions import ConflictError, NotFoundError, ValidationError
@@ -93,7 +93,13 @@ async def list_staff(session: AsyncSession) -> list[StaffResponse]:
 async def create_staff(
     session: AsyncSession, admin: User, request: StaffCreateRequest
 ) -> StaffResponse:
-    invalid = set(request.permissions) - _valid_permissions()
+    permissions = set(request.permissions)
+    if request.role_group:
+        group = STAFF_ROLE_GROUPS.get(request.role_group)
+        if group is None:
+            raise ValidationError(f"Unknown role group: {request.role_group}")
+        permissions |= set(group["permissions"])  # type: ignore[arg-type]
+    invalid = permissions - _valid_permissions()
     if invalid:
         raise ValidationError(f"Unknown permissions: {sorted(invalid)}")
 
@@ -120,7 +126,7 @@ async def create_staff(
         kyc_status="verified",  # internal accounts bypass guest KYC
     )
 
-    for permission in sorted(set(request.permissions)):
+    for permission in sorted(permissions):
         session.add(
             StaffPermissionRow(
                 id=str(uuid4()),
@@ -139,11 +145,11 @@ async def create_staff(
         payload={
             "user_id": user.id,
             "created_by": admin.id,
-            "permissions": sorted(set(request.permissions)),
+            "permissions": sorted(permissions),
         },
     )
 
-    return _to_response(user, sorted(set(request.permissions)))
+    return _to_response(user, sorted(permissions))
 
 
 async def update_staff(

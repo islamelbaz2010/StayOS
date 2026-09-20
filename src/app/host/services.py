@@ -19,9 +19,11 @@ from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.bookings.schemas import BookingResponse
 from app.bookings.services import _compute_stay_phase, _to_response
-from app.listings.constants import UnitStatus
+from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.payments import repository as payments_repository
+from app.payments.constants import PaymentStatus
+from app.payments.models import Payment
 from app.shared.exceptions import (
     AuthorizationError,
     ConflictError,
@@ -677,17 +679,20 @@ async def get_host_calendar(
 # LISTING READINESS
 # ============================================================
 
-# Required fields for a listing to be publishable.
-# These are the minimum for a guest to have a complete booking experience.
+# Required fields for a listing to be publishable (FD-22 checklist):
+# identity verified, authorization complete, photos, description,
+# amenities, pricing, availability, cancellation policy, payout info.
 _REQUIRED_FIELDS: dict[str, tuple[str, str, str]] = {
     # key: (model_attr, field_label_en, field_label_ar)
     "title": ("title_ar", "Listing title", "عنوان الإقامة"),
     "description": ("description_ar", "Description", "الوصف"),
     "photos": ("_has_photos", "At least one photo", "صورة واحدة على الأقل"),
+    "amenities": ("amenities", "At least one amenity", "ميزة واحدة على الأقل"),
     "price": ("base_price_egp", "Base price (min 100 EGP)", "السعر الأساسي (100 جنيه على الأقل)"),
     "address": ("address", "Property address", "عنوان العقار"),
     "check_in_instructions": ("check_in_instructions", "Check-in instructions", "تعليمات تسجيل الوصول"),
     "house_rules": ("house_rules", "House rules", "قواعد المنزل"),
+    "cancellation_policy": ("cancellation_policy", "Cancellation policy", "سياسة الإلغاء"),
 }
 
 
@@ -700,12 +705,18 @@ async def compute_listing_readiness(
     missing_items: list[str] = []
     missing_labels: dict[str, str] = {}
 
+    # Total checks = listing field checks + host/account-level checks
+    # (identity, authorization, availability, payout).
+    _EXTRA_CHECKS = 4
+
     if listing is None:
         missing_items.append("listing_details")
         missing_labels["listing_details"] = "Listing details"
+        total = len(_REQUIRED_FIELDS) + _EXTRA_CHECKS
         return host_schemas.ListingReadinessResponse(
             unit_id=unit.id,
             status=str(ListingReadinessStatus.ACTION_REQUIRED),
+            readiness_pct=0,
             missing_items=missing_items,
             missing_item_labels=missing_labels,
             computed_at=datetime.now(UTC),
@@ -741,6 +752,49 @@ async def compute_listing_readiness(
         missing_items.append("address")
         missing_labels["address"] = "Property address"
 
+    # Host/account-level checks (identity, authorization, availability,
+    # payout info) — FD-22. These gate activation, not drafting.
+    host_user = await auth_repository.get_user_by_id(session, unit.host_id)
+    if host_user is None or host_user.kyc_status != "verified":
+        missing_items.append("identity_verified")
+        missing_labels["identity_verified"] = "Host identity verified"
+
+    if unit.status == UnitStatus.DRAFT:
+        missing_items.append("authorization")
+        missing_labels["authorization"] = "Submit listing for review"
+
+    # Availability: listing is "available" unless the next 30 days are
+    # fully blocked by calendar rules.
+    from app.listings import repository as listings_repository
+
+    today = date.today()
+    horizon = today + timedelta(days=30)
+    rules = await listings_repository.get_calendar_rules_in_range(
+        session, unit.id, today, horizon
+    )
+    blocked_days = {
+        d for r in rules if r.status == str(CalendarStatus.BLOCKED)
+        for d in [max(r.date_from, today) + timedelta(days=i)
+                  for i in range((min(r.date_to, horizon) - max(r.date_from, today)).days)]
+    }
+    if len(blocked_days) >= 30:
+        missing_items.append("availability")
+        missing_labels["availability"] = "Open at least one upcoming date"
+
+    from app.auth.models import Account
+
+    account = await session.scalar(
+        select(Account).where(Account.user_id == unit.host_id)
+    )
+    if account is None or not account.payout_method:
+        missing_items.append("payout_info")
+        missing_labels["payout_info"] = "Payout preference"
+
+    total_checks = len(_REQUIRED_FIELDS) + _EXTRA_CHECKS
+    # "listing_details" isn't one of the named checks — count it as all missing
+    passed = total_checks - min(len(missing_items), total_checks)
+    readiness_pct = max(0, min(100, int(passed * 100 / total_checks)))
+
     status = (
         str(ListingReadinessStatus.READY)
         if not missing_items
@@ -755,6 +809,7 @@ async def compute_listing_readiness(
     return host_schemas.ListingReadinessResponse(
         unit_id=unit.id,
         status=status,
+        readiness_pct=readiness_pct,
         missing_items=missing_items,
         missing_item_labels=missing_labels,
         computed_at=datetime.now(UTC),
@@ -1116,3 +1171,139 @@ async def update_host_profile(
     await session.refresh(user)
 
     return await get_host_profile(session, user)
+
+
+# ============================================================
+# EARNINGS SIMULATOR + PERFORMANCE CENTER (FD-21 / FD-23)
+# ============================================================
+
+async def simulate_earnings(
+    user: User, request: host_schemas.EarningsSimulateRequest
+) -> host_schemas.EarningsSimulateResponse:
+    """Host earnings simulator (FD-21).
+
+    Uses the canonical commercial engine — the same math used by quote,
+    booking, payment and payout. Host-facing only: this response exposes
+    StayOS economics and must never be surfaced to a guest.
+    """
+    _assert_host_or_cohost(user)
+
+    from app.finance.commercial import compute_booking_economics
+
+    base = request.nightly_price_egp * request.nights
+    discount = min(request.discount_pct, 90)
+    discounted = round(base * (100 - discount) / 100)
+    economics = compute_booking_economics(
+        accommodation_egp=discounted, cleaning_fee_egp=request.cleaning_fee_egp
+    )
+    return host_schemas.EarningsSimulateResponse(
+        nightly_price_egp=request.nightly_price_egp,
+        nights=request.nights,
+        accommodation_egp=economics.accommodation_egp,
+        discount_egp=base - discounted,
+        cleaning_fee_egp=request.cleaning_fee_egp,
+        guest_total_egp=economics.guest_total_egp,
+        stayos_share_egp=economics.platform_share_egp,
+        host_net_egp=economics.host_net_egp,
+    )
+
+
+async def get_host_performance(
+    session: AsyncSession, user: User, days: int = 90
+) -> host_schemas.HostPerformanceResponse:
+    """Host Performance Center (FD-23) — canonical aggregates derived
+    from bookings, payments, conversations and calendar. Read-only."""
+    _assert_host_or_cohost(user)
+    host_id = user.id
+    window_start = date.today() - timedelta(days=days)
+
+    unit_rows = await session.execute(
+        select(Unit.id).where(Unit.host_id == host_id)
+    )
+    unit_ids = [r[0] for r in unit_rows.all()]
+    empty = host_schemas.HostPerformanceResponse(
+        period_days=days,
+        total_bookings=0, accepted_bookings=0, completed_stays=0,
+        cancelled_bookings=0, cancellation_rate_pct=0, booked_nights=0,
+        occupancy_pct=0, gross_revenue_egp=0, avg_nightly_egp=0,
+        inquiries=0, per_unit=[],
+    )
+    if not unit_ids:
+        return empty
+
+    booking_rows = (await session.execute(
+        select(Booking).where(
+            Booking.unit_id.in_(unit_ids),
+            Booking.created_at >= datetime.combine(window_start, datetime.min.time()),
+        )
+    )).scalars().all()
+
+    total = len(booking_rows)
+    accepted = sum(1 for b in booking_rows
+                   if b.status in (BookingStatus.CONFIRMED, BookingStatus.COMPLETED))
+    completed = sum(1 for b in booking_rows if b.checked_out_at is not None)
+    cancelled = sum(1 for b in booking_rows if b.status == BookingStatus.CANCELLED)
+    cancel_pct = round(cancelled * 100 / total) if total else 0
+
+    booked_nights = sum(
+        max(0, (b.check_out - b.check_in).days) for b in booking_rows
+        if b.status not in (BookingStatus.CANCELLED, BookingStatus.REJECTED)
+    )
+    listed_nights = days * len(unit_ids)
+    occupancy = min(100, round(booked_nights * 100 / listed_nights)) if listed_nights else 0
+
+    settled = {
+        PaymentStatus.VERIFIED, PaymentStatus.REFUND_PENDING, PaymentStatus.REFUNDED
+    }
+    revenue = int(await session.scalar(
+        select(func.coalesce(func.sum(Payment.amount_egp), 0)).where(
+            Payment.host_id == host_id, Payment.status.in_(settled)
+        )
+    ) or 0)
+    accom_sum = int(await session.scalar(
+        select(func.coalesce(func.sum(Payment.accommodation_amount_egp), 0)).where(
+            Payment.host_id == host_id, Payment.status.in_(settled)
+        )
+    ) or 0)
+    avg_nightly = round(accom_sum / booked_nights) if booked_nights else 0
+
+    # Inquiries = inquiry conversations opened about this host's units.
+    from app.messages.constants import ConversationType
+    from app.messages.models import Conversation
+
+    inquiries = int(await session.scalar(
+        select(func.count(Conversation.id)).where(
+            Conversation.unit_id.in_(unit_ids),
+            Conversation.type == str(ConversationType.INQUIRY),
+            Conversation.created_at >= datetime.combine(window_start, datetime.min.time()),
+        )
+    ) or 0)
+
+    per_unit: list[dict[str, Any]] = []
+    for uid in unit_ids:
+        ub = [b for b in booking_rows if b.unit_id == uid]
+        unights = sum(
+            max(0, (b.check_out - b.check_in).days) for b in ub
+            if b.status not in (BookingStatus.CANCELLED, BookingStatus.REJECTED)
+        )
+        per_unit.append({
+            "unit_id": uid,
+            "bookings": len(ub),
+            "booked_nights": unights,
+            "cancelled": sum(1 for b in ub if b.status == BookingStatus.CANCELLED),
+        })
+
+    return host_schemas.HostPerformanceResponse(
+        period_days=days,
+        total_bookings=total,
+        accepted_bookings=accepted,
+        completed_stays=completed,
+        cancelled_bookings=cancelled,
+        cancellation_rate_pct=cancel_pct,
+        booked_nights=booked_nights,
+        occupancy_pct=occupancy,
+        gross_revenue_egp=revenue,
+        avg_nightly_egp=avg_nightly,
+        inquiries=inquiries,
+        per_unit=per_unit,
+    )

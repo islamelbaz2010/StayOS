@@ -371,10 +371,32 @@ async def test_host_earnings_no_units_returns_zeros(fake_session: AsyncMock, mon
 # LISTING READINESS
 # ============================================================
 
+def _mock_host_level_checks(monkeypatch, fake_session: AsyncMock) -> None:
+    """Satisfy the FD-22 host/account readiness checks (identity verified,
+    dates open, payout preference on file)."""
+    host_user = _make_user(user_id="host-1", kyc_status="verified")
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=host_user)
+    )
+    from app.listings import repository as listings_repository
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
+    account = MagicMock()
+    account.payout_method = "bank"
+    fake_session.scalar = AsyncMock(return_value=account)
+
+
 @pytest.mark.asyncio
-async def test_listing_readiness_complete(fake_session: AsyncMock) -> None:
+async def test_listing_readiness_complete(
+    fake_session: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
     unit = _make_unit(host_id="host-1", unit_id="unit-1")
     listing = _make_listing("unit-1")
+    _mock_host_level_checks(monkeypatch, fake_session)
 
     # Mock photo count query
     photo_result = MagicMock()
@@ -387,12 +409,16 @@ async def test_listing_readiness_complete(fake_session: AsyncMock) -> None:
     result = await host_services.compute_listing_readiness(fake_session, unit, listing)
     assert result.status == host_constants.ListingReadinessStatus.READY
     assert result.missing_items == []
+    assert result.readiness_pct == 100
 
 
 @pytest.mark.asyncio
-async def test_listing_readiness_missing_photos(fake_session: AsyncMock) -> None:
+async def test_listing_readiness_missing_photos(
+    fake_session: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
     unit = _make_unit(host_id="host-1", unit_id="unit-1")
     listing = _make_listing("unit-1")
+    _mock_host_level_checks(monkeypatch, fake_session)
 
     # Mock photo count query — 0 photos
     photo_result = MagicMock()
@@ -402,13 +428,17 @@ async def test_listing_readiness_missing_photos(fake_session: AsyncMock) -> None
     result = await host_services.compute_listing_readiness(fake_session, unit, listing)
     assert result.status == host_constants.ListingReadinessStatus.ACTION_REQUIRED
     assert "photos" in result.missing_items
+    assert 0 < result.readiness_pct < 100
 
 
 @pytest.mark.asyncio
-async def test_listing_readiness_missing_check_in_instructions(fake_session: AsyncMock) -> None:
+async def test_listing_readiness_missing_check_in_instructions(
+    fake_session: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
     unit = _make_unit(host_id="host-1", unit_id="unit-1")
     listing = _make_listing("unit-1")
     listing.check_in_instructions = None  # Missing
+    _mock_host_level_checks(monkeypatch, fake_session)
 
     # Mock photo count query — has photos
     photo_result = MagicMock()
@@ -418,6 +448,48 @@ async def test_listing_readiness_missing_check_in_instructions(fake_session: Asy
     result = await host_services.compute_listing_readiness(fake_session, unit, listing)
     assert result.status == host_constants.ListingReadinessStatus.ACTION_REQUIRED
     assert "check_in_instructions" in result.missing_items
+
+
+@pytest.mark.asyncio
+async def test_listing_readiness_missing_payout_info(
+    fake_session: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FD-22: payout preference is part of the readiness checklist."""
+    unit = _make_unit(host_id="host-1", unit_id="unit-1")
+    listing = _make_listing("unit-1")
+    _mock_host_level_checks(monkeypatch, fake_session)
+    fake_session.scalar = AsyncMock(return_value=None)  # no account row
+
+    photo_result = MagicMock()
+    photo_result.scalar.return_value = 3
+    fake_session.execute = AsyncMock(return_value=photo_result)
+
+    result = await host_services.compute_listing_readiness(fake_session, unit, listing)
+    assert result.status == host_constants.ListingReadinessStatus.ACTION_REQUIRED
+    assert "payout_info" in result.missing_items
+
+
+@pytest.mark.asyncio
+async def test_listing_readiness_unverified_host(
+    fake_session: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FD-22: host identity verification is part of readiness."""
+    unit = _make_unit(host_id="host-1", unit_id="unit-1")
+    listing = _make_listing("unit-1")
+    _mock_host_level_checks(monkeypatch, fake_session)
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_id",
+        AsyncMock(return_value=_make_user(user_id="host-1", kyc_status="unverified")),
+    )
+
+    photo_result = MagicMock()
+    photo_result.scalar.return_value = 3
+    fake_session.execute = AsyncMock(return_value=photo_result)
+
+    result = await host_services.compute_listing_readiness(fake_session, unit, listing)
+    assert result.status == host_constants.ListingReadinessStatus.ACTION_REQUIRED
+    assert "identity_verified" in result.missing_items
 
 
 @pytest.mark.asyncio

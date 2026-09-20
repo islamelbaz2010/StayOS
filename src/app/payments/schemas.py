@@ -40,6 +40,9 @@ class PaymentResponse(BaseModel):
     status: str
     method: str
     amount_egp: int
+    # Amount breakdown is internal commercial data: serialized only for
+    # admin/staff viewers (``include_breakdown``). Guests and hosts always
+    # receive ``None`` — the guest experience is total-only.
     accommodation_amount_egp: int | None = None
     guest_service_fee_egp: int | None = None
     cleaning_fee_egp: int | None = None
@@ -69,7 +72,22 @@ class BookingQuote(BaseModel):
     """Guest-facing price quote for a unit + date range.
 
     Computed by the same routine that prices the actual payment so the
-    total a guest sees before booking always matches the amount charged."""
+    total a guest sees before booking always matches the amount charged.
+    All-inclusive model (FD-19): the response carries ONLY the final
+    price — no accommodation subtotal, no fee lines, no internal
+    economics. "Includes all fees"."""
+
+    unit_id: str
+    check_in: str
+    check_out: str
+    nights: int
+    nightly_rate_egp: int
+    total_egp: int
+
+
+class InternalQuote(BaseModel):
+    """Full internal quote — used by payment creation and host/admin
+    surfaces. Never serialized on a guest-facing endpoint."""
 
     unit_id: str
     check_in: str
@@ -78,8 +96,6 @@ class BookingQuote(BaseModel):
     nightly_rate_egp: int
     accommodation_egp: int
     cleaning_fee_egp: int
-    service_fee_egp: int
-    service_fee_waived: bool
     total_egp: int
 
 

@@ -5,13 +5,14 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.celery_app import celery_app
+from app.config import settings
 from app.listings import repository as listings_repository
 from app.reservations import repository as reservations_repository
 from app.reservations.models import Reservation
 from app.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from app.shared.outbox import write_event
 
-from . import providers
+from . import commercial, providers
 from . import repository as finance_repository
 from .constants import (
     AccountType,
@@ -53,6 +54,50 @@ async def _reservation_or_none(
     )
 
 
+async def _payment_or_none(session: AsyncSession, booking_id: str):
+    """The live booking flow keys escrow off ``booking.id`` — resolve the
+    booking's payment record when no legacy Reservation row exists."""
+    from app.payments import repository as payments_repository
+
+    return await payments_repository.get_payment_by_booking(session, booking_id)
+
+
+async def _booking_host_net(session: AsyncSession, payment) -> int:
+    """Canonical host net for the booking/payment flow: the collected
+    all-inclusive total minus the platform share on the accommodation
+    base, honouring the closed-alpha free-bookings incentive."""
+    from app.bookings import repository as bookings_repository
+
+    host_completed = await bookings_repository.count_host_completed_bookings(
+        session, payment.host_id, exclude_booking_id=payment.booking_id
+    )
+    waived = host_completed < settings.ALPHA_HOST_FREE_BOOKINGS
+    fee_base = payment.accommodation_amount_egp
+    if fee_base is None:
+        fee_base = payment.amount_egp
+    fee_base -= payment.cleaning_fee_egp or 0
+    if fee_base < 0:
+        fee_base = payment.amount_egp
+    return commercial.compute_booking_economics(
+        fee_base,
+        payment.cleaning_fee_egp or 0,
+        platform_share_waived=waived,
+    ).host_net_egp
+
+
+async def _resolve_host_amount(session: AsyncSession, reservation_id: str) -> int:
+    """Host net for an escrowed booking — legacy reservations carry the
+    figure on the row; live bookings derive it from the payment via the
+    canonical commercial engine."""
+    reservation = await _reservation_or_none(session, reservation_id)
+    if reservation is not None:
+        return reservation.host_amount_egp
+    payment = await _payment_or_none(session, reservation_id)
+    if payment is None:
+        raise NotFoundError("Payment not found for escrow release")
+    return await _booking_host_net(session, payment)
+
+
 async def _ensure_reservation_amounts(
     session: AsyncSession,
     reservation_id: str,
@@ -65,19 +110,29 @@ async def _ensure_reservation_amounts(
     if total is None or host_amount is None or host_id is None:
         reservation = await _reservation_or_none(session, reservation_id)
         if reservation is None:
-            raise NotFoundError("Reservation not found")
-        total = total if total is not None else reservation.total_amount_egp
-        host_amount = (
-            host_amount if host_amount is not None else reservation.host_amount_egp
-        )
-        unit = await listings_repository.get_unit_with_listing(
-            session, reservation.unit_id
-        )
-        host_id = (
-            host_id
-            if host_id is not None
-            else (unit.host_id if unit is not None else None)
-        )
+            payment = await _payment_or_none(session, reservation_id)
+            if payment is None:
+                raise NotFoundError("Reservation not found")
+            total = total if total is not None else payment.amount_egp
+            host_amount = (
+                host_amount
+                if host_amount is not None
+                else await _booking_host_net(session, payment)
+            )
+            host_id = host_id if host_id is not None else payment.host_id
+        else:
+            total = total if total is not None else reservation.total_amount_egp
+            host_amount = (
+                host_amount if host_amount is not None else reservation.host_amount_egp
+            )
+            unit = await listings_repository.get_unit_with_listing(
+                session, reservation.unit_id
+            )
+            host_id = (
+                host_id
+                if host_id is not None
+                else (unit.host_id if unit is not None else None)
+            )
 
     if host_id is None:
         raise ValidationError("Host id is required for finance processing")
@@ -317,12 +372,14 @@ async def handle_checkin_event(
 
     escrow = await finance_repository.get_escrow_by_reservation(session, reservation_id)
     if escrow is None:
-        _, host_amount, host_id = await _ensure_reservation_amounts(
+        # Fallback path for bookings whose payment predates escrow
+        # creation — the escrow always represents the full collected total.
+        total, _, host_id = await _ensure_reservation_amounts(
             session, reservation_id, payload
         )
         _, _ = await _get_or_create_wallets(session, host_id)
         escrow = await finance_repository.create_escrow_account(
-            session, reservation_id, host_id, host_amount
+            session, reservation_id, host_id, total
         )
 
     if escrow.status not in (EscrowStatus.CREATED, EscrowStatus.HELD):
@@ -367,17 +424,13 @@ async def release_escrow(
         if escrow.hold_until and datetime.now(UTC) < escrow.hold_until:
             raise ConflictError("Escrow hold period has not elapsed")
 
-    reservation = await _reservation_or_none(session, escrow.reservation_id)
-    if reservation is None:
-        raise NotFoundError("Reservation not found")
-
     key = _idempotency_key("escrow-release", escrow.reservation_id)
     existing = await finance_repository.get_transaction_by_idempotency_key(session, key)
     if existing is not None:
         return escrow
 
     total = escrow.amount_egp
-    host_amount = reservation.host_amount_egp
+    host_amount = await _resolve_host_amount(session, escrow.reservation_id)
     platform_revenue = total - host_amount
 
     _, host_wallet = await _get_or_create_wallets(session, escrow.host_id)
@@ -620,119 +673,6 @@ async def process_payout(
     )
 
     return payout
-
-
-async def handle_manual_payment_verified(
-    session: AsyncSession,
-    payment_id: str,
-    booking_id: str,
-    host_id: str,
-    amount_egp: int,
-) -> None:
-    """Credit host wallet when a manual payment is verified by admin.
-
-    This bridges the manual booking/payment flow to the finance system so
-    that hosts can request payouts after a confirmed booking.
-
-    Applies the Closed Alpha commercial rule:
-    - Host: 0% commission for first ALPHA_HOST_FREE_BOOKINGS completed bookings, then standard rate.
-    - Guest: 0% service fee for first ALPHA_GUEST_FREE_BOOKINGS completed bookings globally, then standard rate.
-    """
-    from app.bookings import repository as bookings_repository
-    from app.config import settings
-
-    key = f"finance-manual-payment-{payment_id}"
-    existing = await finance_repository.get_transaction_by_idempotency_key(
-        session, key
-    )
-    if existing is not None:
-        return
-
-    host_completed = await bookings_repository.count_host_completed_bookings(
-        session, host_id, exclude_booking_id=booking_id
-    )
-    global_completed = await bookings_repository.count_global_completed_bookings(
-        session, exclude_booking_id=booking_id
-    )
-
-    if host_completed < settings.ALPHA_HOST_FREE_BOOKINGS:
-        host_commission_rate = 0.0
-    else:
-        host_commission_rate = settings.HOST_COMMISSION_PCT
-
-    if global_completed < settings.ALPHA_GUEST_FREE_BOOKINGS:
-        guest_fee_rate = 0.0
-    else:
-        guest_fee_rate = settings.GUEST_SERVICE_FEE_PCT
-
-    platform_fee = int(round(amount_egp * settings.PLATFORM_TAKE_RATE_PCT))
-    host_commission = int(round(amount_egp * host_commission_rate))
-    guest_fee = int(round(amount_egp * guest_fee_rate))
-    host_amount = amount_egp - host_commission - platform_fee
-    platform_revenue = host_commission + platform_fee
-
-    platform_wallet, host_wallet = await _get_or_create_wallets(session, host_id)
-
-    tx = await finance_repository.create_financial_transaction(
-        session,
-        transaction_type=TransactionType.PAYMENT_CAPTURE,
-        amount_egp=amount_egp,
-        idempotency_key=key,
-        status=TransactionStatus.COMPLETED,
-    )
-
-    await finance_repository.create_ledger_entry(
-        session,
-        transaction_id=tx.id,
-        ledger_account=LedgerAccount.PLATFORM_CASH,
-        account_type=AccountType.ASSET,
-        entry_type=LedgerEntryType.DEBIT,
-        amount_egp=amount_egp,
-        wallet=platform_wallet,
-        description=f"Manual payment received (booking {booking_id})",
-    )
-
-    await finance_repository.create_ledger_entry(
-        session,
-        transaction_id=tx.id,
-        ledger_account=LedgerAccount.HOST_PAYABLE,
-        account_type=AccountType.LIABILITY,
-        entry_type=LedgerEntryType.CREDIT,
-        amount_egp=host_amount,
-        wallet=host_wallet,
-        description=f"Host payout owed (booking {booking_id})",
-    )
-
-    if platform_revenue > 0:
-        await finance_repository.create_ledger_entry(
-            session,
-            transaction_id=tx.id,
-            ledger_account=LedgerAccount.PLATFORM_REVENUE,
-            account_type=AccountType.REVENUE,
-            entry_type=LedgerEntryType.CREDIT,
-            amount_egp=platform_revenue,
-            description=f"Platform revenue (booking {booking_id})",
-        )
-
-    await write_event(
-        session,
-        aggregate_type="FinancialTransaction",
-        aggregate_id=UUID(tx.id),
-        event_type="finance.manual_payment_captured",
-        payload={
-            "payment_id": payment_id,
-            "booking_id": booking_id,
-            "host_id": host_id,
-            "amount_egp": amount_egp,
-            "host_amount_egp": host_amount,
-            "platform_revenue_egp": platform_revenue,
-            "host_commission_rate": host_commission_rate,
-            "guest_fee_rate": guest_fee_rate,
-            "guest_fee_egp": guest_fee,
-            "host_completed_bookings": host_completed,
-            "global_completed_bookings": global_completed,
-        },
-    )
 
 
 def _bank_last4(bank_info: dict[str, Any] | None) -> str | None:

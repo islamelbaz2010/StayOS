@@ -128,6 +128,23 @@ A. BENCHMARK-COMPLIANT · B. TECHNICAL DEFECT · C. RELEASE BLOCKER · D. FOUNDE
 
 ---
 
+## MASTER FOUNDER DECISION CLOSURE — 2026-09-21 (COMMERCIAL + PRODUCT PACKAGE)
+
+Changes landing on guest/host/staff-facing surfaces in this package:
+
+| Area | Change | Founder-visible on preview |
+|------|--------|----------------------------|
+| Guest pricing | Total-only all-inclusive price on search/listing/booking/checkout/trip — no fee lines, "Includes all fees" | YES — requires Founder acceptance |
+| Mobile | Booking + payment screens now total-only ("Includes all fees") | APK/preview |
+| Profile nav | `/profile` removed from primary nav; avatar/name → profile link (FD-27) | YES |
+| Staff | Role-group templates on staff creation (`GET /admin/staff/role-groups`); granular overrides retained | YES — admin staff page |
+| Reviews | Guests/hosts can report a review → admin moderation queue (hide/dismiss) | YES — admin |
+| Host | Earnings simulator + performance center + expanded listing readiness + custom offers + discounts + payout preferences | YES — host pages |
+
+Internal-only (no guest surface): canonical 12% engine (6%+6% internal
+allocation), payment verification → escrow/funds-held wiring, role-aware
+payment serialization, Local Fit endpoint + guest preferences.
+
 ## FOUNDER OBSERVATION REGISTER (blank — fill during review)
 
 | ID | Surface | Route | Current Behavior | Benchmark Status | Observation | Type | Decision Required? | Potential Impact | Status |

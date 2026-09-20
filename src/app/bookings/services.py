@@ -193,7 +193,8 @@ def _assert_booking_nights(check_in: date, check_out: date, listing: UnitListing
 
 
 def _assert_guest_capacity(unit: Unit, request: BookingCreate) -> None:
-    total_guests = request.adults + request.children + request.infants
+    # FD-03: adults + children count toward max_guests; infants do not.
+    total_guests = request.adults + request.children
     if total_guests > unit.max_guests:
         raise ValidationError(
             f"This unit accommodates a maximum of {unit.max_guests} guests"
@@ -1138,8 +1139,10 @@ async def complete_booking(
 ) -> BookingResponse:
     """Mark a confirmed booking as completed (admin-only).
 
-    This triggers the finance ledger entry and host wallet crediting,
-    applying the Alpha commercial rule based on completed booking counts.
+    Finances are handled by the escrow lifecycle — the payment created an
+    escrow at verification, check-in scheduled the 24h hold release, and
+    the host payable was credited then. Completion is a lifecycle/status
+    transition only; it must never credit a wallet directly.
     """
     if user.role not in (UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only admins can complete bookings")
@@ -1153,19 +1156,6 @@ async def complete_booking(
     updated = await bookings_repository.update_booking(
         session, booking, status=str(BookingStatus.COMPLETED)
     )
-
-    from app.finance import services as finance_services
-    from app.payments import repository as payments_repository
-
-    payment = await payments_repository.get_payment_by_booking(session, booking_id)
-    if payment is not None:
-        await finance_services.handle_manual_payment_verified(
-            session,
-            payment_id=payment.id,
-            booking_id=booking_id,
-            host_id=payment.host_id,
-            amount_egp=payment.amount_egp,
-        )
 
     return _to_response(updated)
 

@@ -110,7 +110,7 @@ Actual implemented architecture (not the intended AWS/ECS architecture — see �
 | Reviews | Booking-scoped host/guest reviews | `reviews/` | — | VERIFIED |
 | Booking lifecycle | `reservations/` (request/expire flow) + `bookings/` (state machine, host accept/reject 24h `REQUEST_EXPIRATION_HOURS`) | `reservations/`, `bookings/` | — | VERIFIED |
 | Search | PostGIS geo search + filters + all-in pricing | `listings/services.py`, `listings/pricing.py` | PostGIS | VERIFIED |
-| Pricing | `GUEST_SERVICE_FEE_PCT=0.04`, `HOST_COMMISSION_PCT=0.10`, `PLATFORM_TAKE_RATE_PCT=0.02`, alpha waivers (`ALPHA_*`) | `config.py`, `listings/pricing.py`, `payments/services.py` | — | VERIFIED (decided values) |
+| Pricing | Canonical: `PLATFORM_TOTAL_SHARE_PCT=0.12`, `HOST_SIDE_SHARE_PCT=0.06`, `GUEST_SIDE_SHARE_PCT=0.06` (FD-19). Legacy `GUEST_SERVICE_FEE_PCT`/`HOST_COMMISSION_PCT`/`PLATFORM_TAKE_RATE_PCT` retained for old rows only | `config.py`, `finance/commercial.py`, `listings/pricing.py`, `payments/services.py`, `finance/services.py` | `docs/STAYOS_PAYMENT_AND_COMMERCIAL_MODEL.md` | VERIFIED (decided values) |
 | Refunds | Cancellation tiers via `CANCELLATION_*` + `REFUND_PROCESSING_DAYS=5` (wired into `booking.cancelled` payload) | `config.py`, `reservations/services.py`, `bookings/services.py` | manual processing | VERIFIED (rules decided; payout manual) |
 | Admin ops | KYC queue, listing moderation, disputes, staff management, CSV import, payments review, discovery console | `operations/`, `staff/`, `importer/`, `apps/web/app/[locale]/admin/` | — | VERIFIED |
 

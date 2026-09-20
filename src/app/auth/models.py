@@ -46,6 +46,11 @@ class User(UUIDMixin, TimestampMixin, Base):
         ARRAY(String), nullable=False, default=list
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # StayOS Local Fit (FD-24): guest stay preferences used by the
+    # rule-based, explainable matching — a list of preference keys.
+    guest_preferences: Mapped[list[str] | None] = mapped_column(
+        JSON, nullable=True
+    )
 
     account: Mapped["Account | None"] = relationship(
         "Account", back_populates="user", uselist=False
@@ -72,6 +77,19 @@ class Account(UUIDMixin, TimestampMixin, Base):
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     tax_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     address: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Host payout preference (FD-26): collection only — actual payout
+    # execution stays blocked until provider/legal prerequisites exist.
+    payout_method: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    payout_bank_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    payout_account_number: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
+    payout_wallet_msisdn: Mapped[str | None] = mapped_column(
+        String(30), nullable=True
+    )
+    payout_holder_name: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="account")
 

@@ -13,6 +13,8 @@ from .schemas import (
     BookingCancellationPreview,
     BookingCancelRequest,
     BookingCreate,
+    BookingOfferCreate,
+    BookingOfferResponse,
     BookingResponse,
     BookingTimelineResponse,
     BookingUpdate,
@@ -45,6 +47,67 @@ async def post_booking(
 ) -> BookingResponse:
     try:
         return await create_booking(session, user, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+# Custom-offer endpoints are declared before /{booking_id} so the literal
+# "offers" segment is not captured as a booking id.
+
+@router.post("/offers", response_model=BookingOfferResponse, status_code=201)
+async def post_booking_offer(
+    request: BookingOfferCreate,
+    conversation_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> BookingOfferResponse:
+    """Host sends a custom-priced stay offer inside a conversation."""
+    from .offers import create_booking_offer
+
+    try:
+        return await create_booking_offer(session, user, conversation_id, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/offers", response_model=list[BookingOfferResponse])
+async def get_conversation_offers(
+    conversation_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> list[BookingOfferResponse]:
+    from .offers import list_conversation_offers
+
+    try:
+        return await list_conversation_offers(session, user, conversation_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/offers/{offer_id}/accept", response_model=BookingResponse)
+async def post_accept_offer(
+    offer_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> BookingResponse:
+    from .offers import accept_booking_offer
+
+    try:
+        return await accept_booking_offer(session, user, offer_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/offers/{offer_id}/decline", response_model=BookingOfferResponse)
+async def post_decline_offer(
+    offer_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> BookingOfferResponse:
+    from .offers import decline_booking_offer
+
+    try:
+        return await decline_booking_offer(session, user, offer_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

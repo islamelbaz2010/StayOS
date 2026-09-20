@@ -1290,7 +1290,8 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
     """Payment creation must record the 24h proof deadline and the
-    accommodation/service-fee split used later by refund computation."""
+    all-inclusive total (FD-19): the guest pays accommodation + cleaning
+    exactly — StayOS's 12% is internal and never added on top."""
     from app.config import settings
 
     guest = _make_user(role=UserRole.GUEST)
@@ -1316,7 +1317,6 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
     monkeypatch.setattr(
         "app.payments.services.payments_repository.create_payment", create_mock
     )
-    # Past the alpha free-booking window so the 4% guest fee applies.
     monkeypatch.setattr(
         "app.bookings.repository.count_global_completed_bookings",
         AsyncMock(return_value=50),
@@ -1326,10 +1326,11 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
     await payment_services.create_payment_for_booking(fake_session, booking, guest)
 
     kwargs = create_mock.call_args.kwargs
-    # subtotal = 500*4 + 50 cleaning = 2050; fee = 4% of 2050 = 82
+    # All-inclusive: 500*4 + 50 cleaning = 2050 — no guest service fee,
+    # no amount added on top of the advertised price.
     assert kwargs["accommodation_amount_egp"] == 2050
-    assert kwargs["guest_service_fee_egp"] == 82
-    assert kwargs["amount_egp"] == 2132
+    assert kwargs["guest_service_fee_egp"] == 0
+    assert kwargs["amount_egp"] == 2050
     deadline = kwargs["payment_deadline_at"]
     assert deadline is not None
     delta = (deadline - before).total_seconds() / 3600
@@ -1483,7 +1484,9 @@ def test_payment_proof_bucket_requires_private_config(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_booking_quote_waived_alpha(fake_session: AsyncMock, monkeypatch) -> None:
+async def test_get_booking_quote_all_inclusive(fake_session: AsyncMock, monkeypatch) -> None:
+    """FD-19: the guest quote is the final all-inclusive price — no fee
+    fields are exposed at all."""
     host = _make_user(user_id="host-1", role=UserRole.HOST)
     unit = _make_unit(host_id=host.id)
     unit.listing = _make_listing(unit)
@@ -1495,10 +1498,6 @@ async def test_get_booking_quote_waived_alpha(fake_session: AsyncMock, monkeypat
     monkeypatch.setattr(
         "app.payments.services.listings_repository.get_calendar_rules_in_range",
         AsyncMock(return_value=[]),
-    )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_global_completed_bookings",
-        AsyncMock(return_value=0),
     )
 
     quote = await payment_services.get_booking_quote(
@@ -1506,18 +1505,24 @@ async def test_get_booking_quote_waived_alpha(fake_session: AsyncMock, monkeypat
     )
     assert quote.nights == 4
     assert quote.nightly_rate_egp == 500
-    assert quote.accommodation_egp == 2000
-    assert quote.cleaning_fee_egp == 50
-    assert quote.service_fee_egp == 0
-    assert quote.service_fee_waived is True
+    # 500 × 4 nights + 50 cleaning = 2050 — the final price, nothing added.
     assert quote.total_egp == 2050
+    # No fee/breakdown fields exist on the guest-facing contract.
+    assert not hasattr(quote, "accommodation_egp")
+    assert not hasattr(quote, "service_fee_egp")
+    assert not hasattr(quote, "guest_service_fee_egp")
 
 
 @pytest.mark.asyncio
-async def test_get_booking_quote_charged_after_threshold(fake_session: AsyncMock, monkeypatch) -> None:
+async def test_get_booking_quote_weekly_discount(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """FD-08: the weekly discount reduces the all-inclusive total."""
     host = _make_user(user_id="host-1", role=UserRole.HOST)
     unit = _make_unit(host_id=host.id)
-    unit.listing = _make_listing(unit)
+    listing = _make_listing(unit)
+    listing.weekly_discount_pct = 10
+    unit.listing = listing
 
     monkeypatch.setattr(
         "app.payments.services.listings_repository.get_unit_with_listing",
@@ -1527,17 +1532,13 @@ async def test_get_booking_quote_charged_after_threshold(fake_session: AsyncMock
         "app.payments.services.listings_repository.get_calendar_rules_in_range",
         AsyncMock(return_value=[]),
     )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_global_completed_bookings",
-        AsyncMock(return_value=10),
-    )
 
     quote = await payment_services.get_booking_quote(
-        fake_session, "unit-1", date(2026, 9, 10), date(2026, 9, 14)
+        fake_session, "unit-1", date(2026, 9, 10), date(2026, 9, 18)
     )
-    assert quote.service_fee_egp == 82  # round(2050 * 0.04)
-    assert quote.service_fee_waived is False
-    assert quote.total_egp == 2132
+    # 8 nights: 500 × 8 = 4000 − 10% = 3600 + 50 cleaning = 3650
+    assert quote.nights == 8
+    assert quote.total_egp == 3650
 
 
 @pytest.mark.asyncio
@@ -1573,10 +1574,8 @@ async def test_get_booking_quote_applies_weekend_multiplier(
         fake_session, "unit-1", date(2026, 9, 11), date(2026, 9, 15)
     )
     assert quote.nights == 4
-    # 2 weekday nights @ 500 + 2 weekend nights @ 750 = 1000 + 1500 = 2500
-    assert quote.accommodation_egp == 2500
-    assert quote.cleaning_fee_egp == 50
-    assert quote.total_egp == 2550  # alpha: no service fee
+    # 2 weekday nights @ 500 + 2 weekend nights @ 750 = 2500 + 50 cleaning
+    assert quote.total_egp == 2550
 
 
 @pytest.mark.asyncio
@@ -1641,12 +1640,9 @@ async def test_get_booking_quote_matches_payment_creation(fake_session: AsyncMoc
         create_payment_mock,
     )
     await payment_services.create_payment_for_booking(fake_session, booking, guest)
+    # Quote total = charged amount — the all-inclusive contract.
     assert create_payment_mock.call_args.kwargs["amount_egp"] == quote.total_egp
-    assert create_payment_mock.call_args.kwargs["accommodation_amount_egp"] == (
-        quote.accommodation_egp + quote.cleaning_fee_egp
-    )
-    assert create_payment_mock.call_args.kwargs["guest_service_fee_egp"] == quote.service_fee_egp
-    assert create_payment_mock.call_args.kwargs["cleaning_fee_egp"] == quote.cleaning_fee_egp
+    assert create_payment_mock.call_args.kwargs["guest_service_fee_egp"] == 0
 
 
 @pytest.mark.asyncio

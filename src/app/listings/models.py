@@ -153,6 +153,18 @@ class UnitListing(UUIDMixin, Base):
     cleaning_fee_egp: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
     )
+    # Host promotions (FD-08/FD-20): percentage discounts on the
+    # accommodation amount. Exactly ONE applies per booking — the best
+    # applicable single discount (listing promo > monthly > weekly).
+    listing_discount_pct: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, default=0, server_default=text("0")
+    )
+    weekly_discount_pct: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, default=0, server_default=text("0")
+    )
+    monthly_discount_pct: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, default=0, server_default=text("0")
+    )
     cancellation_policy: Mapped[str] = mapped_column(
         String(50), nullable=False, default="FLEXIBLE"
     )

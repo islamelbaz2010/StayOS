@@ -23,10 +23,6 @@ vi.mock("@/lib/queries/bookings", () => ({
   useBookingQuote: () => ({
     data: {
       nightly_rate_egp: 1000,
-      accommodation_egp: 4000,
-      cleaning_fee_egp: 300,
-      service_fee_egp: 0,
-      service_fee_waived: true,
       total_egp: 4300,
     },
     isLoading: false,

@@ -190,41 +190,11 @@ function TripContent({
             </p>
           </div>
 
-          {payment.accommodation_amount_egp != null && (
-            <dl className="mt-3 space-y-1 text-sm text-neutral-600">
-              <div className="flex justify-between">
-                <dt>{tp("accommodation")}</dt>
-                <dd className="font-medium text-brand-900">
-                  {formatMoney(payment.accommodation_amount_egp, "EGP", dateLocale)}
-                </dd>
-              </div>
-              {payment.cleaning_fee_egp != null && payment.cleaning_fee_egp > 0 && (
-                <div className="flex justify-between">
-                  <dt>{tp("cleaningFee")}</dt>
-                  <dd className="font-medium text-brand-900">
-                    {formatMoney(payment.cleaning_fee_egp, "EGP", dateLocale)}
-                  </dd>
-                </div>
-              )}
-              {payment.guest_service_fee_egp != null &&
-                payment.guest_service_fee_egp > 0 && (
-                  <div className="flex justify-between">
-                    <dt>{tp("serviceFee")}</dt>
-                    <dd className="font-medium text-brand-900">
-                      {formatMoney(payment.guest_service_fee_egp, "EGP", dateLocale)}
-                    </dd>
-                  </div>
-                )}
-              {payment.guest_service_fee_egp === 0 && (
-                <div className="flex justify-between">
-                  <dt>{tp("serviceFee")}</dt>
-                  <dd className="font-medium text-success-600">
-                    {tp("serviceFeeWaived")}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          )}
+          {/* All-inclusive pricing: guests see the total only — no fee
+              breakdown (Founder commercial decision). */}
+          <p className="mt-2 text-sm text-neutral-500">
+            {tp("includesAllFees")}
+          </p>
 
           {payment.reject_reason && (
             <p className="mt-3 text-sm text-danger-600">

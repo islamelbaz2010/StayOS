@@ -1,9 +1,9 @@
 # FOUNDER DECISION REGISTER — StayOS
 
-**Version**: 1.1.0
-**Date**: 2026-09-20
+**Version**: 1.2.0
+**Date**: 2026-09-21
 **Branch**: `product-completion-review`
-**Status**: ACTIVE — canonical register of decisions requiring Founder input
+**Status**: CLOSED — see "MASTER FOUNDER DECISION CLOSURE (2026-09-21)" below for the authoritative final status of every decision. The OPEN rows in the historical table are superseded by that section.
 **Companion**: `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` (LIST 3), `StayOS_Technical_Release_Review_Master_2026-09-20.xlsx` sheet `04_FOUNDER_DECISIONS`
 
 > Engineering does not decide these. Options are listed from repository evidence only; no option ranking. The Founder answers in the workbook (`Founder Choice` column) or by appending to `DECISION_LOG.md`.
@@ -37,6 +37,43 @@
 | FD-D3 | Field operations / turnover tickets | DEC-018: postponed until 50+ active units |
 | FD-D4 | Channel-manager sync | DEC-018: "Never" per existing strategy |
 | FD-D5 | Real-time messaging transport | DEC-014: SSE + Redis pub/sub decided (ADR-008); WebSocket rejected |
+
+## MASTER FOUNDER DECISION CLOSURE (2026-09-21)
+
+Authoritative final statuses per the "MASTER FOUNDER DECISION CLOSURE"
+package. The prompt's FD-17 (profile navigation) collides with this
+register's FD-17 (social sign-in); it is recorded as **FD-27** below.
+Register FD-17 (social sign-in) keeps its own identity and status.
+
+| ID | Decision (final) | Status | Evidence / boundary |
+|----|------------------|--------|---------------------|
+| FD-01 | Paymob = primary PSP for Egypt alpha; Stripe dormant legacy | CLOSED — IMPLEMENTED BEHIND CONFIGURATION | Paymob provider/webhook/idempotency code exists; live collection awaits merchant account approval + credentials |
+| FD-02 | Manual KYC review for alpha | CLOSED — IMPLEMENTED | Admin KYC queue; automated providers dormant |
+| FD-03 | Adults + children count toward `max_guests`; infants do not | CLOSED — IMPLEMENTED | `bookings/services.py` + `reservations/services.py` capacity checks exclude infants |
+| FD-04 | Review report → admin moderation queue; no AI moderation | CLOSED — IMPLEMENTED | `support.review_reports`, `POST /reviews/{id}/report`, admin report queue + `is_hidden` moderation action (DISPUTES permission) |
+| FD-05 | Alterations = cancel + rebook only | CLOSED — IMPLEMENTED | No alteration flow added; existing cancel/rebook path is the contract |
+| FD-06 | No separate host pre-approval | CLOSED — IMPLEMENTED | Inquiry → request flow unchanged |
+| FD-07 | Host custom offers from inquiry | CLOSED — IMPLEMENTED | `booking.booking_offers`, `/bookings/offers*` endpoints; all-inclusive host-set total, guest accept/decline |
+| FD-08 | Weekly/monthly + listing discounts | CLOSED — IMPLEMENTED | `unit_listings.{listing,weekly,monthly}_discount_pct`; one applicable discount per booking feeds the canonical engine |
+| FD-09 | AI/dynamic pricing | CLOSED — DEFERRED BY STRATEGY | DEC-018 stands; no AI pricing in alpha |
+| FD-10 | EGP only in alpha | CLOSED — IMPLEMENTED | Single-currency contract throughout |
+| FD-11 | Expo / React Native mobile | CLOSED — IMPLEMENTED | `apps/mobile` remains the mobile surface |
+| FD-14 | External analytics provider | CLOSED — DEFERRED BY STRATEGY | DEC-013 stands; Host Performance Center uses canonical transactional data only |
+| FD-15 | Akedly OTP | CLOSED — IMPLEMENTED | Verified live previously |
+| FD-16 | `ENVIRONMENT=production` only at real launch | CLOSED — IMPLEMENTED BEHIND CONFIGURATION | Env-gated; dev endpoints stay off public envs |
+| FD-18 | Staff Role Group → Permission Set → Staff User (+ overrides) | CLOSED — IMPLEMENTED | `STAFF_ROLE_GROUPS` in `auth/constants.py`; `GET /admin/staff/role-groups`; validation rejects unknown groups/permissions |
+| FD-19 | 12% total economics = 6% host + 6% guest internal; all-inclusive guest UX | CLOSED — IMPLEMENTED | `finance/commercial.py` canonical engine; no guest-facing fee breakdown anywhere |
+| FD-20 | Host promotions | CLOSED — IMPLEMENTED | Discount fields + host visibility of original/discount/payout |
+| FD-21 | Host Earnings Simulator on canonical engine | CLOSED — IMPLEMENTED | `POST /host/earnings/simulate` |
+| FD-22 | Listing Readiness | CLOSED — IMPLEMENTED | Expanded readiness checks (content, photos, amenities, pricing, address, policies, availability, identity, payout) with actionable missing items |
+| FD-23 | Host Performance Center | CLOSED — IMPLEMENTED | `GET /host/performance` — canonical aggregates, no AI recommendations |
+| FD-24 | Rule-based explainable Local Fit | CLOSED — IMPLEMENTED | `listings/fit.py` + `GET /listings/{unit}/fit` + `PUT /auth/me/preferences` |
+| FD-25 | Egypt-localized payment experience | CLOSED — IMPLEMENTED BEHIND CONFIGURATION | Paymob checkout rails; live methods gated on merchant account |
+| FD-26 | Host payout preferences | CLOSED — IMPLEMENTED BEHIND CONFIGURATION | `auth.accounts.payout_*` collection; execution blocked on provider/legal prerequisites |
+| FD-27 | Profile via Account/Avatar/Name menu, not primary nav | CLOSED — IMPLEMENTED | Header account affordance links to `/profile`; route retained |
+| FD-12 | Real collection/payout account details | BLOCKED — EXTERNAL DEPENDENCY | Requires legal entity bank account |
+| FD-13 | Legal entity + marketplace funds characterization | BLOCKED — LEGAL | Counsel + CBE analysis required; not inventable |
+| FD-17 (register) | Social sign-in (Google/Apple) | BLOCKED — PROVIDER / CREDENTIAL | Firebase project + credentials (RB-19) |
 
 ## Documentation conflicts discovered (report only, not resolved)
 

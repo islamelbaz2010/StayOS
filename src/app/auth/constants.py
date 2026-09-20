@@ -25,6 +25,39 @@ class StaffPermission(StrEnum):
     DISCOVERY = "discovery"
 
 
+# FD-18: Job Role / Role Group → Permission Set → Staff User.
+# A role group is a named permission-set template applied at staff
+# creation; granular per-user overrides remain available afterwards and
+# the underlying permission model is unchanged.
+STAFF_ROLE_GROUPS: dict[str, dict[str, object]] = {
+    "operations_manager": {
+        "label_en": "Operations Manager",
+        "label_ar": "مدير العمليات",
+        "permissions": ["operations", "disputes", "listings"],
+    },
+    "kyc_officer": {
+        "label_en": "KYC Officer",
+        "label_ar": "مسؤول التحقق",
+        "permissions": ["kyc"],
+    },
+    "finance_officer": {
+        "label_en": "Finance Officer",
+        "label_ar": "مسؤول مالي",
+        "permissions": ["payments", "disputes"],
+    },
+    "listings_manager": {
+        "label_en": "Listings Manager",
+        "label_ar": "مدير الإعلانات",
+        "permissions": ["listings", "discovery"],
+    },
+    "admin": {
+        "label_en": "Admin",
+        "label_ar": "مدير النظام",
+        "permissions": [p.value for p in StaffPermission],
+    },
+}
+
+
 class KycStatus(StrEnum):
     UNVERIFIED = "unverified"
     PENDING = "pending"

@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import dependencies as auth_dependencies
 from app.auth import staff as staff_services
 from app.auth.models import User
+from app.auth.constants import STAFF_ROLE_GROUPS
 from app.auth.staff_schemas import (
+    RoleGroupResponse,
     StaffCreateRequest,
     StaffPermissionsUpdate,
     StaffResponse,
@@ -29,6 +31,23 @@ async def list_staff_endpoint(
     session: AsyncSession = Depends(get_session),
 ) -> list[StaffResponse]:
     return await staff_services.list_staff(session)
+
+
+@router.get("/role-groups", response_model=list[RoleGroupResponse])
+async def list_role_groups_endpoint(
+    _: User = Depends(auth_dependencies.require_role("admin")),
+) -> list[RoleGroupResponse]:
+    """FD-18: Job Role / Role Group → Permission Set templates. Applying a
+    group grants its permission set; individual overrides still apply."""
+    return [
+        RoleGroupResponse(
+            key=key,
+            label_en=str(group["label_en"]),
+            label_ar=str(group["label_ar"]),
+            permissions=list(group["permissions"]),  # type: ignore[arg-type]
+        )
+        for key, group in STAFF_ROLE_GROUPS.items()
+    ]
 
 
 @router.post("", response_model=StaffResponse, status_code=201)

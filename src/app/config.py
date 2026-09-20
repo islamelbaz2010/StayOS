@@ -87,6 +87,18 @@ class Settings(BaseSettings):
     CALENDAR_LOCK_TIMEOUT_MS: int = 5000
 
     # Booking / pricing settings
+    # FOUNDER DECISION (payment & commercial model): StayOS economics total
+    # 12% of the accommodation amount, internally allocated 6% host-side +
+    # 6% guest-side. The Guest-facing price is strictly all-inclusive — the
+    # 12% is never added on top, never shown as a fee line, and never
+    # exposed to the guest. PLATFORM_TOTAL_SHARE_PCT is the only rate the
+    # canonical pricing engine (app.finance.commercial) may use.
+    PLATFORM_TOTAL_SHARE_PCT: float = Field(default=0.12, ge=0.0, le=1.0)
+    HOST_SIDE_SHARE_PCT: float = Field(default=0.06, ge=0.0, le=1.0)
+    GUEST_SIDE_SHARE_PCT: float = Field(default=0.06, ge=0.0, le=1.0)
+    # Legacy rate settings retained ONLY for interpreting payment rows
+    # recorded before the all-inclusive model existed. New bookings must
+    # never charge a guest service fee or a separate host commission.
     GUEST_SERVICE_FEE_PCT: float = Field(default=0.04, ge=0.0, le=1.0)
     HOST_COMMISSION_PCT: float = Field(default=0.10, ge=0.0, le=1.0)
     PLATFORM_TAKE_RATE_PCT: float = Field(default=0.02, ge=0.0, le=1.0)

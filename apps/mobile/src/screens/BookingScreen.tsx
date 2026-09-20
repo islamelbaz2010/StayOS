@@ -222,27 +222,12 @@ export function BookingScreen() {
               <Text style={styles.summaryText}>
                 {price} {currency} × {quote.nights} {t("nightsCount")}
               </Text>
-              <Text style={styles.summaryValue}>{quote.accommodation_egp} {currency}</Text>
-            </View>
-            {quote.cleaning_fee_egp > 0 && (
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryText}>{t("cleaningFee")}</Text>
-                <Text style={styles.summaryValue}>{quote.cleaning_fee_egp} {currency}</Text>
-              </View>
-            )}
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryText}>
-                {t("serviceFee")}
-                {quote.service_fee_waived && (
-                  <Text style={styles.waivedText}> ({t("serviceFeeWaived")})</Text>
-                )}
-              </Text>
-              <Text style={styles.summaryValue}>{quote.service_fee_egp} {currency}</Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryTotal}>{t("total")}</Text>
               <Text style={styles.summaryTotalValue}>{quote.total_egp} {currency}</Text>
             </View>
+            <Text style={styles.summaryText}>{t("includesAllFees")}</Text>
           </>
         ) : (
           <View style={styles.summaryRow}>

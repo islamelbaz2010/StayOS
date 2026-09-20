@@ -533,10 +533,8 @@ export function useBookingQuote(unitId: string, checkIn: string, checkOut: strin
         check_out: string;
         nights: number;
         nightly_rate_egp: number;
-        accommodation_egp: number;
-        cleaning_fee_egp: number;
-        service_fee_egp: number;
-        service_fee_waived: boolean;
+        // All-inclusive pricing: guests see the total only — no internal
+        // fee breakdown is returned or rendered.
         total_egp: number;
       }>("/payments/quote", {
         params: { unit_id: unitId, check_in: checkIn, check_out: checkOut },

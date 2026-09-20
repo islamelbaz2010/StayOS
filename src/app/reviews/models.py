@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -66,5 +67,45 @@ class Review(UUIDMixin, TimestampMixin, Base):
     # host_response.
     host_response: Mapped[str | None] = mapped_column(Text, nullable=True)
     host_response_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # FD-04 moderation: an admin can hide a review after a report is
+    # reviewed. Hidden reviews are excluded from public listing reads and
+    # rating aggregates but remain in the ledger for audit.
+    is_hidden: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
+
+class ReviewReport(UUIDMixin, TimestampMixin, Base):
+    """FD-04: guest/host flags a review → admin moderation queue.
+
+    No automated moderation in alpha — a staff member reviews each
+    report and resolves it by hiding the review or dismissing the
+    report. One open report per reporter per review.
+    """
+
+    __tablename__ = "review_reports"
+    __table_args__ = (
+        UniqueConstraint(
+            "review_id", "reporter_id", name="uq_review_report_reporter"
+        ),
+        Index("idx_review_reports_review", "review_id"),
+        Index("idx_review_reports_status", "status"),
+        {"schema": "support"},
+    )
+
+    review_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("pms.reviews.id", ondelete="CASCADE"), nullable=False
+    )
+    reporter_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False
+    )
+    reason: Mapped[str] = mapped_column(String(50), nullable=False)
+    details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="open")
+    admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resolved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

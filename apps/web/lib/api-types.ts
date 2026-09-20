@@ -71,6 +71,14 @@ export interface paths {
     /** Update Account */
     patch: operations["update_account_api_v1_auth_me_account_patch"];
   };
+  "/api/v1/auth/me/preferences": {
+    /**
+     * Update Preferences
+     * @description Set the guest's Local Fit stay preferences (rule keys only —
+     * unsupported keys are dropped).
+     */
+    put: operations["update_preferences_api_v1_auth_me_preferences_put"];
+  };
   "/api/v1/auth/me/export": {
     /** Export My Data */
     get: operations["export_my_data_api_v1_auth_me_export_get"];
@@ -242,6 +250,14 @@ export interface paths {
     /** Post Bulk Pricing */
     post: operations["post_bulk_pricing_api_v1_listings__unit_id__calendar_bulk_pricing_post"];
   };
+  "/api/v1/listings/{unit_id}/fit": {
+    /**
+     * Get Listing Fit Endpoint
+     * @description StayOS Local Fit — explainable rule-based match between the guest's
+     * saved preferences and this listing's canonical attributes.
+     */
+    get: operations["get_listing_fit_endpoint_api_v1_listings__unit_id__fit_get"];
+  };
   "/api/v1/listings/{unit_id}/similar": {
     /** Get Similar Listings Endpoint */
     get: operations["get_similar_listings_endpoint_api_v1_listings__unit_id__similar_get"];
@@ -353,6 +369,23 @@ export interface paths {
     get: operations["get_host_bookings_api_v1_bookings_get"];
     /** Post Booking */
     post: operations["post_booking_api_v1_bookings_post"];
+  };
+  "/api/v1/bookings/offers": {
+    /** Get Conversation Offers */
+    get: operations["get_conversation_offers_api_v1_bookings_offers_get"];
+    /**
+     * Post Booking Offer
+     * @description Host sends a custom-priced stay offer inside a conversation.
+     */
+    post: operations["post_booking_offer_api_v1_bookings_offers_post"];
+  };
+  "/api/v1/bookings/offers/{offer_id}/accept": {
+    /** Post Accept Offer */
+    post: operations["post_accept_offer_api_v1_bookings_offers__offer_id__accept_post"];
+  };
+  "/api/v1/bookings/offers/{offer_id}/decline": {
+    /** Post Decline Offer */
+    post: operations["post_decline_offer_api_v1_bookings_offers__offer_id__decline_post"];
   };
   "/api/v1/bookings/guest": {
     /** Get Guest Bookings */
@@ -624,6 +657,21 @@ export interface paths {
      */
     post: operations["post_host_response_api_v1_reviews__review_id__host_response_post"];
   };
+  "/api/v1/reviews/{review_id}/report": {
+    /**
+     * Post Review Report
+     * @description FD-04: flag a review → admin moderation queue (no AI moderation).
+     */
+    post: operations["post_review_report_api_v1_reviews__review_id__report_post"];
+  };
+  "/api/v1/reviews/admin/reports": {
+    /** Get Review Reports Admin */
+    get: operations["get_review_reports_admin_api_v1_reviews_admin_reports_get"];
+  };
+  "/api/v1/reviews/admin/reports/{report_id}": {
+    /** Patch Review Report Admin */
+    patch: operations["patch_review_report_admin_api_v1_reviews_admin_reports__report_id__patch"];
+  };
   "/api/v1/guests/{guest_id}/reviews": {
     /** Get Guest Review History */
     get: operations["get_guest_review_history_api_v1_guests__guest_id__reviews_get"];
@@ -651,6 +699,21 @@ export interface paths {
   "/api/v1/host/earnings": {
     /** Get Host Earnings Endpoint */
     get: operations["get_host_earnings_endpoint_api_v1_host_earnings_get"];
+  };
+  "/api/v1/host/earnings/simulate": {
+    /**
+     * Simulate Earnings Endpoint
+     * @description Host earnings simulator (FD-21) — canonical pricing engine,
+     * host-side economics only.
+     */
+    post: operations["simulate_earnings_endpoint_api_v1_host_earnings_simulate_post"];
+  };
+  "/api/v1/host/performance": {
+    /**
+     * Get Host Performance Endpoint
+     * @description Host Performance Center (FD-23) — canonical aggregates.
+     */
+    get: operations["get_host_performance_endpoint_api_v1_host_performance_get"];
   };
   "/api/v1/host/calendar": {
     /** Get Host Calendar Endpoint */
@@ -705,6 +768,14 @@ export interface paths {
     get: operations["list_staff_endpoint_api_v1_admin_staff_get"];
     /** Create Staff Endpoint */
     post: operations["create_staff_endpoint_api_v1_admin_staff_post"];
+  };
+  "/api/v1/admin/staff/role-groups": {
+    /**
+     * List Role Groups Endpoint
+     * @description FD-18: Job Role / Role Group → Permission Set templates. Applying a
+     * group grants its permission set; individual overrides still apply.
+     */
+    get: operations["list_role_groups_endpoint_api_v1_admin_staff_role_groups_get"];
   };
   "/api/v1/admin/staff/{user_id}": {
     /** Update Staff Endpoint */
@@ -778,6 +849,16 @@ export interface components {
       address: {
         [key: string]: unknown;
       } | null;
+      /** Payout Method */
+      payout_method?: string | null;
+      /** Payout Bank Name */
+      payout_bank_name?: string | null;
+      /** Payout Account Number */
+      payout_account_number?: string | null;
+      /** Payout Wallet Msisdn */
+      payout_wallet_msisdn?: string | null;
+      /** Payout Holder Name */
+      payout_holder_name?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -803,6 +884,16 @@ export interface components {
       address?: {
         [key: string]: unknown;
       } | null;
+      /** Payout Method */
+      payout_method?: string | null;
+      /** Payout Bank Name */
+      payout_bank_name?: string | null;
+      /** Payout Account Number */
+      payout_account_number?: string | null;
+      /** Payout Wallet Msisdn */
+      payout_wallet_msisdn?: string | null;
+      /** Payout Holder Name */
+      payout_holder_name?: string | null;
     };
     /**
      * AdminContactCreate
@@ -1119,11 +1210,73 @@ export interface components {
         }[];
     };
     /**
+     * BookingOfferCreate
+     * @description Host custom offer inside an inquiry conversation (FD-07).
+     */
+    BookingOfferCreate: {
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Total Price Egp */
+      total_price_egp: number;
+      /** Message */
+      message?: string | null;
+    };
+    /** BookingOfferResponse */
+    BookingOfferResponse: {
+      /** Id */
+      id: string;
+      /** Conversation Id */
+      conversation_id: string;
+      /** Unit Id */
+      unit_id: string;
+      /** Host Id */
+      host_id: string;
+      /** Guest Id */
+      guest_id: string;
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Total Price Egp */
+      total_price_egp: number;
+      /** Status */
+      status: string;
+      /** Booking Id */
+      booking_id?: string | null;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
      * BookingQuote
      * @description Guest-facing price quote for a unit + date range.
      *
      * Computed by the same routine that prices the actual payment so the
      * total a guest sees before booking always matches the amount charged.
+     * All-inclusive model (FD-19): the response carries ONLY the final
+     * price — no accommodation subtotal, no fee lines, no internal
+     * economics. "Includes all fees".
      */
     BookingQuote: {
       /** Unit Id */
@@ -1136,14 +1289,6 @@ export interface components {
       nights: number;
       /** Nightly Rate Egp */
       nightly_rate_egp: number;
-      /** Accommodation Egp */
-      accommodation_egp: number;
-      /** Cleaning Fee Egp */
-      cleaning_fee_egp: number;
-      /** Service Fee Egp */
-      service_fee_egp: number;
-      /** Service Fee Waived */
-      service_fee_waived: boolean;
       /** Total Egp */
       total_egp: number;
     };
@@ -1976,6 +2121,50 @@ export interface components {
      * @enum {string}
      */
     DisputeStatus: "open" | "in_review" | "resolved" | "closed";
+    /**
+     * EarningsSimulateRequest
+     * @description Host earnings simulator input (FD-21). The host thinks in their
+     * target nightly price; the response shows the guest-facing all-in
+     * price and the resulting economics — host-side only, never guest.
+     */
+    EarningsSimulateRequest: {
+      /** Nightly Price Egp */
+      nightly_price_egp: number;
+      /**
+       * Nights
+       * @default 1
+       */
+      nights?: number;
+      /**
+       * Cleaning Fee Egp
+       * @default 0
+       */
+      cleaning_fee_egp?: number;
+      /**
+       * Discount Pct
+       * @default 0
+       */
+      discount_pct?: number;
+    };
+    /** EarningsSimulateResponse */
+    EarningsSimulateResponse: {
+      /** Nightly Price Egp */
+      nightly_price_egp: number;
+      /** Nights */
+      nights: number;
+      /** Accommodation Egp */
+      accommodation_egp: number;
+      /** Discount Egp */
+      discount_egp: number;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp: number;
+      /** Guest Total Egp */
+      guest_total_egp: number;
+      /** Stayos Share Egp */
+      stayos_share_egp: number;
+      /** Host Net Egp */
+      host_net_egp: number;
+    };
     /** EmailLoginRequest */
     EmailLoginRequest: {
       /** Email */
@@ -2097,6 +2286,11 @@ export interface components {
     FirebaseAuthRequest: {
       /** Id Token */
       id_token: string;
+    };
+    /** GuestPreferencesUpdate */
+    GuestPreferencesUpdate: {
+      /** Guest Preferences */
+      guest_preferences?: string[];
     };
     /** GuestReviewListResponse */
     GuestReviewListResponse: {
@@ -2327,6 +2521,38 @@ export interface components {
       is_cover: boolean;
       /** Caption */
       caption?: string | null;
+    };
+    /**
+     * HostPerformanceResponse
+     * @description Host Performance Center (FD-23) — canonical aggregates only.
+     */
+    HostPerformanceResponse: {
+      /** Period Days */
+      period_days: number;
+      /** Total Bookings */
+      total_bookings: number;
+      /** Accepted Bookings */
+      accepted_bookings: number;
+      /** Completed Stays */
+      completed_stays: number;
+      /** Cancelled Bookings */
+      cancelled_bookings: number;
+      /** Cancellation Rate Pct */
+      cancellation_rate_pct: number;
+      /** Booked Nights */
+      booked_nights: number;
+      /** Occupancy Pct */
+      occupancy_pct: number;
+      /** Gross Revenue Egp */
+      gross_revenue_egp: number;
+      /** Avg Nightly Egp */
+      avg_nightly_egp: number;
+      /** Inquiries */
+      inquiries: number;
+      /** Per Unit */
+      per_unit?: {
+          [key: string]: unknown;
+        }[];
     };
     /** HostProfileUpdate */
     HostProfileUpdate: {
@@ -3013,6 +3239,21 @@ export interface components {
        */
       cleaning_fee_egp?: number;
       /**
+       * Listing Discount Pct
+       * @default 0
+       */
+      listing_discount_pct?: number;
+      /**
+       * Weekly Discount Pct
+       * @default 0
+       */
+      weekly_discount_pct?: number;
+      /**
+       * Monthly Discount Pct
+       * @default 0
+       */
+      monthly_discount_pct?: number;
+      /**
        * Cancellation Policy
        * @default FLEXIBLE
        */
@@ -3076,12 +3317,44 @@ export interface components {
        */
       is_draft?: boolean;
     };
+    /**
+     * ListingFitCheck
+     * @description One explainable Local Fit rule outcome.
+     */
+    ListingFitCheck: {
+      /** Key */
+      key: string;
+      /** Label En */
+      label_en: string;
+      /** Label Ar */
+      label_ar: string;
+      /** Passed */
+      passed: boolean;
+    };
+    /**
+     * ListingFitResponse
+     * @description Rule-based guest↔listing match (FD-24). ``match_pct`` is null when
+     * the guest has no saved/evaluable preferences.
+     */
+    ListingFitResponse: {
+      /** Unit Id */
+      unit_id: string;
+      /** Match Pct */
+      match_pct: number | null;
+      /** Checks */
+      checks: components["schemas"]["ListingFitCheck"][];
+    };
     /** ListingReadinessResponse */
     ListingReadinessResponse: {
       /** Unit Id */
       unit_id: string;
       /** Status */
       status: string;
+      /**
+       * Readiness Pct
+       * @default 0
+       */
+      readiness_pct?: number;
       /** Missing Items */
       missing_items: string[];
       /**
@@ -3181,6 +3454,21 @@ export interface components {
       base_price_egp: number;
       /** Cleaning Fee Egp */
       cleaning_fee_egp: number;
+      /**
+       * Listing Discount Pct
+       * @default 0
+       */
+      listing_discount_pct?: number;
+      /**
+       * Weekly Discount Pct
+       * @default 0
+       */
+      weekly_discount_pct?: number;
+      /**
+       * Monthly Discount Pct
+       * @default 0
+       */
+      monthly_discount_pct?: number;
       /** Cancellation Policy */
       cancellation_policy: string;
       /**
@@ -3381,6 +3669,12 @@ export interface components {
       base_price_egp?: number | null;
       /** Cleaning Fee Egp */
       cleaning_fee_egp?: number | null;
+      /** Listing Discount Pct */
+      listing_discount_pct?: number | null;
+      /** Weekly Discount Pct */
+      weekly_discount_pct?: number | null;
+      /** Monthly Discount Pct */
+      monthly_discount_pct?: number | null;
       /** Cancellation Policy */
       cancellation_policy?: string | null;
       /** Instant Book */
@@ -4230,11 +4524,11 @@ export interface components {
       /** Total Amount Egp */
       total_amount_egp: number;
       /** Host Amount Egp */
-      host_amount_egp: number;
+      host_amount_egp?: number | null;
       /** Platform Fee Egp */
-      platform_fee_egp: number;
+      platform_fee_egp?: number | null;
       /** Guest Fee Egp */
-      guest_fee_egp: number;
+      guest_fee_egp?: number | null;
       /** Payment Method */
       payment_method: string;
       /** Checked In At */
@@ -4297,6 +4591,70 @@ export interface components {
       /** Offset */
       offset: number;
     };
+    /** ReviewReportAdminUpdate */
+    ReviewReportAdminUpdate: {
+      status?: components["schemas"]["ReviewReportStatus"] | null;
+      /** Admin Notes */
+      admin_notes?: string | null;
+      /**
+       * Hide Review
+       * @default false
+       */
+      hide_review?: boolean;
+    };
+    /**
+     * ReviewReportCreate
+     * @description FD-04: flag a review for admin moderation.
+     */
+    ReviewReportCreate: {
+      reason: components["schemas"]["ReviewReportReason"];
+      /** Details */
+      details?: string | null;
+    };
+    /** ReviewReportListResponse */
+    ReviewReportListResponse: {
+      /** Data */
+      data: components["schemas"]["ReviewReportResponse"][];
+      /** Total */
+      total: number;
+    };
+    /**
+     * ReviewReportReason
+     * @description Report reason vocabulary for FD-04 review moderation.
+     * @enum {string}
+     */
+    ReviewReportReason: "inappropriate" | "false_or_misleading" | "spam" | "privacy" | "other";
+    /** ReviewReportResponse */
+    ReviewReportResponse: {
+      /** Id */
+      id: string;
+      /** Review Id */
+      review_id: string;
+      /** Reporter Id */
+      reporter_id: string;
+      /** Reason */
+      reason: string;
+      /** Details */
+      details: string | null;
+      /** Status */
+      status: string;
+      /** Admin Notes */
+      admin_notes?: string | null;
+      /** Resolved By */
+      resolved_by?: string | null;
+      /** Resolved At */
+      resolved_at?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
+     * ReviewReportStatus
+     * @enum {string}
+     */
+    ReviewReportStatus: "open" | "resolved" | "dismissed";
     /** ReviewResponse */
     ReviewResponse: {
       /** Id */
@@ -4337,6 +4695,17 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+    };
+    /** RoleGroupResponse */
+    RoleGroupResponse: {
+      /** Key */
+      key: string;
+      /** Label En */
+      label_en: string;
+      /** Label Ar */
+      label_ar: string;
+      /** Permissions */
+      permissions: string[];
     };
     /** RoleUpgradeRequest */
     RoleUpgradeRequest: {
@@ -4387,6 +4756,8 @@ export interface components {
       email?: string | null;
       /** Permissions */
       permissions?: string[];
+      /** Role Group */
+      role_group?: string | null;
     };
     /** StaffPermissionsUpdate */
     StaffPermissionsUpdate: {
@@ -4409,6 +4780,11 @@ export interface components {
       is_active: boolean;
       /** Permissions */
       permissions: string[];
+      /**
+       * Has Password
+       * @default false
+       */
+      has_password?: boolean;
       /**
        * Created At
        * Format: date-time
@@ -4693,6 +5069,8 @@ export interface components {
        * @default false
        */
       has_password?: boolean;
+      /** Guest Preferences */
+      guest_preferences?: string[] | null;
       /**
        * Created At
        * Format: date-time
@@ -5161,6 +5539,32 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["AccountResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Update Preferences
+   * @description Set the guest's Local Fit stay preferences (rule keys only —
+   * unsupported keys are dropped).
+   */
+  update_preferences_api_v1_auth_me_preferences_put: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GuestPreferencesUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["UserResponse"];
         };
       };
       /** @description Validation Error */
@@ -6190,6 +6594,32 @@ export interface operations {
       };
     };
   };
+  /**
+   * Get Listing Fit Endpoint
+   * @description StayOS Local Fit — explainable rule-based match between the guest's
+   * saved preferences and this listing's canonical attributes.
+   */
+  get_listing_fit_endpoint_api_v1_listings__unit_id__fit_get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingFitResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Similar Listings Endpoint */
   get_similar_listings_endpoint_api_v1_listings__unit_id__similar_get: {
     parameters: {
@@ -6927,6 +7357,102 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Conversation Offers */
+  get_conversation_offers_api_v1_bookings_offers_get: {
+    parameters: {
+      query: {
+        conversation_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingOfferResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Post Booking Offer
+   * @description Host sends a custom-priced stay offer inside a conversation.
+   */
+  post_booking_offer_api_v1_bookings_offers_post: {
+    parameters: {
+      query: {
+        conversation_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BookingOfferCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["BookingOfferResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Accept Offer */
+  post_accept_offer_api_v1_bookings_offers__offer_id__accept_post: {
+    parameters: {
+      path: {
+        offer_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Post Decline Offer */
+  post_decline_offer_api_v1_bookings_offers__offer_id__decline_post: {
+    parameters: {
+      path: {
+        offer_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingOfferResponse"];
         };
       };
       /** @description Validation Error */
@@ -8404,6 +8930,87 @@ export interface operations {
       };
     };
   };
+  /**
+   * Post Review Report
+   * @description FD-04: flag a review → admin moderation queue (no AI moderation).
+   */
+  post_review_report_api_v1_reviews__review_id__report_post: {
+    parameters: {
+      path: {
+        review_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewReportCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["ReviewReportResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Review Reports Admin */
+  get_review_reports_admin_api_v1_reviews_admin_reports_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ReviewReportListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Patch Review Report Admin */
+  patch_review_report_admin_api_v1_reviews_admin_reports__report_id__patch: {
+    parameters: {
+      path: {
+        report_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewReportAdminUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ReviewReportResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Guest Review History */
   get_guest_review_history_api_v1_guests__guest_id__reviews_get: {
     parameters: {
@@ -8547,6 +9154,57 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["HostEarningsSummary"];
+        };
+      };
+    };
+  };
+  /**
+   * Simulate Earnings Endpoint
+   * @description Host earnings simulator (FD-21) — canonical pricing engine,
+   * host-side economics only.
+   */
+  simulate_earnings_endpoint_api_v1_host_earnings_simulate_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EarningsSimulateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["EarningsSimulateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Host Performance Endpoint
+   * @description Host Performance Center (FD-23) — canonical aggregates.
+   */
+  get_host_performance_endpoint_api_v1_host_performance_get: {
+    parameters: {
+      query?: {
+        days?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["HostPerformanceResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -8887,6 +9545,21 @@ export interface operations {
       422: {
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * List Role Groups Endpoint
+   * @description FD-18: Job Role / Role Group → Permission Set templates. Applying a
+   * group grants its permission set; individual overrides still apply.
+   */
+  list_role_groups_endpoint_api_v1_admin_staff_role_groups_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["RoleGroupResponse"][];
         };
       };
     };

@@ -172,6 +172,25 @@ async def get_account(
     return auth_schemas.AccountResponse.model_validate(account)
 
 
+@router.put("/me/preferences", response_model=auth_schemas.UserResponse)
+async def update_preferences(
+    data: auth_schemas.GuestPreferencesUpdate,
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.UserResponse:
+    """Set the guest's Local Fit stay preferences (rule keys only —
+    unsupported keys are dropped)."""
+    from app.listings.fit import validate_preferences
+
+    user.guest_preferences = validate_preferences(data.guest_preferences)
+    session.add(user)
+    await session.flush()
+    await session.refresh(user)
+    response = auth_schemas.UserResponse.model_validate(user)
+    response.has_password = bool(user.password_hash)
+    return response
+
+
 @router.get("/me/export", response_model=auth_schemas.UserExportResponse)
 async def export_my_data(
     user: User = Depends(auth_dependencies.require_active_user),

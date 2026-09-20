@@ -26,6 +26,42 @@ class BookingCreate(BaseModel):
         return v
 
 
+class BookingOfferCreate(BaseModel):
+    """Host custom offer inside an inquiry conversation (FD-07)."""
+
+    check_in: date
+    check_out: date
+    # All-inclusive guest total for the whole stay — the host quotes ONE
+    # number; economics are derived server-side by the canonical engine.
+    total_price_egp: int = Field(..., gt=0)
+    message: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("check_out")
+    @classmethod
+    def offer_check_out_after_check_in(cls, v: date, info: Any) -> date:
+        check_in = info.data.get("check_in")
+        if check_in is not None and v <= check_in:
+            raise ValueError("check_out must be after check_in")
+        return v
+
+
+class BookingOfferResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    conversation_id: str
+    unit_id: str
+    host_id: str
+    guest_id: str
+    check_in: date
+    check_out: date
+    total_price_egp: int
+    status: str
+    booking_id: str | None = None
+    expires_at: datetime
+    created_at: datetime
+
+
 class BookingUpdate(BaseModel):
     status: BookingStatus
     reject_reason: str | None = None

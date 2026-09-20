@@ -34,10 +34,52 @@ class CoHostUpdate(BaseModel):
 class ListingReadinessResponse(BaseModel):
     unit_id: str
     status: str  # "ready" | "action_required"
+    # FD-22: readiness percentage = checks passed / total checks.
+    readiness_pct: int = 0
     missing_items: list[str]
     computed_at: datetime
     # Human-readable labels for each missing item, keyed by item key
     missing_item_labels: dict[str, str] = Field(default_factory=dict)
+
+
+class EarningsSimulateRequest(BaseModel):
+    """Host earnings simulator input (FD-21). The host thinks in their
+    target nightly price; the response shows the guest-facing all-in
+    price and the resulting economics — host-side only, never guest."""
+
+    nightly_price_egp: int = Field(..., ge=100)
+    nights: int = Field(default=1, ge=1, le=365)
+    cleaning_fee_egp: int = Field(default=0, ge=0)
+    # Optional promo preview — mirrors the single-discount booking rule.
+    discount_pct: int = Field(default=0, ge=0, le=90)
+
+
+class EarningsSimulateResponse(BaseModel):
+    nightly_price_egp: int
+    nights: int
+    accommodation_egp: int  # after discount
+    discount_egp: int
+    cleaning_fee_egp: int
+    guest_total_egp: int  # all-inclusive price the guest would pay
+    stayos_share_egp: int  # platform economics — host-facing only
+    host_net_egp: int  # estimated host payout
+
+
+class HostPerformanceResponse(BaseModel):
+    """Host Performance Center (FD-23) — canonical aggregates only."""
+
+    period_days: int
+    total_bookings: int
+    accepted_bookings: int
+    completed_stays: int
+    cancelled_bookings: int
+    cancellation_rate_pct: int
+    booked_nights: int
+    occupancy_pct: int  # booked nights / listed nights in window
+    gross_revenue_egp: int  # verified/settled guest payments
+    avg_nightly_egp: int
+    inquiries: int  # inquiry conversations opened in window
+    per_unit: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class HostTodayItem(BaseModel):

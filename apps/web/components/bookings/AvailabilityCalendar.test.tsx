@@ -11,10 +11,14 @@ interface Day {
   price_egp: number;
 }
 
-let mockDays: Day[] = [];
+let mockDays: Day[] | null = [];
+let lastQuery: { checkIn: string; checkOut: string } | null = null;
 
 vi.mock("@/lib/queries/listings", () => ({
-  useListingAvailability: () => ({ data: { days: mockDays } }),
+  useListingAvailability: (_unitId: string, checkIn: string, checkOut: string) => {
+    lastQuery = { checkIn, checkOut };
+    return { data: { days: mockDays ?? buildRangeDays(checkIn, checkOut) } };
+  },
 }));
 
 import { AvailabilityCalendar } from "./AvailabilityCalendar";
@@ -36,6 +40,23 @@ function buildDays(count: number, blocked: number[] = []): Day[] {
       status: blocked.includes(i) ? "BOOKED" : "AVAILABLE",
       price_egp: 1000,
     });
+  }
+  return days;
+}
+
+// Builds AVAILABLE days for an arbitrary [start, end) ISO window — mimics
+// the API for windows beyond the current month.
+function buildRangeDays(startStr: string, endStr: string): Day[] {
+  const days: Day[] = [];
+  const cur = new Date(`${startStr}T00:00:00`);
+  const end = new Date(`${endStr}T00:00:00`);
+  while (cur < end) {
+    days.push({
+      date: `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`,
+      status: "AVAILABLE",
+      price_egp: 1000,
+    });
+    cur.setDate(cur.getDate() + 1);
   }
   return days;
 }
@@ -130,5 +151,38 @@ describe("AvailabilityCalendar", () => {
     const onSelect = renderCalendar(dayStr(3), dayStr(6));
     fireEvent.click(screen.getByText("Clear dates"));
     expect(onSelect).toHaveBeenCalledWith("", "");
+  });
+
+  it("keeps Next month enabled past the first 90 days and slides the fetch window", () => {
+    renderCalendar("", "");
+    const next = screen.getByLabelText("Next month");
+
+    // Regression: navigation was previously capped at the ~90-day API window,
+    // making any date further out unreachable even though the API allows it.
+    for (let i = 0; i < 4; i++) fireEvent.click(next);
+    expect(next).not.toBeDisabled();
+
+    // The requested window must slide forward — anchoring at today would
+    // exceed the API's 90-day per-request limit and fail.
+    const spanDays =
+      (new Date(`${lastQuery!.checkOut}T00:00:00`).getTime() -
+        new Date(`${lastQuery!.checkIn}T00:00:00`).getTime()) /
+      86400000;
+    expect(spanDays).toBeLessThanOrEqual(90);
+    expect(lastQuery!.checkIn > dayStr(90)).toBe(true);
+  });
+
+  it("completes a range whose endpoints are in different months", () => {
+    // null => mock derives AVAILABLE days from whatever window is requested.
+    mockDays = null;
+    const onSelect = renderCalendar(dayStr(3), "");
+
+    const next = screen.getByLabelText("Next month");
+    fireEvent.click(next);
+    fireEvent.click(next);
+
+    const target = screen.getAllByLabelText(dayStr(70))[0];
+    fireEvent.click(target);
+    expect(onSelect).toHaveBeenLastCalledWith(dayStr(3), dayStr(70));
   });
 });

@@ -11,6 +11,7 @@ export interface User {
   kyc_status: string;
   is_active: boolean;
   staff_permissions?: string[];
+  has_password?: boolean;
   created_at: string;
   updated_at: string;
 }

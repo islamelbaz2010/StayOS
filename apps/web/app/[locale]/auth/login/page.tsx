@@ -45,6 +45,36 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [devLoading, setDevLoading] = useState<string | null>(null);
   const [socialLoading, setSocialLoading] = useState<"google" | "apple" | null>(null);
+  const [method, setMethod] = useState<"phone" | "email">("phone");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function handleEmailLogin(event: FormEvent) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { data } = await api.post<{
+        access_token: string;
+        refresh_token: string;
+        token_type: string;
+        expires_in: number;
+      }>("/auth/login", { email, password });
+      await login(data);
+      router.push(redirect);
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      setError(
+        status === 401
+          ? t("invalidCredentials")
+          : err instanceof Error
+            ? err.message
+            : t("socialSignInFailed")
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function handleDevLogin(userId: string) {
     setDevLoading(userId);
@@ -153,7 +183,86 @@ export default function LoginPage() {
         <div className="grow border-t border-neutral-200" />
       </div>
 
-      {step === "phone" ? (
+      <div className="mt-2 flex rounded-lg bg-neutral-100 p-1" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={method === "phone"}
+          onClick={() => {
+            setMethod("phone");
+            setError(null);
+          }}
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+            method === "phone"
+              ? "bg-white text-neutral-900 shadow-sm"
+              : "text-neutral-500 hover:text-neutral-700"
+          }`}
+        >
+          {t("phone")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={method === "email"}
+          onClick={() => {
+            setMethod("email");
+            setError(null);
+          }}
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+            method === "email"
+              ? "bg-white text-neutral-900 shadow-sm"
+              : "text-neutral-500 hover:text-neutral-700"
+          }`}
+        >
+          {t("email")}
+        </button>
+      </div>
+
+      {method === "email" ? (
+        <form onSubmit={handleEmailLogin} className="mt-6 space-y-4">
+          <div>
+            <label
+              htmlFor="login-email"
+              className="mb-1 block text-sm font-medium text-neutral-700"
+            >
+              {t("email")}
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="login-password"
+              className="mb-1 block text-sm font-medium text-neutral-700"
+            >
+              {t("password")}
+            </label>
+            <input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full rounded-lg bg-brand-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+          >
+            {submitting ? t("signingIn") : t("signIn")}
+          </button>
+        </form>
+      ) : step === "phone" ? (
         <form onSubmit={handleSend} className="mt-6 space-y-4">
           <div>
             <label

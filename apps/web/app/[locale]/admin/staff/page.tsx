@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { AxiosError } from "axios";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminLayout } from "@/components/layouts";
@@ -46,11 +47,15 @@ export default function AdminStaffPage() {
 
   const handleCreate = async () => {
     setError(null);
+    if (!/^\+[1-9]\d{1,14}$/.test(phone.trim())) {
+      setError(t("invalidPhone"));
+      return;
+    }
     try {
       await createMutation.mutateAsync({
-        phone_number: phone,
+        phone_number: phone.trim(),
         display_name: name,
-        email: email || undefined,
+        email: email.trim() || undefined,
         permissions: createPerms,
       });
       setShowCreate(false);
@@ -58,8 +63,10 @@ export default function AdminStaffPage() {
       setName("");
       setEmail("");
       setCreatePerms([]);
-    } catch {
-      setError(t("createFailed"));
+    } catch (err) {
+      const detail = (err as AxiosError<{ detail?: string }>)?.response?.data
+        ?.detail;
+      setError(typeof detail === "string" ? detail : t("createFailed"));
     }
   };
 
@@ -187,6 +194,8 @@ export default function AdminStaffPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder={t("phonePlaceholder")}
+                    type="tel"
+                    dir="ltr"
                     className="input w-full text-sm"
                   />
                   <input

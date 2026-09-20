@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import repository as auth_repository
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import Account, DeviceToken, RefreshToken, User
+from app.auth import schemas as auth_schemas
 from app.auth.schemas import (
     AccountUpdate,
     FirebaseAuthRequest,
@@ -551,6 +552,99 @@ async def rotate_refresh_token(session: AsyncSession, token: str) -> TokenPair:
     user = await verify_refresh_token(token, session)
     await revoke_refresh_token(session, token)
     return await create_token_pair(session, user)
+
+
+# --- Email + password authentication --------------------------------------
+# Conventional credentials alongside phone OTP and Firebase. Passwords are
+# stored as bcrypt hashes on auth.users.password_hash; the token/session
+# machinery (create_token_pair / refresh / logout) is unchanged.
+
+import re
+
+import bcrypt
+
+from app.shared.exceptions import ConflictError
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+# bcrypt operates on at most 72 bytes; pre-hash with SHA-256 so passwords
+# longer than that still derive a distinct digest (no silent truncation).
+def _hash_password(password: str) -> str:
+    digest = hashlib.sha256(password.encode("utf-8")).hexdigest().encode("ascii")
+    return bcrypt.hashpw(digest, bcrypt.gensalt()).decode("utf-8")
+
+
+def _verify_password(password: str, password_hash: str) -> bool:
+    try:
+        digest = hashlib.sha256(password.encode("utf-8")).hexdigest().encode("ascii")
+        return bcrypt.checkpw(digest, password_hash.encode("utf-8"))
+    except ValueError:
+        return False
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+async def register_with_email(
+    session: AsyncSession, request: auth_schemas.EmailRegisterRequest
+) -> TokenPair:
+    email = _normalize_email(request.email)
+    if not _EMAIL_RE.match(email):
+        raise ValidationError("Invalid email address")
+
+    existing = await auth_repository.get_user_by_email(session, email)
+    if existing is not None:
+        raise ConflictError("An account already exists for this email")
+
+    user = await auth_repository.create_user(
+        session=session,
+        email=email,
+        password_hash=_hash_password(request.password),
+        display_name=request.display_name or None,
+        locale=request.locale,
+        role=UserRole.GUEST,
+        kyc_status=KycStatus.UNVERIFIED,
+    )
+    return await create_token_pair(session, user)
+
+
+async def authenticate_by_email(
+    session: AsyncSession, request: auth_schemas.EmailLoginRequest
+) -> TokenPair:
+    email = _normalize_email(request.email)
+    rate_key = f"email-login:{email}"
+    await _check_rate_limit(rate_key)
+
+    user = await auth_repository.get_user_by_email(session, email)
+    # Uniform failure for unknown email vs wrong password — no enumeration.
+    if (
+        user is None
+        or not user.password_hash
+        or not _verify_password(request.password, user.password_hash)
+    ):
+        await _increment_rate_limit(rate_key)
+        raise AuthenticationError("Invalid email or password")
+
+    if not user.is_active:
+        raise AuthenticationError("Account disabled")
+
+    if redis_state.redis_client is not None:
+        await redis_state.redis_client.delete(rate_key)
+    return await create_token_pair(session, user)
+
+
+async def set_password(
+    session: AsyncSession, user: User, request: auth_schemas.PasswordSetRequest
+) -> None:
+    if user.password_hash:
+        if not request.current_password or not _verify_password(
+            request.current_password, user.password_hash
+        ):
+            raise AuthenticationError("Current password is incorrect")
+    await auth_repository.update_user(
+        session, user, password_hash=_hash_password(request.new_password)
+    )
 
 
 async def ensure_account(session: AsyncSession, user: User) -> Account:

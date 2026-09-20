@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
+import { useAuth } from "@/lib/auth/useAuth";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useHostEarnings } from "@/lib/queries/hostEarnings";
 import {
@@ -39,6 +40,9 @@ export default function HostProfilePage() {
   const { data: profile, isLoading, isError, refetch } = useHostProfile();
   const { data: earnings } = useHostEarnings();
   const updateProfile = useUpdateHostProfile();
+  // Keep /auth/me in sync — display name/email live on the users table and
+  // are shared by the consumer /profile (Account) surface.
+  const { refreshUser } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -91,6 +95,7 @@ export default function HostProfilePage() {
       email: email.trim() || undefined,
       languages,
     });
+    await refreshUser();
     setIsEditing(false);
   };
 

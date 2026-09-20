@@ -697,6 +697,22 @@ async def test_create_staff_account(
     assert sorted(result.permissions) == ["disputes", "operations"]
 
 
+@pytest.mark.parametrize(
+    "phone",
+    ["01011111111", "+20 10 1111 1111", "201011111111", "abc", "+0111111111"],
+)
+def test_create_staff_rejects_non_e164_phone(phone: str) -> None:
+    """Staff phones must be E.164 — OTP login looks users up by the exact
+    normalized string, so any other format would create an unreachable
+    account that logs in as a fresh guest instead."""
+    import pydantic
+
+    from app.auth.staff_schemas import StaffCreateRequest
+
+    with pytest.raises(pydantic.ValidationError):
+        StaffCreateRequest(phone_number=phone, display_name="Ops Agent")
+
+
 @pytest.mark.asyncio
 async def test_create_staff_rejects_unknown_permission(
     fake_session: AsyncMock,

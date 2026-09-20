@@ -33,6 +33,8 @@ class User(UUIDMixin, TimestampMixin, Base):
         String(128), unique=True, nullable=True, index=True
     )
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # bcrypt hash for email+password sign-in; NULL for OTP/Firebase-only accounts.
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Free-text host bio shown on the public host profile (Airbnb parity).
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     locale: Mapped[str] = mapped_column(String(10), default="ar")

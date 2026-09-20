@@ -4,7 +4,10 @@ from pydantic import BaseModel, Field
 
 
 class StaffCreateRequest(BaseModel):
-    phone_number: str = Field(..., min_length=8, max_length=20)
+    # Must match the OTP-login format (E.164) exactly — auth looks users up by
+    # the normalized string, so a non-normalized phone here creates an
+    # unreachable staff account.
+    phone_number: str = Field(..., pattern=r"^\+[1-9]\d{1,14}$")
     display_name: str = Field(..., min_length=1, max_length=255)
     email: str | None = Field(None, max_length=255)
     permissions: list[str] = Field(default_factory=list)

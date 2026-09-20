@@ -991,6 +991,35 @@ async def test_get_payment_by_booking(fake_session: AsyncMock) -> None:
     assert result == payment
 
 
+def _executed_stmt_load_paths(fake_session: AsyncMock) -> list[str]:
+    stmt = fake_session.execute.call_args.args[0]
+    return [str(getattr(opt, "path", "")) for opt in stmt._with_options]
+
+
+@pytest.mark.asyncio
+async def test_get_payment_eager_loads_unit_context(fake_session: AsyncMock) -> None:
+    """Regression: payment detail 500 — `_payment_unit_context` dereferences
+    `payment.unit.listing`/`unit.photos`; without eager loading the async
+    lazy-load raises MissingGreenlet → 500 on the admin payment details page."""
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = _make_payment(
+        _make_booking(_make_unit(), _make_user()), _make_user(),
+        _make_user(user_id="host-1", role=UserRole.HOST),
+    )
+    fake_session.execute = AsyncMock(return_value=mock_result)
+
+    await payments_repository.get_payment(fake_session, "p1")
+    paths = _executed_stmt_load_paths(fake_session)
+    assert any("Payment.unit" in p and "Unit.photos" in p for p in paths)
+    assert any("Payment.unit" in p and "Unit.listing" in p for p in paths)
+
+    fake_session.execute.reset_mock()
+    await payments_repository.get_payment_by_booking(fake_session, "b1")
+    paths = _executed_stmt_load_paths(fake_session)
+    assert any("Payment.unit" in p and "Unit.photos" in p for p in paths)
+    assert any("Payment.unit" in p and "Unit.listing" in p for p in paths)
+
+
 @pytest.mark.asyncio
 async def test_update_payment(fake_session: AsyncMock) -> None:
     fake_session.add = MagicMock()

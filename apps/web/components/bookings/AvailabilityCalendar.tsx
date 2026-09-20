@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useLocale, useTranslations } from "next-intl";
 
@@ -8,6 +8,7 @@ import { useListingAvailability } from "@/lib/queries/listings";
 import { cn, parseInputDate, toInputDate } from "@/lib/utils";
 
 const MAX_WINDOW_DAYS = 90;
+const MAX_NAV_MONTHS = 24;
 
 function addDays(date: Date, days: number): Date {
   const next = new Date(date);
@@ -61,31 +62,48 @@ export function AvailabilityCalendar({
     return [base, addMonths(base, 1)];
   }, [today, offset]);
 
-  const maxOffset = useMemo(() => {
-    const first = monthStart(today);
-    let next = 0;
-    while (true) {
-      const second = addMonths(first, next + 1);
-      const lastVisible = monthEnd(second);
-      if ((lastVisible.getTime() - today.getTime()) / 86400000 > MAX_WINDOW_DAYS) {
-        break;
-      }
-      next += 1;
-    }
-    return next;
-  }, [today]);
+  const maxOffset = MAX_NAV_MONTHS;
 
+  // Fetch only the two visible months (always <= 62 days, within the API's
+  // 90-day per-request limit) — the window slides as the user navigates.
+  const windowStart = useMemo(() => {
+    const first = months[0];
+    return first > today ? first : today;
+  }, [months, today]);
   const windowEnd = useMemo(() => addDays(monthEnd(months[1]), 1), [months]);
 
-  const { data } = useListingAvailability(unitId, todayStr, toInputDate(windowEnd));
+  const { data } = useListingAvailability(
+    unitId,
+    toInputDate(windowStart),
+    toInputDate(windowEnd)
+  );
 
-  const statusByDate = useMemo(() => {
-    const map = new Map<string, { status: string; price: number }>();
-    for (const day of data?.days ?? []) {
-      map.set(day.date, { status: day.status, price: day.price_egp });
-    }
-    return map;
+  // Accumulate statuses across fetched windows so a range whose endpoints
+  // live in different months still validates after navigation.
+  const [statusByDate, setStatusByDate] = useState(
+    () => new Map<string, { status: string; price: number }>()
+  );
+  useEffect(() => {
+    setStatusByDate((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const day of data?.days ?? []) {
+        const existing = next.get(day.date);
+        if (
+          !existing ||
+          existing.status !== day.status ||
+          existing.price !== day.price_egp
+        ) {
+          next.set(day.date, { status: day.status, price: day.price_egp });
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
   }, [data]);
+  useEffect(() => {
+    setStatusByDate(new Map());
+  }, [unitId]);
 
   const weekdayNames = useMemo(() => {
     const base = new Date(2024, 0, 7); // a Sunday

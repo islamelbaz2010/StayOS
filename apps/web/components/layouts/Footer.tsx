@@ -12,25 +12,33 @@ export function Footer() {
   const locale = params?.locale ?? "ar";
   const { user } = useAuth();
 
-  const isOps =
-    user?.role === "admin" ||
-    user?.role === "staff" ||
-    user?.role === "field_staff";
+  // field_staff operate on /operations (mobile); they cannot open /admin —
+  // ProtectedRoute there only allows admin/staff, so never link them to it.
+  const isOps = user?.role === "admin" || user?.role === "staff";
+  const isFieldOps = user?.role === "field_staff";
   const isHost = user?.role === "host";
+  const canModerateListings =
+    user?.role === "admin" ||
+    (user?.role === "staff" &&
+      (user.staff_permissions ?? []).includes("listings"));
 
   // Ops staff get an operations column instead of marketplace/guest
   // actions — internal accounts are never nudged toward "become a host".
   const workspaceLinks: { href: string; label: string }[] = isOps
     ? [
         { href: `/${locale}/admin`, label: t("admin") },
-        { href: `/${locale}/admin/pending`, label: t("pendingListings") },
+        ...(canModerateListings
+          ? [{ href: `/${locale}/admin/pending`, label: t("pendingListings") }]
+          : []),
       ]
     : isHost
       ? [
           { href: `/${locale}/host`, label: t("host") },
           { href: `/${locale}/host/listings`, label: t("myListings") },
         ]
-      : [{ href: `/${locale}/kyc`, label: t("becomeHost") }];
+      : isFieldOps
+        ? []
+        : [{ href: `/${locale}/kyc`, label: t("becomeHost") }];
 
   return (
     <footer className="border-t border-neutral-200 bg-white">
@@ -63,7 +71,7 @@ export function Footer() {
           </div>
           <div>
             <p className="text-sm font-semibold text-neutral-900">
-              {isOps ? t("admin") : t("host")}
+              {isOps ? t("admin") : isFieldOps ? t("account") : t("host")}
             </p>
             <ul className="mt-4 space-y-2">
               {workspaceLinks.map((link) => (

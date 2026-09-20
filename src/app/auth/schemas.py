@@ -28,6 +28,9 @@ class UserResponse(BaseModel):
     kyc_status: KycStatus
     is_active: bool
     staff_permissions: list[str] = []
+    # True when a password is set (email+password login enabled). Derived in
+    # the route — the ORM exposes password_hash, never serialized here.
+    has_password: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -122,6 +125,27 @@ class OtpVerifyRequest(BaseModel):
 
 class FirebaseAuthRequest(BaseModel):
     id_token: str
+
+
+class EmailRegisterRequest(BaseModel):
+    email: str = Field(..., min_length=5, max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+    display_name: str | None = Field(default=None, max_length=255)
+    locale: str = Field(default="ar", pattern=r"^(en|ar)$")
+
+
+class EmailLoginRequest(BaseModel):
+    email: str = Field(..., min_length=5, max_length=255)
+    password: str = Field(..., min_length=1, max_length=128)
+
+
+class PasswordSetRequest(BaseModel):
+    """Set or change the account password. ``current_password`` is required
+    only when the account already has one — OTP/Firebase-only accounts can
+    set their first password while authenticated."""
+
+    new_password: str = Field(..., min_length=8, max_length=128)
+    current_password: str | None = Field(default=None, max_length=128)
 
 
 class DeviceTokenRegisterRequest(BaseModel):

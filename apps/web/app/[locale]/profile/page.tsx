@@ -1,5 +1,6 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -7,11 +8,12 @@ import { GuestLayout } from "@/components/layouts";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useKycStatus } from "@/lib/queries/kyc";
+import { api } from "@/lib/api";
 
 export default function ProfilePage() {
   const t = useTranslations("profile");
   const tc = useTranslations("common");
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const router = useRouter();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
@@ -112,6 +114,11 @@ export default function ProfilePage() {
               </dl>
             </div>
 
+            <PasswordSection
+              hasPassword={Boolean(user?.has_password)}
+              onSaved={refreshUser}
+            />
+
             {user?.role === "guest" && (
               <div className="rounded-xl bg-brand-50 p-6">
                 <h2 className="text-lg font-bold text-neutral-900">{t("becomeHostTitle")}</h2>
@@ -143,5 +150,113 @@ export default function ProfilePage() {
         </div>
       </GuestLayout>
     </ProtectedRoute>
+  );
+}
+
+function PasswordSection({
+  hasPassword,
+  onSaved,
+}: {
+  hasPassword: boolean;
+  onSaved: () => Promise<void>;
+}) {
+  const t = useTranslations("auth");
+  const tc = useTranslations("common");
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setSaved(false);
+    if (next !== confirm) {
+      setError(t("passwordMismatch"));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.post("/auth/password", {
+        new_password: next,
+        ...(hasPassword ? { current_password: current } : {}),
+      });
+      await onSaved();
+      setSaved(true);
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      setError(
+        status === 401 ? t("invalidCredentials") : t("registerFailed")
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl bg-white p-6 shadow-card">
+      <h2 className="text-lg font-bold text-neutral-900">
+        {hasPassword ? t("changePassword") : t("setPassword")}
+      </h2>
+      {!hasPassword && (
+        <p className="mt-1 text-sm text-neutral-600">{t("passwordSetHint")}</p>
+      )}
+      <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+        {hasPassword && (
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            placeholder={t("currentPassword")}
+            required
+            className="input w-full text-sm"
+            aria-label={t("currentPassword")}
+          />
+        )}
+        <input
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          placeholder={t("newPassword")}
+          required
+          className="input w-full text-sm"
+          aria-label={t("newPassword")}
+        />
+        <input
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          placeholder={t("confirmPassword")}
+          required
+          className="input w-full text-sm"
+          aria-label={t("confirmPassword")}
+        />
+        {error && (
+          <p className="text-sm text-danger-600" role="alert">
+            {error}
+          </p>
+        )}
+        {saved && (
+          <p className="text-sm text-success-700">{t("passwordUpdated")}</p>
+        )}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="btn-primary text-sm disabled:opacity-50"
+        >
+          {submitting ? tc("loading") : tc("save")}
+        </button>
+      </form>
+    </div>
   );
 }

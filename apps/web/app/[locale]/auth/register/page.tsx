@@ -8,6 +8,7 @@ import type { ConfirmationResult } from "firebase/auth";
 
 import { AuthLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
+import { api } from "@/lib/api";
 
 export default function RegisterPage() {
   const t = useTranslations("auth");
@@ -22,6 +23,7 @@ export default function RegisterPage() {
     isFirebaseConfigured,
     sendOtpViaBackend,
     verifyOtpViaBackend,
+    login,
   } = useAuth();
 
   const locale = params?.locale ?? "ar";
@@ -33,6 +35,47 @@ export default function RegisterPage() {
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [method, setMethod] = useState<"phone" | "email">("phone");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  async function handleEmailRegister(event: FormEvent) {
+    event.preventDefault();
+    if (password !== confirmPassword) {
+      setError(t("passwordMismatch"));
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { data } = await api.post<{
+        access_token: string;
+        refresh_token: string;
+        token_type: string;
+        expires_in: number;
+      }>("/auth/register", {
+        email,
+        password,
+        display_name: name || undefined,
+        locale,
+      });
+      await login(data);
+      router.push(redirect);
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      setError(
+        status === 409
+          ? t("emailExists")
+          : err instanceof Error
+            ? err.message
+            : t("registerFailed")
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function handleSend(event: FormEvent) {
     event.preventDefault();
@@ -84,7 +127,122 @@ export default function RegisterPage() {
       <h1 className="text-2xl font-bold text-neutral-900">{t("signUp")}</h1>
       <p className="mt-2 text-sm text-neutral-600">{t("registerSubtitle")}</p>
 
-      {step === "phone" ? (
+      <div className="mt-4 flex rounded-lg bg-neutral-100 p-1" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={method === "phone"}
+          onClick={() => {
+            setMethod("phone");
+            setError(null);
+          }}
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+            method === "phone"
+              ? "bg-white text-neutral-900 shadow-sm"
+              : "text-neutral-500 hover:text-neutral-700"
+          }`}
+        >
+          {t("phone")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={method === "email"}
+          onClick={() => {
+            setMethod("email");
+            setError(null);
+          }}
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+            method === "email"
+              ? "bg-white text-neutral-900 shadow-sm"
+              : "text-neutral-500 hover:text-neutral-700"
+          }`}
+        >
+          {t("email")}
+        </button>
+      </div>
+
+      {method === "email" ? (
+        <form onSubmit={handleEmailRegister} className="mt-6 space-y-4">
+          <div>
+            <label
+              htmlFor="register-name"
+              className="mb-1 block text-sm font-medium text-neutral-700"
+            >
+              {t("displayName")}
+            </label>
+            <input
+              id="register-name"
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="register-email"
+              className="mb-1 block text-sm font-medium text-neutral-700"
+            >
+              {t("email")}
+            </label>
+            <input
+              id="register-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="register-password"
+              className="mb-1 block text-sm font-medium text-neutral-700"
+            >
+              {t("password")}
+            </label>
+            <input
+              id="register-password"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            />
+            <p className="mt-1 text-xs text-neutral-500">{t("passwordHint")}</p>
+          </div>
+          <div>
+            <label
+              htmlFor="register-confirm"
+              className="mb-1 block text-sm font-medium text-neutral-700"
+            >
+              {t("confirmPassword")}
+            </label>
+            <input
+              id="register-confirm"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full rounded-lg bg-brand-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+          >
+            {submitting ? t("signingIn") : t("createAccount")}
+          </button>
+        </form>
+      ) : step === "phone" ? (
         <form onSubmit={handleSend} className="mt-6 space-y-4">
           <div>
             <label

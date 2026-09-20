@@ -70,6 +70,49 @@ async def firebase_auth(
         raise to_http_exception(exc) from exc
 
 
+@router.post("/register", response_model=auth_schemas.TokenPair)
+async def register_email(
+    request: auth_schemas.EmailRegisterRequest,
+    session: AsyncSession = Depends(get_session),
+    _rate_limit: None = Depends(login_rate_limit),
+) -> auth_schemas.TokenPair:
+    """Email+password registration — creates a guest account and returns a
+    token pair (auto-login). Phone OTP and Firebase flows are unaffected."""
+    try:
+        return await auth_services.register_with_email(session, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/login", response_model=auth_schemas.TokenPair)
+async def login_email(
+    request: auth_schemas.EmailLoginRequest,
+    session: AsyncSession = Depends(get_session),
+    _rate_limit: None = Depends(login_rate_limit),
+) -> auth_schemas.TokenPair:
+    """Email+password login. Uniform "invalid credentials" failure for
+    unknown accounts and wrong passwords."""
+    try:
+        return await auth_services.authenticate_by_email(session, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/password", status_code=204)
+async def set_password(
+    request: auth_schemas.PasswordSetRequest,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """Set or change the account password while authenticated. Accounts that
+    signed up via OTP/Firebase can set a first password without supplying a
+    current one; password-holders must re-authenticate with the current one."""
+    try:
+        await auth_services.set_password(session, user, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
 @router.post("/refresh", response_model=auth_schemas.TokenPair)
 async def refresh_token(
     request: auth_schemas.TokenRefreshRequest,
@@ -102,6 +145,7 @@ async def get_me(
     session: AsyncSession = Depends(get_session),
 ) -> auth_schemas.UserResponse:
     response = auth_schemas.UserResponse.model_validate(user)
+    response.has_password = bool(user.password_hash)
     from app.auth.constants import UserRole
 
     if user.role == UserRole.STAFF:

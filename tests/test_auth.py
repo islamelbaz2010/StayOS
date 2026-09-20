@@ -723,3 +723,192 @@ def test_dev_token_rejected_in_production_env(auth_client: TestClient, monkeypat
         json={"user_id": "seed-accept-gues-0000-000000000001"},
     )
     assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Email + password authentication
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_register_with_email_creates_guest_and_tokens(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_email", AsyncMock(return_value=None)
+    )
+    created = _make_user(email="new@example.com")
+    created.password_hash = "x"
+    monkeypatch.setattr(
+        auth_repository, "create_user", AsyncMock(return_value=created)
+    )
+    token_pair = TokenPair(access_token="a", refresh_token="r", expires_in=900)
+    monkeypatch.setattr(
+        auth_services, "create_token_pair", AsyncMock(return_value=token_pair)
+    )
+
+    req = auth_services.auth_schemas.EmailRegisterRequest(
+        email="New@Example.com", password="password123", display_name="New"
+    )
+    result = await auth_services.register_with_email(fake_session, req)
+
+    assert result.access_token == "a"
+    # email normalized to lowercase + stored hash, never the plaintext
+    kwargs = auth_repository.create_user.call_args.kwargs
+    assert kwargs["email"] == "new@example.com"
+    assert kwargs["password_hash"] != "password123"
+    assert kwargs["password_hash"].startswith("$2")
+    assert kwargs["role"] == UserRole.GUEST
+
+
+@pytest.mark.asyncio
+async def test_register_with_email_duplicate_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_email",
+        AsyncMock(return_value=_make_user()),
+    )
+    req = auth_services.auth_schemas.EmailRegisterRequest(
+        email="user@example.com", password="password123"
+    )
+    from app.shared.exceptions import ConflictError
+
+    with pytest.raises(ConflictError):
+        await auth_services.register_with_email(fake_session, req)
+
+
+@pytest.mark.asyncio
+async def test_register_with_email_invalid_format(fake_session: AsyncMock) -> None:
+    req = auth_services.auth_schemas.EmailRegisterRequest(
+        email="not-an-email", password="password123"
+    )
+    from app.shared.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
+        await auth_services.register_with_email(fake_session, req)
+
+
+@pytest.mark.asyncio
+async def test_authenticate_by_email_success(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    user = _make_user(email="user@example.com")
+    user.password_hash = auth_services._hash_password("password123")
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_email", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(auth_services, "_check_rate_limit", AsyncMock())
+    monkeypatch.setattr(auth_services, "_increment_rate_limit", AsyncMock())
+    token_pair = TokenPair(access_token="a", refresh_token="r", expires_in=900)
+    monkeypatch.setattr(
+        auth_services, "create_token_pair", AsyncMock(return_value=token_pair)
+    )
+
+    req = auth_services.auth_schemas.EmailLoginRequest(
+        email="user@example.com", password="password123"
+    )
+    result = await auth_services.authenticate_by_email(fake_session, req)
+    assert result.access_token == "a"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("case", ["unknown", "wrong_password", "no_password"])
+async def test_authenticate_by_email_uniform_failure(
+    fake_session: AsyncMock, monkeypatch, case: str
+) -> None:
+    """Unknown email, wrong password, and OTP-only accounts must all fail
+    identically — no user enumeration via distinct errors."""
+    user = _make_user()
+    if case == "wrong_password":
+        user.password_hash = auth_services._hash_password("real-password")
+    elif case == "no_password":
+        user.password_hash = None
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_email",
+        AsyncMock(return_value=None if case == "unknown" else user),
+    )
+    monkeypatch.setattr(auth_services, "_check_rate_limit", AsyncMock())
+    monkeypatch.setattr(auth_services, "_increment_rate_limit", AsyncMock())
+
+    req = auth_services.auth_schemas.EmailLoginRequest(
+        email="user@example.com", password="password123"
+    )
+    from app.shared.exceptions import AuthenticationError
+
+    with pytest.raises(AuthenticationError, match="Invalid email or password"):
+        await auth_services.authenticate_by_email(fake_session, req)
+
+
+@pytest.mark.asyncio
+async def test_set_password_first_time_and_change(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    user = _make_user()
+    user.password_hash = None
+    monkeypatch.setattr(auth_repository, "update_user", AsyncMock(return_value=user))
+
+    # OTP-only account sets a first password — no current_password required.
+    await auth_services.set_password(
+        fake_session,
+        user,
+        auth_services.auth_schemas.PasswordSetRequest(new_password="newpass123"),
+    )
+    assert auth_repository.update_user.called
+
+    # Once a hash exists, current_password is enforced.
+    user.password_hash = auth_services._hash_password("newpass123")
+    auth_repository.update_user.reset_mock()
+    from app.shared.exceptions import AuthenticationError
+
+    with pytest.raises(AuthenticationError):
+        await auth_services.set_password(
+            fake_session,
+            user,
+            auth_services.auth_schemas.PasswordSetRequest(
+                new_password="another123", current_password="wrong"
+            ),
+        )
+    await auth_services.set_password(
+        fake_session,
+        user,
+        auth_services.auth_schemas.PasswordSetRequest(
+            new_password="another123", current_password="newpass123"
+        ),
+    )
+    assert auth_repository.update_user.called
+
+
+def test_email_login_route(auth_client: TestClient, monkeypatch) -> None:
+    token_pair = TokenPair(access_token="a", refresh_token="r", expires_in=900)
+    monkeypatch.setattr(
+        auth_services, "authenticate_by_email", AsyncMock(return_value=token_pair)
+    )
+    response = auth_client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": "password123"},
+    )
+    assert response.status_code == 200
+    assert response.json()["access_token"] == "a"
+
+
+def test_email_register_route(auth_client: TestClient, monkeypatch) -> None:
+    token_pair = TokenPair(access_token="a", refresh_token="r", expires_in=900)
+    monkeypatch.setattr(
+        auth_services, "register_with_email", AsyncMock(return_value=token_pair)
+    )
+    response = auth_client.post(
+        "/api/v1/auth/register",
+        json={"email": "user@example.com", "password": "password123"},
+    )
+    assert response.status_code == 200
+
+
+def test_email_login_short_password_rejected(auth_client: TestClient) -> None:
+    response = auth_client.post(
+        "/api/v1/auth/register",
+        json={"email": "user@example.com", "password": "short"},
+    )
+    assert response.status_code == 422

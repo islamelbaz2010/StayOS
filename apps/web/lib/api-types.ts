@@ -26,6 +26,31 @@ export interface paths {
     /** Firebase Auth */
     post: operations["firebase_auth_api_v1_auth_firebase_post"];
   };
+  "/api/v1/auth/register": {
+    /**
+     * Register Email
+     * @description Email+password registration — creates a guest account and returns a
+     * token pair (auto-login). Phone OTP and Firebase flows are unaffected.
+     */
+    post: operations["register_email_api_v1_auth_register_post"];
+  };
+  "/api/v1/auth/login": {
+    /**
+     * Login Email
+     * @description Email+password login. Uniform "invalid credentials" failure for
+     * unknown accounts and wrong passwords.
+     */
+    post: operations["login_email_api_v1_auth_login_post"];
+  };
+  "/api/v1/auth/password": {
+    /**
+     * Set Password
+     * @description Set or change the account password while authenticated. Accounts that
+     * signed up via OTP/Firebase can set a first password without supplying a
+     * current one; password-holders must re-authenticate with the current one.
+     */
+    post: operations["set_password_api_v1_auth_password_post"];
+  };
   "/api/v1/auth/refresh": {
     /** Refresh Token */
     post: operations["refresh_token_api_v1_auth_refresh_post"];
@@ -1951,6 +1976,27 @@ export interface components {
      * @enum {string}
      */
     DisputeStatus: "open" | "in_review" | "resolved" | "closed";
+    /** EmailLoginRequest */
+    EmailLoginRequest: {
+      /** Email */
+      email: string;
+      /** Password */
+      password: string;
+    };
+    /** EmailRegisterRequest */
+    EmailRegisterRequest: {
+      /** Email */
+      email: string;
+      /** Password */
+      password: string;
+      /** Display Name */
+      display_name?: string | null;
+      /**
+       * Locale
+       * @default ar
+       */
+      locale?: string;
+    };
     /** EscrowListResponse */
     EscrowListResponse: {
       /**
@@ -3620,6 +3666,18 @@ export interface components {
       /** Last Read At */
       last_read_at: string | null;
     };
+    /**
+     * PasswordSetRequest
+     * @description Set or change the account password. ``current_password`` is required
+     * only when the account already has one — OTP/Firebase-only accounts can
+     * set their first password while authenticated.
+     */
+    PasswordSetRequest: {
+      /** New Password */
+      new_password: string;
+      /** Current Password */
+      current_password?: string | null;
+    };
     /** PaymentConfirmationRequest */
     PaymentConfirmationRequest: {
       provider: components["schemas"]["PaymentProvider"];
@@ -4631,6 +4689,11 @@ export interface components {
        */
       staff_permissions?: string[];
       /**
+       * Has Password
+       * @default false
+       */
+      has_password?: boolean;
+      /**
        * Created At
        * Format: date-time
        */
@@ -4921,6 +4984,83 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["TokenPair"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Register Email
+   * @description Email+password registration — creates a guest account and returns a
+   * token pair (auto-login). Phone OTP and Firebase flows are unaffected.
+   */
+  register_email_api_v1_auth_register_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailRegisterRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["TokenPair"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Login Email
+   * @description Email+password login. Uniform "invalid credentials" failure for
+   * unknown accounts and wrong passwords.
+   */
+  login_email_api_v1_auth_login_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailLoginRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["TokenPair"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Set Password
+   * @description Set or change the account password while authenticated. Accounts that
+   * signed up via OTP/Firebase can set a first password without supplying a
+   * current one; password-holders must re-authenticate with the current one.
+   */
+  set_password_api_v1_auth_password_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PasswordSetRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
       };
       /** @description Validation Error */
       422: {

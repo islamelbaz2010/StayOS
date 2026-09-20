@@ -52,7 +52,14 @@ async def create_payment(
 
 async def get_payment(session: AsyncSession, payment_id: str) -> Payment | None:
     result = await session.execute(
-        select(Payment).where(Payment.id == payment_id)
+        select(Payment)
+        .options(
+            selectinload(Payment.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Payment.unit).selectinload(Unit.photos),
+        )
+        .where(Payment.id == payment_id)
     )
     return result.scalar_one_or_none()
 
@@ -70,7 +77,14 @@ async def get_payment_by_booking(
     session: AsyncSession, booking_id: str
 ) -> Payment | None:
     result = await session.execute(
-        select(Payment).where(Payment.booking_id == booking_id)
+        select(Payment)
+        .options(
+            selectinload(Payment.unit)
+            .selectinload(Unit.listing)
+            .selectinload(UnitListing.cover_photo),
+            selectinload(Payment.unit).selectinload(Unit.photos),
+        )
+        .where(Payment.booking_id == booking_id)
     )
     return result.scalar_one_or_none()
 

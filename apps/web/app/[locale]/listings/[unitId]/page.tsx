@@ -277,7 +277,7 @@ export default function ListingDetailPage() {
                 {listing.hostDisplayName && (
                   <section className="card p-5 sm:p-6">
                     <h2 className="mb-4 text-lg font-semibold text-brand-900">
-                      {t("hostedby")}
+                      {t("hostedBy")}
                     </h2>
                     <div className="flex items-center gap-4">
                       <Link
@@ -383,7 +383,7 @@ export default function ListingDetailPage() {
                       {listing.accessibilityFeatures.length > 0 && (
                         <div>
                           <p className="mb-2 font-medium text-brand-900">
-                            {t("accessibilityFeatures")}
+                            {t("accessibilityFeaturesTitle")}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {listing.accessibilityFeatures.map((feature) => (

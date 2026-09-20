@@ -865,3 +865,108 @@ async def test_staff_create_success(
     assert result.phone_number == "+201118000472"
     assert result.email == "fatma@example.com"  # normalized
     assert result.permissions == ["listings"]
+
+
+# ============================================================
+# FOUNDER ACCEPTANCE PASS 3 — Staff sign-in lifecycle
+# ============================================================
+
+from app.auth import services as auth_services  # noqa: E402
+from app.auth.schemas import EmailLoginRequest, PasswordSetRequest  # noqa: E402
+from app.shared.exceptions import AuthenticationError  # noqa: E402
+
+
+@pytest.mark.asyncio
+async def test_staff_response_reports_password_state(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Admins must see whether a staff member has established a password —
+    has_password on StaffResponse, never the hash itself."""
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_phone", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_email", AsyncMock(return_value=None)
+    )
+
+    async def _create(session, **kwargs):
+        return User(
+            id=kwargs["id"],
+            phone_number=kwargs["phone_number"],
+            email=kwargs["email"],
+            display_name=kwargs["display_name"],
+            role=kwargs["role"],
+            is_active=True,
+            kyc_status="verified",
+            created_at=datetime.now(UTC),
+        )
+
+    monkeypatch.setattr(auth_repository, "create_user", AsyncMock(side_effect=_create))
+    monkeypatch.setattr("app.auth.staff.write_event", AsyncMock())
+
+    result = await staff_services.create_staff(
+        fake_session, _admin(), _staff_request()
+    )
+    assert result.has_password is False
+    assert not hasattr(result, "password_hash")
+
+
+@pytest.mark.asyncio
+async def test_staff_first_password_then_email_login(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """The complete Founder lifecycle: staff signs in via OTP (role-agnostic),
+    sets a first password with no current-password requirement, then logs in
+    with email+password."""
+    staff = User(
+        id=str(uuid.uuid4()),
+        phone_number="+201118000472",
+        email="staff@example.com",
+        role=UserRole.STAFF,
+        is_active=True,
+        password_hash=None,
+        created_at=datetime.now(UTC),
+    )
+
+    async def _apply(session, user, **kwargs):
+        user.password_hash = kwargs.get("password_hash", user.password_hash)
+        return user
+
+    monkeypatch.setattr(
+        auth_repository, "update_user", AsyncMock(side_effect=_apply)
+    )
+
+    # C. first password set — no current_password needed (OTP-only account)
+    await auth_services.set_password(
+        fake_session, staff, PasswordSetRequest(new_password="Str0ng!Pass")
+    )
+    assert staff.password_hash is not None
+
+    # D. email+password login succeeds for staff role
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_email", AsyncMock(return_value=staff)
+    )
+    monkeypatch.setattr(auth_services, "_check_rate_limit", AsyncMock())
+    monkeypatch.setattr(auth_services, "_increment_rate_limit", AsyncMock())
+    from app.auth.schemas import TokenPair
+
+    monkeypatch.setattr(
+        auth_services,
+        "create_token_pair",
+        AsyncMock(return_value=TokenPair(access_token="a", refresh_token="r", expires_in=900)),
+    )
+    result = await auth_services.authenticate_by_email(
+        fake_session,
+        EmailLoginRequest(email="staff@example.com", password="Str0ng!Pass"),
+    )
+    assert result.access_token == "a"
+
+    # E. wrong password fails
+    with pytest.raises(AuthenticationError):
+        await auth_services.authenticate_by_email(
+            fake_session,
+            EmailLoginRequest(email="staff@example.com", password="wrong-pass"),
+        )
+
+    # I. password never exposed in plaintext on the response surface
+    assert "Str0ng!Pass" not in str(staff_services._to_response(staff, []))

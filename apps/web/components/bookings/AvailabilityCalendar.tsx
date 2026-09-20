@@ -224,7 +224,7 @@ export function AvailabilityCalendar({
                       )}
                     >
                       <span>{i + 1}</span>
-                      {selectable && day ? (
+                      {awaitingCheckout && selectable && day ? (
                         <span
                           className={cn(
                             "text-[9px] leading-none",

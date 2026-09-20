@@ -176,6 +176,23 @@ describe("AvailabilityCalendar", () => {
     expect(lastQuery!.checkIn > dayStr(90)).toBe(true);
   });
 
+  it("shows no per-day price labels before a check-in is selected", () => {
+    // Founder requirement: date numbers only until the user starts selecting.
+    renderCalendar("", "");
+    expect(screen.queryAllByText("1,000")).toHaveLength(0);
+    // date numbers still render
+    expect(screen.getAllByLabelText(dayStr(5)).length).toBeGreaterThan(0);
+  });
+
+  it("shows price labels only while a check-out is pending", () => {
+    renderCalendar(dayStr(3), "");
+    expect(screen.getAllByText("1,000").length).toBeGreaterThan(0);
+
+    cleanup();
+    renderCalendar(dayStr(3), dayStr(6));
+    expect(screen.queryAllByText("1,000")).toHaveLength(0);
+  });
+
   it("completes a range whose endpoints are in different months", () => {
     // null => mock derives AVAILABLE days from whatever window is requested.
     mockDays = null;

@@ -77,6 +77,7 @@ export default function AdminStaffPage() {
                 {t("title")}
               </h1>
               <p className="mt-2 text-sm text-neutral-600">{t("subtitle")}</p>
+              <p className="mt-1 text-xs text-neutral-500">{t("signInHint")}</p>
             </div>
             <button
               type="button"
@@ -113,6 +114,18 @@ export default function AdminStaffPage() {
                             {t("inactive")}
                           </span>
                         )}
+                        <span
+                          className={cn(
+                            "ms-2 rounded px-2 py-0.5 text-xs font-medium",
+                            member.has_password
+                              ? "bg-success-100 text-success-700"
+                              : "bg-neutral-100 text-neutral-600"
+                          )}
+                        >
+                          {member.has_password
+                            ? t("passwordSet")
+                            : t("otpOnly")}
+                        </span>
                       </p>
                       <p className="mt-1 text-sm text-neutral-500">
                         {member.phone_number}
@@ -180,6 +193,9 @@ export default function AdminStaffPage() {
                 <h2 className="text-lg font-bold text-brand-900">
                   {t("addStaff")}
                 </h2>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {t("signInHint")}
+                </p>
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();

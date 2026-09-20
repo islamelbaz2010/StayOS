@@ -21,6 +21,7 @@ export interface StaffMember {
   role: string;
   is_active: boolean;
   permissions: string[];
+  has_password: boolean;
   created_at: string;
 }
 

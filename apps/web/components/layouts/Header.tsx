@@ -63,7 +63,7 @@ function HostLink({
   return (
     <Link href={`/${locale}/host`} className={className} onClick={onClick}>
       <span className="inline-flex items-center gap-1.5">
-        {t("host")}
+        {t("hostDashboard")}
         {pendingCount > 0 && <CountBadge count={pendingCount} />}
       </span>
     </Link>
@@ -216,7 +216,7 @@ export function Header() {
           className="text-sm font-medium text-neutral-700 hover:text-accent-600"
           onClick={() => setMobileOpen(false)}
         >
-          {t("payments")}
+          {t("earnings")}
         </Link>
       )}
       {isAuthenticated && (
@@ -380,7 +380,7 @@ export function Header() {
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >
-                {t("payments")}
+                {t("earnings")}
               </Link>
             )}
             {isAuthenticated && (

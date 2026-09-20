@@ -22,6 +22,7 @@
     "home": "Home",
     "search": "Search",
     "host": "List your property",
+    "hostDashboard": "Host dashboard",
     "trips": "My trips",
     "favorites": "Favorites",
     "messages": "Messages",
@@ -36,6 +37,7 @@
     "profile": "Profile",
     "bulkImport": "Bulk Import",
     "payments": "Payments",
+    "earnings": "Earnings",
     "support": "Support",
     "rights": "All rights reserved.",
     "toggleMenu": "Toggle menu",
@@ -1703,7 +1705,10 @@
       "operations": "Operations",
       "disputes": "Disputes",
       "discovery": "Discovery"
-    }
+    },
+    "signInHint": "Staff sign in with their phone number (OTP). They can then set an email password under Account → Set password.",
+    "passwordSet": "Password set",
+    "otpOnly": "OTP only"
   },
   "disputes": {
     "reportProblem": "Report a problem",

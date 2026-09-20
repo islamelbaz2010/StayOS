@@ -108,9 +108,25 @@ describe("Header role visibility", () => {
   it("host sees host workspace + earnings but no admin link", () => {
     as("host");
     renderWith(<Header />);
-    expect(screen.getAllByText(t.host).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t.hostDashboard).length).toBeGreaterThan(0);
     expect(screen.queryByText(t.admin)).toBeNull();
     expect(screen.queryByText(t.trips)).toBeNull();
+  });
+
+  it("host nav labels match their destinations (dashboard/earnings)", () => {
+    as("host");
+    const { container } = renderWith(<Header />);
+    const links = Array.from(container.querySelectorAll("a"));
+    const byHref = (href: string) =>
+      links.filter((a) => a.getAttribute("href") === href);
+    // /host is the dashboard — must not be labeled "List your property"
+    for (const a of byHref("/en/host"))
+      expect(a.textContent).toContain(t.hostDashboard);
+    // /host/earnings is earnings — must not reuse the guest "Payments" label
+    for (const a of byHref("/en/host/earnings"))
+      expect(a.textContent).toContain(t.earnings);
+    // hosts are already hosts — no guest CTA toward /kyc
+    expect(byHref("/en/kyc")).toHaveLength(0);
   });
 
   it("admin sees the admin link", () => {
@@ -178,13 +194,16 @@ describe("Footer role visibility", () => {
   it("host gets host workspace links, no admin, no become-host", () => {
     as("host");
     const { container } = renderWith(<Footer />);
-    const hrefs = Array.from(container.querySelectorAll("a")).map((a) =>
-      a.getAttribute("href")
-    );
+    const anchors = Array.from(container.querySelectorAll("a"));
+    const hrefs = anchors.map((a) => a.getAttribute("href"));
     expect(hrefs).toContain("/en/host");
     expect(hrefs).toContain("/en/host/listings");
     expect(hrefs.filter((h) => h?.includes("/admin"))).toHaveLength(0);
     expect(hrefs).not.toContain("/en/kyc");
+    // /host link is labeled as the dashboard, not the guest CTA
+    const dash = anchors.find((a) => a.getAttribute("href") === "/en/host");
+    expect(dash?.textContent).toContain(t.hostDashboard);
+    expect(screen.queryByText(t.becomeHost)).toBeNull();
   });
 
   it("every role can reach search (header/footer policy parity)", () => {

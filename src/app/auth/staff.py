@@ -74,6 +74,7 @@ def _to_response(user: User, permissions: list[str]) -> StaffResponse:
         role=user.role,
         is_active=user.is_active,
         permissions=sorted(permissions),
+        has_password=bool(user.password_hash),
         created_at=user.created_at,
     )
 

@@ -38,7 +38,7 @@ export function Footer() {
       ]
     : isHost
       ? [
-          { href: `/${locale}/host`, label: t("host") },
+          { href: `/${locale}/host`, label: t("hostDashboard") },
           { href: `/${locale}/host/listings`, label: t("myListings") },
         ]
       : isInternal
@@ -49,7 +49,9 @@ export function Footer() {
     ? t("admin")
     : isInternal
       ? t("account")
-      : t("host");
+      : isHost
+        ? t("hostDashboard")
+        : t("host");
 
   return (
     <footer className="border-t border-neutral-200 bg-white">

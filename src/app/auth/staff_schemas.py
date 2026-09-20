@@ -32,6 +32,11 @@ class StaffResponse(BaseModel):
     role: str
     is_active: bool
     permissions: list[str]
+    # Whether the member has established an email+password credential.
+    # False = sign-in is phone OTP only (staff can set a password later in
+    # Account). Surfaced so admins can see the sign-in lifecycle state —
+    # the hash itself is never exposed.
+    has_password: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

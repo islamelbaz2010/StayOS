@@ -9,6 +9,7 @@ import type { ConfirmationResult } from "firebase/auth";
 import { AuthLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/utils";
 
 const DEV_USERS = [
   { id: "seed-admin-0000-0000-000000000001", label: "Admin" },
@@ -67,9 +68,7 @@ export default function LoginPage() {
       setError(
         status === 401
           ? t("invalidCredentials")
-          : err instanceof Error
-            ? err.message
-            : t("socialSignInFailed")
+          : getApiErrorMessage(err, t("loginFailed"))
       );
     } finally {
       setSubmitting(false);

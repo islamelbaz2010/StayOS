@@ -9,6 +9,7 @@ import type { ConfirmationResult } from "firebase/auth";
 import { AuthLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/utils";
 
 export default function RegisterPage() {
   const t = useTranslations("auth");
@@ -68,9 +69,7 @@ export default function RegisterPage() {
       setError(
         status === 409
           ? t("emailExists")
-          : err instanceof Error
-            ? err.message
-            : t("registerFailed")
+          : getApiErrorMessage(err, t("registerFailed"))
       );
     } finally {
       setSubmitting(false);

@@ -74,6 +74,7 @@
     "passwordHint": "At least 8 characters",
     "passwordMismatch": "Passwords do not match",
     "invalidCredentials": "Invalid email or password",
+    "loginFailed": "Sign-in failed. Please try again.",
     "emailExists": "An account already exists for this email",
     "registerFailed": "Registration failed. Please try again.",
     "createAccount": "Create account",

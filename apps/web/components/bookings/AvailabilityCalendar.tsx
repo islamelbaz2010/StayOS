@@ -34,6 +34,9 @@ interface AvailabilityCalendarProps {
   checkOut: string;
   onSelect: (checkIn: string, checkOut: string) => void;
   disabled?: boolean;
+  // True when the popover was opened from the check-out field — a click on a
+  // day after check-in replaces the check-out instead of restarting the range.
+  selectingCheckOut?: boolean;
 }
 
 export function AvailabilityCalendar({
@@ -42,6 +45,7 @@ export function AvailabilityCalendar({
   checkOut,
   onSelect,
   disabled,
+  selectingCheckOut,
 }: AvailabilityCalendarProps) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -83,6 +87,11 @@ export function AvailabilityCalendar({
   const [statusByDate, setStatusByDate] = useState(
     () => new Map<string, { status: string; price: number }>()
   );
+  // Reset runs before the merge effect so a remount with already-cached
+  // availability repopulates instead of being wiped after the merge.
+  useEffect(() => {
+    setStatusByDate(new Map());
+  }, [unitId]);
   useEffect(() => {
     setStatusByDate((prev) => {
       let changed = false;
@@ -101,9 +110,6 @@ export function AvailabilityCalendar({
       return changed ? next : prev;
     });
   }, [data]);
-  useEffect(() => {
-    setStatusByDate(new Map());
-  }, [unitId]);
 
   const weekdayNames = useMemo(() => {
     const base = new Date(2024, 0, 7); // a Sunday
@@ -113,11 +119,18 @@ export function AvailabilityCalendar({
   }, [dateLocale]);
 
   const awaitingCheckout = Boolean(checkIn) && !checkOut;
+  // Picking a new check-out from an already-complete range shows the same
+  // price labels as the awaiting-checkout phase.
+  const pickingCheckout = awaitingCheckout || (Boolean(selectingCheckOut) && Boolean(checkIn));
 
   const handleDayClick = (dateStr: string) => {
     if (disabled) return;
     const day = statusByDate.get(dateStr);
     if (!day || day.status !== "AVAILABLE" || dateStr < todayStr) return;
+    if (selectingCheckOut && checkIn && dateStr > checkIn) {
+      onSelect(checkIn, dateStr);
+      return;
+    }
     if (!awaitingCheckout || dateStr <= checkIn) {
       onSelect(dateStr, "");
       return;
@@ -224,7 +237,7 @@ export function AvailabilityCalendar({
                       )}
                     >
                       <span>{i + 1}</span>
-                      {awaitingCheckout && selectable && day ? (
+                      {pickingCheckout && selectable && day ? (
                         <span
                           className={cn(
                             "text-[9px] leading-none",

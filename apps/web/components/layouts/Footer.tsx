@@ -45,13 +45,16 @@ export function Footer() {
         ? []
         : [{ href: `/${locale}/kyc`, label: t("becomeHost") }];
 
+  // Anonymous/guest users get the host-entry column; its heading must use the
+  // same canonical label as the header link for /kyc ("Become a host"), not
+  // the host-side "List your property" terminology.
   const workspaceHeading = hasAdminAccess
     ? t("admin")
     : isInternal
       ? t("account")
       : isHost
         ? t("hostDashboard")
-        : t("host");
+        : t("becomeHost");
 
   return (
     <footer className="border-t border-neutral-200 bg-white">

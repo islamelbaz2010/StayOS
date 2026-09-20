@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
@@ -34,9 +34,24 @@ vi.mock("@/lib/queries/bookings", () => ({
   useCreateBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
+let mockDays: { date: string; status: string; price_egp: number }[] | null = [];
+
 vi.mock("@/lib/queries/listings", () => ({
-  useListingAvailability: () => ({ data: { days: [] } }),
+  useListingAvailability: () => ({
+    data: {
+      days:
+        mockDays ??
+        // Derive availability for whatever window the calendar requests.
+        [],
+    },
+  }),
 }));
+
+function dayStr(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
 
 import { BookingPanel } from "./BookingPanel";
 import type { ListingDetail } from "@/lib/queries/listings";
@@ -68,6 +83,74 @@ function renderPanel() {
     </QueryClientProvider>
   );
 }
+
+describe("BookingPanel calendar popover", () => {
+  beforeEach(() => {
+    mockDays = [];
+  });
+
+  const monthGrid = () =>
+    document.querySelector("[aria-label='Previous month']");
+
+  it("calendar is closed on initial render — only date controls visible", () => {
+    renderPanel();
+    expect(monthGrid()).toBeNull();
+    expect(screen.getByLabelText("Check-in")).toBeInTheDocument();
+    expect(screen.getByLabelText("Check-out")).toBeInTheDocument();
+  });
+
+  it("clicking the check-in field opens the calendar", () => {
+    renderPanel();
+    fireEvent.click(screen.getByLabelText("Check-in"));
+    expect(monthGrid()).not.toBeNull();
+  });
+
+  it("clicking the check-out field opens the calendar", () => {
+    renderPanel();
+    fireEvent.click(screen.getByLabelText("Check-out"));
+    expect(monthGrid()).not.toBeNull();
+  });
+
+  it("check-in pick keeps the calendar open; check-out pick closes it", () => {
+    mockDays = Array.from({ length: 120 }, (_, i) => ({
+      date: dayStr(i + 1),
+      status: "AVAILABLE",
+      price_egp: 1000,
+    }));
+    renderPanel();
+
+    fireEvent.click(screen.getByLabelText("Check-in"));
+    expect(monthGrid()).not.toBeNull();
+
+    // Select check-in — calendar stays open awaiting check-out.
+    fireEvent.click(screen.getByRole("button", { name: dayStr(2) }));
+    expect(monthGrid()).not.toBeNull();
+    expect(
+      (screen.getByLabelText("Check-in") as HTMLInputElement).value
+    ).toBe(dayStr(2));
+
+    // Select check-out — complete range closes the popover.
+    fireEvent.click(screen.getByRole("button", { name: dayStr(5) }));
+    expect(monthGrid()).toBeNull();
+    expect(
+      (screen.getByLabelText("Check-out") as HTMLInputElement).value
+    ).toBe(dayStr(5));
+  });
+
+  it("reopening a completed range from check-out replaces the end date", () => {
+    renderPanel(); // defaults: check-in tomorrow, check-out day after
+    fireEvent.click(screen.getByLabelText("Check-out"));
+    expect(monthGrid()).not.toBeNull();
+  });
+
+  it("Escape closes the calendar", () => {
+    renderPanel();
+    fireEvent.click(screen.getByLabelText("Check-in"));
+    expect(monthGrid()).not.toBeNull();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(monthGrid()).toBeNull();
+  });
+});
 
 describe("BookingPanel guest-facing summary", () => {
   it("hides the internal fee breakdown but keeps total + includes-all-fees", () => {

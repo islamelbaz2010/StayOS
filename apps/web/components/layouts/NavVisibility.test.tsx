@@ -206,6 +206,33 @@ describe("Footer role visibility", () => {
     expect(screen.queryByText(t.becomeHost)).toBeNull();
   });
 
+  it("guest footer uses the canonical 'Become a host' label for /kyc", () => {
+    as("guest");
+    const { container } = renderWith(<Footer />);
+    const anchors = Array.from(container.querySelectorAll("a"));
+    const kycLink = anchors.find((a) => a.getAttribute("href") === "/en/kyc");
+    expect(kycLink?.textContent).toBe(t.becomeHost);
+    // The host-side 'List your property' label must not appear for a guest.
+    expect(
+      Array.from(container.querySelectorAll("p, a")).some(
+        (el) => el.textContent === t.host
+      )
+    ).toBe(false);
+  });
+
+  it("anonymous footer uses the canonical 'Become a host' label for /kyc", () => {
+    as(null);
+    const { container } = renderWith(<Footer />);
+    const anchors = Array.from(container.querySelectorAll("a"));
+    const kycLink = anchors.find((a) => a.getAttribute("href") === "/en/kyc");
+    expect(kycLink?.textContent).toBe(t.becomeHost);
+    expect(
+      Array.from(container.querySelectorAll("p, a")).some(
+        (el) => el.textContent === t.host
+      )
+    ).toBe(false);
+  });
+
   it("every role can reach search (header/footer policy parity)", () => {
     for (const role of [null, "guest", "host", "admin", "staff", "field_staff"]) {
       as(role);

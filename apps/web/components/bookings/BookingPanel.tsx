@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -66,6 +66,40 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
   const [success, setSuccess] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<BookingResponse | null>(null);
   const [message, setMessage] = useState("");
+  // The calendar is a popover anchored to the date fields, not a permanent
+  // grid — it opens on field focus and closes once a full range is picked.
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarTarget, setCalendarTarget] = useState<"in" | "out">("in");
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!datePickerRef.current?.contains(event.target as Node)) {
+        setCalendarOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setCalendarOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [calendarOpen]);
+
+  function openCalendar(target: "in" | "out") {
+    setCalendarTarget(target);
+    setCalendarOpen(true);
+  }
+
+  function handleCalendarSelect(nextCheckIn: string, nextCheckOut: string) {
+    setCheckIn(nextCheckIn);
+    setCheckOut(nextCheckOut);
+    if (nextCheckIn && nextCheckOut) setCalendarOpen(false);
+  }
 
   useEffect(() => {
     if (checkIn && checkOut && checkOut <= checkIn) {
@@ -266,6 +300,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
       )}
 
       <form className="mt-5 space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <div ref={datePickerRef}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label
@@ -280,6 +315,8 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
               value={checkIn}
               min={todayStr}
               onChange={(e) => setCheckIn(e.target.value)}
+              onFocus={() => openCalendar("in")}
+              onClick={() => openCalendar("in")}
               className={cn(
                 "input mt-1 text-sm",
                 errors.checkIn &&
@@ -313,6 +350,8 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
                   : todayStr
               }
               onChange={(e) => setCheckOut(e.target.value)}
+              onFocus={() => openCalendar("out")}
+              onClick={() => openCalendar("out")}
               className={cn(
                 "input mt-1 text-sm",
                 errors.checkOut &&
@@ -345,16 +384,17 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
           </div>
         </div>
 
-        <AvailabilityCalendar
-          unitId={listing.id}
-          checkIn={checkIn}
-          checkOut={checkOut}
-          disabled={createBooking.isPending}
-          onSelect={(nextCheckIn, nextCheckOut) => {
-            setCheckIn(nextCheckIn);
-            setCheckOut(nextCheckOut);
-          }}
-        />
+        {calendarOpen && (
+          <AvailabilityCalendar
+            unitId={listing.id}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            disabled={createBooking.isPending}
+            selectingCheckOut={calendarTarget === "out"}
+            onSelect={handleCalendarSelect}
+          />
+        )}
+        </div>
 
         {listing.minNights > 1 && (
           <p className="text-xs text-neutral-500">

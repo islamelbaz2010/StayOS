@@ -1285,6 +1285,7 @@
       "guest": "Guest",
       "host": "Host",
       "admin": "Admin",
+      "staff": "Staff",
       "field_staff": "Field Staff"
     },
     "kyc": {

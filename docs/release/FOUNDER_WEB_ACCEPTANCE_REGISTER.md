@@ -1,18 +1,35 @@
 # FOUNDER WEB ACCEPTANCE REGISTER — StayOS
 
-**Version**: 1.0.0
+**Version**: 2.0.0
 **Date**: 2026-09-20
-**Branch**: `product-completion-review` @ `2f602b0`
+**Branch**: `product-completion-review` @ `d534c37`
 **Purpose**: Founder personally reviews the deployed web product before mobile behavior is frozen.
-**Companion**: `StayOS_Technical_Release_Review_Master_2026-09-20.xlsx` sheet `05_WEB_ACCEPTANCE` / `06_FOUNDER_OBSERVATIONS`
+**Companion**: `StayOS_Technical_Release_Review_Master_2026-09-20_v2.xlsx` sheet `05_WEB_ACCEPTANCE` / `06_FOUNDER_OBSERVATIONS`
 
 ## How to review
 
-**Deployed web (Vercel preview)**: `https://stayos-814l6q390-islam-elbaz-s-projects.vercel.app` (302 → `/en`; switch to `/ar` for Arabic)
+**Deployed web (Vercel preview)**: `https://stayos-git-product-completion-review-islam-elbaz-s-projects.vercel.app` (302 → `/en`; switch to `/ar` for Arabic). **Vercel SSO protection is ON — sign in to Vercel as the project owner first.**
 **API**: `https://stayos-demo-production.up.railway.app` (`/docs` for Swagger)
-**Login**: Dev Login on `/en/auth/login` — Guest `seed-accept-gues-0000-000000000001`, Host `seed-host-0000-0000-000000000002` (Omar Hassan, KYC-verified), Admin `seed-admin-0000-0000-000000000001`, Staff fixture available.
+**Login**: Dev Login on `/en/auth/login` — Guest `seed-accept-gues-0000-000000000001`, Host `seed-host-0000-0000-000000000002` (Omar Hassan, KYC-verified), Admin `seed-admin-0000-0000-000000000001`, Staff fixture available. **New**: "Email" tab supports real email+password register/login; phone OTP via Akedly is live-verified. Google/Apple buttons are disabled until Firebase is configured (RB-19).
 **Seed listings**: Zamalek `seed-unit-…0001` (request-to-book), Maadi `seed-unit-…0002` (instant book).
 **Known cosmetic note**: presign uploads return 503 until AWS storage vars are set — photo/proof/KYC-document uploads cannot complete on the deployed env yet (release blocker RB-02, not a product defect).
+
+## Hardening results (2026-09-20 cycle)
+
+ENGINEERING VERIFIED = reproduced → root-caused → fixed → regression-tested → verified on the live API and in a real browser session. **FOUNDER VISUAL ACCEPTANCE still pending** — engineering verification is not Founder acceptance.
+
+| Item | Result | Verification |
+|------|--------|--------------|
+| Booking calendar | FIXED — month navigation beyond ~90 days now works; availability fetch uses a sliding window over the two visible months; selections persist across navigation | ENGINEERING VERIFIED (browser: 5 months forward, 39→59 enabled days, range persisted; live API accepts far-future windows) |
+| Staff management | FIXED — `phone_number` now enforces E.164 (previously any 8–20 chars were stored, producing accounts that could never log in via OTP); modal shows real API errors; one pre-fix staff row normalized `01090677722 → +20109067722` | ENGINEERING VERIFIED (live: non-E.164 → 422, E.164 → 201; browser: list, modal, client-side validation) |
+| Email + password auth | IMPLEMENTED — `POST /auth/register`, `POST /auth/login`, `POST /auth/password`; login/register pages have a Phone/Email toggle; Profile has a set/change-password section | ENGINEERING VERIFIED (live: register/login/wrong-pw/duplicate/change/delete all correct; UI register flow completed in browser) |
+| Header/Footer navigation | FIXED — `field_staff` no longer receives `/admin` links that ProtectedRoute rejects; staff links filtered by granted permissions | ENGINEERING VERIFIED (browser: guest, host, admin states) |
+| Profile vs Account consistency | FIXED — host-profile saves now refresh the auth-user cache (`/profile` and `/host/profile` stay consistent); single source of truth remains `auth.users` | ENGINEERING VERIFIED (browser: `/profile` renders password section + correct identity) |
+| Admin Payment Details 500 | FIXED — `get_payment` eager-loads `unit→listing→cover_photo` + `unit→photos` (was `MissingGreenlet` on async lazy-load) | ENGINEERING VERIFIED (live: all 3 queue items → 200 with `unit_cover_image`) |
+| Payment Queue images | FIXED earlier pass — canonical cover resolution (`cover_photo` → `is_cover` → first live photo); `unit_cover_image` populated on all queue rows | ENGINEERING VERIFIED (live payload inspection) |
+| Notifications/state refresh | Retained — 30s polling on operational lists + pending-count badges in header/sidebar | ENGINEERING VERIFIED (code + earlier live check) |
+| Listing approval | Verified — submit → queue (with `pending_photos` diff) → approve → persisted → host sees result; photo-only change-sets approve cleanly | ENGINEERING VERIFIED (live lifecycle + regression test `test_approve_photo_only_edit_publishes_photos`) |
+| Google/Apple sign-in | CONFIGURATION BLOCKER — Firebase not configured; buttons render disabled; no broken UX | Code path exists; creds absent (verified live) |
 
 ## Classification codes
 

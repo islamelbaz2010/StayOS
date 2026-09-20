@@ -1064,7 +1064,7 @@ This manifest lists every document in the StayOS repository. It is the source of
 | **Domain** | Product / Acceptance |
 | **Phase** | Phase 0 → Phase 1 transition |
 | **Status** | Active — founder review register |
-| **Purpose** | Surface-by-surface founder web acceptance review (consumer, host, admin/ops) with verified routes and current behavior, plus a blank observation register the founder fills during review. Observations are triaged before implementation. |
+| **Purpose** | Surface-by-surface founder web acceptance review (consumer, host, admin/ops) with verified routes and current behavior, the 2026-09-20 hardening results (engineering-verified vs founder-accepted), plus a blank observation register the founder fills during review. Observations are triaged before implementation. |
 | **Owner** | Founder |
 | **Dependencies** | Deployed web preview, `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` |
 | **Consumers** | Founder, product engineering |

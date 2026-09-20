@@ -1,6 +1,6 @@
 # FOUNDER DECISION REGISTER — StayOS
 
-**Version**: 1.0.0
+**Version**: 1.1.0
 **Date**: 2026-09-20
 **Branch**: `product-completion-review`
 **Status**: ACTIVE — canonical register of decisions requiring Founder input
@@ -24,8 +24,9 @@
 | FD-12 | **Real collection account details** | `PAYMENT_*` config holds documented placeholders (Bank of Egypt / Vodafone Cash `01012345678`) | Guests currently see placeholder account data | (a) Founder-provided bank account + wallet numbers | Legal entity (account must be in entity name) | Checkout instructions unsafe for real money | OPEN |
 | FD-13 | **Legal entity + marketplace characterization** | No entity data in repo; legal dossier lists required inputs | CBE PSP analysis, tax registration, contracts all depend on entity form | Founder/counsel: legal form, CR, tax card, HQ, activity code | Counsel engagement | All regulated blockers stay open | OPEN |
 | FD-14 | **Analytics provider** | `DEC-013` deferred to Sprint 1 | Observability of funnel before alpha | (a) Defer per DEC-013; (b) pick provider now | — | No product analytics | OPEN (deferred per DEC-013) |
-| FD-15 | **OTP provider confirmation** | Akedly integrated (`auth_otp_akedly` tests); live delivery unverified on production env | OTP must actually deliver SMS before real users | (a) Akedly (implemented); (b) alternative (Twilio vars referenced in infra) | Provider account/credits | Dev-login only viable for acceptance | OPEN |
+| FD-15 | **OTP provider confirmation** | Akedly integrated (`auth_otp_akedly` tests); **live delivery verified — Founder received a real OTP and authenticated 2026-09-20** | OTP must actually deliver SMS before real users | (a) Akedly (implemented); (b) alternative (Twilio vars referenced in infra) | Provider account/credits | — | **RESOLVED — Akedly confirmed working live** |
 | FD-16 | **`ENVIRONMENT=production` cutover** | Dev-token endpoint reachable on deployed env (implies development/staging) | Dev Login must not ship to public users | (a) Flip at launch; (b) keep dev env for acceptance now | Production domain | Acceptance works; launch gated | OPEN (correct for current phase) |
+| FD-17 | **Social sign-in (Google/Apple) enablement** | Code path complete (`signInWithPopup` → `POST /auth/firebase`); `FIREBASE_*` empty on Railway and `NEXT_PUBLIC_FIREBASE_*` absent on Vercel — buttons render disabled | Social login requires a Firebase project + service-account credentials + Vercel client vars | (a) Configure Firebase now; (b) launch closed alpha without social login (phone OTP + email/password both work) | Firebase console access | Social login unavailable; email/password covers the conventional-auth need | OPEN — CONFIGURATION BLOCKER (RB-19) |
 
 ## Deferred-by-governance (not blocking, recorded for completeness)
 

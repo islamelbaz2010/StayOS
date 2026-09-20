@@ -148,6 +148,16 @@ export function Header() {
   const locale = params?.locale ?? "ar";
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Staff need at least one active permission grant before /admin renders
+  // anything for them — without it the link leads to a dead-end 403.
+  const staffPermissions = user?.staff_permissions ?? [];
+  const hasAdminAccess =
+    user?.role === "admin" ||
+    (user?.role === "staff" && staffPermissions.length > 0);
+  const canModerateListings =
+    user?.role === "admin" ||
+    (user?.role === "staff" && staffPermissions.includes("listings"));
+
   const navLinks = (
     <>
       <Link
@@ -223,12 +233,11 @@ export function Header() {
           enabled={isAuthenticated && user?.role === "host"}
         />
       )}
-      {isAuthenticated &&
-        (user?.role === "admin" || user?.role === "staff") && (
+      {isAuthenticated && hasAdminAccess && (
         <AdminLink
           className="text-sm font-medium text-accent-600 hover:text-accent-700"
           onClick={() => setMobileOpen(false)}
-          enabled={isAuthenticated && user?.role === "admin"}
+          enabled={isAuthenticated && canModerateListings}
         />
       )}
       {isAuthenticated && (
@@ -388,12 +397,11 @@ export function Header() {
                 enabled={isAuthenticated && user?.role === "host"}
               />
             )}
-            {isAuthenticated &&
-              (user?.role === "admin" || user?.role === "staff") && (
+            {isAuthenticated && hasAdminAccess && (
               <AdminLink
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
-                enabled={isAuthenticated && user?.role === "admin"}
+                enabled={isAuthenticated && canModerateListings}
               />
             )}
             {isAuthenticated && (

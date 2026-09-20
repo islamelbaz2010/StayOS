@@ -9,7 +9,9 @@ class StaffCreateRequest(BaseModel):
     # unreachable staff account.
     phone_number: str = Field(..., pattern=r"^\+[1-9]\d{1,14}$")
     display_name: str = Field(..., min_length=1, max_length=255)
-    email: str | None = Field(None, max_length=255)
+    email: str | None = Field(
+        None, max_length=255, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+    )
     permissions: list[str] = Field(default_factory=list)
 
 

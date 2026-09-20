@@ -14,17 +14,22 @@ export function Footer() {
 
   // field_staff operate on /operations (mobile); they cannot open /admin —
   // ProtectedRoute there only allows admin/staff, so never link them to it.
-  const isOps = user?.role === "admin" || user?.role === "staff";
+  // Staff additionally need at least one active permission grant — without
+  // it /admin returns 403 (backend _require_console_access).
+  const staffPermissions = user?.staff_permissions ?? [];
+  const isAdmin = user?.role === "admin";
+  const isStaff = user?.role === "staff";
+  const hasAdminAccess =
+    isAdmin || (isStaff && staffPermissions.length > 0);
   const isFieldOps = user?.role === "field_staff";
+  const isInternal = hasAdminAccess || isStaff || isFieldOps;
   const isHost = user?.role === "host";
   const canModerateListings =
-    user?.role === "admin" ||
-    (user?.role === "staff" &&
-      (user.staff_permissions ?? []).includes("listings"));
+    isAdmin || (isStaff && staffPermissions.includes("listings"));
 
   // Ops staff get an operations column instead of marketplace/guest
   // actions — internal accounts are never nudged toward "become a host".
-  const workspaceLinks: { href: string; label: string }[] = isOps
+  const workspaceLinks: { href: string; label: string }[] = hasAdminAccess
     ? [
         { href: `/${locale}/admin`, label: t("admin") },
         ...(canModerateListings
@@ -36,9 +41,15 @@ export function Footer() {
           { href: `/${locale}/host`, label: t("host") },
           { href: `/${locale}/host/listings`, label: t("myListings") },
         ]
-      : isFieldOps
+      : isInternal
         ? []
         : [{ href: `/${locale}/kyc`, label: t("becomeHost") }];
+
+  const workspaceHeading = hasAdminAccess
+    ? t("admin")
+    : isInternal
+      ? t("account")
+      : t("host");
 
   return (
     <footer className="border-t border-neutral-200 bg-white">
@@ -47,17 +58,15 @@ export function Footer() {
           <div>
             <p className="text-sm font-semibold text-neutral-900">StayOS</p>
             <ul className="mt-4 space-y-2">
-              {!isOps && (
-                <li>
-                  <Link
-                    href={`/${locale}/search`}
-                    className="text-sm text-neutral-500 hover:text-neutral-900"
-                  >
-                    {t("search")}
-                  </Link>
-                </li>
-              )}
-              {!isOps && user?.role === "guest" && (
+              <li>
+                <Link
+                  href={`/${locale}/search`}
+                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                >
+                  {t("search")}
+                </Link>
+              </li>
+              {!isInternal && user?.role === "guest" && (
                 <li>
                   <Link
                     href={`/${locale}/bookings`}
@@ -69,23 +78,25 @@ export function Footer() {
               )}
             </ul>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-neutral-900">
-              {isOps ? t("admin") : isFieldOps ? t("account") : t("host")}
-            </p>
-            <ul className="mt-4 space-y-2">
-              {workspaceLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-neutral-500 hover:text-neutral-900"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {workspaceLinks.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-neutral-900">
+                {workspaceHeading}
+              </p>
+              <ul className="mt-4 space-y-2">
+                {workspaceLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-neutral-500 hover:text-neutral-900"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div>
             <p className="text-sm font-semibold text-neutral-900">
               {t("account")}
@@ -93,10 +104,10 @@ export function Footer() {
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
-                  href={`/${locale}/profile`}
+                  href={user ? `/${locale}/profile` : `/${locale}/auth/login`}
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
-                  {t("account")}
+                  {user ? t("account") : t("signIn")}
                 </Link>
               </li>
               {user && (

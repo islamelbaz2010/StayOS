@@ -102,11 +102,17 @@ async def create_staff(
             raise ConflictError("A staff account already exists for this phone")
         raise ConflictError("Phone number already belongs to an existing account")
 
+    email = request.email.strip().lower() if request.email else None
+    if email:
+        by_email = await auth_repository.get_user_by_email(session, email)
+        if by_email is not None:
+            raise ConflictError("Email already belongs to an existing account")
+
     user = await auth_repository.create_user(
         session,
         id=str(uuid4()),
         phone_number=request.phone_number,
-        email=request.email,
+        email=email,
         display_name=request.display_name,
         role=UserRole.STAFF,
         is_active=True,

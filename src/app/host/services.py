@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.constants import UserRole
 from app.auth.models import User
+from app.auth import repository as auth_repository
 from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
@@ -21,7 +22,12 @@ from app.bookings.services import _compute_stay_phase, _to_response
 from app.listings.constants import UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.payments import repository as payments_repository
-from app.shared.exceptions import AuthorizationError, NotFoundError, ValidationError
+from app.shared.exceptions import (
+    AuthorizationError,
+    ConflictError,
+    NotFoundError,
+    ValidationError,
+)
 
 from . import repository as host_repository
 from . import permissions as host_permissions
@@ -1088,7 +1094,16 @@ async def update_host_profile(
     if request.bio is not None:
         user.bio = request.bio
     if request.email is not None:
-        user.email = request.email
+        normalized_email = request.email.strip().lower()
+        if not normalized_email:
+            user.email = None
+        else:
+            existing = await auth_repository.get_user_by_email(
+                session, normalized_email
+            )
+            if existing is not None and existing.id != user.id:
+                raise ConflictError("Email already belongs to an existing account")
+            user.email = normalized_email
     if request.locale is not None:
         if request.locale not in ("ar", "en"):
             raise ValidationError("Locale must be 'ar' or 'en'")

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { useListingAvailability } from "@/lib/queries/listings";
-import { cn, parseInputDate, toInputDate } from "@/lib/utils";
+import { cn, toInputDate } from "@/lib/utils";
 
 const MAX_WINDOW_DAYS = 90;
 const MAX_NAV_MONTHS = 24;
@@ -112,18 +112,6 @@ export function AvailabilityCalendar({
     );
   }, [dateLocale]);
 
-  const rangeBlocked = (start: string, end: string): boolean => {
-    let cur = parseInputDate(start);
-    const endDate = parseInputDate(end);
-    if (!cur || !endDate) return true;
-    while (cur < endDate) {
-      const day = statusByDate.get(toInputDate(cur));
-      if (!day || day.status !== "AVAILABLE") return true;
-      cur = addDays(cur, 1);
-    }
-    return false;
-  };
-
   const awaitingCheckout = Boolean(checkIn) && !checkOut;
 
   const handleDayClick = (dateStr: string) => {
@@ -132,11 +120,12 @@ export function AvailabilityCalendar({
     if (!day || day.status !== "AVAILABLE" || dateStr < todayStr) return;
     if (!awaitingCheckout || dateStr <= checkIn) {
       onSelect(dateStr, "");
-    } else if (rangeBlocked(checkIn, dateStr)) {
-      onSelect(dateStr, "");
-    } else {
-      onSelect(checkIn, dateStr);
+      return;
     }
+    // Always complete the range — if it spans unavailable days, BookingPanel's
+    // availability query shows "dates unavailable" and disables submit. A
+    // silent reset here made valid-looking clicks erase the user's check-in.
+    onSelect(checkIn, dateStr);
   };
 
   return (

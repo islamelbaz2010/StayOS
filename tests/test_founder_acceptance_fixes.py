@@ -740,3 +740,128 @@ async def test_initiate_kyc_allows_missing_account(
 
     assert create_doc.await_args.kwargs["account_id"] is None
     assert result.document_id == document.id
+
+
+# ============================================================
+# FOUNDER ACCEPTANCE PASS 2 — Staff creation error handling
+# ============================================================
+
+from app.auth import repository as auth_repository  # noqa: E402
+from app.auth import staff as staff_services  # noqa: E402
+from app.auth.staff_schemas import StaffCreateRequest  # noqa: E402
+from app.shared.exceptions import ConflictError  # noqa: E402
+
+
+def _admin() -> User:
+    return User(
+        id=str(uuid.uuid4()),
+        phone_number="+201000000001",
+        role=UserRole.ADMIN,
+        kyc_status=KycStatus.VERIFIED,
+        is_active=True,
+    )
+
+
+def _staff_request(**overrides) -> StaffCreateRequest:
+    data = {
+        "phone_number": "+201118000472",
+        "display_name": "Fatma",
+        "permissions": ["listings"],
+    }
+    data.update(overrides)
+    return StaffCreateRequest(**data)
+
+
+@pytest.mark.asyncio
+async def test_staff_create_existing_phone_conflicts(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: the exact Founder case — reusing a registered phone must
+    surface the real conflict message, not a generic create failure."""
+    existing = User(
+        id=str(uuid.uuid4()),
+        phone_number="+201118000472",
+        role=UserRole.GUEST,
+        is_active=True,
+    )
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_phone",
+        AsyncMock(return_value=existing),
+    )
+    with pytest.raises(ConflictError, match="Phone number already belongs"):
+        await staff_services.create_staff(
+            fake_session, _admin(), _staff_request()
+        )
+
+
+@pytest.mark.asyncio
+async def test_staff_create_duplicate_email_conflicts(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: a taken email used to hit the users_email_key unique
+    index and surface as an opaque 500."""
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_phone", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_email",
+        AsyncMock(return_value=User(id=str(uuid.uuid4()), role=UserRole.HOST)),
+    )
+    with pytest.raises(ConflictError, match="Email already belongs"):
+        await staff_services.create_staff(
+            fake_session,
+            _admin(),
+            _staff_request(email="taken@example.com"),
+        )
+
+
+def test_staff_create_rejects_invalid_email() -> None:
+    """Regression: 'not-an-email' was previously accepted (plain str field)."""
+    with pytest.raises(Exception):
+        _staff_request(email="not-an-email")
+
+
+def test_staff_create_rejects_local_phone() -> None:
+    with pytest.raises(Exception):
+        _staff_request(phone_number="01118000472")
+
+
+@pytest.mark.asyncio
+async def test_staff_create_success(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_phone", AsyncMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_email", AsyncMock(return_value=None)
+    )
+
+    async def _create(session, **kwargs):
+        return User(
+            id=kwargs["id"],
+            phone_number=kwargs["phone_number"],
+            email=kwargs["email"],
+            display_name=kwargs["display_name"],
+            role=kwargs["role"],
+            is_active=True,
+            kyc_status="verified",
+            created_at=datetime.now(UTC),
+        )
+
+    create_user = AsyncMock(side_effect=_create)
+    monkeypatch.setattr(auth_repository, "create_user", create_user)
+    monkeypatch.setattr(
+        "app.auth.staff.write_event", AsyncMock()
+    )
+
+    result = await staff_services.create_staff(
+        fake_session,
+        _admin(),
+        _staff_request(email="Fatma@Example.com"),
+    )
+    assert result.phone_number == "+201118000472"
+    assert result.email == "fatma@example.com"  # normalized
+    assert result.permissions == ["listings"]

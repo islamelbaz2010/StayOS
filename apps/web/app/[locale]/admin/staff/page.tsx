@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { AxiosError } from "axios";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminLayout } from "@/components/layouts";
@@ -15,7 +14,7 @@ import {
   useUpdateStaff,
   type StaffMember,
 } from "@/lib/queries/staff";
-import { cn } from "@/lib/utils";
+import { cn, getApiErrorMessage } from "@/lib/utils";
 
 export default function AdminStaffPage() {
   const t = useTranslations("adminStaff");
@@ -64,9 +63,7 @@ export default function AdminStaffPage() {
       setEmail("");
       setCreatePerms([]);
     } catch (err) {
-      const detail = (err as AxiosError<{ detail?: string }>)?.response?.data
-        ?.detail;
-      setError(typeof detail === "string" ? detail : t("createFailed"));
+      setError(getApiErrorMessage(err, t("createFailed")));
     }
   };
 
@@ -183,11 +180,18 @@ export default function AdminStaffPage() {
                 <h2 className="text-lg font-bold text-brand-900">
                   {t("addStaff")}
                 </h2>
-                <div className="mt-4 space-y-3">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleCreate();
+                  }}
+                  className="mt-4 space-y-3"
+                >
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t("namePlaceholder")}
+                    required
                     className="input w-full text-sm"
                   />
                   <input
@@ -196,12 +200,15 @@ export default function AdminStaffPage() {
                     placeholder={t("phonePlaceholder")}
                     type="tel"
                     dir="ltr"
+                    required
                     className="input w-full text-sm"
                   />
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t("emailPlaceholder")}
+                    type="email"
+                    dir="ltr"
                     className="input w-full text-sm"
                   />
                   <div>
@@ -228,27 +235,30 @@ export default function AdminStaffPage() {
                       ))}
                     </div>
                   </div>
-                  {error && <p className="text-sm text-danger-600">{error}</p>}
-                </div>
-                <div className="mt-5 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreate(false)}
-                    className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-                  >
-                    {tc("cancel")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={
-                      createMutation.isPending || !phone.trim() || !name.trim()
-                    }
-                    onClick={handleCreate}
-                    className="btn-primary text-sm disabled:opacity-50"
-                  >
-                    {createMutation.isPending ? tc("loading") : t("create")}
-                  </button>
-                </div>
+                  {error && (
+                    <p className="text-sm text-danger-600" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <div className="mt-5 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreate(false)}
+                      className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                    >
+                      {tc("cancel")}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={
+                        createMutation.isPending || !phone.trim() || !name.trim()
+                      }
+                      className="btn-primary text-sm disabled:opacity-50"
+                    >
+                      {createMutation.isPending ? tc("loading") : t("create")}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

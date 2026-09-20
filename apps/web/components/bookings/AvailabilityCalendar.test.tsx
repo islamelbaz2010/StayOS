@@ -100,12 +100,16 @@ describe("AvailabilityCalendar", () => {
     expect(onSelect).toHaveBeenLastCalledWith(dayStr(3), dayStr(6));
   });
 
-  it("resets the pending range when the checkout crosses a blocked day", () => {
+  it("completes the range when the checkout crosses a blocked day (panel reports it)", () => {
+    // Regression: the calendar used to silently reset the pending check-in
+    // when the range crossed a blocked day — users saw their selection vanish
+    // with no feedback. Now the range is completed so BookingPanel can show
+    // the "dates unavailable" error and keep submit disabled.
     mockDays = buildDays(62, [10]);
     const onSelect = renderCalendar(dayStr(5), "");
 
     fireEvent.click(screen.getAllByLabelText(dayStr(12))[0]);
-    expect(onSelect).toHaveBeenLastCalledWith(dayStr(12), "");
+    expect(onSelect).toHaveBeenLastCalledWith(dayStr(5), dayStr(12));
   });
 
   it("ignores clicks on unavailable and past days", () => {

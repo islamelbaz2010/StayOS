@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { getApiErrorMessage } from "@/lib/utils";
 import { useHostEarnings } from "@/lib/queries/hostEarnings";
 import {
   useHostProfile,
@@ -215,7 +216,9 @@ export default function HostProfilePage() {
                         </button>
                       </div>
                       {updateProfile.isError && (
-                        <p className="text-sm text-danger-600">{t("saveError")}</p>
+                        <p className="text-sm text-danger-600" role="alert">
+                          {getApiErrorMessage(updateProfile.error, t("saveError"))}
+                        </p>
                       )}
                     </form>
                   ) : (

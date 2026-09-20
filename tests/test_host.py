@@ -20,7 +20,8 @@ from app.host import repository as host_repository
 from app.host import schemas as host_schemas
 from app.host import services as host_services
 from app.listings.constants import UnitStatus
-from app.shared.exceptions import AuthorizationError, ValidationError
+from app.auth import repository as auth_repository
+from app.shared.exceptions import AuthorizationError, ConflictError, ValidationError
 
 
 def _make_user(
@@ -608,6 +609,53 @@ async def test_update_host_profile_bio(fake_session: AsyncMock, monkeypatch) -> 
     result = await host_services.update_host_profile(fake_session, host, request)
     assert result.bio == "I host cozy apartments in Cairo."
     assert host.bio == "I host cozy apartments in Cairo."
+
+
+@pytest.mark.asyncio
+async def test_update_host_profile_duplicate_email_conflicts(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: reusing another account's email used to surface as a
+    raw 500 from the users_email_key unique constraint."""
+    host = _make_user(user_id="host-1")
+    other = _make_user(user_id="other-1", role=UserRole.GUEST)
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_email",
+        AsyncMock(return_value=other),
+    )
+    request = host_schemas.HostProfileUpdate(email="taken@example.com")
+    with pytest.raises(ConflictError):
+        await host_services.update_host_profile(fake_session, host, request)
+
+
+@pytest.mark.asyncio
+async def test_update_host_profile_own_email_no_conflict(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    host = _make_user(user_id="host-1")
+    fake_session.scalar = AsyncMock(side_effect=[0, 0])
+    monkeypatch.setattr(
+        host_repository,
+        "count_co_hosted_units",
+        AsyncMock(return_value=0),
+    )
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_email",
+        AsyncMock(return_value=host),
+    )
+    request = host_schemas.HostProfileUpdate(email="HOST@Example.com")
+    result = await host_services.update_host_profile(fake_session, host, request)
+    assert host.email == "host@example.com"
+    assert result.email == "host@example.com"
+
+
+def test_host_profile_update_rejects_invalid_email() -> None:
+    """Regression: an email-shaped check is required — 'not-an-email' used
+    to be accepted and then exploded on the unique index when reused."""
+    with pytest.raises(Exception):
+        host_schemas.HostProfileUpdate(email="not-an-email")
 
 
 # ============================================================

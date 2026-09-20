@@ -115,6 +115,14 @@ docs/RELEASE_TECHNICAL_HANDOFF.md
 └── "FINAL PRODUCT BENCHMARK STATUS" section
     (depends on: FINAL_AIRBNB_BENCHMARK_CLOSURE for product-gap state;
      release blockers stay in the handoff itself)
+
+docs/release/FOUNDER_DECISION_REGISTER.md
+│   (depends on: DECISION_LOG.md, benchmark LIST 3, ADRs)
+└── feeds workbook sheet 04_FOUNDER_DECISIONS
+
+docs/release/FOUNDER_WEB_ACCEPTANCE_REGISTER.md
+│   (depends on: deployed web preview, benchmark register)
+└── feeds workbook sheets 05_WEB_ACCEPTANCE / 06_FOUNDER_OBSERVATIONS
 ```
 
 ---

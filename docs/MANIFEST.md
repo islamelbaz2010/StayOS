@@ -1043,6 +1043,32 @@ This manifest lists every document in the StayOS repository. It is the source of
 | **Dependencies** | `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` |
 | **Consumers** | Founder, product engineering |
 
+### docs/release/FOUNDER_DECISION_REGISTER.md
+
+| Field | Value |
+|-------|-------|
+| **Path** | `docs/release/FOUNDER_DECISION_REGISTER.md` |
+| **Domain** | Product / Governance |
+| **Phase** | Phase 0 → Phase 1 transition |
+| **Status** | Active — canonical register of open founder decisions |
+| **Purpose** | Consolidates every decision requiring founder input (FD-01..FD-16 plus deferred-by-governance items): current implementation, why a decision is required, repository-evidenced options, dependencies, impact of deferral. Options are listed without ranking; engineering does not decide. |
+| **Owner** | Founder |
+| **Dependencies** | `DECISION_LOG.md`, `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` (LIST 3), ADRs |
+| **Consumers** | Founder, product engineering |
+
+### docs/release/FOUNDER_WEB_ACCEPTANCE_REGISTER.md
+
+| Field | Value |
+|-------|-------|
+| **Path** | `docs/release/FOUNDER_WEB_ACCEPTANCE_REGISTER.md` |
+| **Domain** | Product / Acceptance |
+| **Phase** | Phase 0 → Phase 1 transition |
+| **Status** | Active — founder review register |
+| **Purpose** | Surface-by-surface founder web acceptance review (consumer, host, admin/ops) with verified routes and current behavior, plus a blank observation register the founder fills during review. Observations are triaged before implementation. |
+| **Owner** | Founder |
+| **Dependencies** | Deployed web preview, `docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md` |
+| **Consumers** | Founder, product engineering |
+
 ---
 
 **This manifest is the authoritative record of what exists in this repository. Update it whenever a document is added, removed, or changes status.**

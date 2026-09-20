@@ -141,7 +141,7 @@ Actual implemented architecture (not the intended AWS/ECS architecture — see �
 
 ## SECTION 6 — API INVENTORY
 
-Source: generated `openapi.json` — **133 paths**, title "StayOS API" v0.1.0. Routers mounted in `src/app/main.py:209-225`.
+Source: generated `openapi.json` — **156 paths** (regenerated 2026-09-20; includes reviews `q` param), title "StayOS API" v0.1.0. Routers mounted in `src/app/main.py:209-225`.
 
 | Group | Paths | Notable endpoints | Auth/permission |
 |---|---|---|---|
@@ -301,7 +301,7 @@ Live DB fixture state is **PARTIALLY VERIFIED** — the seeds ran previously aga
 1. **Real collection account** — replace `PAYMENT_BANK_ACCOUNT_NUMBER`/`PAYMENT_VODAFONE_CASH_NUMBER`/`PAYMENT_BANK_NAME_*`/`PAYMENT_ACCOUNT_NAME` placeholders (guest-facing instructions). No real payment can complete without this. (Founder)
 2. **AWS KYC/photo/proof storage** — as root/admin identity in `me-central-1`: create buckets `stayos-staging-kyc` (+listings, +private payment-proof bucket), add CORS on KYC+listings buckets (`PUT` for `https://stayos-*-islam-elbaz-s-projects.vercel.app` + preview URL + `http://localhost:3000`, header `content-type`, expose `ETag`), create IAM user scoped `s3:PutObject`/`s3:GetObject`, then set `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_KYC_BUCKET`, `S3_LISTINGS_BUCKET`, `S3_PAYMENT_PROOF_BUCKET` on Railway API **and** worker. (Founder + ops)
 3. **Legal entity/registration** — required for publishable ToS (Consumer Protection Law Art. 37); drafts exist in `docs/legal/` but are NOT legally approved. (Founder → counsel)
-4. **Egyptian legal counsel** on: CBE Law 194/2020 PSP licensing of Model A money flow, PDPL 151/2020 KYC licensing (compliance deadline **2026-10-31**), platform-role characterization. (Founder → counsel)
+4. **Egyptian legal counsel** on: CBE Law 194/2020 PSP licensing of Model A money flow (PSP/PSO licensing rules issued June 2025, ~June 2026 transition), PDPL 151/2020 + Executive Regulations Decree 816/2025 (in force Nov 2025; compliance deadline **2026-11-01**), platform-role characterization. (Founder → counsel)
 5. **KYC ML architecture decision** — Textract/Rekognition do not exist in `me-central-1`; decide manual-only vs non-MENA ML region vs other provider. Manual review works today. (Founder/architecture)
 6. **Payment processor decision** — Paymob (DEC-004) vs Stripe (FLOWS/backlog) remains unresolved; do not write integration code until decided. (Founder)
 7. **`ENVIRONMENT=production`** on Railway before public traffic — disables `/auth/dev-token`. (Ops)
@@ -342,7 +342,7 @@ Live DB fixture state is **PARTIALLY VERIFIED** — the seeds ran previously aga
 | KYC bucket CORS | `infra/terraform/s3.tf` has no CORS on KYC bucket; browser PUT required | Uploads blocked by browser even with credentials | Ops | Bucket exists | OPEN | Apply CORS block §13-A2 |
 | OTP provider unverified | Akedly vars defined; live delivery never proven | Normal guest login may fail; dev-token bypass works | Founder | Akedly account | OPEN | Send test OTP on staging |
 | Legal entity | `docs/legal/` drafts exist; no registration | ToS cannot publish; Art. 37 disclosure missing | Founder | Registration | OPEN | Founder registers entity |
-| CBE/PDPL counsel | `LEGAL_COUNSEL_REVIEW_CHECKLIST.md` | Money-flow model may need licensing; KYC may need PDPC license by 2026-10-31 | Founder→Counsel | Egyptian counsel | OPEN | Engage counsel |
+| CBE/PDPL counsel | `LEGAL_COUNSEL_REVIEW_CHECKLIST.md`; readiness pack v2 | Money-flow model may need CBE PSP licensing (~Jun 2026 transition); PDPL Exec Regs 816/2025 in force — compliance by 2026-11-01 | Founder→Counsel | Egyptian counsel | OPEN | Engage counsel |
 | Payment processor conflict | `DECISION_LOG` DEC-004 (Paymob) vs `FLOWS.md`/`ENGINEERING_BACKLOG.md` (Stripe) | Blocks all gateway integration code | Founder | Decision | OPEN | Founder rules |
 | KYC ML region | Textract/Rekognition absent from `me-central-1`/`me-south-1` (botocore + AWS list verified) | Auto-verification cannot run in canonical region | Founder | Architecture ruling | OPEN — manual review is viable interim | Decide manual-only vs alt region/provider |
 | Mobile device bugs | OPPO validation report (P0): booking CTA, map toggle | Mobile alpha unusable on that device | Engineering | Repro/fix | OPEN | TouchableOpacity diagnostic + rebuild |
@@ -380,6 +380,7 @@ Live DB fixture state is **PARTIALLY VERIFIED** — the seeds ran previously aga
 - **Non-product release blockers**: unchanged — see SECTION 14 (real collection account, AWS storage config incl. `S3_PAYMENT_PROOF_BUCKET`, legal entity + CBE/PDPL counsel, processor decision, OTP verification, mobile P0s + ADR-016, `ENVIRONMENT=production`, prod domain/backups/Sentry). These are deliberately excluded from the product benchmark.
 - **LEGAL/ACCOUNTING REVIEW ITEM**: the closure pass produced no new technical evidence affecting payment flow, money custody, KYC processing, personal data, hosting/transfer, marketplace role, or invoicing beyond what SECTION 12–14 already records. Review search and the availability calendar introduce no regulated-data change.
 - **Benchmark verification this pass**: 1160 backend tests / 80.60% coverage; frontend typecheck + lint + 12 Vitest + production build green; OpenAPI regenerated with the new `q` param (no drift); mobile unchanged.
+- **Acceptance package (2026-09-20)**: `docs/release/FOUNDER_DECISION_REGISTER.md` (FD-01..FD-16 + deferred items + ADR-016 numbering collision), `docs/release/FOUNDER_WEB_ACCEPTANCE_REGISTER.md` (all consumer/host/admin surfaces + blank observation register), `StayOS_Technical_Release_Review_Master_2026-09-20.xlsx` (20 sheets), `StayOS_Legal_Accounting_Regulatory_Readiness_Egypt_2026-09-20_v2.pdf` (founder's bilingual dossier preserved). Mobile gate restated: web founder acceptance + relevant FD resolutions + mobile requirements freeze — not yet met.
 
 ---
 

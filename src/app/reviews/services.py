@@ -277,9 +277,15 @@ async def get_guest_reviews(
 
 
 async def get_listing_reviews(
-    session: AsyncSession, unit_id: str, limit: int, offset: int
+    session: AsyncSession,
+    unit_id: str,
+    limit: int,
+    offset: int,
+    query: str | None = None,
 ) -> ReviewListResponse:
-    rows = await reviews_repository.list_reviews_for_unit(session, unit_id, limit, offset)
+    rows = await reviews_repository.list_reviews_for_unit(
+        session, unit_id, limit, offset, query
+    )
     average_rating, review_count = await reviews_repository.get_rating_aggregate_for_unit(
         session, unit_id
     )

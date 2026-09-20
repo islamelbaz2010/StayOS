@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
 from geoalchemy2.elements import WKTElement
 
 from app.auth import services as auth_services

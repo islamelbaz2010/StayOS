@@ -13,6 +13,7 @@ import { useBookingQuote, useCreateBooking } from "@/lib/queries/bookings";
 import { useListingAvailability } from "@/lib/queries/listings";
 import { cn, formatMoney } from "@/lib/utils";
 
+import { AvailabilityCalendar } from "./AvailabilityCalendar";
 import { BookingSuccess } from "./BookingSuccess";
 
 interface BookingPanelProps {
@@ -334,6 +335,17 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
             )}
           </div>
         </div>
+
+        <AvailabilityCalendar
+          unitId={listing.id}
+          checkIn={checkIn}
+          checkOut={checkOut}
+          disabled={createBooking.isPending}
+          onSelect={(nextCheckIn, nextCheckOut) => {
+            setCheckIn(nextCheckIn);
+            setCheckOut(nextCheckOut);
+          }}
+        />
 
         {listing.minNights > 1 && (
           <p className="text-xs text-neutral-500">

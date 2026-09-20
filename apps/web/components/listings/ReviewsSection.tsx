@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/lib/auth/useAuth";
@@ -190,20 +190,34 @@ export function ReviewsSection({ unitId, locale, hostId }: { unitId: string; loc
   const t = useTranslations("listing");
   const tc = useTranslations("common");
   const { user } = useAuth();
-  const { data, isPending, isError, refetch } = useListingReviews(unitId);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const { data, isPending, isError, refetch } = useListingReviews(unitId, search);
   const [extraReviews, setExtraReviews] = useState<Review[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setExtraReviews([]);
+    setExhausted(false);
+  }, [search]);
 
   const isHost = Boolean(hostId && user && user.id === hostId);
 
   const allReviews = [...(data?.data ?? []), ...extraReviews];
   const totalReviewCount = data?.reviewCount ?? 0;
-  const hasMore = allReviews.length < totalReviewCount;
+  const hasMore = !exhausted && allReviews.length < totalReviewCount;
 
   const handleLoadMore = async () => {
     setLoadingMore(true);
     try {
-      const more = await fetchMoreReviews(unitId, allReviews.length, PAGE_SIZE);
+      const more = await fetchMoreReviews(unitId, allReviews.length, PAGE_SIZE, search);
+      if (more.length < PAGE_SIZE) setExhausted(true);
       setExtraReviews((prev) => [...prev, ...more]);
     } finally {
       setLoadingMore(false);
@@ -288,8 +302,33 @@ export function ReviewsSection({ unitId, locale, hostId }: { unitId: string; loc
         </div>
       )}
 
+      {totalReviewCount > 0 && (
+        <div className="relative mb-4 sm:max-w-xs">
+          <svg
+            className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.35-4.35" strokeLinecap="round" />
+          </svg>
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t("searchReviews")}
+            aria-label={t("searchReviews")}
+            className="input w-full ps-9 text-sm"
+          />
+        </div>
+      )}
+
       {allReviews.length === 0 ? (
-        <p className="text-sm text-neutral-500">{t("noReviews")}</p>
+        <p className="text-sm text-neutral-500">
+          {search ? t("noSearchResults") : t("noReviews")}
+        </p>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2">

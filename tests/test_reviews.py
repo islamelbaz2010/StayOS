@@ -213,6 +213,40 @@ async def test_get_listing_reviews_returns_aggregate(
     assert result.data[0].rating == 4
 
 
+@pytest.mark.asyncio
+async def test_get_listing_reviews_passes_search_query(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    list_mock = AsyncMock(return_value=[])
+    monkeypatch.setattr(reviews_repository, "list_reviews_for_unit", list_mock)
+    monkeypatch.setattr(
+        reviews_repository,
+        "get_rating_aggregate_for_unit",
+        AsyncMock(return_value=(None, 0)),
+    )
+    monkeypatch.setattr(
+        reviews_repository,
+        "get_subrating_averages_for_unit",
+        AsyncMock(return_value={}),
+    )
+    monkeypatch.setattr(
+        reviews_repository,
+        "get_rating_distribution_for_unit",
+        AsyncMock(return_value={}),
+    )
+
+    await review_services.get_listing_reviews(
+        fake_session, "unit-1", limit=10, offset=0, query="clean"
+    )
+
+    list_mock.assert_awaited_once_with(fake_session, "unit-1", 10, 0, "clean")
+
+
+def test_escape_like_escapes_wildcards() -> None:
+    assert reviews_repository._escape_like("100%_\\") == "100\\%\\_\\\\"
+    assert reviews_repository._escape_like("clean") == "clean"
+
+
 # ============================================================
 # REPOSITORY COVERAGE
 # ============================================================

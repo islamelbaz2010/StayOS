@@ -92,6 +92,7 @@ async def get_unit_reviews(
     unit_id: str,
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
+    q: str | None = Query(None, max_length=200),
     session: AsyncSession = Depends(get_session),
 ) -> ReviewListResponse:
-    return await get_listing_reviews(session, unit_id, limit, offset)
+    return await get_listing_reviews(session, unit_id, limit, offset, q)

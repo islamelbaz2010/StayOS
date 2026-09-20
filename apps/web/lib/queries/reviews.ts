@@ -57,12 +57,12 @@ function mapReview(item: ApiReviewListResponse["data"][number]): Review {
   };
 }
 
-export function useListingReviews(unitId: string, limit = 10) {
+export function useListingReviews(unitId: string, search = "", limit = 10) {
   return useQuery({
-    queryKey: ["listing-reviews", unitId],
+    queryKey: ["listing-reviews", unitId, search],
     queryFn: async () => {
       const { data } = await api.get<ApiReviewListResponse>(`/listings/${unitId}/reviews`, {
-        params: { limit },
+        params: { limit, q: search || undefined },
       });
       const result: ReviewList = {
         data: data.data.map(mapReview),
@@ -80,10 +80,11 @@ export function useListingReviews(unitId: string, limit = 10) {
 export async function fetchMoreReviews(
   unitId: string,
   offset: number,
-  limit: number
+  limit: number,
+  search = ""
 ): Promise<Review[]> {
   const { data } = await api.get<ApiReviewListResponse>(`/listings/${unitId}/reviews`, {
-    params: { limit, offset },
+    params: { limit, offset, q: search || undefined },
   });
   return data.data.map(mapReview);
 }

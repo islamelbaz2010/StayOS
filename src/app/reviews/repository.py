@@ -103,11 +103,19 @@ def is_review_published(
     return (now - review.created_at) >= window
 
 
+def _escape_like(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 async def list_reviews_for_unit(
-    session: AsyncSession, unit_id: str, limit: int, offset: int
+    session: AsyncSession,
+    unit_id: str,
+    limit: int,
+    offset: int,
+    query: str | None = None,
 ) -> list[tuple[Review, str | None]]:
     """List published guest reviews for a unit, newest first."""
-    result = await session.execute(
+    stmt = (
         select(Review, User.display_name)
         .join(User, User.id == Review.guest_id)
         .where(
@@ -118,6 +126,9 @@ async def list_reviews_for_unit(
         .limit(limit)
         .offset(offset)
     )
+    if query:
+        stmt = stmt.where(Review.comment.ilike(f"%{_escape_like(query)}%", escape="\\"))
+    result = await session.execute(stmt)
     rows = [(review, guest_name) for review, guest_name in result.all()]
     if not rows:
         return []

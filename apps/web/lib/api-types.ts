@@ -7930,6 +7930,7 @@ export interface operations {
       query?: {
         limit?: number;
         offset?: number;
+        q?: string | null;
       };
       path: {
         unit_id: string;

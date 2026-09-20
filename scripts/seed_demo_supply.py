@@ -227,7 +227,8 @@ async def upsert_demo_unit(session: AsyncSession, row: tuple) -> None:
                  cancellation_policy, instant_book, updated_at)
             VALUES
                 (:lid, :uid, :title_ar, :title_en, :desc_ar, :desc_en,
-                 :amenities, :tags, :category, :price, :cleaning,
+                 CAST(:amenities AS text[]), CAST(:tags AS text[]),
+                 :category, :price, :cleaning,
                  1, 30, 'MODERATE', :instant, now())
             ON CONFLICT (unit_id) DO UPDATE SET
                 title_ar = :title_ar, title_en = :title_en,
@@ -240,8 +241,8 @@ async def upsert_demo_unit(session: AsyncSession, row: tuple) -> None:
             "title_en": title_en,
             "desc_ar": f"{title_ar}. إقامة مريحة بموقع مميز. (StayOS demo listing)",
             "desc_en": f"{title_en}. A comfortable stay in a prime location. (StayOS demo listing)",
-            "amenities": "{" + ",".join(amenities) + "}",
-            "tags": "{family_friendly}",
+            "amenities": list(amenities),
+            "tags": ["family_friendly"],
             "category": category,
             "price": price,
             "cleaning": price // 10,

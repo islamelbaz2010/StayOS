@@ -40,6 +40,7 @@ const messages = {
     invalidType: "Unsupported file type.",
     fileTooLarge: "File too large.",
     uploadFailed: "Upload failed.",
+    dragHint: "Drag and drop to reorder photos",
   },
 };
 

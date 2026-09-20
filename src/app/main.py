@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.admin import router as admin_router
 from app.auth import router as auth_router
 from app.auth import services as auth_services
 from app.auth import staff_router as staff_router
@@ -223,6 +224,7 @@ app.include_router(reviews_router.router, prefix="/api/v1")
 app.include_router(host_router.router, prefix="/api/v1")
 app.include_router(disputes_router.router, prefix="/api/v1")
 app.include_router(staff_router.router, prefix="/api/v1")
+app.include_router(admin_router.router, prefix="/api/v1")
 
 
 async def _db_status(session: AsyncSession) -> str:

@@ -116,3 +116,47 @@
     text-wrap: balance;
   }
 }
+
+@layer utilities {
+  /* Dual-handle price range: the two stacked range inputs share one track;
+     the track itself stays transparent and non-interactive so both thumbs
+     remain draggable/keyboard-focusable. */
+  .price-range-thumb {
+    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .price-range-thumb::-webkit-slider-runnable-track {
+    background: transparent;
+  }
+
+  .price-range-thumb::-webkit-slider-thumb {
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 1.25rem;
+    width: 1.25rem;
+    margin-top: 0.25rem;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid theme("colors.brand.600");
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+    cursor: grab;
+  }
+
+  .price-range-thumb::-moz-range-track {
+    background: transparent;
+  }
+
+  .price-range-thumb::-moz-range-thumb {
+    pointer-events: auto;
+    height: 1.25rem;
+    width: 1.25rem;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid theme("colors.brand.600");
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+    cursor: grab;
+  }
+}

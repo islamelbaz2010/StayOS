@@ -34,6 +34,8 @@ export interface Listing {
   lng?: number;
   nights?: number | null;
   totalEgp?: number | null;
+  effectiveNightlyEgp?: number | null;
+  discounted?: boolean;
 }
 
 interface ListingCardProps {
@@ -163,7 +165,19 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
           </div>
 
           <p className="mt-3 text-lg font-bold text-brand-900">
-            {formatMoney(listing.price, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}{" "}
+            {listing.discounted && listing.effectiveNightlyEgp != null ? (
+              <>
+                <span className="me-1.5 text-sm font-normal text-neutral-400 line-through">
+                  {formatMoney(listing.price, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}
+                </span>
+                {formatMoney(listing.effectiveNightlyEgp, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}{" "}
+                <span className="me-1.5 inline-flex items-center rounded-full bg-accent-100 px-2 py-0.5 align-middle text-xs font-semibold text-accent-700">
+                  {t("offer")}
+                </span>
+              </>
+            ) : (
+              formatMoney(listing.price, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")
+            )}{" "}
             <span className="text-sm font-normal text-neutral-600">
               {t("perNight")}
             </span>

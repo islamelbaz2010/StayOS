@@ -312,7 +312,21 @@
     "discovery": "اكتشاف المعروض",
     "rejectReasonPlaceholder": "سبب الرفض (يظهر للمضيف)",
     "pendingEdit": "تعديل بانتظار المراجعة",
-    "pendingChangesTitle": "تعديلات مرسلة من المضيف بانتظار المراجعة"
+    "pendingChangesTitle": "تعديلات مرسلة من المضيف بانتظار المراجعة",
+    "proposedChanges": "التعديلات المقترحة",
+    "field": "الحقل",
+    "currentValue": "المنشور",
+    "proposedValue": "المقترح",
+    "changeHistory": "سجل المراجعة",
+    "noHistory": "لا توجد أحداث مراجعة مسجلة بعد.",
+    "submittedBy": "قُدّم بواسطة",
+    "pendingPhotos": "تغييرات صور بانتظار المراجعة",
+    "eventSubmitted": "تم إرسال التعديلات",
+    "eventApproved": "تم اعتماد التعديلات",
+    "eventRejected": "تم طلب تعديلات",
+    "eventListingSubmitted": "تم تقديم الإعلان",
+    "eventListingApproved": "تم اعتماد الإعلان",
+    "eventListingRejected": "تم رفض الإعلان"
   },
   "search": {
     "title": "بحث",
@@ -442,7 +456,15 @@
     },
     "instantBook": "حجز فوري",
     "bookingOptions": "خيارات الحجز",
-    "showResults": "عرض {count} نتيجة"
+    "showResults": "عرض {count} نتيجة",
+    "split": "تقسيم",
+    "priceRange": {
+      "label": "نطاق السعر",
+      "min": "الحد الأدنى",
+      "max": "الحد الأقصى",
+      "histogramLabel": "توزيع الأسعار من {min} إلى {max}",
+      "summary": "{min} – {max} لليلة · {count} مكان"
+    }
   },
   "favorites": {
     "title": "المفضلة",
@@ -654,7 +676,8 @@
     "submitResponse": "إرسال الرد",
     "submitting": "جارٍ الإرسال...",
     "responseError": "فشل إرسال الرد",
-    "includesAllFees": "شامل جميع الرسوم"
+    "includesAllFees": "شامل جميع الرسوم",
+    "offer": "عرض"
   },
   "trust": {
     "title": "الثقة والأمان",
@@ -1235,7 +1258,12 @@
       "pending": "قيد المراجعة",
       "verified": "موثّق",
       "rejected": "مرفوض"
-    }
+    },
+    "permissions": "الصلاحيات",
+    "accountStatus": "حالة الحساب",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "allPermissions": "جميع الصلاحيات (مدير)"
   },
   "hostNav": {
     "dashboard": "لوحة التحكم",
@@ -1577,7 +1605,9 @@
     "discovery": "اكتشاف المعروضات",
     "import": "استيراد جماعي",
     "disputes": "النزاعات",
-    "staff": "الموظفون"
+    "staff": "الموظفون",
+    "overview": "نظرة عامة",
+    "earnings": "الإيرادات"
   },
   "adminDisputes": {
     "title": "النزاعات",
@@ -1603,7 +1633,19 @@
     "replyToReporter": "الرد على المُبلِغ",
     "replyPlaceholder": "اكتب ردًا سيظهر للضيف/المضيف في رسائله…",
     "replyHint": "يُرسَل إلى رسائل المُبلِغ. ملاحظات المشرف أعلاه تبقى داخلية.",
-    "sendReply": "إرسال الرد"
+    "sendReply": "إرسال الرد",
+    "context": "سياق الحجز والدفع",
+    "contextLoading": "جارٍ تحميل السياق…",
+    "reporter": "مقدّم البلاغ",
+    "guest": "الضيف",
+    "host": "المضيف",
+    "listing": "الإعلان",
+    "bookingStatus": "حالة الحجز",
+    "dates": "التواريخ",
+    "paymentStatus": "حالة الدفع",
+    "paymentAmount": "مبلغ الدفع",
+    "refundAmount": "مبلغ الاسترداد",
+    "noBookingContext": "لا يتوفر سياق حجز."
   },
   "adminStaff": {
     "title": "الموظفون",
@@ -1644,5 +1686,91 @@
       "guest": "ضيف",
       "other": "أخرى"
     }
+  },
+  "fees": {
+    "popupTitle": "سترى الآن سعرًا واحدًا لرحلتك شاملاً جميع الرسوم",
+    "popupBody": "السعر المعروض يشمل سعر الليلة ورسوم التنظيف ورسوم الخدمة — بدون مفاجآت عند الدفع.",
+    "popupCta": "فهمت",
+    "line": "الأسعار تشمل جميع الرسوم"
+  },
+  "adminOverview": {
+    "title": "نظرة عامة على السوق",
+    "subtitle": "لقطة تشغيلية حية للمستخدمين والمعروض والحجوزات والمدفوعات.",
+    "users": "المستخدمون",
+    "usersTotal": "إجمالي المستخدمين",
+    "guests": "الضيوف",
+    "hosts": "المضيفون",
+    "hostsVerified": "مضيفون موثّقون (KYC)",
+    "supply": "المعروض",
+    "listingsTotal": "إجمالي الإعلانات",
+    "listed": "إعلانات منشورة",
+    "pendingVerification": "بانتظار التحقق",
+    "pendingChanges": "تعديلات معلّقة",
+    "rejected": "مرفوضة",
+    "byGovernorate": "الإعلانات حسب المحافظة",
+    "bookings": "الحجوزات",
+    "bookingsTotal": "إجمالي الحجوزات",
+    "requested": "مطلوبة",
+    "accepted": "مقبولة",
+    "confirmed": "مؤكدة",
+    "completed": "مكتملة",
+    "cancelled": "ملغاة",
+    "rejectedB": "مرفوضة",
+    "upcomingCheckins": "وصول خلال 7 أيام",
+    "money": "المدفوعات والمالية",
+    "paymentsPending": "مدفوعات معلّقة",
+    "proofUploaded": "إثباتات بانتظار المراجعة",
+    "verifiedPayments": "مدفوعات مؤكدة",
+    "collectedAmount": "المحصّل (مؤكد)",
+    "refundedAmount": "المسترد",
+    "payoutsPending": "مدفوعات مستحقة للمضيفين",
+    "payoutsAmount": "قيمة المدفوعات المعلّقة",
+    "escrowsHeld": "مبالغ محجوزة (ضمان)",
+    "workQueues": "قوائم العمل",
+    "kycPending": "مستندات KYC بانتظار المراجعة",
+    "disputesOpen": "نزاعات مفتوحة",
+    "disputesInReview": "نزاعات قيد المراجعة",
+    "maintenanceOpen": "طلبات صيانة مفتوحة",
+    "tasksPending": "مهام معلّقة",
+    "tasksOverdue": "مهام متأخرة",
+    "egp": "ج.م",
+    "loadError": "تعذر تحميل النظرة العامة."
+  },
+  "adminEarnings": {
+    "title": "الإيرادات والعمليات المالية",
+    "subtitle": "تحقق من الحالة المالية لأي حجز — الدفع والضمان والقيود والاسترداد.",
+    "lookupLabel": "معرّف الحجز",
+    "lookupPlaceholder": "الصق معرّف الحجز…",
+    "lookup": "بحث",
+    "booking": "الحجز",
+    "status": "الحالة",
+    "guest": "الضيف",
+    "host": "المضيف",
+    "listing": "الإعلان",
+    "dates": "التواريخ",
+    "payment": "الدفع",
+    "method": "الطريقة",
+    "amount": "المبلغ",
+    "accommodation": "الإقامة",
+    "serviceFee": "رسوم خدمة الضيف",
+    "cleaningFee": "رسوم التنظيف",
+    "reference": "المرجع",
+    "deadline": "مهلة الدفع",
+    "proofUploaded": "تم رفع الإثبات",
+    "verified": "مؤكد",
+    "refunded": "مسترد",
+    "rejectReason": "سبب الرفض",
+    "escrow": "الضمان",
+    "escrowStatus": "حالة الضمان",
+    "escrowAmount": "مبلغ الضمان",
+    "holdUntil": "محجوز حتى",
+    "released": "تم الإفراج",
+    "transactions": "المعاملات",
+    "ledger": "دفتر الأستاذ",
+    "noTransactions": "لا توجد معاملات مالية مسجلة.",
+    "disputes": "النزاعات المرتبطة",
+    "noDisputes": "لا توجد نزاعات على هذا الحجز.",
+    "notFound": "الحجز غير موجود.",
+    "egp": "ج.م"
   }
 }

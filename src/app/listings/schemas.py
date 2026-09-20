@@ -1,6 +1,6 @@
 import base64
 import json
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -398,10 +398,44 @@ class ListingSearchResult(BaseModel):
     # Computed selected-stay totals; only set when the search includes dates.
     nights: int | None = None
     total_egp: int | None = None
+    # Effective nightly rate over the requested dates (host price overrides
+    # and weekend multipliers applied). ``discounted`` is true when it is
+    # lower than the listing's base price — i.e. the host set a temporary
+    # promotional price covering part of the stay.
+    effective_nightly_egp: int | None = None
+    discounted: bool = False
 
 
 class ListingRejectRequest(BaseModel):
     reason: str | None = Field(None, max_length=500)
+
+
+class PriceBucket(BaseModel):
+    from_egp: int
+    to_egp: int
+    count: int
+
+
+class PriceDistributionResponse(BaseModel):
+    """Nightly-price distribution over the listings matching the current
+    (non-price) filters — powers the price-range histogram."""
+
+    min_price_egp: int | None
+    max_price_egp: int | None
+    total: int
+    buckets: list[PriceBucket]
+
+
+class ListingChangeEvent(BaseModel):
+    """One entry in a listing's review lifecycle, sourced from the
+    persistent outbox event log."""
+
+    id: str
+    event_type: str
+    created_at: datetime
+    actor_id: str | None = None
+    actor_name: str | None = None
+    payload: dict
 
 
 class PaginationInfo(BaseModel):

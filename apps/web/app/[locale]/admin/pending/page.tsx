@@ -13,6 +13,123 @@ import {
   useRejectListing,
   type HostListing,
 } from "@/lib/queries/hostListings";
+import { useListingChangeHistory } from "@/lib/queries/listings";
+
+/** Fields that can appear in a pending change-set, mapped to the
+ *  HostListing attribute holding the currently-published value. */
+const DIFFABLE_FIELDS = [
+  "title_ar",
+  "title_en",
+  "description_ar",
+  "description_en",
+  "property_type",
+  "category",
+  "governorate",
+  "city",
+  "district",
+  "address",
+  "lat",
+  "lng",
+  "max_guests",
+  "bedrooms",
+  "beds",
+  "bathrooms",
+  "amenities",
+  "cultural_tags",
+  "accessibility_features",
+  "self_check_in",
+  "self_check_in_methods",
+  "allows_pets",
+  "base_price_egp",
+  "cleaning_fee_egp",
+  "weekend_mult",
+  "peak_mult",
+  "min_nights",
+  "max_nights",
+  "cancellation_policy",
+  "instant_book",
+  "house_rules",
+  "policies",
+  "check_in_time",
+  "check_out_time",
+  "sleeping_arrangements",
+  "cover_photo_id",
+];
+
+function formatDiffValue(value: unknown): string {
+  if (value == null) return "—";
+  if (typeof value === "boolean") return value ? "✓" : "✗";
+  if (Array.isArray(value)) return value.join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function ChangeHistory({ unitId }: { unitId: string }) {
+  const t = useTranslations("adminListings");
+  const { data: events, isLoading } = useListingChangeHistory(unitId);
+
+  const eventLabel = (type: string) => {
+    switch (type) {
+      case "listing.edit_submitted":
+        return t("eventSubmitted");
+      case "listing.edit_approved":
+        return t("eventApproved");
+      case "listing.edit_rejected":
+        return t("eventRejected");
+      case "listing.submitted":
+        return t("eventListingSubmitted");
+      case "listing.approved":
+        return t("eventListingApproved");
+      case "listing.rejected":
+        return t("eventListingRejected");
+      default:
+        return type;
+    }
+  };
+
+  return (
+    <div className="mt-4">
+      <span className="font-medium text-neutral-700">
+        {t("changeHistory")}
+      </span>
+      {isLoading ? (
+        <p className="mt-1 text-xs text-neutral-400">…</p>
+      ) : !events || events.length === 0 ? (
+        <p className="mt-1 text-xs text-neutral-500">{t("noHistory")}</p>
+      ) : (
+        <ol className="mt-2 space-y-2 border-s-2 border-neutral-200 ps-3">
+          {events.map((event) => (
+            <li key={event.id} className="text-xs">
+              <span className="font-semibold text-neutral-800">
+                {eventLabel(event.event_type)}
+              </span>
+              <span className="ms-2 text-neutral-500">
+                {new Date(event.created_at).toLocaleString()}
+              </span>
+              {event.actor_name && (
+                <span className="ms-2 text-neutral-500">
+                  · {event.actor_name}
+                </span>
+              )}
+              {typeof event.payload.reason === "string" &&
+                event.payload.reason && (
+                  <p className="mt-0.5 text-neutral-600">
+                    {event.payload.reason}
+                  </p>
+                )}
+              {Array.isArray(event.payload.fields) &&
+                event.payload.fields.length > 0 && (
+                  <p className="mt-0.5 text-neutral-400" dir="ltr">
+                    {(event.payload.fields as string[]).join(", ")}
+                  </p>
+                )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
 
 export default function AdminPendingListingsPage() {
   const t = useTranslations("adminListings");
@@ -355,31 +472,63 @@ export default function AdminPendingListingsPage() {
                   {selected.pending_changes && (
                     <div className="mt-4 rounded-lg border border-warning-200 bg-warning-50 p-3">
                       <span className="font-medium text-warning-800">
-                        {t("pendingChangesTitle")}
+                        {t("proposedChanges")}
                       </span>
-                      <dl className="mt-2 space-y-1 text-sm">
-                        {Object.entries({
-                          ...(selected.pending_changes.unit ?? {}),
-                          ...(selected.pending_changes.listing ?? {}),
-                          ...(selected.pending_changes.lat != null
-                            ? { lat: selected.pending_changes.lat }
-                            : {}),
-                          ...(selected.pending_changes.lng != null
-                            ? { lng: selected.pending_changes.lng }
-                            : {}),
-                        }).map(([field, value]) => (
-                          <div key={field} className="flex gap-2">
-                            <dt className="min-w-32 font-medium text-neutral-700">
-                              {field}:
-                            </dt>
-                            <dd className="text-neutral-600">
-                              {typeof value === "object"
-                                ? JSON.stringify(value)
-                                : String(value)}
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
+                      <div className="mt-2 overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-start text-xs text-neutral-500">
+                              <th className="py-1 pe-3 text-start font-medium">
+                                {t("field")}
+                              </th>
+                              <th className="py-1 pe-3 text-start font-medium">
+                                {t("currentValue")}
+                              </th>
+                              <th className="py-1 text-start font-medium">
+                                {t("proposedValue")}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries({
+                              ...(selected.pending_changes.unit ?? {}),
+                              ...(selected.pending_changes.listing ?? {}),
+                              ...(selected.pending_changes.lat != null
+                                ? { lat: selected.pending_changes.lat }
+                                : {}),
+                              ...(selected.pending_changes.lng != null
+                                ? { lng: selected.pending_changes.lng }
+                                : {}),
+                            }).map(([field, value]) => {
+                              const current = (
+                                selected as unknown as Record<string, unknown>
+                              )[field];
+                              const known = DIFFABLE_FIELDS.includes(field);
+                              return (
+                                <tr
+                                  key={field}
+                                  className="border-t border-warning-100"
+                                >
+                                  <td className="py-1.5 pe-3 font-medium text-neutral-700">
+                                    {field}
+                                    {!known && (
+                                      <span className="ms-1 text-[10px] text-neutral-400">
+                                        *
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-1.5 pe-3 text-neutral-500">
+                                    {formatDiffValue(current)}
+                                  </td>
+                                  <td className="py-1.5 font-medium text-neutral-800">
+                                    {formatDiffValue(value)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                       {selected.pending_changes.submitted_at && (
                         <p className="mt-2 text-xs text-neutral-500">
                           {new Date(
@@ -389,6 +538,8 @@ export default function AdminPendingListingsPage() {
                       )}
                     </div>
                   )}
+
+                  <ChangeHistory unitId={selected.id} />
 
                   <div className="mt-6 flex justify-end gap-3">
                     <button

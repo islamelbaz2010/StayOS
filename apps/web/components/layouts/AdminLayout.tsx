@@ -22,16 +22,20 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   // Staff only see the areas their account was granted — enforcement
   // stays server-side via staff permissions; nav hiding is UX only.
   const allItems = [
+    { label: t("overview"), href: `/${locale}/admin`, perm: null },
     { label: t("pending"), href: `/${locale}/admin/pending`, perm: "listings" },
     { label: t("kyc"), href: `/${locale}/admin/kyc`, perm: "kyc" },
     { label: t("payments"), href: `/${locale}/admin/payments`, perm: "payments" },
+    { label: t("earnings"), href: `/${locale}/admin/earnings`, perm: "payments" },
     { label: t("bookings"), href: `/${locale}/admin/bookings`, perm: "operations" },
     { label: t("disputes"), href: `/${locale}/admin/disputes`, perm: "disputes" },
     { label: t("discovery"), href: `/${locale}/admin/discovery`, perm: "discovery" },
     { label: t("import"), href: `/${locale}/admin/import`, perm: "listings" },
   ];
   const navItems = [
-    ...(isStaff ? allItems.filter((i) => granted.has(i.perm)) : allItems),
+    ...(isStaff
+      ? allItems.filter((i) => i.perm === null || granted.has(i.perm))
+      : allItems),
     ...(isAdmin
       ? [{ label: t("staff"), href: `/${locale}/admin/staff` }]
       : []),

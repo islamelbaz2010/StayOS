@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -12,7 +13,101 @@ import {
   type Dispute,
   type DisputeStatus,
 } from "@/lib/queries/disputes";
-import { cn } from "@/lib/utils";
+import { useDisputeContext } from "@/lib/queries/admin";
+import { cn, formatMoney } from "@/lib/utils";
+
+function DisputeContextPanel({ disputeId }: { disputeId: string }) {
+  const t = useTranslations("adminDisputes");
+  const { locale } = useParams<{ locale: string }>();
+  const intlLocale = locale === "ar" ? "ar-EG" : "en-EG";
+  const { data, isPending } = useDisputeContext(disputeId);
+
+  if (isPending) {
+    return (
+      <p className="mt-4 text-xs text-neutral-400">{t("contextLoading")}</p>
+    );
+  }
+  if (!data || !data.booking) {
+    return (
+      <p className="mt-4 text-xs text-neutral-500">{t("noBookingContext")}</p>
+    );
+  }
+
+  const b = data.booking;
+  return (
+    <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+      <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+        {t("context")}
+      </p>
+      <dl className="mt-2 space-y-1 text-xs">
+        <div className="flex justify-between gap-2">
+          <dt className="text-neutral-500">{t("guest")}</dt>
+          <dd className="font-medium text-neutral-800">
+            {b.guest_name ?? b.guest_phone ?? b.guest_id}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-neutral-500">{t("host")}</dt>
+          <dd className="font-medium text-neutral-800">
+            {b.host_name ?? b.host_phone ?? b.host_id}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-neutral-500">{t("listing")}</dt>
+          <dd className="font-medium text-neutral-800">
+            {b.unit_title ?? b.unit_id}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-neutral-500">{t("dates")}</dt>
+          <dd className="font-medium text-neutral-800" dir="ltr">
+            {b.check_in} → {b.check_out}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-neutral-500">{t("bookingStatus")}</dt>
+          <dd className="font-medium text-neutral-800">{b.booking_status}</dd>
+        </div>
+        {b.payment_status && (
+          <div className="flex justify-between gap-2">
+            <dt className="text-neutral-500">{t("paymentStatus")}</dt>
+            <dd className="font-medium text-neutral-800">
+              {b.payment_status}
+              {b.payment_method ? ` · ${b.payment_method}` : ""}
+            </dd>
+          </div>
+        )}
+        {b.payment_amount_egp != null && (
+          <div className="flex justify-between gap-2">
+            <dt className="text-neutral-500">{t("paymentAmount")}</dt>
+            <dd className="font-medium text-neutral-800">
+              {formatMoney(b.payment_amount_egp, "EGP", intlLocale)}
+            </dd>
+          </div>
+        )}
+        {b.refund_amount_egp != null && (
+          <div className="flex justify-between gap-2">
+            <dt className="text-neutral-500">{t("refundAmount")}</dt>
+            <dd className="font-medium text-neutral-800">
+              {formatMoney(b.refund_amount_egp, "EGP", intlLocale)}
+            </dd>
+          </div>
+        )}
+        {data.reporter && (
+          <div className="flex justify-between gap-2">
+            <dt className="text-neutral-500">{t("reporter")}</dt>
+            <dd className="font-medium text-neutral-800">
+              {data.reporter.display_name ??
+                data.reporter.phone_number ??
+                data.reporter.id}{" "}
+              ({data.reporter.role})
+            </dd>
+          </div>
+        )}
+      </dl>
+    </div>
+  );
+}
 
 const STATUS_FILTERS = ["open", "in_review", "resolved", "closed"] as const;
 const NEXT_STATUSES: Record<string, DisputeStatus[]> = {
@@ -178,6 +273,8 @@ export default function AdminDisputesPage() {
                 <p className="mt-2 text-xs text-neutral-400">
                   {t("booking")}: {selected.booking_id}
                 </p>
+
+                <DisputeContextPanel disputeId={selected.id} />
 
                 <label className="mt-4 block text-sm font-medium text-neutral-700">
                   {t("adminNotes")}

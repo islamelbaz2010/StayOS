@@ -358,6 +358,45 @@ async def search_listings(
     return rows, total
 
 
+async def search_price_values(
+    session: AsyncSession, filters: ListingSearchFilters
+) -> list[int]:
+    """Base nightly prices for every listing matching the given filters
+    (min/max price are ignored so the histogram always shows the full
+    available range for the current search)."""
+    import copy
+
+    priceless = copy.copy(filters)
+    priceless.min_price = None
+    priceless.max_price = None
+    stmt = (
+        _build_search_statement(priceless)
+        .with_only_columns(UnitListing.base_price_egp)
+        .order_by(None)
+    )
+    result = await session.execute(stmt)
+    return [int(row[0]) for row in result.all()]
+
+
+async def list_listing_events(
+    session: AsyncSession, unit_id: str, limit: int = 100
+) -> list[Any]:
+    """Listing lifecycle/review events for a unit from the persistent
+    outbox log (submission, review decisions, resubmissions)."""
+    from app.shared.models import OutboxEvent
+
+    result = await session.execute(
+        select(OutboxEvent)
+        .where(
+            OutboxEvent.aggregate_type == "listing",
+            OutboxEvent.aggregate_id == unit_id,
+        )
+        .order_by(OutboxEvent.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
 async def get_calendar_rules_in_range(
     session: AsyncSession, unit_id: str, check_in: date, check_out: date
 ) -> list[CalendarRule]:

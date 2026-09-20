@@ -12,15 +12,26 @@ interface SearchMapProps {
   onBoundsChange?: (bounds: { sw_lat: string; sw_lng: string; ne_lat: string; ne_lng: string }) => void;
   className?: string;
   searchAreaLabel?: string;
+  /** Listing to emphasize (e.g. hovered card in the split view). */
+  highlightId?: string | null;
+  /** Card hover → map callback so the list can clear the highlight. */
+  onMarkerHover?: (unitId: string | null) => void;
 }
 
 const DEFAULT_CENTER: L.LatLngExpression = [30.0444, 31.2357];
 const DEFAULT_ZOOM = 12;
 
-export function SearchMap({ listings, onSelect, onBoundsChange, className, searchAreaLabel }: SearchMapProps) {
+const markerHtml = (price: number, currency: string, active: boolean) =>
+  `<div class="px-2 py-1 rounded-lg text-sm font-semibold whitespace-nowrap shadow-md border ${
+    active
+      ? "bg-brand-900 text-white border-brand-900 scale-110"
+      : "bg-white text-brand-700 border-brand-200"
+  }">${price} ${currency}</div>`;
+
+export function SearchMap({ listings, onSelect, onBoundsChange, className, searchAreaLabel, highlightId, onMarkerHover }: SearchMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
+  const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const [showSearchButton, setShowSearchButton] = useState(false);
 
   useEffect(() => {
@@ -44,7 +55,7 @@ export function SearchMap({ listings, onSelect, onBoundsChange, className, searc
         maxZoom: 19,
       }).addTo(map);
 
-      markersRef.current = [];
+      markersRef.current = new Map();
 
       const validListings = listings.filter(
         (l): l is Listing & { lat: number; lng: number } =>
@@ -54,7 +65,7 @@ export function SearchMap({ listings, onSelect, onBoundsChange, className, searc
       validListings.forEach((listing) => {
         const icon = L.divIcon({
           className: "custom-search-marker",
-          html: `<div class="px-2 py-1 rounded-lg bg-white shadow-md border border-brand-200 text-brand-700 text-sm font-semibold whitespace-nowrap">${listing.price} ${listing.currency}</div>`,
+          html: markerHtml(listing.price, listing.currency, false),
           iconSize: [80, 30],
           iconAnchor: [40, 15],
         });
@@ -66,12 +77,16 @@ export function SearchMap({ listings, onSelect, onBoundsChange, className, searc
         marker.on("click", () => {
           onSelect(listing.id);
         });
+        if (onMarkerHover) {
+          marker.on("mouseover", () => onMarkerHover(listing.id));
+          marker.on("mouseout", () => onMarkerHover(null));
+        }
 
-        markersRef.current.push(marker);
+        markersRef.current.set(listing.id, marker);
       });
 
       if (validListings.length > 0) {
-        const group = L.featureGroup(markersRef.current);
+        const group = L.featureGroup([...markersRef.current.values()]);
         map.fitBounds(group.getBounds().pad(0.1));
       } else {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
@@ -92,7 +107,24 @@ export function SearchMap({ listings, onSelect, onBoundsChange, className, searc
         mapRef.current = null;
       }
     };
-  }, [listings, onSelect, onBoundsChange]);
+  }, [listings, onSelect, onBoundsChange, onMarkerHover]);
+
+  // Highlight sync: restyle markers without re-initialising the map.
+  useEffect(() => {
+    markersRef.current.forEach((marker, id) => {
+      const listing = listings.find((l) => l.id === id);
+      if (!listing) return;
+      marker.setIcon(
+        L.divIcon({
+          className: "custom-search-marker",
+          html: markerHtml(listing.price, listing.currency, id === highlightId),
+          iconSize: [80, 30],
+          iconAnchor: [40, 15],
+        })
+      );
+      marker.setZIndexOffset(id === highlightId ? 1000 : 0);
+    });
+  }, [highlightId, listings]);
 
   const handleSearchArea = () => {
     if (!mapRef.current || !onBoundsChange) return;

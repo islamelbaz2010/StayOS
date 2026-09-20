@@ -50,6 +50,7 @@ from .schemas import (
     HostProfileResponse,
     HostReservationCalendarItem,
     HostReservationCalendarResponse,
+    ListingChangeEvent,
     ListingCreate,
     ListingResponse,
     ListingSearchFilters,
@@ -57,6 +58,8 @@ from .schemas import (
     ListingSearchResult,
     ListingUpdate,
     PaginationInfo,
+    PriceBucket,
+    PriceDistributionResponse,
     PhotoCreate,
     PhotoPresignResponse,
     PhotoReorderRequest,
@@ -65,6 +68,27 @@ from .schemas import (
 
 _PHOTO_UPLOAD_TTL_SECONDS = 900
 _PHOTO_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+async def _emit_listing_event(
+    session: AsyncSession,
+    unit_id: str,
+    event_type: str,
+    payload: dict[str, Any],
+) -> None:
+    """Record a listing lifecycle event in the persistent outbox log so
+    the admin review history survives across resubmissions."""
+    from app.shared.models import OutboxEvent
+
+    session.add(
+        OutboxEvent(
+            aggregate_type="listing",
+            aggregate_id=unit_id,
+            event_type=event_type,
+            payload=payload,
+        )
+    )
+    await session.flush()
 
 
 def _require_storage_config() -> None:
@@ -385,6 +409,9 @@ async def submit_for_review(
     unit = await listings_repository.set_unit_status(
         session, unit, UnitStatus.PENDING_VERIFICATION
     )
+    await _emit_listing_event(
+        session, unit.id, "listing.submitted", {"submitted_by": user.id}
+    )
     listing = unit.listing
     if listing is None:
         raise NotFoundError("Listing details not found")
@@ -431,9 +458,25 @@ async def approve_listing(
         # publishes the stashed changes; the unit stays LISTED.
         from . import moderation
 
+        # Capture the change-set before apply clears it.
+        pending_snapshot = dict(listing.pending_changes or {})
         applied = await moderation.apply_pending_changes(session, unit, listing)
         if not applied:
             raise ValidationError("No pending changes to approve")
+        await _emit_listing_event(
+            session,
+            unit.id,
+            "listing.edit_approved",
+            {
+                "decided_by": user.id,
+                "fields": sorted(
+                    set(pending_snapshot.get("unit") or {})
+                    | set(pending_snapshot.get("listing") or {})
+                    | {k for k in ("lat", "lng") if pending_snapshot.get(k)}
+                ),
+                "submitted_by": pending_snapshot.get("submitted_by"),
+            },
+        )
         if unit.rejection_reason:
             # Approval resolves any outstanding rejection record.
             unit.rejection_reason = None
@@ -441,6 +484,9 @@ async def approve_listing(
             await session.flush()
     elif unit.status == UnitStatus.PENDING_VERIFICATION:
         unit = await listings_repository.set_unit_status(session, unit, UnitStatus.LISTED)
+        await _emit_listing_event(
+            session, unit.id, "listing.approved", {"decided_by": user.id}
+        )
     else:
         raise ValidationError("Only pending listings can be approved")
 
@@ -468,15 +514,37 @@ async def reject_listing(
         # change-set; the approved version stays live.
         from . import moderation
 
+        pending_snapshot = dict(listing.pending_changes or {})
         discarded = await moderation.discard_pending_changes(session, unit, listing)
         if not discarded:
             raise ValidationError("No pending changes to reject")
         unit.rejection_reason = reason or None
         session.add(unit)
         await session.flush()
+        await _emit_listing_event(
+            session,
+            unit.id,
+            "listing.edit_rejected",
+            {
+                "decided_by": user.id,
+                "reason": reason,
+                "fields": sorted(
+                    set(pending_snapshot.get("unit") or {})
+                    | set(pending_snapshot.get("listing") or {})
+                    | {k for k in ("lat", "lng") if pending_snapshot.get(k)}
+                ),
+                "submitted_by": pending_snapshot.get("submitted_by"),
+            },
+        )
     elif unit.status == UnitStatus.PENDING_VERIFICATION:
         unit.rejection_reason = reason or None
         unit = await listings_repository.set_unit_status(session, unit, UnitStatus.REJECTED)
+        await _emit_listing_event(
+            session,
+            unit.id,
+            "listing.rejected",
+            {"decided_by": user.id, "reason": reason},
+        )
     else:
         raise ValidationError("Only pending listings can be rejected")
 
@@ -518,6 +586,16 @@ async def update_listing(
         stashed = moderation.stash_pending_changes(
             unit, listing, update_data, submitted_by=user.id
         )
+        if stashed:
+            await _emit_listing_event(
+                session,
+                unit.id,
+                "listing.edit_submitted",
+                {
+                    "submitted_by": user.id,
+                    "fields": sorted(update_data.keys()),
+                },
+            )
         if stashed and unit.rejection_reason:
             # A prior change-set rejection is superseded once the host
             # submits a new change-set for review.
@@ -651,6 +729,12 @@ async def search_listings(
                 else int(round(fee_base * settings.GUEST_SERVICE_FEE_PCT))
             )
             item["total_egp"] = fee_base + service_fee
+            effective_nightly = int(round(fee_base / nights)) if nights else None
+            item["effective_nightly_egp"] = effective_nightly
+            item["discounted"] = bool(
+                effective_nightly is not None
+                and effective_nightly < listing.base_price_egp
+            )
     has_more = offset + len(data) < total
     next_cursor = (
         ListingSearchFilters.encode_cursor(offset + filters.limit)
@@ -666,6 +750,91 @@ async def search_listings(
             total_count=total,
         ),
     )
+
+
+_PRICE_HISTOGRAM_BUCKETS = 20
+
+
+async def get_price_distribution(
+    session: AsyncSession, filters: ListingSearchFilters
+) -> PriceDistributionResponse:
+    """Nightly-price histogram over the listings matching the current
+    non-price filters — used by the price-range filter UI."""
+    import copy
+
+    priceless = copy.copy(filters)
+    priceless.min_price = None
+    priceless.max_price = None
+    prices = await listings_repository.search_price_values(session, priceless)
+    if not prices:
+        return PriceDistributionResponse(
+            min_price_egp=None, max_price_egp=None, total=0, buckets=[]
+        )
+
+    lo, hi = min(prices), max(prices)
+    if lo == hi:
+        return PriceDistributionResponse(
+            min_price_egp=lo,
+            max_price_egp=hi,
+            total=len(prices),
+            buckets=[PriceBucket(from_egp=lo, to_egp=hi, count=len(prices))],
+        )
+
+    bucket_count = min(_PRICE_HISTOGRAM_BUCKETS, len(prices))
+    width = max(1, math.ceil((hi - lo + 1) / bucket_count))
+    buckets = [0] * bucket_count
+    for price in prices:
+        idx = min((price - lo) // width, bucket_count - 1)
+        buckets[idx] += 1
+
+    return PriceDistributionResponse(
+        min_price_egp=lo,
+        max_price_egp=hi,
+        total=len(prices),
+        buckets=[
+            PriceBucket(from_egp=lo + i * width, to_egp=lo + (i + 1) * width - 1, count=c)
+            for i, c in enumerate(buckets)
+        ],
+    )
+
+
+async def get_listing_change_history(
+    session: AsyncSession, unit_id: str
+) -> list[ListingChangeEvent]:
+    """Review lifecycle history for a unit: submissions, approvals,
+    change requests and resubmissions, newest first."""
+    events = await listings_repository.list_listing_events(session, unit_id)
+    actor_ids = {
+        str(payload_actor)
+        for e in events
+        for payload_actor in [
+            (e.payload or {}).get("submitted_by") or (e.payload or {}).get("decided_by")
+        ]
+        if payload_actor
+    }
+    actors: dict[str, User] = {}
+    if actor_ids:
+        result = await session.execute(
+            select(User).where(User.id.in_(actor_ids))
+        )
+        actors = {u.id: u for u in result.scalars().all()}
+
+    response: list[ListingChangeEvent] = []
+    for event in events:
+        payload = dict(event.payload or {})
+        actor_id = payload.get("submitted_by") or payload.get("decided_by")
+        actor = actors.get(actor_id) if actor_id else None
+        response.append(
+            ListingChangeEvent(
+                id=event.id,
+                event_type=event.event_type,
+                created_at=event.created_at,
+                actor_id=actor_id,
+                actor_name=actor.display_name if actor else None,
+                payload=payload,
+            )
+        )
+    return response
 
 
 async def _calculate_host_response_metrics(

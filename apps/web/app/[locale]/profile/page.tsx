@@ -80,6 +80,35 @@ export default function ProfilePage() {
                     {user?.created_at ? new Date(user.created_at).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-EG") : "—"}
                   </dd>
                 </div>
+                <div className="flex justify-between">
+                  <dt className="text-sm text-neutral-500">{t("accountStatus")}</dt>
+                  <dd className="text-sm font-medium text-neutral-900">
+                    {user?.is_active ? t("active") : t("inactive")}
+                  </dd>
+                </div>
+                {(user?.role === "admin" || user?.role === "staff") && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-sm text-neutral-500">{t("permissions")}</dt>
+                    <dd className="text-end text-sm font-medium text-neutral-900">
+                      {user.role === "admin" ? (
+                        t("allPermissions")
+                      ) : user.staff_permissions && user.staff_permissions.length > 0 ? (
+                        <span className="inline-flex flex-wrap justify-end gap-1">
+                          {user.staff_permissions.map((p) => (
+                            <span
+                              key={p}
+                              className="rounded bg-neutral-100 px-2 py-0.5 text-xs"
+                            >
+                              {p}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
 

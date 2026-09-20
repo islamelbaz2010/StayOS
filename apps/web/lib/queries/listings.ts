@@ -153,6 +153,8 @@ function mapSearchResult(item: ApiSearchResult): Listing {
     lng: item.lng,
     nights: item.nights ?? null,
     totalEgp: item.total_egp ?? null,
+    effectiveNightlyEgp: item.effective_nightly_egp ?? null,
+    discounted: item.discounted ?? false,
   };
 }
 
@@ -246,6 +248,55 @@ export function useSearchListings(filters: SearchFilters) {
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.offset + lastPage.limit : undefined,
+  });
+}
+
+export type ApiPriceDistribution =
+  components["schemas"]["PriceDistributionResponse"];
+
+/**
+ * Nightly-price histogram over the listings matching the current non-price
+ * filters — powers the price-range slider UI. The backend ignores
+ * min_price/max_price here so the distribution always shows the full range.
+ */
+export function usePriceDistribution(filters: SearchFilters) {
+  const queryParams = buildSearchQueryParams(filters);
+  delete queryParams.min_price;
+  delete queryParams.max_price;
+
+  return useQuery<ApiPriceDistribution>({
+    queryKey: ["price-distribution", queryParams],
+    queryFn: async () => {
+      const { data } = await api.get<ApiPriceDistribution>(
+        "/listings/price-distribution",
+        { params: queryParams }
+      );
+      return data;
+    },
+    staleTime: 60_000,
+  });
+}
+
+export interface ListingChangeEvent {
+  id: string;
+  event_type: string;
+  created_at: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  payload: Record<string, unknown>;
+}
+
+/** Review lifecycle history for a listing (admin/staff with listings perm). */
+export function useListingChangeHistory(unitId: string | undefined) {
+  return useQuery<ListingChangeEvent[]>({
+    queryKey: ["listing-change-history", unitId],
+    queryFn: async () => {
+      const { data } = await api.get<ListingChangeEvent[]>(
+        `/listings/admin/${unitId}/change-history`
+      );
+      return data;
+    },
+    enabled: Boolean(unitId),
   });
 }
 

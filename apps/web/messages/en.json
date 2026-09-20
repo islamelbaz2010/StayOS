@@ -312,7 +312,21 @@
     "discovery": "Supply Discovery",
     "rejectReasonPlaceholder": "Reason for rejection (shared with the host)",
     "pendingEdit": "Edit awaiting review",
-    "pendingChangesTitle": "Pending changes submitted by host"
+    "pendingChangesTitle": "Pending changes submitted by host",
+    "proposedChanges": "Proposed changes",
+    "field": "Field",
+    "currentValue": "Published",
+    "proposedValue": "Proposed",
+    "changeHistory": "Review history",
+    "noHistory": "No review events recorded yet.",
+    "submittedBy": "Submitted by",
+    "pendingPhotos": "Photo changes pending review",
+    "eventSubmitted": "Changes submitted",
+    "eventApproved": "Changes approved",
+    "eventRejected": "Changes requested back",
+    "eventListingSubmitted": "Listing submitted",
+    "eventListingApproved": "Listing approved",
+    "eventListingRejected": "Listing rejected"
   },
   "search": {
     "title": "Search",
@@ -442,7 +456,15 @@
     },
     "instantBook": "Instant Book",
     "bookingOptions": "Booking options",
-    "showResults": "Show {count} results"
+    "showResults": "Show {count} results",
+    "split": "Split",
+    "priceRange": {
+      "label": "Price range",
+      "min": "Minimum",
+      "max": "Maximum",
+      "histogramLabel": "Price distribution from {min} to {max}",
+      "summary": "{min} – {max} per night · {count} places"
+    }
   },
   "favorites": {
     "title": "Favorites",
@@ -654,7 +676,8 @@
     "submitResponse": "Submit response",
     "submitting": "Submitting...",
     "responseError": "Failed to submit response",
-    "includesAllFees": "Includes all fees"
+    "includesAllFees": "Includes all fees",
+    "offer": "Offer"
   },
   "trust": {
     "title": "Trust & Safety",
@@ -1235,7 +1258,12 @@
       "pending": "Under review",
       "verified": "Verified",
       "rejected": "Rejected"
-    }
+    },
+    "permissions": "Permissions",
+    "accountStatus": "Account status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "allPermissions": "All permissions (admin)"
   },
   "hostNav": {
     "dashboard": "Dashboard",
@@ -1577,7 +1605,9 @@
     "discovery": "Supply Discovery",
     "import": "Bulk Import",
     "disputes": "Disputes",
-    "staff": "Staff"
+    "staff": "Staff",
+    "overview": "Overview",
+    "earnings": "Earnings"
   },
   "adminDisputes": {
     "title": "Disputes",
@@ -1603,7 +1633,19 @@
     "replyToReporter": "Reply to reporter",
     "replyPlaceholder": "Write a reply the guest/host will see in their Messages…",
     "replyHint": "Sent to the reporter's Messages. Admin notes above stay internal.",
-    "sendReply": "Send reply"
+    "sendReply": "Send reply",
+    "context": "Booking & payment context",
+    "contextLoading": "Loading context…",
+    "reporter": "Reporter",
+    "guest": "Guest",
+    "host": "Host",
+    "listing": "Listing",
+    "bookingStatus": "Booking status",
+    "dates": "Dates",
+    "paymentStatus": "Payment status",
+    "paymentAmount": "Payment amount",
+    "refundAmount": "Refund amount",
+    "noBookingContext": "No booking context available."
   },
   "adminStaff": {
     "title": "Staff",
@@ -1644,5 +1686,91 @@
       "guest": "Guest",
       "other": "Other"
     }
+  },
+  "fees": {
+    "popupTitle": "Now you'll see one price for your trip, all fees included",
+    "popupBody": "The price you see covers the nightly rate, cleaning fee and service fee — no surprises at checkout.",
+    "popupCta": "Got it",
+    "line": "Prices include all fees"
+  },
+  "adminOverview": {
+    "title": "Marketplace Overview",
+    "subtitle": "Live operational snapshot across users, supply, bookings and payments.",
+    "users": "Users",
+    "usersTotal": "Total users",
+    "guests": "Guests",
+    "hosts": "Hosts",
+    "hostsVerified": "Hosts KYC-verified",
+    "supply": "Supply",
+    "listingsTotal": "Total listings",
+    "listed": "Live listings",
+    "pendingVerification": "Pending verification",
+    "pendingChanges": "Pending edits",
+    "rejected": "Rejected",
+    "byGovernorate": "Listings by governorate",
+    "bookings": "Bookings",
+    "bookingsTotal": "Total bookings",
+    "requested": "Requested",
+    "accepted": "Accepted",
+    "confirmed": "Confirmed",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "rejectedB": "Rejected",
+    "upcomingCheckins": "Check-ins next 7 days",
+    "money": "Payments & finance",
+    "paymentsPending": "Pending payments",
+    "proofUploaded": "Proofs awaiting review",
+    "verifiedPayments": "Verified payments",
+    "collectedAmount": "Collected (verified)",
+    "refundedAmount": "Refunded",
+    "payoutsPending": "Pending payouts",
+    "payoutsAmount": "Pending payout amount",
+    "escrowsHeld": "Escrows held",
+    "workQueues": "Work queues",
+    "kycPending": "KYC docs awaiting review",
+    "disputesOpen": "Open disputes",
+    "disputesInReview": "Disputes in review",
+    "maintenanceOpen": "Open maintenance requests",
+    "tasksPending": "Pending tasks",
+    "tasksOverdue": "Overdue tasks",
+    "egp": "EGP",
+    "loadError": "Could not load the overview."
+  },
+  "adminEarnings": {
+    "title": "Earnings & Financial Operations",
+    "subtitle": "Investigate the financial state of any booking — payment, escrow, ledger and refund context.",
+    "lookupLabel": "Booking ID",
+    "lookupPlaceholder": "Paste a booking ID…",
+    "lookup": "Look up",
+    "booking": "Booking",
+    "status": "Status",
+    "guest": "Guest",
+    "host": "Host",
+    "listing": "Listing",
+    "dates": "Dates",
+    "payment": "Payment",
+    "method": "Method",
+    "amount": "Amount",
+    "accommodation": "Accommodation",
+    "serviceFee": "Guest service fee",
+    "cleaningFee": "Cleaning fee",
+    "reference": "Reference",
+    "deadline": "Payment deadline",
+    "proofUploaded": "Proof uploaded",
+    "verified": "Verified",
+    "refunded": "Refunded",
+    "rejectReason": "Reject reason",
+    "escrow": "Escrow",
+    "escrowStatus": "Escrow status",
+    "escrowAmount": "Escrow amount",
+    "holdUntil": "Held until",
+    "released": "Released",
+    "transactions": "Transactions",
+    "ledger": "Ledger",
+    "noTransactions": "No financial transactions recorded.",
+    "disputes": "Linked disputes",
+    "noDisputes": "No disputes on this booking.",
+    "notFound": "Booking not found.",
+    "egp": "EGP"
   }
 }

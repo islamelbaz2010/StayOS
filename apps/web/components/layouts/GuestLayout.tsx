@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 
+import { FeesIncludedPopup } from "@/components/search/FeesIncludedNotice";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 
@@ -8,6 +9,7 @@ export function GuestLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col bg-neutral-50">
       <Header />
       <main className="flex-1">{children}</main>
+      <FeesIncludedPopup />
       <Footer />
     </div>
   );

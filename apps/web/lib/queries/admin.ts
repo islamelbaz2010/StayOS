@@ -1,0 +1,117 @@
+import { useQuery } from "@tanstack/react-query";
+
+import { api } from "@/lib/api";
+import type { components } from "@/lib/api-types";
+
+export type AdminOverview = components["schemas"]["AdminOverviewResponse"];
+type ApiBookingFinancialContext =
+  components["schemas"]["BookingFinancialContextResponse"];
+
+export interface EscrowInfo {
+  id: string;
+  status: string;
+  amount_egp: number;
+  hold_until: string | null;
+  released_at: string | null;
+  refunded_at: string | null;
+}
+
+export interface LedgerEntryInfo {
+  ledger_account: string;
+  entry_type: string;
+  amount_egp: number;
+  balance_after: number;
+  created_at: string | null;
+}
+
+export interface FinancialTransactionInfo {
+  id: string;
+  type: string;
+  amount_egp: number;
+  status: string;
+  provider: string | null;
+  provider_ref: string | null;
+  created_at: string | null;
+  ledger_entries: LedgerEntryInfo[];
+}
+
+export interface LinkedDisputeInfo {
+  id: string;
+  category: string;
+  status: string;
+  created_at: string | null;
+}
+
+/** BookingFinancialContext with the nested dicts narrowed to their
+ *  server-emitted shapes. */
+export type BookingFinancialContext = Omit<
+  ApiBookingFinancialContext,
+  "escrow" | "transactions" | "disputes"
+> & {
+  escrow: EscrowInfo | null;
+  transactions: FinancialTransactionInfo[];
+  disputes: LinkedDisputeInfo[];
+};
+
+export interface DisputeContext {
+  dispute: {
+    id: string;
+    booking_id: string;
+    category: string;
+    description: string;
+    status: string;
+    admin_notes: string | null;
+    resolved_by: string | null;
+    resolved_at: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+  };
+  reporter: {
+    id: string;
+    display_name: string | null;
+    phone_number: string | null;
+    role: string;
+  } | null;
+  booking: BookingFinancialContext | null;
+}
+
+/** Marketplace operations snapshot for the admin console landing page. */
+export function useAdminOverview() {
+  return useQuery<AdminOverview>({
+    queryKey: ["admin-overview"],
+    queryFn: async () => {
+      const { data } = await api.get<AdminOverview>("/admin/overview");
+      return data;
+    },
+    staleTime: 30_000,
+  });
+}
+
+/** Booking-level financial investigation view (payments permission). */
+export function useBookingFinancialContext(bookingId: string | undefined) {
+  return useQuery<BookingFinancialContext>({
+    queryKey: ["admin-booking-financial", bookingId],
+    queryFn: async () => {
+      const { data } = await api.get<BookingFinancialContext>(
+        `/admin/bookings/${bookingId}/financial`
+      );
+      return data;
+    },
+    enabled: Boolean(bookingId),
+    retry: false,
+  });
+}
+
+/** Dispute investigation view: dispute + reporter + booking context. */
+export function useDisputeContext(disputeId: string | undefined) {
+  return useQuery<DisputeContext>({
+    queryKey: ["admin-dispute-context", disputeId],
+    queryFn: async () => {
+      const { data } = await api.get<DisputeContext>(
+        `/admin/disputes/${disputeId}/context`
+      );
+      return data;
+    },
+    enabled: Boolean(disputeId),
+  });
+}

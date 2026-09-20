@@ -111,6 +111,10 @@ export interface paths {
     /** Post Listing */
     post: operations["post_listing_api_v1_listings_post"];
   };
+  "/api/v1/listings/price-distribution": {
+    /** Get Price Distribution Endpoint */
+    get: operations["get_price_distribution_endpoint_api_v1_listings_price_distribution_get"];
+  };
   "/api/v1/listings/{unit_id}": {
     /** Get Listing */
     get: operations["get_listing_api_v1_listings__unit_id__get"];
@@ -152,6 +156,10 @@ export interface paths {
   "/api/v1/listings/admin/{unit_id}/reject": {
     /** Post Reject Listing */
     post: operations["post_reject_listing_api_v1_listings_admin__unit_id__reject_post"];
+  };
+  "/api/v1/listings/admin/{unit_id}/change-history": {
+    /** Get Listing Change History Endpoint */
+    get: operations["get_listing_change_history_endpoint_api_v1_listings_admin__unit_id__change_history_get"];
   };
   "/api/v1/listings/{unit_id}/availability": {
     /** Get Listing Availability */
@@ -681,6 +689,18 @@ export interface paths {
     /** Set Permissions Endpoint */
     put: operations["set_permissions_endpoint_api_v1_admin_staff__user_id__permissions_put"];
   };
+  "/api/v1/admin/overview": {
+    /** Get Overview */
+    get: operations["get_overview_api_v1_admin_overview_get"];
+  };
+  "/api/v1/admin/bookings/{booking_id}/financial": {
+    /** Get Booking Financial */
+    get: operations["get_booking_financial_api_v1_admin_bookings__booking_id__financial_get"];
+  };
+  "/api/v1/admin/disputes/{dispute_id}/context": {
+    /** Get Dispute Context Endpoint */
+    get: operations["get_dispute_context_endpoint_api_v1_admin_disputes__dispute_id__context_get"];
+  };
   "/health": {
     /** Health Check */
     get: operations["health_check_health_get"];
@@ -770,6 +790,82 @@ export interface components {
       target: string;
       /** Content */
       content: string;
+    };
+    /**
+     * AdminOverviewResponse
+     * @description Marketplace operations snapshot for the admin console.
+     *
+     * All counts/sums are computed directly from the live tables — no
+     * invented business definitions. ``None`` where a section does not
+     * apply to the caller's permissions.
+     */
+    AdminOverviewResponse: {
+      /** Users Total */
+      users_total: number;
+      /** Users Guests */
+      users_guests: number;
+      /** Users Hosts */
+      users_hosts: number;
+      /** Hosts Kyc Verified */
+      hosts_kyc_verified: number;
+      /** Listings Total */
+      listings_total: number;
+      /** Listings Listed */
+      listings_listed: number;
+      /** Listings Pending Verification */
+      listings_pending_verification: number;
+      /** Listings Pending Changes */
+      listings_pending_changes: number;
+      /** Listings Rejected */
+      listings_rejected: number;
+      /** Listings By Governorate */
+      listings_by_governorate: {
+        [key: string]: number;
+      };
+      /** Bookings Total */
+      bookings_total: number;
+      /** Bookings Requested */
+      bookings_requested: number;
+      /** Bookings Accepted */
+      bookings_accepted: number;
+      /** Bookings Confirmed */
+      bookings_confirmed: number;
+      /** Bookings Completed */
+      bookings_completed: number;
+      /** Bookings Cancelled */
+      bookings_cancelled: number;
+      /** Bookings Rejected */
+      bookings_rejected: number;
+      /** Upcoming Checkins 7D */
+      upcoming_checkins_7d: number;
+      /** Payments Pending */
+      payments_pending: number;
+      /** Payments Proof Uploaded */
+      payments_proof_uploaded: number;
+      /** Payments Verified */
+      payments_verified: number;
+      /** Payments Verified Amount Egp */
+      payments_verified_amount_egp: number;
+      /** Payments Refunded Amount Egp */
+      payments_refunded_amount_egp: number;
+      /** Payouts Pending */
+      payouts_pending: number;
+      /** Payouts Pending Amount Egp */
+      payouts_pending_amount_egp: number;
+      /** Escrows Held */
+      escrows_held: number;
+      /** Kyc Pending Documents */
+      kyc_pending_documents: number;
+      /** Disputes Open */
+      disputes_open: number;
+      /** Disputes In Review */
+      disputes_in_review: number;
+      /** Maintenance Open */
+      maintenance_open: number;
+      /** Tasks Pending */
+      tasks_pending: number;
+      /** Tasks Overdue */
+      tasks_overdue: number;
     };
     /** AutomatedMessageSend */
     AutomatedMessageSend: {
@@ -893,6 +989,107 @@ export interface components {
       infants?: number;
       /** Message */
       message?: string | null;
+    };
+    /**
+     * BookingFinancialContextResponse
+     * @description Investigation view for a single booking: booking + payment +
+     * escrow/transactions/ledger context joined across modules.
+     */
+    BookingFinancialContextResponse: {
+      /** Booking Id */
+      booking_id: string;
+      /** Booking Status */
+      booking_status: string;
+      /**
+       * Check In
+       * Format: date
+       */
+      check_in: string;
+      /**
+       * Check Out
+       * Format: date
+       */
+      check_out: string;
+      /** Adults */
+      adults: number;
+      /** Children */
+      children: number;
+      /** Infants */
+      infants: number;
+      /** Requested At */
+      requested_at: string | null;
+      /** Accepted At */
+      accepted_at: string | null;
+      /** Cancelled At */
+      cancelled_at: string | null;
+      /** Cancel Reason */
+      cancel_reason: string | null;
+      /** Guest Id */
+      guest_id: string;
+      /** Guest Name */
+      guest_name: string | null;
+      /** Guest Phone */
+      guest_phone: string | null;
+      /** Host Id */
+      host_id: string;
+      /** Host Name */
+      host_name: string | null;
+      /** Host Phone */
+      host_phone: string | null;
+      /** Unit Id */
+      unit_id: string;
+      /** Unit Title */
+      unit_title: string | null;
+      /** Unit City */
+      unit_city: string | null;
+      /** Unit Governorate */
+      unit_governorate: string | null;
+      /** Payment Id */
+      payment_id: string | null;
+      /** Payment Status */
+      payment_status: string | null;
+      /** Payment Method */
+      payment_method: string | null;
+      /** Payment Amount Egp */
+      payment_amount_egp: number | null;
+      /** Accommodation Amount Egp */
+      accommodation_amount_egp: number | null;
+      /** Guest Service Fee Egp */
+      guest_service_fee_egp: number | null;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp: number | null;
+      /** Reference Number */
+      reference_number: string | null;
+      /** Payment Deadline At */
+      payment_deadline_at: string | null;
+      /** Proof Uploaded At */
+      proof_uploaded_at: string | null;
+      /** Verified At */
+      verified_at: string | null;
+      /** Refund Amount Egp */
+      refund_amount_egp: number | null;
+      /** Refunded At */
+      refunded_at: string | null;
+      /** Reject Reason */
+      reject_reason: string | null;
+      /** Escrow */
+      escrow?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Transactions
+       * @default []
+       */
+      transactions?: {
+          [key: string]: unknown;
+        }[];
+      /**
+       * Disputes
+       * @default []
+       */
+      disputes?: {
+          [key: string]: unknown;
+        }[];
     };
     /**
      * BookingQuote
@@ -1680,6 +1877,23 @@ export interface components {
      * @enum {string}
      */
     DisputeCategory: "booking" | "payment" | "property" | "host" | "guest" | "other";
+    /**
+     * DisputeContextResponse
+     * @description Admin investigation view for a single dispute: the dispute itself
+     * plus the full booking/payment/escrow context so the case can be
+     * worked without jumping across unrelated screens.
+     */
+    DisputeContextResponse: {
+      /** Dispute */
+      dispute: {
+        [key: string]: unknown;
+      };
+      /** Reporter */
+      reporter?: {
+        [key: string]: unknown;
+      } | null;
+      booking?: components["schemas"]["BookingFinancialContextResponse"] | null;
+    };
     /** DisputeCreate */
     DisputeCreate: {
       /** Booking Id */
@@ -2659,6 +2873,30 @@ export interface components {
       /** Data */
       data: components["schemas"]["LedgerEntryResponse"][];
     };
+    /**
+     * ListingChangeEvent
+     * @description One entry in a listing's review lifecycle, sourced from the
+     * persistent outbox event log.
+     */
+    ListingChangeEvent: {
+      /** Id */
+      id: string;
+      /** Event Type */
+      event_type: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Actor Id */
+      actor_id?: string | null;
+      /** Actor Name */
+      actor_name?: string | null;
+      /** Payload */
+      payload: {
+        [key: string]: unknown;
+      };
+    };
     /** ListingCreate */
     ListingCreate: {
       /** Property Type */
@@ -3035,6 +3273,13 @@ export interface components {
       nights?: number | null;
       /** Total Egp */
       total_egp?: number | null;
+      /** Effective Nightly Egp */
+      effective_nightly_egp?: number | null;
+      /**
+       * Discounted
+       * @default false
+       */
+      discounted?: boolean;
     };
     /** ListingUpdate */
     ListingUpdate: {
@@ -3710,6 +3955,30 @@ export interface components {
       challenge_token: string;
       /** Nonce */
       nonce: number;
+    };
+    /** PriceBucket */
+    PriceBucket: {
+      /** From Egp */
+      from_egp: number;
+      /** To Egp */
+      to_egp: number;
+      /** Count */
+      count: number;
+    };
+    /**
+     * PriceDistributionResponse
+     * @description Nightly-price distribution over the listings matching the current
+     * (non-price) filters — powers the price-range histogram.
+     */
+    PriceDistributionResponse: {
+      /** Min Price Egp */
+      min_price_egp: number | null;
+      /** Max Price Egp */
+      max_price_egp: number | null;
+      /** Total */
+      total: number;
+      /** Buckets */
+      buckets: components["schemas"]["PriceBucket"][];
     };
     /** PromoApplicationResponse */
     PromoApplicationResponse: {
@@ -5090,6 +5359,60 @@ export interface operations {
       };
     };
   };
+  /** Get Price Distribution Endpoint */
+  get_price_distribution_endpoint_api_v1_listings_price_distribution_get: {
+    parameters: {
+      query?: {
+        q?: string | null;
+        city?: string | null;
+        governorate?: string | null;
+        host_id?: string | null;
+        sw_lat?: number | null;
+        sw_lng?: number | null;
+        ne_lat?: number | null;
+        ne_lng?: number | null;
+        lat?: number | null;
+        lng?: number | null;
+        radius_km?: number | null;
+        check_in?: string | null;
+        check_out?: string | null;
+        min_price?: number | null;
+        max_price?: number | null;
+        bedrooms?: number | null;
+        beds?: number | null;
+        bathrooms?: number | null;
+        property_type?: string | null;
+        category?: string | null;
+        cultural_tags?: string | null;
+        amenities?: string | null;
+        free_cancellation?: boolean | null;
+        instant_book?: boolean | null;
+        pets?: boolean | null;
+        self_check_in?: boolean | null;
+        accessibility?: string | null;
+        host_language?: string | null;
+        guests?: number | null;
+        sort?: string | null;
+        cursor?: string | null;
+        offset?: number | null;
+        limit?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PriceDistributionResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Get Listing */
   get_listing_api_v1_listings__unit_id__get: {
     parameters: {
@@ -5301,6 +5624,28 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ListingResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Listing Change History Endpoint */
+  get_listing_change_history_endpoint_api_v1_listings_admin__unit_id__change_history_get: {
+    parameters: {
+      path: {
+        unit_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ListingChangeEvent"][];
         };
       };
       /** @description Validation Error */
@@ -8429,6 +8774,61 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["StaffResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Overview */
+  get_overview_api_v1_admin_overview_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AdminOverviewResponse"];
+        };
+      };
+    };
+  };
+  /** Get Booking Financial */
+  get_booking_financial_api_v1_admin_bookings__booking_id__financial_get: {
+    parameters: {
+      path: {
+        booking_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BookingFinancialContextResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Dispute Context Endpoint */
+  get_dispute_context_endpoint_api_v1_admin_disputes__dispute_id__context_get: {
+    parameters: {
+      path: {
+        dispute_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["DisputeContextResponse"];
         };
       };
       /** @description Validation Error */

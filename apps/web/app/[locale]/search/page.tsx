@@ -8,9 +8,14 @@ import { useTranslations } from "next-intl";
 import { GuestLayout } from "@/components/layouts";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ListingCardSkeleton } from "@/components/listings/ListingCardSkeleton";
+import { FeesIncludedLine } from "@/components/search/FeesIncludedNotice";
+import { PriceRangeFilter } from "@/components/search/PriceRangeFilter";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { useSearchListings } from "@/lib/queries/listings";
+import {
+  usePriceDistribution,
+  useSearchListings,
+} from "@/lib/queries/listings";
 
 const SearchMap = dynamic(
   () => import("@/components/search/SearchMap").then((mod) => mod.SearchMap),
@@ -194,6 +199,23 @@ export default function SearchPage() {
     });
   };
 
+  const applyPriceRange = (min: number | null, max: number | null) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (min != null) {
+      nextParams.set("min_price", String(min));
+    } else {
+      nextParams.delete("min_price");
+    }
+    if (max != null) {
+      nextParams.set("max_price", String(max));
+    } else {
+      nextParams.delete("max_price");
+    }
+    router.push(`/${locale}/search?${nextParams.toString()}`, {
+      scroll: false,
+    });
+  };
+
   const hasActiveFilters = Boolean(
     filters.property_type ||
       filters.category ||
@@ -240,8 +262,11 @@ export default function SearchPage() {
     refetch,
   } = useSearchListings(filters);
 
-  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [viewMode, setViewMode] = useState<"list" | "map" | "split">("split");
   const [showFilters, setShowFilters] = useState(false);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  const priceDistribution = usePriceDistribution(filters);
 
   const allListings = useMemo(
     () => data?.pages.flatMap((page) => page.listings) ?? [],
@@ -266,6 +291,7 @@ export default function SearchPage() {
             </span>
           )}
         </div>
+        <FeesIncludedLine className="mt-1" />
 
         <div className="mt-4">
           <SearchBar
@@ -455,38 +481,13 @@ export default function SearchPage() {
               ))}
             </select>
           </div>
-          <div className="w-28">
-            <label
-              htmlFor="filter-min-price"
-              className="block text-xs font-medium text-neutral-500"
-            >
-              {t("search.minPrice")}
-            </label>
-            <input
-              id="filter-min-price"
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={filters.min_price ?? ""}
-              onChange={(e) => updateParam("min_price", e.target.value)}
-              className="input mt-1 w-full text-sm"
-            />
-          </div>
-          <div className="w-28">
-            <label
-              htmlFor="filter-max-price"
-              className="block text-xs font-medium text-neutral-500"
-            >
-              {t("search.maxPrice")}
-            </label>
-            <input
-              id="filter-max-price"
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={filters.max_price ?? ""}
-              onChange={(e) => updateParam("max_price", e.target.value)}
-              className="input mt-1 w-full text-sm"
+          <div className="w-full">
+            <PriceRangeFilter
+              distribution={priceDistribution.data}
+              isLoading={priceDistribution.isPending}
+              minPrice={filters.min_price}
+              maxPrice={filters.max_price}
+              onApply={applyPriceRange}
             />
           </div>
           <div className="w-24">
@@ -791,6 +792,21 @@ export default function SearchPage() {
           </button>
           <button
             type="button"
+            onClick={() => setViewMode("split")}
+            className={`
+              hidden rounded-lg px-3 py-1.5 text-sm font-medium transition lg:inline-block
+              ${
+                viewMode === "split"
+                  ? "bg-brand-600 text-white"
+                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+              }
+            `}
+            aria-pressed={viewMode === "split"}
+          >
+            {t("search.split")}
+          </button>
+          <button
+            type="button"
             onClick={() => setViewMode("map")}
             className={`
               rounded-lg px-3 py-1.5 text-sm font-medium transition
@@ -828,24 +844,28 @@ export default function SearchPage() {
               {t("search.noResultsHint")}
             </p>
           </div>
-        ) : viewMode === "map" ? (
-          <div className="mt-6">
-            <SearchMap
-              listings={allListings}
-              onSelect={goToListing}
-              onBoundsChange={(bounds) => {
-                const nextParams = new URLSearchParams(searchParams.toString());
-                nextParams.set("sw_lat", bounds.sw_lat);
-                nextParams.set("sw_lng", bounds.sw_lng);
-                nextParams.set("ne_lat", bounds.ne_lat);
-                nextParams.set("ne_lng", bounds.ne_lng);
-                router.push(`/${locale}/search?${nextParams.toString()}`, {
-                  scroll: false,
-                });
-              }}
-              searchAreaLabel={t("search.searchArea")}
-            />
-            {(filters.sw_lat || filters.sw_lng || filters.ne_lat || filters.ne_lng) && (
+        ) : (
+          (() => {
+            const applyMapBounds = (bounds: {
+              sw_lat: string;
+              sw_lng: string;
+              ne_lat: string;
+              ne_lng: string;
+            }) => {
+              const nextParams = new URLSearchParams(searchParams.toString());
+              nextParams.set("sw_lat", bounds.sw_lat);
+              nextParams.set("sw_lng", bounds.sw_lng);
+              nextParams.set("ne_lat", bounds.ne_lat);
+              nextParams.set("ne_lng", bounds.ne_lng);
+              router.push(`/${locale}/search?${nextParams.toString()}`, {
+                scroll: false,
+              });
+            };
+
+            const mapAreaIndicator = (filters.sw_lat ||
+              filters.sw_lng ||
+              filters.ne_lat ||
+              filters.ne_lng) && (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-sm text-neutral-500">
                   {t("search.filteredByMapArea")}
@@ -853,7 +873,9 @@ export default function SearchPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const nextParams = new URLSearchParams(searchParams.toString());
+                    const nextParams = new URLSearchParams(
+                      searchParams.toString()
+                    );
                     nextParams.delete("sw_lat");
                     nextParams.delete("sw_lng");
                     nextParams.delete("ne_lat");
@@ -867,36 +889,88 @@ export default function SearchPage() {
                   {t("search.clearMapArea")}
                 </button>
               </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {allListings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  checkin={filters.checkin}
-                  checkout={filters.checkout}
-                />
-              ))}
-            </div>
+            );
 
-            {hasNextPage && (
-              <div className="mt-8 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isFetchingNextPage
-                    ? t("search.loadingMore")
-                    : t("search.loadMore")}
-                </button>
-              </div>
-            )}
-          </>
+            const renderMap = (mapClass: string) => (
+              <>
+                <SearchMap
+                  listings={allListings}
+                  onSelect={goToListing}
+                  onBoundsChange={applyMapBounds}
+                  searchAreaLabel={t("search.searchArea")}
+                  highlightId={highlightedId}
+                  onMarkerHover={setHighlightedId}
+                  className={mapClass}
+                />
+                {mapAreaIndicator}
+              </>
+            );
+
+            const renderList = (gridCols: string) => (
+              <>
+                <div className={`mt-6 grid grid-cols-1 gap-6 ${gridCols}`}>
+                  {allListings.map((listing) => (
+                    <div
+                      key={listing.id}
+                      onMouseEnter={() => setHighlightedId(listing.id)}
+                      onMouseLeave={() => setHighlightedId(null)}
+                      className={
+                        highlightedId === listing.id
+                          ? "rounded-card ring-2 ring-brand-500"
+                          : ""
+                      }
+                    >
+                      <ListingCard
+                        listing={listing}
+                        checkin={filters.checkin}
+                        checkout={filters.checkout}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {hasNextPage && (
+                  <div className="mt-8 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isFetchingNextPage
+                        ? t("search.loadingMore")
+                        : t("search.loadMore")}
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+
+            if (viewMode === "map") {
+              return (
+                <div className="mt-6">
+                  {renderMap("h-[70vh] w-full rounded-xl")}
+                </div>
+              );
+            }
+
+            if (viewMode === "split") {
+              // Desktop: results + map side by side, map sticky. Mobile:
+              // falls back to the list (the map view is one tap away).
+              return (
+                <div className="lg:grid lg:grid-cols-[1fr_45%] lg:gap-6">
+                  <div>{renderList("sm:grid-cols-2")}</div>
+                  <div className="hidden lg:block">
+                    <div className="sticky top-24">
+                      {renderMap("h-[calc(100vh-140px)] w-full rounded-xl")}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return renderList("sm:grid-cols-2 lg:grid-cols-3");
+          })()
         )}
       </section>
     </GuestLayout>

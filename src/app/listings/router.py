@@ -20,12 +20,14 @@ from .schemas import (
     HostDashboardStats,
     HostProfileResponse,
     HostReservationCalendarResponse,
+    ListingChangeEvent,
     ListingCreate,
     ListingRejectRequest,
     ListingResponse,
     ListingSearchFilters,
     ListingSearchResponse,
     ListingUpdate,
+    PriceDistributionResponse,
     PhotoCreate,
     PhotoPresignRequest,
     PhotoPresignResponse,
@@ -49,8 +51,10 @@ from .services import (
     get_host_listings,
     get_host_profile,
     get_host_reservation_calendar,
+    get_listing_change_history,
     get_listing_detail,
     get_pending_listings,
+    get_price_distribution,
     get_similar_listings,
     list_photos,
     publish_listing,
@@ -75,6 +79,18 @@ async def list_listings(
 ) -> ListingSearchResponse:
     try:
         return await search_listings(session, filters)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/price-distribution", response_model=PriceDistributionResponse)
+async def get_price_distribution_endpoint(
+    _: None = Depends(listings_rate_limit),
+    session: AsyncSession = Depends(get_session),
+    filters: ListingSearchFilters = Depends(),
+) -> PriceDistributionResponse:
+    try:
+        return await get_price_distribution(session, filters)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 
@@ -224,6 +240,21 @@ async def post_reject_listing(
         return await reject_listing(
             session, user, unit_id, reason=payload.reason if payload else None
         )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get(
+    "/admin/{unit_id}/change-history",
+    response_model=list[ListingChangeEvent],
+)
+async def get_listing_change_history_endpoint(
+    unit_id: str,
+    user: User = Depends(auth_dependencies.require_staff_permission("listings")),
+    session: AsyncSession = Depends(get_session),
+) -> list[ListingChangeEvent]:
+    try:
+        return await get_listing_change_history(session, unit_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

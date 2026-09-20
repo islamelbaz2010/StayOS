@@ -1,8 +1,8 @@
 # FOUNDER WEB ACCEPTANCE REGISTER — StayOS
 
-**Version**: 2.0.0
+**Version**: 3.0.0
 **Date**: 2026-09-20
-**Branch**: `product-completion-review` @ `d534c37`
+**Branch**: `product-completion-review` @ `d37fa6d`
 **Purpose**: Founder personally reviews the deployed web product before mobile behavior is frozen.
 **Companion**: `StayOS_Technical_Release_Review_Master_2026-09-20_v2.xlsx` sheet `05_WEB_ACCEPTANCE` / `06_FOUNDER_OBSERVATIONS`
 
@@ -14,17 +14,31 @@
 **Seed listings**: Zamalek `seed-unit-…0001` (request-to-book), Maadi `seed-unit-…0002` (instant book).
 **Known cosmetic note**: presign uploads return 503 until AWS storage vars are set — photo/proof/KYC-document uploads cannot complete on the deployed env yet (release blocker RB-02, not a product defect).
 
-## Hardening results (2026-09-20 cycle)
+## Founder retest — defect closure pass 2 (2026-09-20, `d37fa6d`)
+
+The Founder personally retested the preview and overrode earlier engineering claims. Five items were FAIL; all five were reproduced, root-caused, fixed, regression-tested, deployed, and re-verified in a real browser session against the deployed API. **FOUNDER VISUAL RE-ACCEPTANCE still pending.**
+
+| Item | Founder result | Root cause | Fix | Engineering verification |
+|------|----------------|------------|-----|--------------------------|
+| Booking calendar | FAIL | `AvailabilityCalendar.rangeBlocked()` silently reset the pending check-in when a selected range crossed unavailable days — the user's check-in vanished with no message (reproduced: check-in Sep 22 → 5 months forward → check-out Feb 11 → check-in was replaced by Feb 11) | Calendar now completes the range; `BookingPanel`'s existing blocked-date check shows "dates unavailable" and keeps submit disabled | Browser: check-in 2026-10-11 → 5 months fwd → check-out 2027-03-10 persisted; clear/reselect works; valid range Oct 25→28 submitted → "Booking requested / Status: Requested"; regression test covers the blocked-range case |
+| Staff creation | FAIL | Three defects: (1) UI read `response.data.detail` but the API error envelope is `error.message` → real 409 reason was swallowed into "Could not create staff account"; (2) duplicate email hit `users_email_key` → opaque 500; (3) `email` was plain `str` → invalid values accepted | UI uses `getApiErrorMessage`; backend normalizes email + pre-checks uniqueness → 409; email pattern validated (422); modal converted to a real `<form>` with `type="email"` | Browser: `+201118000472` → "Phone number already belongs to an existing account"; local phone → E.164 hint; `not-an-email` blocked by browser validation; fresh staff created and listed. Live API: dup email → 409, invalid → 422 |
+| Email/password | PASS | — | Unchanged | PASS — UNCHANGED |
+| Header/Footer | FAIL | Staff with zero active permission grants received an `/admin` link that 403s (`_require_console_access`); anonymous visitors got a footer "Account" link to the login-walled `/profile`; ops roles were missing Search in the footer (contradicting header); `field_staff` got an empty workspace column | Admin link/footer links now gated on `staff_permissions` matching the backend rule; anon Account → Sign in; Search shown for all roles; empty workspace column suppressed | Browser: link inventory verified for anon/guest/host/admin/staff — no dead-end links; 14-case role-visibility regression test |
+| Profile/Account | FAIL | `PATCH /host/profile` wrote `user.email` raw: duplicate email → 500 on `users_email_key`, invalid email stored verbatim; UI showed generic `saveError` instead of the API message | Email normalized + pattern-validated (422) + uniqueness pre-check (409, self excluded); UI surfaces `error.message` | Live API: dup → 409, invalid → 422, valid → normalized 200. Browser: conflict message rendered; host display-name save → `/profile` shows updated name (auth cache refresh confirmed) |
+| Payment Details | PASS | — | Unchanged | PASS — UNCHANGED |
+| Payment Images | PASS | — | Unchanged | PASS — UNCHANGED |
+
+## Hardening results (2026-09-20 cycle, superseded where noted)
 
 ENGINEERING VERIFIED = reproduced → root-caused → fixed → regression-tested → verified on the live API and in a real browser session. **FOUNDER VISUAL ACCEPTANCE still pending** — engineering verification is not Founder acceptance.
 
 | Item | Result | Verification |
 |------|--------|--------------|
-| Booking calendar | FIXED — month navigation beyond ~90 days now works; availability fetch uses a sliding window over the two visible months; selections persist across navigation | ENGINEERING VERIFIED (browser: 5 months forward, 39→59 enabled days, range persisted; live API accepts far-future windows) |
-| Staff management | FIXED — `phone_number` now enforces E.164 (previously any 8–20 chars were stored, producing accounts that could never log in via OTP); modal shows real API errors; one pre-fix staff row normalized `01090677722 → +20109067722` | ENGINEERING VERIFIED (live: non-E.164 → 422, E.164 → 201; browser: list, modal, client-side validation) |
+| Booking calendar | FIXED — month navigation beyond ~90 days now works; availability fetch uses a sliding window over the two visible months; selections persist across navigation. **Pass 2**: silent range-reset removed (see above) | ENGINEERING VERIFIED (browser: 5 months forward, 39→59 enabled days, range persisted; live API accepts far-future windows) |
+| Staff management | FIXED — `phone_number` now enforces E.164 (previously any 8–20 chars were stored, producing accounts that could never log in via OTP); modal shows real API errors; one pre-fix staff row normalized `01090677722 → +20109067722`. **Pass 2**: error envelope + duplicate-email 409 + email format (see above) | ENGINEERING VERIFIED (live: non-E.164 → 422, E.164 → 201; browser: list, modal, client-side validation) |
 | Email + password auth | IMPLEMENTED — `POST /auth/register`, `POST /auth/login`, `POST /auth/password`; login/register pages have a Phone/Email toggle; Profile has a set/change-password section | ENGINEERING VERIFIED (live: register/login/wrong-pw/duplicate/change/delete all correct; UI register flow completed in browser) |
-| Header/Footer navigation | FIXED — `field_staff` no longer receives `/admin` links that ProtectedRoute rejects; staff links filtered by granted permissions | ENGINEERING VERIFIED (browser: guest, host, admin states) |
-| Profile vs Account consistency | FIXED — host-profile saves now refresh the auth-user cache (`/profile` and `/host/profile` stay consistent); single source of truth remains `auth.users` | ENGINEERING VERIFIED (browser: `/profile` renders password section + correct identity) |
+| Header/Footer navigation | FIXED — `field_staff` no longer receives `/admin` links that ProtectedRoute rejects; staff links filtered by granted permissions. **Pass 2**: zero-permission staff gate + anon Account link + Search parity (see above) | ENGINEERING VERIFIED (browser: guest, host, admin states) |
+| Profile vs Account consistency | FIXED — host-profile saves now refresh the auth-user cache (`/profile` and `/host/profile` stay consistent); single source of truth remains `auth.users`. **Pass 2**: email validation/conflict + real error display (see above) | ENGINEERING VERIFIED (browser: `/profile` renders password section + correct identity) |
 | Admin Payment Details 500 | FIXED — `get_payment` eager-loads `unit→listing→cover_photo` + `unit→photos` (was `MissingGreenlet` on async lazy-load) | ENGINEERING VERIFIED (live: all 3 queue items → 200 with `unit_cover_image`) |
 | Payment Queue images | FIXED earlier pass — canonical cover resolution (`cover_photo` → `is_cover` → first live photo); `unit_cover_image` populated on all queue rows | ENGINEERING VERIFIED (live payload inspection) |
 | Notifications/state refresh | Retained — 30s polling on operational lists + pending-count badges in header/sidebar | ENGINEERING VERIFIED (code + earlier live check) |

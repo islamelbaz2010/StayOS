@@ -29,7 +29,9 @@ down_revision: str | None = "042_commercial_differentiation"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-_ALL_CONSUMERS = '["finance", "operations", "notifications"]'
+_ALL_CONSUMERS_JSONB = (
+    '\'["finance", "operations", "notifications"]\'::jsonb'
+)
 
 
 def upgrade() -> None:
@@ -44,10 +46,8 @@ def upgrade() -> None:
         schema="outbox",
     )
     op.execute(
-        sa.text(
-            "UPDATE outbox.outbox_events SET processed_by = :all_consumers "
-            "WHERE processed_at IS NOT NULL"
-        ).bindparams(all_consumers=_ALL_CONSUMERS)
+        "UPDATE outbox.outbox_events SET processed_by = "
+        f"{_ALL_CONSUMERS_JSONB} WHERE processed_at IS NOT NULL"
     )
 
 

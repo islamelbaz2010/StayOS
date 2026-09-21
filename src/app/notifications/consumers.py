@@ -12,6 +12,8 @@ from . import services as notification_services
 
 logger = logging.getLogger(__name__)
 
+CONSUMER_NAME = "notifications"
+
 _RELEVANT_EVENT_TYPES = (
     "reservation.created",
     "reservation.confirmed",
@@ -48,6 +50,10 @@ async def process_outbox_event(session: AsyncSession, event: OutboxEvent) -> Non
     await notification_services.create_notifications_for_event(
         session, str(event.id), event.event_type, payload
     )
+    processed_by = list(event.processed_by or [])
+    if CONSUMER_NAME not in processed_by:
+        processed_by.append(CONSUMER_NAME)
+    event.processed_by = processed_by
     event.processed_at = datetime.now(UTC)
 
 
@@ -58,7 +64,7 @@ async def poll_and_process_outbox(batch_size: int = 100) -> int:
             result = await session.execute(
                 select(OutboxEvent)
                 .where(
-                    OutboxEvent.processed_at.is_(None),
+                    ~OutboxEvent.processed_by.contains([CONSUMER_NAME]),
                     OutboxEvent.event_type.in_(_RELEVANT_EVENT_TYPES),
                 )
                 .order_by(OutboxEvent.created_at)

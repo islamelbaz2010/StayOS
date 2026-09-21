@@ -9,12 +9,16 @@ from app.shared.models import OutboxEvent
 
 from . import services as operations_services
 
+CONSUMER_NAME = "operations"
+
 
 async def _acquire_idempotency(event_id: str) -> bool:
     client = redis_state.redis_client
     if client is None:
         return True
-    result = await client.set(f"event:{event_id}", "1", nx=True, ex=86400)
+    result = await client.set(
+        f"event:{CONSUMER_NAME}:{event_id}", "1", nx=True, ex=86400
+    )
     return bool(result)
 
 
@@ -34,6 +38,10 @@ async def process_outbox_event(
     elif event.event_type == "booking.cancelled":
         await operations_services.handle_cancel_event(session, payload)
 
+    processed_by = list(event.processed_by or [])
+    if CONSUMER_NAME not in processed_by:
+        processed_by.append(CONSUMER_NAME)
+    event.processed_by = processed_by
     event.processed_at = datetime.now(UTC)
 
 
@@ -48,7 +56,7 @@ async def poll_and_process_outbox(batch_size: int = 100) -> int:
             result = await session.execute(
                 select(OutboxEvent)
                 .where(
-                    OutboxEvent.processed_at.is_(None),
+                    ~OutboxEvent.processed_by.contains([CONSUMER_NAME]),
                     OutboxEvent.event_type.in_(event_types),
                 )
                 .limit(batch_size)

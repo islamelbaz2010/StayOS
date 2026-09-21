@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,6 +19,7 @@ def _make_event(event_type: str, payload: dict | None = None) -> MagicMock:
     event.event_type = event_type
     event.payload = payload or {}
     event.processed_at = None
+    event.processed_by = []
     return event
 
 
@@ -63,6 +65,57 @@ async def test_process_cancel(mock_redis, monkeypatch) -> None:
 
     services.handle_cancel_event.assert_awaited_once()
     assert event.processed_at is not None
+
+
+@pytest.mark.asyncio
+async def test_marks_processed_by_consumer(mock_redis, monkeypatch) -> None:
+    from app.finance import consumers, services
+
+    event = _make_event("booking.checked_in", {"reservation_id": "res-1"})
+    monkeypatch.setattr(services, "handle_checkin_event", AsyncMock())
+
+    session = AsyncMock()
+    await consumers.process_outbox_event(session, event)
+
+    assert event.processed_by == ["finance"]
+    assert event.processed_at is not None
+
+
+@pytest.mark.asyncio
+async def test_processes_event_already_consumed_by_another_consumer(
+    mock_redis, monkeypatch
+) -> None:
+    # Regression: consumers previously shared OutboxEvent.processed_at, so an
+    # overlapping event (e.g. booking.checked_in) marked processed by the
+    # operations consumer was silently skipped by finance.
+    from app.finance import consumers, services
+
+    event = _make_event("booking.checked_in", {"reservation_id": "res-1"})
+    event.processed_at = datetime.now(UTC)
+    event.processed_by = ["operations", "notifications"]
+    monkeypatch.setattr(services, "handle_checkin_event", AsyncMock())
+
+    session = AsyncMock()
+    await consumers.process_outbox_event(session, event)
+
+    services.handle_checkin_event.assert_awaited_once()
+    assert event.processed_by == ["operations", "notifications", "finance"]
+
+
+@pytest.mark.asyncio
+async def test_idempotency_key_is_consumer_scoped(mock_redis, monkeypatch) -> None:
+    # Regression: finance and operations shared the "event:{id}" Redis key, so
+    # whichever consumer acquired it first blocked the other entirely.
+    from app.finance import consumers, services
+
+    event = _make_event("booking.checked_in", {"reservation_id": "res-1"})
+    monkeypatch.setattr(services, "handle_checkin_event", AsyncMock())
+
+    session = AsyncMock()
+    await consumers.process_outbox_event(session, event)
+
+    key = mock_redis.set.await_args.args[0]
+    assert ":finance:" in key
 
 
 @pytest.mark.asyncio

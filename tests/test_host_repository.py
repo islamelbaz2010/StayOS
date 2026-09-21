@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.host.repository import get_host_earnings
+from app.listings.constants import CalendarBlockType, CalendarStatus, UnitStatus
 from app.listings.repository import (
     bulk_replace_calendar_rules,
     create_calendar_rule,
@@ -170,8 +170,14 @@ async def test_get_host_earnings_per_unit_includes_cover_image(fake_session: Asy
     per_unit_row.unit_id = "unit-1"
     per_unit_row.booking_count = 2
     per_unit_row.revenue = 2000
+    card_net_result = MagicMock()
+    card_net_result.all = MagicMock(return_value=[])
+
     per_unit_result = MagicMock()
     per_unit_result.all = MagicMock(return_value=[per_unit_row])
+
+    card_per_unit_result = MagicMock()
+    card_per_unit_result.all = MagicMock(return_value=[])
 
     title_row = MagicMock()
     title_row.title_ar = "شقة"
@@ -185,11 +191,22 @@ async def test_get_host_earnings_per_unit_includes_cover_image(fake_session: Asy
     )
 
     fake_session.execute = AsyncMock(
-        side_effect=[unit_ids_result, per_unit_result, title_result, cover_result]
+        side_effect=[
+            unit_ids_result,
+            card_net_result,
+            per_unit_result,
+            card_per_unit_result,
+            title_result,
+            cover_result,
+        ]
     )
     # Order of scalars: total_bookings, confirmed_bookings, completed_stays,
-    # revenue, pending_verification, refund_pending, net_earnings
-    fake_session.scalar = AsyncMock(side_effect=[1, 0, 0, 2000, 0, 0, 1800])
+    # revenue, pending_verification, refund_pending, net_earnings, then the
+    # card-path scalars (card_total, card_confirmed, card_completed,
+    # card_revenue, card_refund_pending)
+    fake_session.scalar = AsyncMock(
+        side_effect=[1, 0, 0, 2000, 0, 0, 1800, 0, 0, 0, 0, 0]
+    )
 
     result = await get_host_earnings(fake_session, "host-1")
     assert result["per_unit"][0]["unit_id"] == "unit-1"
@@ -213,8 +230,14 @@ async def test_get_host_earnings_refund_reconciliation(
     per_unit_row.unit_id = "unit-1"
     per_unit_row.booking_count = 1
     per_unit_row.revenue = 10000
+    card_net_result = MagicMock()
+    card_net_result.all = MagicMock(return_value=[])
+
     per_unit_result = MagicMock()
     per_unit_result.all = MagicMock(return_value=[per_unit_row])
+
+    card_per_unit_result = MagicMock()
+    card_per_unit_result.all = MagicMock(return_value=[])
 
     title_row = MagicMock()
     title_row.title_ar = "شقة"
@@ -226,12 +249,20 @@ async def test_get_host_earnings_refund_reconciliation(
     cover_result.scalar_one_or_none = MagicMock(return_value=None)
 
     fake_session.execute = AsyncMock(
-        side_effect=[unit_ids_result, per_unit_result, title_result, cover_result]
+        side_effect=[
+            unit_ids_result,
+            card_net_result,
+            per_unit_result,
+            card_per_unit_result,
+            title_result,
+            cover_result,
+        ]
     )
     # total_bookings=1, confirmed=0, completed=0, revenue=10000,
-    # pending_verification=0, refund_pending=4000, net_earnings=6000
+    # pending_verification=0, refund_pending=4000, net_earnings=6000,
+    # card-path scalars all zero
     fake_session.scalar = AsyncMock(
-        side_effect=[1, 0, 0, 10000, 0, 4000, 6000]
+        side_effect=[1, 0, 0, 10000, 0, 4000, 6000, 0, 0, 0, 0, 0]
     )
 
     result = await get_host_earnings(fake_session, "host-1")
@@ -240,6 +271,65 @@ async def test_get_host_earnings_refund_reconciliation(
     assert result["refund_pending_egp"] == 4000
     assert result["net_earnings_egp"] == 6000
     assert result["per_unit"][0]["revenue_egp"] == 10000
+
+
+@pytest.mark.asyncio
+async def test_get_host_earnings_includes_card_reservations(
+    fake_session: AsyncMock,
+) -> None:
+    """Regression: Paymob/Stripe card reservations flow through
+    reservation.payment_intents, not payments.payments — host earnings must
+    count them or a captured card booking shows zero revenue."""
+    unit_ids_result = MagicMock()
+    unit_ids_result.all = MagicMock(return_value=[("unit-1",)])
+
+    card_net_result = MagicMock()
+    card_net_result.all = MagicMock(return_value=[(3000,)])
+
+    per_unit_result = MagicMock()
+    per_unit_result.all = MagicMock(return_value=[])
+
+    card_per_unit_row = MagicMock()
+    card_per_unit_row.unit_id = "unit-1"
+    card_per_unit_row.booking_count = 1
+    card_per_unit_row.revenue = 3000
+    card_per_unit_result = MagicMock()
+    card_per_unit_result.all = MagicMock(return_value=[card_per_unit_row])
+
+    title_row = MagicMock()
+    title_row.title_ar = None
+    title_row.title_en = "Card Unit"
+    title_result = MagicMock()
+    title_result.one_or_none = MagicMock(return_value=title_row)
+
+    cover_result = MagicMock()
+    cover_result.scalar_one_or_none = MagicMock(return_value=None)
+
+    fake_session.execute = AsyncMock(
+        side_effect=[
+            unit_ids_result,
+            card_net_result,
+            per_unit_result,
+            card_per_unit_result,
+            title_result,
+            cover_result,
+        ]
+    )
+    # legacy scalars all zero; card-path: total=1, confirmed=1, completed=0,
+    # revenue=3000, refund_pending=0
+    fake_session.scalar = AsyncMock(
+        side_effect=[0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 3000, 0]
+    )
+
+    result = await get_host_earnings(fake_session, "host-1")
+
+    assert result["total_bookings"] == 1
+    assert result["confirmed_bookings"] == 1
+    assert result["total_revenue_egp"] == 3000
+    assert result["net_earnings_egp"] == 3000
+    assert result["per_unit"][0]["unit_id"] == "unit-1"
+    assert result["per_unit"][0]["booking_count"] == 1
+    assert result["per_unit"][0]["revenue_egp"] == 3000
 
 
 @pytest.mark.asyncio

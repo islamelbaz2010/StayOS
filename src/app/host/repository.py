@@ -19,6 +19,11 @@ from app.listings.cohost_models import ListingReadinessCheck, UnitCoHost
 from app.listings.models import Unit, UnitListing, UnitPhoto
 from app.payments.constants import PaymentStatus
 from app.payments.models import Payment
+from app.reservations.constants import (
+    PaymentStatus as IntentPaymentStatus,
+    ReservationStatus,
+)
+from app.reservations.models import PaymentIntent, Reservation
 
 
 async def create_co_host(
@@ -291,6 +296,78 @@ async def get_host_earnings(
     )
     net_earnings = int(net_earnings or 0)
 
+    # Card-path reservations (Paymob/Stripe PaymentIntent) live outside the
+    # manual proof-upload payments table — without this union a confirmed
+    # card booking is invisible in host earnings even though its funds are
+    # collected and held.
+    card_booking_statuses = {
+        ReservationStatus.CONFIRMED,
+        ReservationStatus.CHECKED_IN,
+        ReservationStatus.CHECKED_OUT,
+        ReservationStatus.COMPLETED,
+    }
+    card_settled_statuses = {
+        IntentPaymentStatus.CAPTURED,
+        IntentPaymentStatus.REFUND_PENDING,
+        IntentPaymentStatus.REFUNDED,
+    }
+
+    card_total = await session.scalar(
+        select(func.count(Reservation.id))
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(Unit.host_id == host_id)
+    )
+    total_bookings += int(card_total or 0)
+
+    card_confirmed = await session.scalar(
+        select(func.count(Reservation.id))
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(Unit.host_id == host_id, Reservation.status.in_(card_booking_statuses))
+    )
+    confirmed_bookings += int(card_confirmed or 0)
+
+    card_completed = await session.scalar(
+        select(func.count(Reservation.id))
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(Unit.host_id == host_id, Reservation.checked_out_at.is_not(None))
+    )
+    completed_stays += int(card_completed or 0)
+
+    card_revenue = await session.scalar(
+        select(func.coalesce(func.sum(PaymentIntent.amount_egp), 0))
+        .join(Reservation, PaymentIntent.reservation_id == Reservation.id)
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(Unit.host_id == host_id, PaymentIntent.status.in_(card_settled_statuses))
+    )
+    revenue += int(card_revenue or 0)
+
+    card_refund_pending = await session.scalar(
+        select(func.coalesce(func.sum(Reservation.refund_amount_egp), 0))
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(
+            Unit.host_id == host_id,
+            Reservation.refund_amount_egp.isnot(None),
+            Reservation.id.in_(
+                select(PaymentIntent.reservation_id).where(
+                    PaymentIntent.status == IntentPaymentStatus.REFUND_PENDING
+                )
+            ),
+        )
+    )
+    refund_pending += int(card_refund_pending or 0)
+
+    card_net_rows = await session.execute(
+        select(
+            func.coalesce(func.sum(PaymentIntent.amount_egp), 0)
+            - func.coalesce(Reservation.refund_amount_egp, 0)
+        )
+        .join(Reservation, PaymentIntent.reservation_id == Reservation.id)
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(Unit.host_id == host_id, PaymentIntent.status.in_(card_settled_statuses))
+        .group_by(Reservation.id, Reservation.refund_amount_egp)
+    )
+    net_earnings += sum(int(row[0]) for row in card_net_rows.all())
+
     # Per-unit breakdown: same gross settled view as total_revenue.
     per_unit_result = await session.execute(
         select(
@@ -304,13 +381,37 @@ async def get_host_earnings(
         )
         .group_by(Payment.unit_id)
     )
-    per_unit: list[dict[str, Any]] = []
+    card_per_unit_result = await session.execute(
+        select(
+            Reservation.unit_id,
+            func.count(func.distinct(Reservation.id)).label("booking_count"),
+            func.coalesce(func.sum(PaymentIntent.amount_egp), 0).label("revenue"),
+        )
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .join(PaymentIntent, PaymentIntent.reservation_id == Reservation.id)
+        .where(Unit.host_id == host_id, PaymentIntent.status.in_(card_settled_statuses))
+        .group_by(Reservation.unit_id)
+    )
+    per_unit_totals: dict[str, dict[str, int]] = {}
     for row in per_unit_result.all():
+        per_unit_totals[row.unit_id] = {
+            "booking_count": int(row.booking_count),
+            "revenue": int(row.revenue),
+        }
+    for row in card_per_unit_result.all():
+        bucket = per_unit_totals.setdefault(
+            row.unit_id, {"booking_count": 0, "revenue": 0}
+        )
+        bucket["booking_count"] += int(row.booking_count)
+        bucket["revenue"] += int(row.revenue)
+
+    per_unit: list[dict[str, Any]] = []
+    for unit_id, totals in per_unit_totals.items():
         # Get unit title
         unit_result = await session.execute(
             select(UnitListing.title_ar, UnitListing.title_en)
             .join(Unit, Unit.id == UnitListing.unit_id)
-            .where(Unit.id == row.unit_id)
+            .where(Unit.id == unit_id)
         )
         title_row = unit_result.one_or_none()
         title = (title_row.title_ar if title_row else None) or (title_row.title_en if title_row else None)
@@ -318,18 +419,18 @@ async def get_host_earnings(
         # Get cover image for the unit
         cover_result = await session.execute(
             select(UnitPhoto.url)
-            .where(UnitPhoto.unit_id == row.unit_id, UnitPhoto.is_cover == True)
+            .where(UnitPhoto.unit_id == unit_id, UnitPhoto.is_cover)
             .order_by(UnitPhoto.display_order.asc())
             .limit(1)
         )
         cover_url = cover_result.scalar_one_or_none()
 
         per_unit.append({
-            "unit_id": row.unit_id,
+            "unit_id": unit_id,
             "unit_title": title,
             "unit_cover_image": cover_url,
-            "booking_count": row.booking_count,
-            "revenue_egp": int(row.revenue),
+            "booking_count": totals["booking_count"],
+            "revenue_egp": totals["revenue"],
         })
 
     return {

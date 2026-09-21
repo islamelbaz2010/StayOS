@@ -101,6 +101,7 @@ def test_hmac_matches_documented_field_concatenation() -> None:
             "false",  # pending
             "2346",
             "MasterCard",
+            "card",  # source_data.type
             "true",  # success
         ]
     )

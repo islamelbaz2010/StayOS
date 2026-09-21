@@ -32,6 +32,7 @@ _PAYMOB_HMAC_FIELDS: tuple[str, ...] = (
     "pending",
     "source_data.pan",
     "source_data.sub_type",
+    "source_data.type",
     "success",
 )
 

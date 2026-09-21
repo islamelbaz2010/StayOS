@@ -438,6 +438,47 @@ async def test_process_payout(fake_session: AsyncMock, monkeypatch) -> None:
     assert result.provider_ref == "paymob-ref-123"
 
 
+@pytest.mark.asyncio
+async def test_process_payout_provider_failure_persists_failed_state(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: a failed provider payout must return the FAILED payout so
+    the caller's transaction commits — raising rolled back the failure
+    bookkeeping and left the request pending with the wallet locked."""
+    from app.finance import providers as finance_providers
+    from app.finance import repository as finance_repository
+
+    payout = _make_payout()
+    host_wallet = _make_wallet(wallet_id=payout.wallet_id, owner_id=payout.host_id)
+    host_wallet.balance_egp = 2000
+    host_wallet.available_balance_egp = 0
+
+    monkeypatch.setattr(
+        finance_repository,
+        "get_payout_request_by_id",
+        AsyncMock(return_value=payout),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_wallet_by_id",
+        AsyncMock(return_value=host_wallet),
+    )
+    monkeypatch.setattr(
+        finance_providers,
+        "paymob_payout",
+        AsyncMock(return_value=(False, "Paymob API key not configured", 0)),
+    )
+
+    result = await finance_services.process_payout(fake_session, payout.id, "paymob")
+
+    assert result.status == PayoutStatus.FAILED
+    assert result.failure_reason == "Paymob API key not configured"
+    assert result.processed_at is not None
+    # request_payout reserved amount_egp (1000) from available; failure
+    # must release the reservation back to the wallet.
+    assert host_wallet.available_balance_egp == 1000
+
+
 def test_verify_paymob_hmac() -> None:
     payload = {"reservation_id": str(uuid.uuid4()), "amount_cents": "450000"}
     signature = providers.compute_paymob_signature(payload)

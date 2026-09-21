@@ -598,13 +598,16 @@ async def process_payout(
     if wallet is None:
         raise NotFoundError("Wallet not found")
     if wallet.balance_egp < payout.amount_egp:
+        # Return instead of raising: the caller's transaction boundary would
+        # roll back the FAILED status and the balance restoration on an
+        # exception, leaving the payout stuck in pending with funds locked.
         await finance_repository.update_payout_status(
             session, payout, PayoutStatus.FAILED, failure_reason="Insufficient balance"
         )
         wallet.available_balance_egp += payout.amount_egp
         session.add(wallet)
         await session.flush()
-        raise ConflictError("Insufficient wallet balance")
+        return payout
 
     await finance_repository.update_payout_status(
         session, payout, PayoutStatus.PROCESSING
@@ -630,13 +633,16 @@ async def process_payout(
         success, provider_ref, payout_fee = True, f"internal-{payout.id}", 0
 
     if not success:
+        # Return instead of raising so the FAILED status and restored
+        # available balance are committed rather than rolled back with the
+        # exception.
         await finance_repository.update_payout_status(
             session, payout, PayoutStatus.FAILED, failure_reason=provider_ref
         )
         wallet.available_balance_egp += payout.amount_egp
         session.add(wallet)
         await session.flush()
-        raise ConflictError(f"Payout failed: {provider_ref}")
+        return payout
 
     platform_wallet = await finance_repository.get_platform_wallet(session)
 

@@ -58,18 +58,19 @@ def process_pending_payouts(self: Any, batch_size: int = 50) -> int:
     async def _process_batch() -> int:
         processed = 0
         async with AsyncSessionLocal() as session:
-            result = await session.execute(
-                select(PayoutRequest)
-                .where(PayoutRequest.status == "pending")
-                .limit(batch_size)
-            )
-            payouts = result.scalars().all()
-            for payout in payouts:
-                try:
-                    await finance_services.process_payout(session, payout.id)
-                    processed += 1
-                except StayOSError:
-                    continue
+            async with session.begin():
+                result = await session.execute(
+                    select(PayoutRequest)
+                    .where(PayoutRequest.status == "pending")
+                    .limit(batch_size)
+                )
+                payouts = result.scalars().all()
+                for payout in payouts:
+                    try:
+                        await finance_services.process_payout(session, payout.id)
+                        processed += 1
+                    except StayOSError:
+                        continue
         return processed
 
     return asyncio.run(_process_batch())

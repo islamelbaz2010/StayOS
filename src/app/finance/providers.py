@@ -278,7 +278,6 @@ async def paymob_create_intention(
     # "egy_sk_test_…"), not only at position zero — match the marker
     # anywhere in the key.
     key = settings.PAYMOB_SECRET_KEY
-    is_test_key = "sk_test" in key
     is_live_key = "sk_live" in key
     if settings.ENVIRONMENT == "production" and not is_live_key:
         raise PaymentError(
@@ -298,6 +297,8 @@ async def paymob_create_intention(
         "extras": {"reservation_id": reservation_id},
         "expiration": 3600,
     }
+    if settings.PAYMOB_NOTIFICATION_URL:
+        payload["notification_url"] = settings.PAYMOB_NOTIFICATION_URL
     data = await _paymob_intention_post(payload)
 
     intention_id = data.get("id")

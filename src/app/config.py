@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     PAYMOB_IFRAME_ID: int | None = Field(
         default=None, description="Paymob iframe id for hosted checkout"
     )
+    PAYMOB_NOTIFICATION_URL: str = Field(
+        default="",
+        description="Paymob transaction-processed callback URL sent per "
+        "intention (overrides dashboard callback config)",
+    )
 
     STRIPE_SECRET_KEY: str = Field(default="", description="Stripe secret key")
     STRIPE_WEBHOOK_SECRET: str = Field(

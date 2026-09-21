@@ -219,6 +219,30 @@ async def test_intention_payload_and_checkout_url(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_intention_notification_url_when_configured(monkeypatch) -> None:
+    _configure_intention(monkeypatch)
+    monkeypatch.setattr(
+        providers.settings,
+        "PAYMOB_NOTIFICATION_URL",
+        "https://api.example.com/api/v1/finance/webhooks/paymob",
+    )
+    await providers.create_paymob_payment("res-42", 4500)
+    body = _IntentionClient.last_request["json"]
+    assert body["notification_url"] == (
+        "https://api.example.com/api/v1/finance/webhooks/paymob"
+    )
+
+
+@pytest.mark.asyncio
+async def test_intention_notification_url_omitted_when_unset(monkeypatch) -> None:
+    _configure_intention(monkeypatch)
+    monkeypatch.setattr(providers.settings, "PAYMOB_NOTIFICATION_URL", "")
+    await providers.create_paymob_payment("res-42", 4500)
+    body = _IntentionClient.last_request["json"]
+    assert "notification_url" not in body
+
+
+@pytest.mark.asyncio
 async def test_intention_test_key_rejected_in_production(monkeypatch) -> None:
     _configure_intention(monkeypatch, env="production")
     with pytest.raises(PaymentError, match="test credentials"):

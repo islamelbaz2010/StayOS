@@ -144,18 +144,32 @@ async def test_create_reservation(fake_session: AsyncMock, monkeypatch) -> None:
     repo = _mock_repository(monkeypatch)
     repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
     repo.get_calendar_rules_in_range = AsyncMock(return_value=[])
-    repo.create_payment_intent = AsyncMock(
-        return_value=PaymentIntent(
-            id=str(uuid.uuid4()),
-            reservation_id="res-1",
-            provider="paymob",
-            provider_ref="ref-1",
-            amount_egp=4500,
-            status=PaymentStatus.PENDING,
-        )
+    intent = PaymentIntent(
+        id=str(uuid.uuid4()),
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="ref-1",
+        amount_egp=4500,
+        status=PaymentStatus.PENDING,
     )
+    repo.create_payment_intent = AsyncMock(return_value=intent)
     repo.acquire_calendar_lock = AsyncMock()
     repo.write_booking_event = AsyncMock()
+
+    created: dict[str, object] = {}
+    fake_session.add.side_effect = lambda obj: created.setdefault(
+        "reservation", obj
+    )
+
+    async def _load_relations(session, reservation_id):
+        reservation = created["reservation"]
+        reservation.payment_intents = [intent]
+        reservation.promo_applications = []
+        return reservation
+
+    repo.get_reservation_with_relations = AsyncMock(
+        side_effect=_load_relations
+    )
 
     request = ReservationCreate(
         unit_id="unit-1",

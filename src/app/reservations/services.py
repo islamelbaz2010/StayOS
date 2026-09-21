@@ -321,7 +321,14 @@ async def create_reservation(
         },
     )
 
-    return _to_response(reservation, user)
+    # AsyncSession cannot lazy-load relationships — re-fetch with eager
+    # loading before serializing the response.
+    loaded = await reservations_repository.get_reservation_with_relations(
+        session, reservation.id
+    )
+    if loaded is None:  # pragma: no cover - defensive; row was just flushed
+        raise NotFoundError("Reservation not found after creation")
+    return _to_response(loaded, user)
 
 
 async def get_reservation(

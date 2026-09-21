@@ -770,6 +770,9 @@ async def test_create_paymob_payment_production(monkeypatch) -> None:
 
     monkeypatch.setattr(finance_providers.settings, "ENVIRONMENT", "development")
     monkeypatch.setattr(finance_providers.settings, "PAYMOB_API_KEY", "test-key")
+    # Force the legacy flow — the Intention API is preferred when a secret
+    # key is configured.
+    monkeypatch.setattr(finance_providers.settings, "PAYMOB_SECRET_KEY", "")
     monkeypatch.setattr(finance_providers.settings, "PAYMOB_INTEGRATION_ID", 12345)
     monkeypatch.setattr(finance_providers.settings, "PAYMOB_IFRAME_ID", 67890)
 

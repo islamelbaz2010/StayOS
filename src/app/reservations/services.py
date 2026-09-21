@@ -390,6 +390,7 @@ async def _confirm_reservation(
     provider_ref: str,
     provider_metadata: dict[str, Any] | None = None,
     admin_override: bool = False,
+    expected_amount_egp: int | None = None,
 ) -> ReservationResponse:
     reservation = await reservations_repository.get_reservation_with_relations(
         session, reservation_id
@@ -399,23 +400,44 @@ async def _confirm_reservation(
     if reservation.status != ReservationStatus.PENDING_PAYMENT:
         raise ValidationError("Reservation is not awaiting payment")
 
+    # The callback's provider ref is the transaction/order id, which does
+    # not equal the stored intent ref when the Payment Intention API is
+    # used (provider_ref = intention id). Fall back to the reservation's
+    # non-terminal intent for the same provider.
     intent = await reservations_repository.get_payment_intent_by_provider_ref(
         session, provider_ref
     )
     if intent is None:
+        intent = next(
+            (
+                pi
+                for pi in reservation.payment_intents
+                if pi.provider == provider
+                and pi.status in (PaymentStatus.PENDING, PaymentStatus.CAPTURED)
+            ),
+            None,
+        )
+    if intent is None:
         raise NotFoundError("Payment intent not found")
     if intent.reservation_id != reservation_id:
         raise ValidationError("Payment intent does not belong to reservation")
+
+    if (
+        expected_amount_egp is not None
+        and expected_amount_egp != intent.amount_egp
+    ):
+        raise ValidationError("Callback amount does not match the reservation")
 
     if intent.status == PaymentStatus.CAPTURED:
         return _to_response(reservation)
 
     intent.status = PaymentStatus.CAPTURED
     intent.captured_at = datetime.now(UTC)
+    merged = intent.provider_metadata or {}
     if provider_metadata:
-        merged = intent.provider_metadata or {}
         merged.update(provider_metadata)
-        intent.provider_metadata = merged
+    merged["transaction_ref"] = provider_ref
+    intent.provider_metadata = merged
     session.add(intent)
 
     reservation.status = ReservationStatus.CONFIRMED
@@ -466,6 +488,7 @@ async def confirm_reservation_by_provider(
     provider: str,
     provider_ref: str,
     provider_metadata: dict[str, Any] | None = None,
+    expected_amount_egp: int | None = None,
 ) -> ReservationResponse:
     return await _confirm_reservation(
         session,
@@ -474,6 +497,7 @@ async def confirm_reservation_by_provider(
         provider_ref,
         provider_metadata=provider_metadata,
         admin_override=False,
+        expected_amount_egp=expected_amount_egp,
     )
 
 
@@ -504,6 +528,17 @@ async def fail_reservation_by_provider(
     intent = await reservations_repository.get_payment_intent_by_provider_ref(
         session, provider_ref
     )
+    if intent is None:
+        # Same provider-ref mismatch as the confirmation path — the callback
+        # carries the transaction id, not the stored intention/order ref.
+        intent = next(
+            (
+                pi
+                for pi in reservation.payment_intents
+                if pi.status == PaymentStatus.PENDING
+            ),
+            None,
+        )
     if intent is not None and intent.reservation_id == reservation_id:
         if intent.status == PaymentStatus.CAPTURED:
             return _to_response(reservation)

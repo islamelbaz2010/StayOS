@@ -149,3 +149,46 @@ duplicate-safe; payout cannot run before eligibility.
 
 Config boundaries ensure no live financial operation can occur until
 prerequisites exist; placeholder account values are never production-usable.
+
+## 8. Paymob provider integration (TEST sandbox)
+
+Paymob is the primary Egypt-alpha provider (FD-01/FD-25). Integration is
+configuration-gated — no live payment can occur until production
+credentials exist.
+
+- **Flow:** backend → Payment Intention API (`/v1/intention/`) → Paymob
+  unified checkout URL (`publicKey` + `client_secret`) → guest pays →
+  transaction processed callback → HMAC-SHA512 verify → idempotent
+  reconciliation → existing reservation/finance states.
+- **TEST integration id:** `5935386` (set via `PAYMOB_INTEGRATION_ID` —
+  config-driven, never hardcoded). EGP only.
+- **Amount:** server-authoritative — always the canonical
+  `reservation.total_amount_egp` in minor units; the client never supplies
+  an amount.
+- **Callback hardening** (`POST /finance/webhooks/paymob`): HMAC-SHA512
+  over Paymob's ordered transaction fields via the `hmac` query param;
+  integration-id match against configured id; currency must be EGP;
+  amount must equal the stored intent; reservation/provider-ref
+  correlation falls back to the reservation's pending intent (callback
+  carries the transaction id, the stored ref is the intention id);
+  Redis idempotency on transaction ref; success → CAPTURED + CONFIRMED +
+  `payment.captured`/`reservation.confirmed` events → finance consumers.
+  Failure → FAILED + pending reservation cancelled + lock released.
+- **Environment separation:** `sk_test_*` keys refuse to run in
+  production; `sk_live_*` keys refuse to run elsewhere. Missing config
+  fails closed.
+
+### Variables (names only — values live in Railway)
+
+| Variable | Purpose |
+|----------|---------|
+| `PAYMOB_SECRET_KEY` | Intention API auth (`sk_test_*`/`sk_live_*`) — backend only |
+| `PAYMOB_PUBLIC_KEY` | Unified checkout URL (`pk_test_*`/`pk_live_*`) — safe to expose |
+| `PAYMOB_HMAC_SECRET` | Callback HMAC-SHA512 verification — backend only |
+| `PAYMOB_INTEGRATION_ID` | TEST integration `5935386` |
+| `PAYMOB_IFRAME_ID` | Legacy iframe fallback |
+| `PAYMOB_API_KEY` | Legacy auth-token flow / disburse calls |
+
+Production Paymob merchant approval, production credentials, payout
+onboarding, and legal/accounting/CBE characterization remain external
+blockers — unchanged.

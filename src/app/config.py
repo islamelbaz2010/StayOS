@@ -37,7 +37,20 @@ class Settings(BaseSettings):
         description="Akedly REST API base URL (V1.2 — Shield: PoW + Turnstile + pipeline rate limiting)",
     )
 
-    PAYMOB_API_KEY: str = Field(default="", description="Paymob API key")
+    PAYMOB_API_KEY: str = Field(
+        default="",
+        description="Paymob legacy API key (auth-token flow + disburse calls)",
+    )
+    PAYMOB_SECRET_KEY: str = Field(
+        default="",
+        description="Paymob secret key (sk_test_*/sk_live_*) for the Payment "
+        "Intention API — backend only, never exposed to clients",
+    )
+    PAYMOB_PUBLIC_KEY: str = Field(
+        default="",
+        description="Paymob public key (pk_test_*/pk_live_*) embedded in the "
+        "unified checkout URL — safe to expose",
+    )
     PAYMOB_HMAC_SECRET: str = Field(default="", description="Paymob HMAC secret")
     PAYMOB_INTEGRATION_ID: int | None = Field(
         default=None, description="Paymob payment integration id"

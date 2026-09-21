@@ -213,13 +213,36 @@ async def paymob_webhook(
 ) -> WebhookResponse:
     body = await request.body()
     payload = json.loads(body)
-    signature = request.headers.get("x-paymob-hmac") or request.headers.get(
-        "x-paymob-signature"
+    # Paymob delivers the HMAC as an `hmac` query parameter on transaction
+    # processed callbacks and checkout redirects; header fallbacks kept for
+    # compatibility.
+    signature = (
+        request.query_params.get("hmac")
+        or request.headers.get("x-paymob-hmac")
+        or request.headers.get("x-paymob-signature")
     )
 
     if not providers.verify_paymob_hmac(payload, signature):
         logger.warning("Invalid Paymob webhook signature")
         raise to_http_exception(AuthenticationError("Invalid Paymob signature"))
+
+    # Integration + currency validation before any state change — a callback
+    # for a different merchant integration or currency must never reconcile.
+    integration_id = providers.extract_paymob_integration_id(payload)
+    if (
+        settings.PAYMOB_INTEGRATION_ID is not None
+        and integration_id is not None
+        and integration_id != str(settings.PAYMOB_INTEGRATION_ID)
+    ):
+        logger.warning(
+            "Paymob webhook for foreign integration %s ignored", integration_id
+        )
+        return WebhookResponse(message="ignored")
+
+    currency = providers.extract_paymob_currency(payload)
+    if currency is not None and currency.upper() != "EGP":
+        logger.warning("Paymob webhook non-EGP currency %s ignored", currency)
+        return WebhookResponse(message="ignored")
 
     reservation_id = providers.extract_paymob_reservation_id(payload)
     provider_ref = providers.extract_paymob_provider_ref(payload)
@@ -257,7 +280,8 @@ async def paymob_webhook(
             reservation_id,
             PaymentProvider.PAYMOB.value,
             provider_ref,
-            provider_metadata={"raw_payload": payload, "amount_egp": amount},
+            provider_metadata={"amount_egp": amount},
+            expected_amount_egp=amount,
         )
     except NotFoundError:
         logger.warning("Reservation not found for Paymob webhook: %s", reservation_id)

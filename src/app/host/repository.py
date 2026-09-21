@@ -21,6 +21,8 @@ from app.payments.constants import PaymentStatus
 from app.payments.models import Payment
 from app.reservations.constants import (
     PaymentStatus as IntentPaymentStatus,
+)
+from app.reservations.constants import (
     ReservationStatus,
 )
 from app.reservations.models import PaymentIntent, Reservation
@@ -314,6 +316,7 @@ async def get_host_earnings(
 
     card_total = await session.scalar(
         select(func.count(Reservation.id))
+        .select_from(Reservation)
         .join(Unit, Reservation.unit_id == Unit.id)
         .where(Unit.host_id == host_id)
     )
@@ -321,6 +324,7 @@ async def get_host_earnings(
 
     card_confirmed = await session.scalar(
         select(func.count(Reservation.id))
+        .select_from(Reservation)
         .join(Unit, Reservation.unit_id == Unit.id)
         .where(Unit.host_id == host_id, Reservation.status.in_(card_booking_statuses))
     )
@@ -328,6 +332,7 @@ async def get_host_earnings(
 
     card_completed = await session.scalar(
         select(func.count(Reservation.id))
+        .select_from(Reservation)
         .join(Unit, Reservation.unit_id == Unit.id)
         .where(Unit.host_id == host_id, Reservation.checked_out_at.is_not(None))
     )
@@ -335,6 +340,7 @@ async def get_host_earnings(
 
     card_revenue = await session.scalar(
         select(func.coalesce(func.sum(PaymentIntent.amount_egp), 0))
+        .select_from(PaymentIntent)
         .join(Reservation, PaymentIntent.reservation_id == Reservation.id)
         .join(Unit, Reservation.unit_id == Unit.id)
         .where(Unit.host_id == host_id, PaymentIntent.status.in_(card_settled_statuses))
@@ -343,6 +349,7 @@ async def get_host_earnings(
 
     card_refund_pending = await session.scalar(
         select(func.coalesce(func.sum(Reservation.refund_amount_egp), 0))
+        .select_from(Reservation)
         .join(Unit, Reservation.unit_id == Unit.id)
         .where(
             Unit.host_id == host_id,
@@ -361,6 +368,7 @@ async def get_host_earnings(
             func.coalesce(func.sum(PaymentIntent.amount_egp), 0)
             - func.coalesce(Reservation.refund_amount_egp, 0)
         )
+        .select_from(PaymentIntent)
         .join(Reservation, PaymentIntent.reservation_id == Reservation.id)
         .join(Unit, Reservation.unit_id == Unit.id)
         .where(Unit.host_id == host_id, PaymentIntent.status.in_(card_settled_statuses))
@@ -387,6 +395,7 @@ async def get_host_earnings(
             func.count(func.distinct(Reservation.id)).label("booking_count"),
             func.coalesce(func.sum(PaymentIntent.amount_egp), 0).label("revenue"),
         )
+        .select_from(Reservation)
         .join(Unit, Reservation.unit_id == Unit.id)
         .join(PaymentIntent, PaymentIntent.reservation_id == Reservation.id)
         .where(Unit.host_id == host_id, PaymentIntent.status.in_(card_settled_statuses))

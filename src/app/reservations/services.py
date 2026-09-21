@@ -181,8 +181,11 @@ async def _get_host_id_for_reservation(
 
 
 def _payment_method_to_provider(method: PaymentMethod) -> str:
-    # Local payment methods route through Paymob in Phase 1.
-    # Cards can be routed to Stripe when a Stripe secret key is configured.
+    # Paymob is the primary Egypt-alpha provider (FD-01). Stripe remains
+    # dormant legacy — it only handles card payments when Paymob is not
+    # configured at all.
+    if settings.PAYMOB_SECRET_KEY or settings.PAYMOB_API_KEY:
+        return PaymentProvider.PAYMOB
     if method == PaymentMethod.CARD and settings.STRIPE_SECRET_KEY:
         return PaymentProvider.STRIPE
     return PaymentProvider.PAYMOB

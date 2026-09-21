@@ -274,12 +274,17 @@ async def paymob_create_intention(
 
     # Environment separation: a test key must never charge in production and
     # a live key must never run in non-production. Fail closed on mismatch.
-    is_test_key = settings.PAYMOB_SECRET_KEY.startswith("sk_test_")
-    if settings.ENVIRONMENT == "production" and is_test_key:
+    # Paymob regional keys carry markers inside the token (e.g.
+    # "egy_sk_test_…"), not only at position zero — match the marker
+    # anywhere in the key.
+    key = settings.PAYMOB_SECRET_KEY
+    is_test_key = "sk_test" in key
+    is_live_key = "sk_live" in key
+    if settings.ENVIRONMENT == "production" and not is_live_key:
         raise PaymentError(
             "Paymob test credentials cannot be used in production"
         )
-    if settings.ENVIRONMENT != "production" and not is_test_key:
+    if settings.ENVIRONMENT != "production" and is_live_key:
         raise PaymentError(
             "Paymob live credentials cannot be used outside production"
         )

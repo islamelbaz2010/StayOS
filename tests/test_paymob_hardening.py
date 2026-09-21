@@ -234,6 +234,29 @@ async def test_intention_live_key_rejected_outside_production(monkeypatch) -> No
 
 
 @pytest.mark.asyncio
+async def test_intention_egy_regional_test_key_accepted(monkeypatch) -> None:
+    # Paymob Egypt-region keys carry the marker inside the token.
+    _configure_intention(monkeypatch)
+    monkeypatch.setattr(
+        providers.settings, "PAYMOB_SECRET_KEY", "egy_sk_test_abcd1234"
+    )
+    result = await providers.create_paymob_payment("res-42", 4500)
+    assert result["order_id"] == "intention-1"
+
+
+@pytest.mark.asyncio
+async def test_intention_egy_regional_test_key_rejected_in_production(
+    monkeypatch,
+) -> None:
+    _configure_intention(monkeypatch, env="production")
+    monkeypatch.setattr(
+        providers.settings, "PAYMOB_SECRET_KEY", "egy_sk_test_abcd1234"
+    )
+    with pytest.raises(PaymentError, match="test credentials"):
+        await providers.create_paymob_payment("res-42", 4500)
+
+
+@pytest.mark.asyncio
 async def test_intention_missing_secret_key(monkeypatch) -> None:
     monkeypatch.setattr(providers.settings, "ENVIRONMENT", "development")
     monkeypatch.setattr(providers.settings, "PAYMOB_SECRET_KEY", "")
@@ -368,6 +391,36 @@ def test_webhook_failed_payment(finance_client, monkeypatch) -> None:
     resp = _post_webhook(finance_client, payload, sig)
     assert resp.json()["message"] == "failed"
     fail.assert_awaited_once()
+
+
+# ---------------------------------------------------------------------------
+# Provider routing — Paymob primary (FD-01), Stripe dormant fallback
+# ---------------------------------------------------------------------------
+
+
+def test_provider_routing_paymob_wins_when_configured(monkeypatch) -> None:
+    from app.reservations import services as res_svc
+    from app.reservations.constants import PaymentMethod, PaymentProvider
+
+    monkeypatch.setattr(res_svc.settings, "PAYMOB_SECRET_KEY", "sk_test_x")
+    monkeypatch.setattr(res_svc.settings, "STRIPE_SECRET_KEY", "sk_test_y")
+    # Even card bookings go to Paymob while Paymob is configured.
+    for method in PaymentMethod:
+        assert res_svc._payment_method_to_provider(method) == PaymentProvider.PAYMOB
+
+
+def test_provider_routing_stripe_fallback_for_card(monkeypatch) -> None:
+    from app.reservations import services as res_svc
+    from app.reservations.constants import PaymentMethod, PaymentProvider
+
+    monkeypatch.setattr(res_svc.settings, "PAYMOB_SECRET_KEY", "")
+    monkeypatch.setattr(res_svc.settings, "PAYMOB_API_KEY", "")
+    monkeypatch.setattr(res_svc.settings, "STRIPE_SECRET_KEY", "sk_test_y")
+    assert res_svc._payment_method_to_provider(PaymentMethod.CARD) == PaymentProvider.STRIPE
+    assert (
+        res_svc._payment_method_to_provider(PaymentMethod.VODAFONE_CASH)
+        == PaymentProvider.PAYMOB
+    )
 
 
 # ---------------------------------------------------------------------------

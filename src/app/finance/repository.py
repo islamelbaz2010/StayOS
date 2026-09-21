@@ -148,12 +148,11 @@ async def _update_balance(
         return new_balance
 
     if escrow is not None:
-        current = escrow.amount_egp
-        # Escrow is a liability account.
-        new_balance = current - amount if entry_type == LedgerEntryType.DEBIT else current + amount
-        escrow.amount_egp = new_balance
-        session.add(escrow)
-        return new_balance
+        # escrow.amount_egp is the held principal, not a running balance —
+        # release/refund read it to size the payout, so ledger posting must
+        # never mutate it. The escrow liability equals the principal once
+        # funded and zero once released/refunded (a DEBIT).
+        return 0 if entry_type == LedgerEntryType.DEBIT else escrow.amount_egp
 
     return 0
 

@@ -27,6 +27,8 @@ from .constants import PaymentProvider
 from .schemas import (
     EscrowListResponse,
     LedgerListResponse,
+    PaymentIntentRefundRequest,
+    PaymentIntentRefundResponse,
     PayoutListResponse,
     PayoutProcessRequest,
     PayoutRequestCreate,
@@ -202,6 +204,37 @@ async def process_payout_endpoint(
             session, payout_id, request.provider
         )
         return PayoutRequestResponse.model_validate(payout)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post(
+    "/payment-intents/{intent_id}/refund",
+    response_model=PaymentIntentRefundResponse,
+)
+async def refund_payment_intent_endpoint(
+    intent_id: str,
+    request: PaymentIntentRefundRequest,
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
+    session: AsyncSession = Depends(get_session),
+) -> PaymentIntentRefundResponse:
+    """Issue/reconcile the provider refund for a refund-pending card intent.
+
+    The intent flips to refunded only when Paymob confirms the refund —
+    fail-closed by design.
+    """
+    try:
+        intent = await reservations_services.reconcile_provider_refund(
+            session,
+            intent_id,
+            provider_transaction_id=request.provider_transaction_id,
+        )
+        merged = intent.provider_metadata or {}
+        return PaymentIntentRefundResponse(
+            payment_intent_id=str(intent.id),
+            status=intent.status,
+            refund_provider_ref=merged.get("refund_provider_ref"),
+        )
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

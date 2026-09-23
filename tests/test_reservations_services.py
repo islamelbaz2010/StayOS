@@ -3,8 +3,6 @@ from datetime import UTC, date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from geoalchemy2.elements import WKTElement
-
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.config import settings
@@ -38,6 +36,7 @@ from app.shared.exceptions import (
     PaymentError,
     ValidationError,
 )
+from geoalchemy2.elements import WKTElement
 
 
 def _make_user(
@@ -392,6 +391,9 @@ async def test_confirm_reservation(fake_session: AsyncMock, monkeypatch) -> None
     )
     assert result.status == ReservationStatus.CONFIRMED
     assert intent.status == PaymentStatus.CAPTURED
+    # The provider transaction id must be persisted on the intent — provider
+    # refunds are addressed by transaction_ref, not the intention id.
+    assert intent.provider_metadata["transaction_ref"] == "ref-1"
 
 
 @pytest.mark.asyncio
@@ -565,12 +567,78 @@ async def test_cancel_reservation_stripe_refund_failure_propagates(
 
 
 @pytest.mark.asyncio
-async def test_cancel_reservation_paymob_marks_refund_pending_for_manual_reconciliation(
+async def test_cancel_reservation_paymob_issues_provider_refund(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
-    # Paymob has no automated refund integration in this codebase yet. The
-    # refund must not be silently reported as REFUNDED when no money has
-    # actually moved.
+    # With a persisted provider transaction id, cancellation issues the
+    # Paymob refund and marks the intent REFUNDED on provider success.
+    check_in = datetime.now(UTC).date() + timedelta(days=30)
+    reservation = _make_cancellable_reservation(
+        provider="paymob", check_in=check_in, created_at=datetime.now(UTC) - timedelta(days=2)
+    )
+    reservation.payment_intents[0].provider_metadata = {
+        "transaction_ref": "538949212"
+    }
+    repo = _mock_repository(monkeypatch)
+    repo.get_reservation_with_relations = AsyncMock(return_value=reservation)
+    repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
+    repo.release_calendar_lock = AsyncMock()
+    repo.write_booking_event = AsyncMock()
+    refund_mock = AsyncMock(
+        return_value={"id": 540324238, "success": True, "is_refund": True}
+    )
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.paymob_refund", refund_mock
+    )
+
+    result = await cancel_reservation(
+        fake_session, _make_user(), "res-1", ReservationCancelRequest(reason="change_of_plans")
+    )
+
+    assert result.status == ReservationStatus.CANCELLED
+    refund_mock.assert_awaited_once_with(
+        "538949212", reservation.refund_amount_egp * 100
+    )
+    assert reservation.payment_intents[0].status == PaymentStatus.REFUNDED
+
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_paymob_refund_failure_stays_pending(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    # Provider rejection must not mark the intent refunded — fail closed
+    # so finance can reconcile manually.
+    check_in = datetime.now(UTC).date() + timedelta(days=30)
+    reservation = _make_cancellable_reservation(
+        provider="paymob", check_in=check_in, created_at=datetime.now(UTC) - timedelta(days=2)
+    )
+    reservation.payment_intents[0].provider_metadata = {
+        "transaction_ref": "538949212"
+    }
+    repo = _mock_repository(monkeypatch)
+    repo.get_reservation_with_relations = AsyncMock(return_value=reservation)
+    repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
+    repo.release_calendar_lock = AsyncMock()
+    repo.write_booking_event = AsyncMock()
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.paymob_refund",
+        AsyncMock(side_effect=PaymentError("provider rejected")),
+    )
+
+    result = await cancel_reservation(
+        fake_session, _make_user(), "res-1", ReservationCancelRequest(reason="change_of_plans")
+    )
+
+    assert result.status == ReservationStatus.CANCELLED
+    assert reservation.payment_intents[0].status == PaymentStatus.REFUND_PENDING
+
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_paymob_without_transaction_ref_stays_pending(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    # Intents confirmed before transaction_ref was persisted cannot be
+    # refunded automatically — the provider transaction id is required.
     check_in = datetime.now(UTC).date() + timedelta(days=30)
     reservation = _make_cancellable_reservation(
         provider="paymob", check_in=check_in, created_at=datetime.now(UTC) - timedelta(days=2)
@@ -828,3 +896,194 @@ async def test_create_reservation_propagates_provider_failure(
     )
     with pytest.raises(PaymentError):
         await create_reservation(fake_session, _make_user(), request)
+
+
+@pytest.mark.asyncio
+async def test_reconcile_provider_refund_marks_refunded_on_provider_success(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.reservations.services import reconcile_provider_refund
+
+    intent = PaymentIntent(
+        id=str(uuid.uuid4()),
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="pi_test_x",
+        amount_egp=1500,
+        status=PaymentStatus.REFUND_PENDING,
+        provider_metadata={"transaction_ref": "538949212"},
+    )
+    reservation = Reservation(
+        id="res-1",
+        unit_id="unit-1",
+        guest_id="user-1",
+        status=str(ReservationStatus.CANCELLED),
+        check_in=date(2099, 8, 1),
+        check_out=date(2099, 8, 4),
+        adults=2,
+        children=0,
+        infants=0,
+        total_amount_egp=1500,
+        refund_amount_egp=1500,
+        payment_method="card",
+    )
+    fake_session.execute = AsyncMock(
+        side_effect=[MagicMock(scalar_one_or_none=lambda: intent),
+                     MagicMock(scalar_one_or_none=lambda: reservation)]
+    )
+    refund_mock = AsyncMock(
+        return_value={"id": 540324238, "success": True, "is_refund": True}
+    )
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.paymob_refund", refund_mock
+    )
+
+    result = await reconcile_provider_refund(fake_session, intent.id)
+
+    refund_mock.assert_awaited_once_with("538949212", 150000)
+    assert result.status == PaymentStatus.REFUNDED
+    assert result.provider_metadata["refund_provider_ref"] == "540324238"
+
+
+@pytest.mark.asyncio
+async def test_reconcile_provider_refund_uses_override_transaction_id(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.reservations.services import reconcile_provider_refund
+
+    intent = PaymentIntent(
+        id=str(uuid.uuid4()),
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="pi_test_x",
+        amount_egp=3000,
+        status=PaymentStatus.REFUND_PENDING,
+        provider_metadata=None,
+    )
+    reservation = Reservation(
+        id="res-1",
+        unit_id="unit-1",
+        guest_id="user-1",
+        status=str(ReservationStatus.CANCELLED),
+        check_in=date(2099, 8, 1),
+        check_out=date(2099, 8, 4),
+        adults=2,
+        children=0,
+        infants=0,
+        total_amount_egp=3000,
+        refund_amount_egp=3000,
+        payment_method="card",
+    )
+    fake_session.execute = AsyncMock(
+        side_effect=[MagicMock(scalar_one_or_none=lambda: intent),
+                     MagicMock(scalar_one_or_none=lambda: reservation)]
+    )
+    refund_mock = AsyncMock(return_value={"success": True, "already_refunded": True})
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.paymob_refund", refund_mock
+    )
+
+    result = await reconcile_provider_refund(
+        fake_session, intent.id, provider_transaction_id="538949212"
+    )
+
+    refund_mock.assert_awaited_once_with("538949212", 300000)
+    assert result.status == PaymentStatus.REFUNDED
+
+
+@pytest.mark.asyncio
+async def test_reconcile_provider_refund_rejects_non_pending_intent(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.reservations.services import reconcile_provider_refund
+
+    intent = PaymentIntent(
+        id=str(uuid.uuid4()),
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="pi_test_x",
+        amount_egp=1500,
+        status=PaymentStatus.CAPTURED,
+    )
+    fake_session.execute = AsyncMock(
+        return_value=MagicMock(scalar_one_or_none=lambda: intent)
+    )
+    refund_mock = AsyncMock()
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.paymob_refund", refund_mock
+    )
+
+    with pytest.raises(ValidationError):
+        await reconcile_provider_refund(fake_session, intent.id)
+    refund_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_reconcile_provider_refund_requires_transaction_ref(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.reservations.services import reconcile_provider_refund
+
+    intent = PaymentIntent(
+        id=str(uuid.uuid4()),
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="pi_test_x",
+        amount_egp=1500,
+        status=PaymentStatus.REFUND_PENDING,
+        provider_metadata=None,
+    )
+    fake_session.execute = AsyncMock(
+        return_value=MagicMock(scalar_one_or_none=lambda: intent)
+    )
+    refund_mock = AsyncMock()
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.paymob_refund", refund_mock
+    )
+
+    with pytest.raises(ValidationError):
+        await reconcile_provider_refund(fake_session, intent.id)
+    refund_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_reconcile_provider_refund_failure_keeps_pending(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.reservations.services import reconcile_provider_refund
+
+    intent = PaymentIntent(
+        id=str(uuid.uuid4()),
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="pi_test_x",
+        amount_egp=1500,
+        status=PaymentStatus.REFUND_PENDING,
+        provider_metadata={"transaction_ref": "999000111"},
+    )
+    reservation = Reservation(
+        id="res-1",
+        unit_id="unit-1",
+        guest_id="user-1",
+        status=str(ReservationStatus.CANCELLED),
+        check_in=date(2099, 8, 1),
+        check_out=date(2099, 8, 4),
+        adults=2,
+        children=0,
+        infants=0,
+        total_amount_egp=1500,
+        refund_amount_egp=1500,
+        payment_method="card",
+    )
+    fake_session.execute = AsyncMock(
+        side_effect=[MagicMock(scalar_one_or_none=lambda: intent),
+                     MagicMock(scalar_one_or_none=lambda: reservation)]
+    )
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.paymob_refund",
+        AsyncMock(side_effect=PaymentError("Transaction ID does not exist")),
+    )
+
+    with pytest.raises(PaymentError):
+        await reconcile_provider_refund(fake_session, intent.id)
+    assert intent.status == PaymentStatus.REFUND_PENDING

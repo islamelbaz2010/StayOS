@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.constants import KycStatus, UserRole
@@ -29,7 +30,7 @@ from .constants import (
     PaymentStatus,
     ReservationStatus,
 )
-from .models import Reservation
+from .models import PaymentIntent, Reservation
 from .schemas import (
     PaginationInfo,
     PaymentConfirmationRequest,
@@ -443,7 +444,10 @@ async def _confirm_reservation(
 
     intent.status = PaymentStatus.CAPTURED
     intent.captured_at = datetime.now(UTC)
-    merged = intent.provider_metadata or {}
+    # New dict object — reassigning the same mutated dict instance is not
+    # detected as a change on a plain JSON column, which silently dropped
+    # transaction_ref and made provider refunds impossible to locate.
+    merged = dict(intent.provider_metadata or {})
     if provider_metadata:
         merged.update(provider_metadata)
     merged["transaction_ref"] = provider_ref
@@ -686,18 +690,89 @@ async def _issue_refund(intent: Any, refund_amount: int, total_amount: int) -> P
             raise
         return PaymentStatus.REFUNDED
 
-    # Paymob refund API is not yet integrated in this codebase — no verified
-    # credentials/endpoint have been tested against it. FOUNDER DECISION
-    # NEEDED: activate/confirm the Paymob refund API before this can be
-    # automated. Until then, flag for manual finance reconciliation instead
-    # of falsely claiming the refund was issued.
+    # Paymob: the Accept secret key authorizes the refund endpoint directly
+    # (POST /api/acceptance/void_refund/refund — verified against the TEST
+    # account, txn 540324238). The provider transaction id is persisted as
+    # transaction_ref when the payment callback confirms the intent.
+    transaction_ref = (intent.provider_metadata or {}).get("transaction_ref")
+    if transaction_ref:
+        try:
+            await payment_providers.paymob_refund(
+                str(transaction_ref), refund_amount * 100
+            )
+        except PaymentError as exc:
+            # Fail closed: the refund is owed but the provider did not
+            # confirm it — keep REFUND_PENDING for finance reconciliation.
+            logger.error(
+                "Paymob refund failed for payment intent %s: %s",
+                intent.id,
+                exc,
+            )
+            return PaymentStatus.REFUND_PENDING
+        return PaymentStatus.REFUNDED
+
     logger.warning(
-        "Paymob refund not automated for payment intent %s; manual "
-        "reconciliation required (amount_egp=%s)",
+        "Paymob refund cannot be issued for payment intent %s: provider "
+        "transaction id not persisted; manual reconciliation required "
+        "(amount_egp=%s)",
         intent.id,
         refund_amount,
     )
     return PaymentStatus.REFUND_PENDING
+
+
+async def reconcile_provider_refund(
+    session: AsyncSession,
+    intent_id: str,
+    provider_transaction_id: str | None = None,
+) -> PaymentIntent:
+    """Reconcile a refund-pending card intent against the provider.
+
+    Issues the provider refund (or confirms an already-executed one) and
+    flips the intent to REFUNDED only on authoritative provider
+    confirmation — never before. Admin/finance use only.
+    """
+    result = await session.execute(
+        select(PaymentIntent).where(PaymentIntent.id == intent_id)
+    )
+    intent = result.scalar_one_or_none()
+    if intent is None:
+        raise NotFoundError("Payment intent not found")
+    if intent.status != PaymentStatus.REFUND_PENDING:
+        raise ValidationError(
+            "Only refund-pending payment intents can be reconciled"
+        )
+
+    txn_ref = provider_transaction_id or (intent.provider_metadata or {}).get(
+        "transaction_ref"
+    )
+    if not txn_ref:
+        raise ValidationError(
+            "Provider transaction id is required to reconcile this refund"
+        )
+
+    reservation = await session.execute(
+        select(Reservation).where(Reservation.id == intent.reservation_id)
+    )
+    reservation_row = reservation.scalar_one_or_none()
+    refund_amount = (
+        reservation_row.refund_amount_egp
+        if reservation_row and reservation_row.refund_amount_egp is not None
+        else intent.amount_egp
+    )
+
+    refund_result = await payment_providers.paymob_refund(
+        str(txn_ref), refund_amount * 100
+    )
+
+    intent.status = PaymentStatus.REFUNDED
+    merged = dict(intent.provider_metadata or {})
+    merged["refund_provider_ref"] = str(refund_result.get("id", txn_ref))
+    merged["refund_confirmed_at"] = datetime.now(UTC).isoformat()
+    intent.provider_metadata = merged
+    session.add(intent)
+    await session.flush()
+    return intent
 
 
 def _refund_policy_label(refund_amount: int, total_amount: int) -> str:

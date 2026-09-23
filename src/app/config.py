@@ -63,6 +63,24 @@ class Settings(BaseSettings):
         description="Paymob transaction-processed callback URL sent per "
         "intention (overrides dashboard callback config)",
     )
+    PAYMOB_PAYOUT_CLIENT_ID: str = Field(
+        default="",
+        description="Paymob Payouts OAuth2 client id (separately provisioned "
+        "product — Accept collection credentials do not authorize payouts)",
+    )
+    PAYMOB_PAYOUT_CLIENT_SECRET: str = Field(
+        default="", description="Paymob Payouts OAuth2 client secret"
+    )
+    PAYMOB_PAYOUT_USERNAME: str = Field(
+        default="", description="Paymob Payouts OAuth2 username"
+    )
+    PAYMOB_PAYOUT_PASSWORD: str = Field(
+        default="", description="Paymob Payouts OAuth2 password"
+    )
+    PAYMOB_PAYOUT_BASE_URL: str = Field(
+        default="https://stagingpayouts.paymobsolutions.com",
+        description="Paymob Payouts API base URL (staging or production host)",
+    )
 
     STRIPE_SECRET_KEY: str = Field(default="", description="Stripe secret key")
     STRIPE_WEBHOOK_SECRET: str = Field(

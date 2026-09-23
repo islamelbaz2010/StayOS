@@ -101,5 +101,18 @@ class EscrowListResponse(BaseResponse):
     data: list[EscrowResponse]
 
 
+class PaymentIntentRefundRequest(BaseModel):
+    # Optional override for intents whose provider transaction id was never
+    # persisted (pre-fix rows). When omitted the stored transaction_ref
+    # is used.
+    provider_transaction_id: str | None = None
+
+
+class PaymentIntentRefundResponse(BaseResponse):
+    payment_intent_id: str
+    status: str
+    refund_provider_ref: str | None = None
+
+
 class WebhookResponse(BaseResponse):
     message: str = "processed"

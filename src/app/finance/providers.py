@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import time
 from typing import Any, cast
+from uuid import uuid4
 
 import httpx
 
@@ -457,45 +458,141 @@ async def refund_stripe_payment(
         return await _stripe_post(client, "/refunds", payload)
 
 
+async def paymob_refund(
+    transaction_id: str, amount_cents: int
+) -> dict[str, Any]:
+    """Refund (full or partial) a captured Paymob transaction.
+
+    Uses the Accept secret key (``Authorization: Token``) — the same
+    credential that authorizes Payment Intention creation. Returns the
+    provider refund transaction payload. Raises PaymentError when the
+    provider rejects or the request cannot be completed.
+    """
+    if settings.ENVIRONMENT == "test":
+        return {
+            "id": f"paymob-refund-test-{transaction_id}",
+            "success": True,
+            "is_refund": True,
+        }
+    if not settings.PAYMOB_SECRET_KEY:
+        raise PaymentError("Paymob secret key not configured")
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                f"{_PAYMOB_BASE}/acceptance/void_refund/refund",
+                headers={
+                    "Authorization": f"Token {settings.PAYMOB_SECRET_KEY}"
+                },
+                json={
+                    "transaction_id": int(transaction_id),
+                    "amount_cents": amount_cents,
+                },
+            )
+        except httpx.HTTPError as exc:
+            raise PaymentError(f"Paymob refund request failed: {exc}") from exc
+
+    try:
+        data = response.json()
+    except ValueError as exc:
+        raise PaymentError(
+            f"Paymob refund returned invalid response ({response.status_code})"
+        ) from exc
+
+    if response.status_code in (200, 201) and data.get("success"):
+        return cast(dict[str, Any], data)
+
+    message = str(data.get("message", data))
+    if "already" in message.lower() and "refund" in message.lower():
+        # The provider confirms the money was already returned — the
+        # terminal state we need. Treat as reconciled, not an error.
+        return {"success": True, "already_refunded": True, "message": message}
+    raise PaymentError(
+        f"Paymob refund rejected ({response.status_code}): {message}"
+    )
+
+
 async def paymob_payout(
     host_id: str, amount_egp: int, bank_info: dict[str, Any]
 ) -> tuple[bool, str, int]:
-    """Request a disbursement through Paymob.
+    """Request a disbursement through Paymob Payouts.
+
+    Paymob Payouts ("Send") is a separately provisioned product from
+    Accept collections: it authenticates with OAuth2 password-grant
+    credentials (client id/secret + username/password) issued for the
+    Payouts portal, then disburses via ``/disburse/api/v1/disburse/
+    instant_cashin/``. The Accept API key does not authorize payouts.
 
     Returns (success, provider_ref_or_error, payout_fee_egp).
     """
-    if not settings.PAYMOB_API_KEY:
-        return False, "Paymob API key not configured", 0
-
     if settings.ENVIRONMENT == "test":
         return True, f"paymob-payout-{host_id}-{amount_egp}", 0
 
+    if not (
+        settings.PAYMOB_PAYOUT_CLIENT_ID
+        and settings.PAYMOB_PAYOUT_CLIENT_SECRET
+        and settings.PAYMOB_PAYOUT_USERNAME
+        and settings.PAYMOB_PAYOUT_PASSWORD
+    ):
+        return False, "Paymob Payout credentials not configured", 0
+
+    issuer = bank_info.get("issuer") or (
+        "bank_wallet" if bank_info.get("wallet_number") else "bank_card"
+    )
+    msisdn = bank_info.get("wallet_number") or bank_info.get("msisdn")
+    payload: dict[str, Any] = {
+        "issuer": issuer,
+        "amount": float(amount_egp),
+        "national_id": bank_info.get("national_id"),
+        "client_reference_id": str(uuid4()),
+    }
+    if msisdn:
+        payload["msisdn"] = msisdn
+    if bank_info.get("account_number") or bank_info.get("bank_card_number"):
+        payload["bank_card_number"] = (
+            bank_info.get("bank_card_number") or bank_info.get("account_number")
+        )
+    if bank_info.get("bank_code"):
+        payload["bank_code"] = bank_info["bank_code"]
+    if bank_info.get("full_name"):
+        payload["full_name"] = bank_info["full_name"]
+    if not payload.get("national_id"):
+        return False, "Paymob Payout requires recipient national_id", 0
+
+    base = settings.PAYMOB_PAYOUT_BASE_URL.rstrip("/")
     try:
-        # Paymob auth token step (simplified; real flow is two-step token then payout).
         async with httpx.AsyncClient(timeout=30.0) as client:
             token_response = await client.post(
-                "https://accept.paymob.com/api/auth/tokens",
-                json={"api_key": settings.PAYMOB_API_KEY},
+                f"{base}/o/token/",
+                data={
+                    "grant_type": "password",
+                    "username": settings.PAYMOB_PAYOUT_USERNAME,
+                    "password": settings.PAYMOB_PAYOUT_PASSWORD,
+                },
+                auth=(
+                    settings.PAYMOB_PAYOUT_CLIENT_ID,
+                    settings.PAYMOB_PAYOUT_CLIENT_SECRET,
+                ),
             )
             token_response.raise_for_status()
-            auth_token = token_response.json().get("token")
-            if not auth_token:
-                return False, "Paymob token missing", 0
+            access_token = token_response.json().get("access_token")
+            if not access_token:
+                return False, "Paymob Payout access token missing", 0
 
             payout_response = await client.post(
-                "https://accept.paymob.com/api/acceptance/disburse/",
-                json={
-                    "auth_token": auth_token,
-                    "amount": amount_egp * 100,  # Paymob expects piastres/cents.
-                    "currency": "EGP",
-                    "wallet_msisdn": bank_info.get("wallet_number")
-                    or bank_info.get("account_number"),
-                    "integration_id": settings.PAYMOB_INTEGRATION_ID,
-                },
+                f"{base}/disburse/api/v1/disburse/instant_cashin/",
+                headers={"Authorization": f"Bearer {access_token}"},
+                json=payload,
             )
             payout_response.raise_for_status()
             data = payout_response.json()
-            return True, str(data.get("id", data.get("transaction_id", ""))), 0
+            ref = (
+                data.get("transaction_id")
+                or data.get("reference")
+                or data.get("id")
+                or payload["client_reference_id"]
+            )
+            return True, str(ref), 0
     except httpx.HTTPError as exc:
         return False, f"Paymob payout HTTP error: {exc}", 0
     except Exception as exc:  # pragma: no cover - defensive fallback
@@ -521,7 +618,7 @@ async def stripe_payout(
 
 
 def _as_str(value: Any) -> str | None:
-    if isinstance(value, (str, int)):
+    if isinstance(value, str | int):
         return str(value)
     return None
 

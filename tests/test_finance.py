@@ -5,8 +5,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
-
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
@@ -24,6 +22,7 @@ from app.finance.constants import (
 from app.finance.models import EscrowAccount, FinancialTransaction, PayoutRequest, Wallet
 from app.main import app
 from app.shared.exceptions import PaymentError
+from fastapi.testclient import TestClient
 
 
 class _FakeResponse:
@@ -886,3 +885,117 @@ async def test_refund_stripe_payment_production(monkeypatch) -> None:
 
     result = await finance_providers.refund_stripe_payment("pi_1", 4500)
     assert result["status"] == "succeeded"
+
+
+class _StatusResponse:
+    def __init__(self, status_code: int, payload: object) -> None:
+        self.status_code = status_code
+        self._payload = payload
+
+    def raise_for_status(self) -> None:
+        return
+
+    def json(self) -> object:
+        return self._payload
+
+
+class _StatusClient:
+    responses: list[_StatusResponse] = []
+    last_request: dict[str, object] = {}
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        return
+
+    async def __aenter__(self) -> "_StatusClient":
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        return None
+
+    async def post(self, url: str, **kwargs: object) -> _StatusResponse:
+        _StatusClient.last_request = {"url": url, **kwargs}
+        return self.responses.pop(0)
+
+
+@pytest.mark.asyncio
+async def test_paymob_refund_success(monkeypatch) -> None:
+    from app.finance import providers as finance_providers
+
+    monkeypatch.setattr(finance_providers.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(
+        finance_providers.settings, "PAYMOB_SECRET_KEY", "sk_test_x"
+    )
+    _StatusClient.responses = [
+        _StatusResponse(201, {"id": 540324238, "success": True, "is_refund": True})
+    ]
+    monkeypatch.setattr(finance_providers.httpx, "AsyncClient", _StatusClient)
+
+    result = await finance_providers.paymob_refund("538949212", 150000)
+
+    assert result["success"] is True
+    req = _StatusClient.last_request
+    assert req["url"].endswith("/api/acceptance/void_refund/refund")
+    assert req["headers"]["Authorization"] == "Token sk_test_x"
+    assert req["json"] == {"transaction_id": 538949212, "amount_cents": 150000}
+
+
+@pytest.mark.asyncio
+async def test_paymob_refund_already_refunded_is_reconciled(monkeypatch) -> None:
+    from app.finance import providers as finance_providers
+
+    monkeypatch.setattr(finance_providers.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(
+        finance_providers.settings, "PAYMOB_SECRET_KEY", "sk_test_x"
+    )
+    _StatusClient.responses = [
+        _StatusResponse(400, {"message": "Full Amount has been already refunded"})
+    ]
+    monkeypatch.setattr(finance_providers.httpx, "AsyncClient", _StatusClient)
+
+    result = await finance_providers.paymob_refund("538949212", 150000)
+
+    assert result["success"] is True
+    assert result["already_refunded"] is True
+
+
+@pytest.mark.asyncio
+async def test_paymob_refund_rejection_raises(monkeypatch) -> None:
+    from app.finance import providers as finance_providers
+
+    monkeypatch.setattr(finance_providers.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(
+        finance_providers.settings, "PAYMOB_SECRET_KEY", "sk_test_x"
+    )
+    _StatusClient.responses = [
+        _StatusResponse(422, {"message": "Transaction ID does not exist in our system."})
+    ]
+    monkeypatch.setattr(finance_providers.httpx, "AsyncClient", _StatusClient)
+
+    with pytest.raises(PaymentError):
+        await finance_providers.paymob_refund("999999999", 1000)
+
+
+@pytest.mark.asyncio
+async def test_paymob_payout_fails_closed_without_payout_credentials(
+    monkeypatch,
+) -> None:
+    from app.finance import providers as finance_providers
+
+    monkeypatch.setattr(finance_providers.settings, "ENVIRONMENT", "staging")
+    monkeypatch.setattr(finance_providers.settings, "PAYMOB_PAYOUT_CLIENT_ID", "")
+    monkeypatch.setattr(
+        finance_providers.settings, "PAYMOB_PAYOUT_CLIENT_SECRET", ""
+    )
+    monkeypatch.setattr(finance_providers.settings, "PAYMOB_PAYOUT_USERNAME", "")
+    monkeypatch.setattr(finance_providers.settings, "PAYMOB_PAYOUT_PASSWORD", "")
+    client_mock = MagicMock()
+    monkeypatch.setattr(finance_providers.httpx, "AsyncClient", client_mock)
+
+    ok, ref, fee = await finance_providers.paymob_payout(
+        "host-1", 2640, {"wallet_number": "01000000000"}
+    )
+
+    assert ok is False
+    assert "credentials not configured" in ref
+    assert fee == 0
+    client_mock.assert_not_called()

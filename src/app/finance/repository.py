@@ -54,6 +54,18 @@ async def get_wallet_by_id(session: AsyncSession, wallet_id: str) -> Wallet | No
     return result.scalar_one_or_none()
 
 
+async def get_wallet_by_id_for_update(
+    session: AsyncSession, wallet_id: str
+) -> Wallet | None:
+    """Row-locking variant for balance mutations — concurrent payout
+    requests otherwise race on the check-then-decrement of
+    ``available_balance_egp`` and can overdraw the wallet."""
+    result = await session.execute(
+        select(Wallet).where(Wallet.id == wallet_id).with_for_update()
+    )
+    return result.scalar_one_or_none()
+
+
 async def get_escrow_by_reservation(
     session: AsyncSession, reservation_id: str
 ) -> EscrowAccount | None:
@@ -143,7 +155,18 @@ async def _update_balance(
         else:  # LIABILITY
             new_balance = current - amount if entry_type == LedgerEntryType.DEBIT else current + amount
         wallet.balance_egp = new_balance
-        wallet.available_balance_egp = new_balance
+        # Available balance must move by the posting delta, not jump to the
+        # new total: assigning new_balance outright would erase funds locked
+        # by in-flight payout requests (balance − available), letting a host
+        # double-spend money already committed to a payout. The exception is
+        # the payout-settlement posting itself (liability debit) — the locked
+        # amount is consumed by that entry, so available stays as it was.
+        is_payout_settlement = (
+            account_type == AccountType.LIABILITY
+            and entry_type == LedgerEntryType.DEBIT
+        )
+        if not is_payout_settlement:
+            wallet.available_balance_egp += new_balance - current
         session.add(wallet)
         return new_balance
 
@@ -186,6 +209,21 @@ async def create_ledger_entry(
     session.add(entry)
     await session.flush()
     return entry
+
+
+async def get_ledger_entries_for_transaction(
+    session: AsyncSession,
+    transaction_id: str,
+    ledger_account: str | None = None,
+    entry_type: str | None = None,
+) -> list[LedgerEntry]:
+    stmt = select(LedgerEntry).where(LedgerEntry.transaction_id == transaction_id)
+    if ledger_account:
+        stmt = stmt.where(LedgerEntry.ledger_account == ledger_account)
+    if entry_type:
+        stmt = stmt.where(LedgerEntry.entry_type == entry_type)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
 
 
 async def list_ledger_entries(

@@ -62,3 +62,4 @@ class LedgerAccount(StrEnum):
     ESCROW = "escrow"
     PLATFORM_REVENUE = "platform_revenue"
     PAYOUT_FEE_EXPENSE = "payout_fee_expense"
+    GUEST_REFUND_PAYABLE = "guest_refund_payable"

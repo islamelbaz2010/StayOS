@@ -937,12 +937,19 @@ async def test_reconcile_provider_refund_marks_refunded_on_provider_success(
     monkeypatch.setattr(
         "app.reservations.services.payment_providers.paymob_refund", refund_mock
     )
+    settle_mock = AsyncMock()
+    monkeypatch.setattr(
+        "app.finance.services.settle_guest_refund", settle_mock
+    )
 
     result = await reconcile_provider_refund(fake_session, intent.id)
 
     refund_mock.assert_awaited_once_with("538949212", 150000)
     assert result.status == PaymentStatus.REFUNDED
     assert result.provider_metadata["refund_provider_ref"] == "540324238"
+    # Provider-confirmed refunds must settle the guest-refund payable into
+    # a cash outflow on the ledger.
+    settle_mock.assert_awaited_once_with(fake_session, "res-1")
 
 
 @pytest.mark.asyncio
@@ -981,6 +988,9 @@ async def test_reconcile_provider_refund_uses_override_transaction_id(
     refund_mock = AsyncMock(return_value={"success": True, "already_refunded": True})
     monkeypatch.setattr(
         "app.reservations.services.payment_providers.paymob_refund", refund_mock
+    )
+    monkeypatch.setattr(
+        "app.finance.services.settle_guest_refund", AsyncMock()
     )
 
     result = await reconcile_provider_refund(
@@ -1087,3 +1097,87 @@ async def test_reconcile_provider_refund_failure_keeps_pending(
     with pytest.raises(PaymentError):
         await reconcile_provider_refund(fake_session, intent.id)
     assert intent.status == PaymentStatus.REFUND_PENDING
+
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_pending_intent_marked_cancelled_not_refunded(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: a PENDING intent was never charged — labelling it
+    REFUNDED claims money was returned that was never collected."""
+    check_in = datetime.now(UTC).date() + timedelta(days=30)
+    reservation = _make_cancellable_reservation(
+        provider="paymob",
+        check_in=check_in,
+        created_at=datetime.now(UTC) - timedelta(days=2),
+    )
+    reservation.payment_intents[0].status = PaymentStatus.PENDING
+    repo = _mock_repository(monkeypatch)
+    repo.get_reservation_with_relations = AsyncMock(return_value=reservation)
+    repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
+    repo.release_calendar_lock = AsyncMock()
+    repo.write_booking_event = AsyncMock()
+    refund_mock = AsyncMock()
+    monkeypatch.setattr(
+        "app.reservations.services.payment_providers.paymob_refund", refund_mock
+    )
+
+    result = await cancel_reservation(
+        fake_session,
+        _make_user(),
+        "res-1",
+        ReservationCancelRequest(reason="change_of_plans"),
+    )
+
+    assert result.status == ReservationStatus.CANCELLED
+    assert reservation.payment_intents[0].status == PaymentStatus.CANCELLED
+    refund_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fail_reservation_persists_failure_reason_new_dict(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: provider_metadata must be replaced with a NEW dict —
+    in-place mutation on a plain JSON column is invisible to SQLAlchemy
+    and silently dropped the failure_reason."""
+    reservation = Reservation(
+        id="res-1",
+        unit_id="unit-1",
+        guest_id="guest-1",
+        status=str(ReservationStatus.PENDING_PAYMENT),
+        check_in=date(2099, 8, 1),
+        check_out=date(2099, 8, 4),
+        adults=2,
+        children=0,
+        infants=0,
+        total_amount_egp=4500,
+        payment_method="card",
+    )
+    reservation.promo_applications = []
+    original_metadata = {"checkout_token": "tok-1"}
+    intent = PaymentIntent(
+        id=str(uuid.uuid4()),
+        reservation_id="res-1",
+        provider="paymob",
+        provider_ref="pi_test_x",
+        amount_egp=4500,
+        status=PaymentStatus.PENDING,
+        provider_metadata=original_metadata,
+    )
+    reservation.payment_intents = [intent]
+    repo = _mock_repository(monkeypatch)
+    repo.get_reservation_with_relations = AsyncMock(return_value=reservation)
+    repo.get_payment_intent_by_provider_ref = AsyncMock(return_value=intent)
+    repo.release_calendar_lock = AsyncMock()
+    repo.write_booking_event = AsyncMock()
+    repo.get_unit_with_listing = AsyncMock(return_value=_make_unit())
+
+    await fail_reservation_by_provider(
+        fake_session, "res-1", "pi_test_x", failure_reason="paymob_status:false"
+    )
+
+    assert intent.status == PaymentStatus.FAILED
+    assert intent.provider_metadata is not original_metadata
+    assert intent.provider_metadata["failure_reason"] == "paymob_status:false"
+    assert intent.provider_metadata["checkout_token"] == "tok-1"

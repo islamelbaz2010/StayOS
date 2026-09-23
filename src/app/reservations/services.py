@@ -557,7 +557,9 @@ async def fail_reservation_by_provider(
         if intent.status == PaymentStatus.CAPTURED:
             return _to_response(reservation)
         intent.status = PaymentStatus.FAILED
-        merged = intent.provider_metadata or {}
+        # New dict object — in-place mutation of a plain JSON column is not
+        # detected by SQLAlchemy and the failure_reason would be lost.
+        merged = dict(intent.provider_metadata or {})
         merged["failure_reason"] = failure_reason
         intent.provider_metadata = merged
         session.add(intent)
@@ -643,7 +645,10 @@ async def cancel_reservation(
                 )
             session.add(intent)
         elif intent.status in (PaymentStatus.PENDING, PaymentStatus.AUTHORIZED):
-            intent.status = PaymentStatus.CANCELLED if refund_amount == 0 else PaymentStatus.REFUNDED
+            # Nothing was ever captured on this intent — there is no refund.
+            # Marking it REFUNDED would claim money was returned that was
+            # never collected.
+            intent.status = PaymentStatus.CANCELLED
             session.add(intent)
     await session.flush()
 
@@ -772,6 +777,12 @@ async def reconcile_provider_refund(
     intent.provider_metadata = merged
     session.add(intent)
     await session.flush()
+
+    # Provider-confirmed — convert the recorded guest-refund payable (if
+    # the cancellation accounting posted one) into a cash outflow.
+    from app.finance import services as finance_services
+
+    await finance_services.settle_guest_refund(session, intent.reservation_id)
     return intent
 
 

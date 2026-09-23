@@ -409,7 +409,7 @@ async def test_process_payout(fake_session: AsyncMock, monkeypatch) -> None:
     )
     monkeypatch.setattr(
         finance_repository,
-        "get_wallet_by_id",
+        "get_wallet_by_id_for_update",
         AsyncMock(return_value=host_wallet),
     )
     monkeypatch.setattr(
@@ -459,7 +459,7 @@ async def test_process_payout_provider_failure_persists_failed_state(
     )
     monkeypatch.setattr(
         finance_repository,
-        "get_wallet_by_id",
+        "get_wallet_by_id_for_update",
         AsyncMock(return_value=host_wallet),
     )
     monkeypatch.setattr(
@@ -999,3 +999,409 @@ async def test_paymob_payout_fails_closed_without_payout_credentials(
     assert "credentials not configured" in ref
     assert fee == 0
     client_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_ledger_credit_preserves_locked_payout_funds(
+    fake_session: AsyncMock,
+) -> None:
+    """Regression: posting new earnings must not erase funds locked by an
+    in-flight payout — available is balance minus locked, not balance."""
+    from app.finance import repository as finance_repository
+
+    wallet = _make_wallet()
+    wallet.balance_egp = 3640
+    wallet.available_balance_egp = 0  # 3640 locked by a pending payout
+    tx = _make_transaction()
+
+    await finance_repository.create_ledger_entry(
+        fake_session,
+        transaction_id=tx.id,
+        ledger_account=LedgerAccount.HOST_PAYABLE,
+        account_type="liability",
+        entry_type="credit",
+        amount_egp=1000,
+        wallet=wallet,
+        description="new earnings",
+    )
+    assert wallet.balance_egp == 4640
+    assert wallet.available_balance_egp == 1000
+
+
+@pytest.mark.asyncio
+async def test_ledger_payout_settlement_consumes_lock(
+    fake_session: AsyncMock,
+) -> None:
+    """The payout-completion debit consumes the locked amount — available
+    must not be decremented a second time."""
+    from app.finance import repository as finance_repository
+
+    wallet = _make_wallet()
+    wallet.balance_egp = 2640
+    wallet.available_balance_egp = 0  # locked by the payout being settled
+    tx = _make_transaction()
+
+    await finance_repository.create_ledger_entry(
+        fake_session,
+        transaction_id=tx.id,
+        ledger_account=LedgerAccount.HOST_PAYABLE,
+        account_type="liability",
+        entry_type="debit",
+        amount_egp=2640,
+        wallet=wallet,
+        description="Host payout",
+    )
+    assert wallet.balance_egp == 0
+    assert wallet.available_balance_egp == 0
+
+
+def _posted_ledger_accounts(mock: AsyncMock) -> list[str]:
+    return [c.kwargs["ledger_account"] for c in mock.await_args_list]
+
+
+@pytest.mark.asyncio
+async def test_handle_cancel_event_posts_payable_when_provider_unconfirmed(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: a refund that the provider has NOT confirmed is a
+    payable liability — never a platform_cash outflow."""
+    from app.finance import repository as finance_repository
+
+    escrow = _make_escrow()
+    platform_wallet = _make_wallet(wallet_type="platform")
+    tx = _make_transaction(transaction_type=TransactionType.ESCROW_REFUND)
+
+    # No REFUNDED intent; no refunded manual payment.
+    fake_session.execute = AsyncMock(
+        return_value=MagicMock(scalar_one_or_none=lambda: None)
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_escrow_by_reservation",
+        AsyncMock(return_value=escrow),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_or_create_wallet",
+        AsyncMock(return_value=platform_wallet),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "create_financial_transaction",
+        AsyncMock(return_value=tx),
+    )
+    ledger_mock = AsyncMock(return_value=MagicMock())
+    monkeypatch.setattr(
+        finance_repository, "create_ledger_entry", ledger_mock
+    )
+    monkeypatch.setattr("app.finance.services.write_event", AsyncMock())
+    monkeypatch.setattr(
+        "app.payments.repository.get_payment_by_booking",
+        AsyncMock(return_value=None),
+    )
+
+    await finance_services.handle_cancel_event(
+        fake_session,
+        {"reservation_id": escrow.reservation_id, "refund_amount_egp": 3500},
+    )
+
+    accounts = _posted_ledger_accounts(ledger_mock)
+    assert escrow.status == EscrowStatus.REFUNDED
+    assert LedgerAccount.GUEST_REFUND_PAYABLE in accounts
+    assert LedgerAccount.PLATFORM_CASH not in accounts
+
+
+@pytest.mark.asyncio
+async def test_handle_cancel_event_posts_cash_when_provider_confirmed(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """When the provider refund already succeeded at cancel time the
+    ledger records the cash outflow directly — no payable."""
+    from app.finance import repository as finance_repository
+
+    escrow = _make_escrow()
+    platform_wallet = _make_wallet(wallet_type="platform")
+    tx = _make_transaction(transaction_type=TransactionType.ESCROW_REFUND)
+
+    fake_session.execute = AsyncMock(
+        return_value=MagicMock(scalar_one_or_none=lambda: "intent-id")
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_escrow_by_reservation",
+        AsyncMock(return_value=escrow),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_or_create_wallet",
+        AsyncMock(return_value=platform_wallet),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "create_financial_transaction",
+        AsyncMock(return_value=tx),
+    )
+    ledger_mock = AsyncMock(return_value=MagicMock())
+    monkeypatch.setattr(
+        finance_repository, "create_ledger_entry", ledger_mock
+    )
+    monkeypatch.setattr("app.finance.services.write_event", AsyncMock())
+
+    await finance_services.handle_cancel_event(
+        fake_session,
+        {"reservation_id": escrow.reservation_id, "refund_amount_egp": 3500},
+    )
+
+    accounts = _posted_ledger_accounts(ledger_mock)
+    assert LedgerAccount.PLATFORM_CASH in accounts
+    assert LedgerAccount.GUEST_REFUND_PAYABLE not in accounts
+
+
+@pytest.mark.asyncio
+async def test_settle_guest_refund_converts_payable_to_cash(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.finance import repository as finance_repository
+    from app.finance.models import LedgerEntry
+
+    refund_tx = _make_transaction(
+        transaction_type=TransactionType.ESCROW_REFUND
+    )
+    refund_tx.reservation_id = "res-1"
+    payable_entry = LedgerEntry(
+        id=str(uuid.uuid4()),
+        transaction_id=refund_tx.id,
+        ledger_account=str(LedgerAccount.GUEST_REFUND_PAYABLE),
+        account_type="liability",
+        entry_type="credit",
+        amount_egp=1500,
+        balance_after=1500,
+    )
+    platform_wallet = _make_wallet(wallet_type="platform")
+
+    keys = {
+        f"finance-refund-settle-{refund_tx.reservation_id}": None,
+        f"finance-escrow-refund-{refund_tx.reservation_id}": refund_tx,
+    }
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(side_effect=lambda session, key: keys.get(key)),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_ledger_entries_for_transaction",
+        AsyncMock(return_value=[payable_entry]),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_platform_wallet",
+        AsyncMock(return_value=platform_wallet),
+    )
+    settle_tx = _make_transaction(transaction_type=TransactionType.REFUND)
+    monkeypatch.setattr(
+        finance_repository,
+        "create_financial_transaction",
+        AsyncMock(return_value=settle_tx),
+    )
+    ledger_mock = AsyncMock(return_value=MagicMock())
+    monkeypatch.setattr(
+        finance_repository, "create_ledger_entry", ledger_mock
+    )
+
+    await finance_services.settle_guest_refund(
+        fake_session, refund_tx.reservation_id
+    )
+
+    calls = ledger_mock.await_args_list
+    assert len(calls) == 2
+    assert calls[0].kwargs["ledger_account"] == LedgerAccount.GUEST_REFUND_PAYABLE
+    assert calls[0].kwargs["entry_type"] == "debit"
+    assert calls[1].kwargs["ledger_account"] == LedgerAccount.PLATFORM_CASH
+    assert calls[1].kwargs["entry_type"] == "credit"
+
+
+@pytest.mark.asyncio
+async def test_settle_guest_refund_idempotent(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.finance import repository as finance_repository
+
+    existing = _make_transaction(transaction_type=TransactionType.REFUND)
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=existing),
+    )
+
+    await finance_services.settle_guest_refund(fake_session, "res-1")
+    fake_session.add.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_settle_guest_refund_noop_without_payable(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.finance import repository as finance_repository
+
+    refund_tx = _make_transaction(
+        transaction_type=TransactionType.ESCROW_REFUND
+    )
+    refund_tx.reservation_id = "res-1"
+    keys = {
+        f"finance-refund-settle-{refund_tx.reservation_id}": None,
+        f"finance-escrow-refund-{refund_tx.reservation_id}": refund_tx,
+    }
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(side_effect=lambda session, key: keys.get(key)),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_ledger_entries_for_transaction",
+        AsyncMock(return_value=[]),
+    )
+    create_mock = AsyncMock()
+    monkeypatch.setattr(
+        finance_repository, "create_financial_transaction", create_mock
+    )
+
+    await finance_services.settle_guest_refund(
+        fake_session, refund_tx.reservation_id
+    )
+    create_mock.assert_not_awaited()
+
+
+def test_paymob_webhook_pending_callback_not_confirmed(
+    finance_client: TestClient, fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: a pending transaction has not settled — it must be
+    acknowledged WITHOUT confirming the reservation and WITHOUT consuming
+    the transaction idempotency key (the final callback must still land)."""
+    from app.finance import providers as finance_providers
+    from app.reservations import services as reservations_services
+
+    reservation_id = str(uuid.uuid4())
+    payload = {
+        "reservation_id": reservation_id,
+        "order": "order-1",
+        "success": "true",
+        "pending": True,
+    }
+    signature = providers.compute_paymob_signature(payload)
+
+    monkeypatch.setattr(finance_providers, "verify_paymob_hmac", lambda p, s: True)
+    idem_mock = AsyncMock(return_value=True)
+    monkeypatch.setattr(
+        "app.finance.router._acquire_webhook_idempotency", idem_mock
+    )
+    confirm_mock = AsyncMock()
+    monkeypatch.setattr(
+        reservations_services, "confirm_reservation_by_provider", confirm_mock
+    )
+
+    response = finance_client.post(
+        "/api/v1/finance/webhooks/paymob",
+        json=payload,
+        headers={"x-paymob-hmac": signature},
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "pending"
+    confirm_mock.assert_not_awaited()
+    idem_mock.assert_not_awaited()
+
+
+def test_paymob_webhook_refund_callback_ignored(
+    finance_client: TestClient, fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Refund/void transactions describe money leaving — they must never
+    reach the confirmation path."""
+    from app.finance import providers as finance_providers
+    from app.reservations import services as reservations_services
+
+    payload = {
+        "obj": {
+            "id": 540324238,
+            "is_refund": True,
+            "success": True,
+            "order": {"id": 614601490},
+        }
+    }
+    signature = providers.compute_paymob_signature(payload)
+
+    monkeypatch.setattr(finance_providers, "verify_paymob_hmac", lambda p, s: True)
+    confirm_mock = AsyncMock()
+    monkeypatch.setattr(
+        reservations_services, "confirm_reservation_by_provider", confirm_mock
+    )
+
+    response = finance_client.post(
+        "/api/v1/finance/webhooks/paymob",
+        json=payload,
+        headers={"x-paymob-hmac": signature},
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "ignored"
+    confirm_mock.assert_not_awaited()
+
+
+def test_paymob_webhook_malformed_json_rejected(
+    finance_client: TestClient, fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.finance import providers as finance_providers
+
+    monkeypatch.setattr(finance_providers, "verify_paymob_hmac", lambda p, s: True)
+
+    response = finance_client.post(
+        "/api/v1/finance/webhooks/paymob",
+        content=b"{not-json",
+        headers={
+            "x-paymob-hmac": "sig",
+            "content-type": "application/json",
+        },
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_request_payout_uses_locked_wallet(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: the available-balance check must run under a row lock —
+    without it, concurrent requests double-spend the wallet."""
+    from app.finance import repository as finance_repository
+
+    wallet = _make_wallet()
+    wallet.balance_egp = 2640
+    wallet.available_balance_egp = 2640
+    locked_fetch = AsyncMock(return_value=wallet)
+    monkeypatch.setattr(
+        finance_repository, "get_wallet_by_id_for_update", locked_fetch
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "create_payout_request",
+        AsyncMock(return_value=_make_payout()),
+    )
+
+    await finance_services.request_payout(
+        fake_session,
+        host_id=wallet.owner_id,
+        wallet_id=wallet.id,
+        amount_egp=1000,
+        bank_account_info={"account_number": "1234"},
+    )
+
+    locked_fetch.assert_awaited_once()
+    assert wallet.available_balance_egp == 1640

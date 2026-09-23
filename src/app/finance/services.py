@@ -2,13 +2,15 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.celery_app import celery_app
 from app.config import settings
 from app.listings import repository as listings_repository
 from app.reservations import repository as reservations_repository
-from app.reservations.models import Reservation
+from app.reservations.constants import PaymentStatus as IntentPaymentStatus
+from app.reservations.models import PaymentIntent, Reservation
 from app.shared.exceptions import ConflictError, NotFoundError, ValidationError
 from app.shared.outbox import write_event
 
@@ -217,6 +219,7 @@ async def _post_ledger_for_escrow_refund(
     platform_wallet: Wallet,
     refund_amount: int,
     retained: int,
+    provider_confirmed: bool,
 ) -> None:
     total = refund_amount + retained
     await finance_repository.create_ledger_entry(
@@ -230,16 +233,32 @@ async def _post_ledger_for_escrow_refund(
         description="Escrow voided for cancellation",
     )
     if refund_amount > 0:
-        await finance_repository.create_ledger_entry(
-            session,
-            transaction_id=tx.id,
-            ledger_account=LedgerAccount.PLATFORM_CASH,
-            account_type=AccountType.ASSET,
-            entry_type=LedgerEntryType.CREDIT,
-            amount_egp=refund_amount,
-            wallet=platform_wallet,
-            description="Refund to guest",
-        )
+        if provider_confirmed:
+            # Cash actually left — the provider already confirmed the refund.
+            await finance_repository.create_ledger_entry(
+                session,
+                transaction_id=tx.id,
+                ledger_account=LedgerAccount.PLATFORM_CASH,
+                account_type=AccountType.ASSET,
+                entry_type=LedgerEntryType.CREDIT,
+                amount_egp=refund_amount,
+                wallet=platform_wallet,
+                description="Refund to guest",
+            )
+        else:
+            # The refund is owed but not provider-confirmed — record a
+            # payable, not a cash outflow. settle_guest_refund converts it
+            # to cash when the provider/admin confirms the money moved.
+            await finance_repository.create_ledger_entry(
+                session,
+                transaction_id=tx.id,
+                ledger_account=LedgerAccount.GUEST_REFUND_PAYABLE,
+                account_type=AccountType.LIABILITY,
+                entry_type=LedgerEntryType.CREDIT,
+                amount_egp=refund_amount,
+                escrow=escrow,
+                description="Refund owed to guest",
+            )
     if retained > 0:
         await finance_repository.create_ledger_entry(
             session,
@@ -496,6 +515,25 @@ async def handle_cancel_event(
 
     platform_wallet, _ = await _get_or_create_wallets(session, escrow.host_id)
 
+    provider_confirmed = False
+    if refund_amount > 0:
+        # Card path: the synchronous refund attempt in cancel_reservation
+        # already ran — a REFUNDED intent means the provider confirmed.
+        intent_result = await session.execute(
+            select(PaymentIntent.id).where(
+                PaymentIntent.reservation_id == reservation_id,
+                PaymentIntent.status == IntentPaymentStatus.REFUNDED,
+            )
+        )
+        provider_confirmed = intent_result.scalar_one_or_none() is not None
+        if not provider_confirmed:
+            # Manual-payment path: the admin mark-refunded step is the
+            # authoritative confirmation for bank-transfer refunds.
+            payment = await _payment_or_none(session, reservation_id)
+            provider_confirmed = (
+                payment is not None and payment.status == "refunded"
+            )
+
     tx = await finance_repository.create_financial_transaction(
         session,
         transaction_type=TransactionType.ESCROW_REFUND,
@@ -506,7 +544,13 @@ async def handle_cancel_event(
     )
 
     await _post_ledger_for_escrow_refund(
-        session, tx, escrow, platform_wallet, refund_amount, retained
+        session,
+        tx,
+        escrow,
+        platform_wallet,
+        refund_amount,
+        retained,
+        provider_confirmed,
     )
 
     escrow.status = EscrowStatus.REFUNDED
@@ -529,6 +573,71 @@ async def handle_cancel_event(
     )
 
     return escrow
+
+
+async def settle_guest_refund(
+    session: AsyncSession, reservation_id: str
+) -> None:
+    """Convert a recorded guest-refund payable into a cash outflow.
+
+    Called once the refund is authoritatively confirmed — provider-confirmed
+    card refunds via ``reconcile_provider_refund``, or admin-marked manual
+    refunds via ``refund_payment``. No-ops when the cancellation already
+    posted cash (provider confirmed at cancel time), when the cancellation
+    accounting has not run yet (its event handler will then post cash
+    directly), or when it has already settled.
+    """
+    key = _idempotency_key("refund-settle", reservation_id)
+    existing = await finance_repository.get_transaction_by_idempotency_key(
+        session, key
+    )
+    if existing is not None:
+        return
+
+    refund_tx = await finance_repository.get_transaction_by_idempotency_key(
+        session, _idempotency_key("escrow-refund", reservation_id)
+    )
+    if refund_tx is None:
+        return
+    payable_entries = await finance_repository.get_ledger_entries_for_transaction(
+        session,
+        refund_tx.id,
+        ledger_account=LedgerAccount.GUEST_REFUND_PAYABLE,
+        entry_type=LedgerEntryType.CREDIT,
+    )
+    if not payable_entries:
+        return
+
+    payable_amount = sum(entry.amount_egp for entry in payable_entries)
+    platform_wallet = await finance_repository.get_platform_wallet(session)
+
+    tx = await finance_repository.create_financial_transaction(
+        session,
+        transaction_type=TransactionType.REFUND,
+        amount_egp=payable_amount,
+        reservation_id=reservation_id,
+        idempotency_key=key,
+        status=TransactionStatus.COMPLETED,
+    )
+    await finance_repository.create_ledger_entry(
+        session,
+        transaction_id=tx.id,
+        ledger_account=LedgerAccount.GUEST_REFUND_PAYABLE,
+        account_type=AccountType.LIABILITY,
+        entry_type=LedgerEntryType.DEBIT,
+        amount_egp=payable_amount,
+        description="Refund paid to guest",
+    )
+    await finance_repository.create_ledger_entry(
+        session,
+        transaction_id=tx.id,
+        ledger_account=LedgerAccount.PLATFORM_CASH,
+        account_type=AccountType.ASSET,
+        entry_type=LedgerEntryType.CREDIT,
+        amount_egp=payable_amount,
+        wallet=platform_wallet,
+        description="Refund to guest",
+    )
 
 
 async def manual_hold_escrow(
@@ -562,7 +671,9 @@ async def request_payout(
     bank_account_info: dict[str, Any],
     provider: str | None = None,
 ) -> PayoutRequest:
-    wallet = await finance_repository.get_wallet_by_id(session, wallet_id)
+    wallet = await finance_repository.get_wallet_by_id_for_update(
+        session, wallet_id
+    )
     if wallet is None:
         raise NotFoundError("Wallet not found")
     if wallet.owner_id != host_id:
@@ -594,7 +705,9 @@ async def process_payout(
     if payout.status != PayoutStatus.PENDING:
         raise ConflictError("Payout request is not pending")
 
-    wallet = await finance_repository.get_wallet_by_id(session, payout.wallet_id)
+    wallet = await finance_repository.get_wallet_by_id_for_update(
+        session, payout.wallet_id
+    )
     if wallet is None:
         raise NotFoundError("Wallet not found")
     if wallet.balance_egp < payout.amount_egp:

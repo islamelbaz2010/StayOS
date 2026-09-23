@@ -245,7 +245,10 @@ async def paymob_webhook(
     session: AsyncSession = Depends(get_session),
 ) -> WebhookResponse:
     body = await request.body()
-    payload = json.loads(body)
+    try:
+        payload = json.loads(body)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise to_http_exception(ValidationError("Invalid webhook payload")) from exc
     # Paymob delivers the HMAC as an `hmac` query parameter on transaction
     # processed callbacks and checkout redirects; header fallbacks kept for
     # compatibility.
@@ -277,11 +280,29 @@ async def paymob_webhook(
         logger.warning("Paymob webhook non-EGP currency %s ignored", currency)
         return WebhookResponse(message="ignored")
 
+    # Refund/void callbacks describe money leaving, not a payment — they
+    # must never reach the reservation confirmation path.
+    obj = payload.get("obj", payload)
+    if isinstance(obj, dict) and (obj.get("is_refund") or obj.get("is_voided")):
+        logger.info("Paymob refund/void callback acknowledged")
+        return WebhookResponse(message="ignored")
+
     reservation_id = providers.extract_paymob_reservation_id(payload)
     provider_ref = providers.extract_paymob_provider_ref(payload)
     if not reservation_id or not provider_ref:
         logger.warning("Paymob webhook missing reservation or provider reference")
         raise to_http_exception(ValidationError("Missing reservation or provider reference"))
+
+    # A pending transaction has not settled — acknowledge it WITHOUT
+    # consuming the idempotency key so the final callback for the same
+    # transaction still reconciles.
+    if providers.extract_paymob_pending(payload):
+        logger.info(
+            "Paymob pending callback acknowledged: reservation=%s provider_ref=%s",
+            reservation_id,
+            provider_ref,
+        )
+        return WebhookResponse(message="pending")
 
     idempotency_key = provider_ref
     if not await _acquire_webhook_idempotency(f"paymob:{idempotency_key}"):

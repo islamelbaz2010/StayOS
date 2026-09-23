@@ -7,17 +7,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
-from app.auth.staff import has_permission
 from app.auth.constants import UserRole
 from app.auth.models import User
+from app.auth.staff import has_permission
 from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.config import settings
-from app.listings import repository as listings_repository
+from app.finance import commercial
 from app.listings import pricing
+from app.listings import repository as listings_repository
 from app.listings.constants import UnitStatus
-from app.listings.models import Unit, UnitListing, UnitPhoto
+from app.listings.models import Unit, UnitListing
 from app.shared.exceptions import (
     AuthorizationError,
     NotFoundError,
@@ -25,8 +26,6 @@ from app.shared.exceptions import (
     ValidationError,
 )
 from app.shared.models import OutboxEvent
-
-from app.finance import commercial
 
 from . import repository as payments_repository
 from .constants import PaymentStatus
@@ -674,6 +673,12 @@ async def refund_payment(
 
     guest = await session.execute(select(User).where(User.id == payment.guest_id))
     guest_user = guest.scalar_one_or_none()
+
+    # Admin confirmation is the authoritative signal for manual refunds —
+    # settle the guest-refund payable recorded at cancellation into cash.
+    from app.finance import services as finance_services
+
+    await finance_services.settle_guest_refund(session, payment.booking_id)
 
     await _emit_outbox_event(
         session,

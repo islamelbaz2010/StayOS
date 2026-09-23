@@ -444,14 +444,7 @@ export function HostBookingDetail({
                 </dd>
               </div>
             )}
-            {payment.guest_service_fee_egp != null && (
-              <div>
-                <dt className="text-sm text-neutral-500">{t("serviceFee")}</dt>
-                <dd className="text-sm font-medium text-brand-900">
-                  {formatMoney(payment.guest_service_fee_egp, "EGP", dateLocale)}
-                </dd>
-              </div>
-            )}
+
             {(payment.status === "refund_pending" || payment.status === "refunded") &&
               payment.refund_amount_egp != null && (
                 <div>

@@ -132,12 +132,6 @@ class Settings(BaseSettings):
     PLATFORM_TOTAL_SHARE_PCT: float = Field(default=0.12, ge=0.0, le=1.0)
     HOST_SIDE_SHARE_PCT: float = Field(default=0.06, ge=0.0, le=1.0)
     GUEST_SIDE_SHARE_PCT: float = Field(default=0.06, ge=0.0, le=1.0)
-    # Legacy rate settings retained ONLY for interpreting payment rows
-    # recorded before the all-inclusive model existed. New bookings must
-    # never charge a guest service fee or a separate host commission.
-    GUEST_SERVICE_FEE_PCT: float = Field(default=0.04, ge=0.0, le=1.0)
-    HOST_COMMISSION_PCT: float = Field(default=0.10, ge=0.0, le=1.0)
-    PLATFORM_TAKE_RATE_PCT: float = Field(default=0.02, ge=0.0, le=1.0)
 
     # Manual payment collection destination (V1 Payment Policy Model A: guest pays
     # a real StayOS-controlled account). Defaults below match the values previously

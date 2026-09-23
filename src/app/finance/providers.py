@@ -563,7 +563,7 @@ async def paymob_payout(
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             token_response = await client.post(
-                f"{base}/o/token/",
+                f"{base}/api/secure/o/token/",
                 data={
                     "grant_type": "password",
                     "username": settings.PAYMOB_PAYOUT_USERNAME,

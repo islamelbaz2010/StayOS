@@ -1125,8 +1125,7 @@ OTP_MAX_ATTEMPTS=3                         # optional — has default
 OTP_RATE_LIMIT_WINDOW_SECONDS=900          # optional — has default
 ESCROW_RELEASE_HOURS=24                    # optional — has default (BR-FIN-01)
 CALENDAR_LOCK_TIMEOUT_MS=5000             # optional — has default
-GUEST_SERVICE_FEE_PCT=0.04                # optional — has default (4%)
-HOST_COMMISSION_PCT=0.10                  # optional — has default (10%)
+
 
 # ── Next.js (NEXT_PUBLIC_* exposed to browser) ────────────────────────────────
 NEXT_PUBLIC_API_URL=http://localhost:8000

@@ -32,9 +32,7 @@ Config (`config.py`):
 | `PLATFORM_TOTAL_SHARE_PCT` | 0.12 | Canonical total economics |
 | `HOST_SIDE_SHARE_PCT` | 0.06 | Internal allocation |
 | `GUEST_SIDE_SHARE_PCT` | 0.06 | Internal allocation |
-| `GUEST_SERVICE_FEE_PCT` | 0.04 | **Legacy** — old rows only |
-| `HOST_COMMISSION_PCT` | 0.10 | **Legacy** — old rows only |
-| `PLATFORM_TAKE_RATE_PCT` | 0.02 | **Legacy** — old rows only |
+| `GUEST_SERVICE_FEE_PCT` / `HOST_COMMISSION_PCT` / `PLATFORM_TAKE_RATE_PCT` | — | **Removed** — dead pre-all-inclusive settings; historical rows carry stored amounts, not rates |
 
 All money is integer minor units (EGP); no floats in financial math.
 
@@ -160,8 +158,8 @@ credentials exist.
   unified checkout URL (`publicKey` + `client_secret`) → guest pays →
   transaction processed callback → HMAC-SHA512 verify → idempotent
   reconciliation → existing reservation/finance states.
-- **TEST integration id:** `5935386` (set via `PAYMOB_INTEGRATION_ID` —
-  config-driven, never hardcoded). EGP only.
+- **TEST integration id:** `5935402`, merchant `1231991` (set via
+  `PAYMOB_INTEGRATION_ID` — config-driven, never hardcoded). EGP only.
 - **Amount:** server-authoritative — always the canonical
   `reservation.total_amount_egp` in minor units; the client never supplies
   an amount.
@@ -171,9 +169,24 @@ credentials exist.
   amount must equal the stored intent; reservation/provider-ref
   correlation falls back to the reservation's pending intent (callback
   carries the transaction id, the stored ref is the intention id);
-  Redis idempotency on transaction ref; success → CAPTURED + CONFIRMED +
-  `payment.captured`/`reservation.confirmed` events → finance consumers.
+  Redis idempotency on transaction ref; pending transactions are
+  acknowledged without confirming (and without consuming the idempotency
+  key); refund/void callbacks are acknowledged and ignored; success →
+  CAPTURED + CONFIRMED + `payment.captured`/`reservation.confirmed`
+  events → finance consumers.
   Failure → FAILED + pending reservation cancelled + lock released.
+- **Refunds:** cancellation issues `POST /api/acceptance/void_refund/refund`
+  (`Authorization: Token {PAYMOB_SECRET_KEY}`) against the persisted
+  `transaction_ref`. Provider-confirmed → intent REFUNDED; provider
+  rejection → REFUND_PENDING (fail-closed) + admin reconcile endpoint
+  `POST /finance/payment-intents/{id}/refund`. Verified on TEST (full
+  refund txn `540324238`, partial `540324851`). Ledger records a
+  `guest_refund_payable` liability until the refund is confirmed, then
+  settles to cash.
+- **Payouts:** Paymob Payouts is a separately provisioned product
+  (OAuth2 password grant at the payouts host) — the Accept API key does
+  not authorize it. Without `PAYMOB_PAYOUT_*` credentials the payout path
+  fails closed: request → FAILED + wallet funds restored + replay-safe.
 - **Environment separation:** `sk_test_*` keys refuse to run in
   production; `sk_live_*` keys refuse to run elsewhere. Missing config
   fails closed.
@@ -185,9 +198,10 @@ credentials exist.
 | `PAYMOB_SECRET_KEY` | Intention API auth (`sk_test_*`/`sk_live_*`) — backend only |
 | `PAYMOB_PUBLIC_KEY` | Unified checkout URL (`pk_test_*`/`pk_live_*`) — safe to expose |
 | `PAYMOB_HMAC_SECRET` | Callback HMAC-SHA512 verification — backend only |
-| `PAYMOB_INTEGRATION_ID` | TEST integration `5935386` |
+| `PAYMOB_INTEGRATION_ID` | TEST integration `5935402` |
 | `PAYMOB_IFRAME_ID` | Legacy iframe fallback |
-| `PAYMOB_API_KEY` | Legacy auth-token flow / disburse calls |
+| `PAYMOB_API_KEY` | Legacy auth-token flow / transaction inquiry |
+| `PAYMOB_PAYOUT_CLIENT_ID` / `PAYMOB_PAYOUT_CLIENT_SECRET` / `PAYMOB_PAYOUT_USERNAME` / `PAYMOB_PAYOUT_PASSWORD` | Payouts OAuth2 — not provisioned (external blocker) |
 
 Production Paymob merchant approval, production credentials, payout
 onboarding, and legal/accounting/CBE characterization remain external

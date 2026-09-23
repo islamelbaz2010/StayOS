@@ -27,7 +27,7 @@ Status legend used throughout: `VERIFIED` · `PARTIALLY VERIFIED` · `UNKNOWN / 
 | Backend status | FastAPI modular monolith; **1190 tests passing**, coverage **80.38%** (gate ≥80%) | VERIFIED |
 | Web status | Next.js 14 App Router; typecheck/lint/**Vitest (23)**/production build all passing | VERIFIED |
 | Mobile status | Expo ~51 / RN 0.74.5 app in `apps/mobile/`; `tsc --noEmit` passes; preview-only (not production-ready); device-level P0 bugs open on physical Android (booking CTA, map/list toggle); framework decision ADR-016/DEC-014 still gates mobile engineering | PARTIALLY VERIFIED |
-| Major blockers | Real payment collection account (placeholder), AWS/S3 credentials (empty on Railway), **Firebase credentials absent (Google/Apple sign-in blocked)**, legal entity, unresolved Paymob-vs-Stripe decision, unresolved KYC ML architecture | VERIFIED |
+| Major blockers | Real payment collection account (placeholder), AWS/S3 credentials (empty on Railway), **Firebase credentials absent (Google/Apple sign-in blocked)**, legal entity, **Paymob Payouts OAuth2 provisioning (separate product — disbursement blocked)**, unresolved KYC ML architecture | VERIFIED |
 | Web Acceptance Hardening | Completed 2026-09-20: booking calendar (month navigation + sliding fetch window), staff E.164 enforcement, email+password auth, admin payment-detail 500 fix, profile/account consistency, header/footer permission filtering, canonical cover images. All ENGINEERING VERIFIED; Founder visual acceptance pending. | VERIFIED |
 
 ---
@@ -57,7 +57,7 @@ Status legend used throughout: `VERIFIED` · `PARTIALLY VERIFIED` · `UNKNOWN / 
 | Supabase / Neon | Not used — Postgres is Railway Postgres + local PostGIS docker | VERIFIED (no references) |
 | Vercel dashboard | `https://vercel.com/islam-elbaz-s-projects/web` (derived from org slug `islam-elbaz-s-projects`) | PARTIALLY VERIFIED |
 | Railway dashboard | `https://railway.com/project/fcfb039d-bf12-4bb9-8434-98de4742c4cf` | PARTIALLY VERIFIED (project ID verified; URL format assumed) |
-| Paymob dashboard | UNKNOWN — vars defined, no integration live | UNKNOWN |
+| Paymob dashboard | Accept TEST verified live — merchant `1231991`, integration `5935402`, intention/checkout/3DS/webhook/refund all proven on TEST transactions | VERIFIED (TEST) |
 | Akedly / Twilio / Meta dashboards | UNKNOWN | UNKNOWN / NEEDS FOUNDER INPUT |
 
 ---
@@ -110,8 +110,8 @@ Actual implemented architecture (not the intended AWS/ECS architecture — see �
 | Reviews | Booking-scoped host/guest reviews | `reviews/` | — | VERIFIED |
 | Booking lifecycle | `reservations/` (request/expire flow) + `bookings/` (state machine, host accept/reject 24h `REQUEST_EXPIRATION_HOURS`) | `reservations/`, `bookings/` | — | VERIFIED |
 | Search | PostGIS geo search + filters + all-in pricing | `listings/services.py`, `listings/pricing.py` | PostGIS | VERIFIED |
-| Pricing | Canonical: `PLATFORM_TOTAL_SHARE_PCT=0.12`, `HOST_SIDE_SHARE_PCT=0.06`, `GUEST_SIDE_SHARE_PCT=0.06` (FD-19). Legacy `GUEST_SERVICE_FEE_PCT`/`HOST_COMMISSION_PCT`/`PLATFORM_TAKE_RATE_PCT` retained for old rows only | `config.py`, `finance/commercial.py`, `listings/pricing.py`, `payments/services.py`, `finance/services.py` | `docs/STAYOS_PAYMENT_AND_COMMERCIAL_MODEL.md` | VERIFIED (decided values) |
-| Refunds | Cancellation tiers via `CANCELLATION_*` + `REFUND_PROCESSING_DAYS=5` (wired into `booking.cancelled` payload) | `config.py`, `reservations/services.py`, `bookings/services.py` | manual processing | VERIFIED (rules decided; payout manual) |
+| Pricing | Canonical: `PLATFORM_TOTAL_SHARE_PCT=0.12`, `HOST_SIDE_SHARE_PCT=0.06`, `GUEST_SIDE_SHARE_PCT=0.06` (FD-19). Legacy `GUEST_SERVICE_FEE_PCT`/`HOST_COMMISSION_PCT`/`PLATFORM_TAKE_RATE_PCT` removed — dead settings; historical rows carry stored amounts | `config.py`, `finance/commercial.py`, `listings/pricing.py`, `payments/services.py`, `finance/services.py` | `docs/STAYOS_PAYMENT_AND_COMMERCIAL_MODEL.md` | VERIFIED (decided values) |
+| Refunds | Cancellation tiers via `CANCELLATION_*` + `REFUND_PROCESSING_DAYS=5`; card refunds wired to Paymob provider API with `refund_pending` → `refunded` on provider confirmation + admin reconcile endpoint; manual-payment refunds admin-marked | `config.py`, `reservations/services.py`, `bookings/services.py`, `finance/services.py` | manual payments only | VERIFIED (provider refund proven on TEST txn `540324238`) |
 | Admin ops | KYC queue, listing moderation, disputes, staff management, CSV import, payments review, discovery console | `operations/`, `staff/`, `importer/`, `apps/web/app/[locale]/admin/` | — | VERIFIED |
 
 ---
@@ -154,7 +154,7 @@ Source: generated `openapi.json` — **156 paths** (regenerated 2026-09-20; incl
 | auth/kyc | 7 | `POST /kyc/initiate` (guest, storage-guarded 503), `POST /kyc/documents/{id}/submit`, `GET /kyc/status`, admin pending/review/download | guest + `require_staff_permission("kyc")` |
 | bookings | 11 | `POST /bookings`, `GET /bookings`, guest/host lists, accept/reject (host only — admin denied at API level), cancel | guest/host ownership |
 | discovery | 10 | sources, stats, configs, candidates | staff/admin |
-| finance | 11 | wallets, ledger, escrow, payouts — dormant (Stripe unset) | user/staff |
+| finance | 11 | wallets, ledger, escrow, payouts — live via Paymob (intents, escrow, refunds); payouts fail-closed pending Payouts provisioning | user/staff |
 | reservations | 8 | `POST /reservations`, list/detail, cancel | guest |
 | payments | 8 | quote, payment CRUD, `POST /{id}/proof/presign` (KYC-verified guest/admin, storage-guarded), `GET /{id}/proof/download`, `POST /{id}/verify` (staff `payments` perm) | guest-owner/host/staff |
 | messages | 9 | conversations, unread, send/reply | participant-scoped |
@@ -268,8 +268,8 @@ Live DB fixture state is **PARTIALLY VERIFIED** — the seeds ran previously aga
 | Google Maps | Web/mobile map rendering | `GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | frontend + `app.config.js` | PARTIALLY VERIFIED — see leaked-key history §12 |
 | Google Places | Supply Discovery (server-side; intentionally separate credential from Maps key) | `GOOGLE_PLACES_API_KEY` | `discovery/` | PARTIALLY VERIFIED |
 | OSM/Nominatim + Overpass | Discovery geo lookups | none | `discovery/` | VERIFIED (code) |
-| Paymob | Primary Egypt-alpha processor (FD-01/FD-25) | `PAYMOB_API_KEY`, `PAYMOB_HMAC_SECRET` on Railway; `PAYMOB_SECRET_KEY`, `PAYMOB_PUBLIC_KEY`, `PAYMOB_INTEGRATION_ID` (TEST `5935386`), `PAYMOB_IFRAME_ID` required for Payment Intention flow | Intention API + HMAC-SHA512 webhook implemented; TEST sandbox only | PENDING TEST CREDENTIALS — Founder enters TEST values in Railway; production credentials BLOCKED — PROVIDER |
-| Stripe | Alternative processor / dormant finance module | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | `finance/` dormant without key | UNRESOLVED — same conflict |
+| Paymob | Primary Egypt-alpha processor (FD-01/FD-25) | `PAYMOB_API_KEY`, `PAYMOB_HMAC_SECRET`, `PAYMOB_SECRET_KEY`, `PAYMOB_PUBLIC_KEY`, `PAYMOB_INTEGRATION_ID` (TEST `5935402`, merchant `1231991`) on Railway (stayos-demo/worker/beat) | Intention API + unified checkout + HMAC-SHA512 webhook + provider refund (`/api/acceptance/void_refund/refund`) verified on TEST transactions; payouts fail-closed | ACCEPT TEST VERIFIED — refunds proven (txn `540324238`); PAYOUTS BLOCKED — separate OAuth2 product, no `PAYMOB_PAYOUT_*` credentials provisioned |
+| Stripe | Dormant fallback processor | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | dormant without key | RESOLVED — Paymob is primary (FD-01); Stripe unused |
 | Manual bank/Vodafone Cash | V1 Model A collection | `PAYMENT_BANK_NAME_AR/EN`, `PAYMENT_ACCOUNT_NAME`, `PAYMENT_BANK_ACCOUNT_NUMBER`, `PAYMENT_VODAFONE_CASH_NUMBER` | `payments/services.py` `_build_instructions` | MANUAL ACTION REQUIRED — placeholders; real account needed |
 | Sentry | Error monitoring | `SENTRY_DSN` | `security/sentry.py` | MANUAL ACTION REQUIRED — not defined on Railway |
 
@@ -306,7 +306,7 @@ Live DB fixture state is **PARTIALLY VERIFIED** — the seeds ran previously aga
 3. **Legal entity/registration** — required for publishable ToS (Consumer Protection Law Art. 37); drafts exist in `docs/legal/` but are NOT legally approved. (Founder → counsel)
 4. **Egyptian legal counsel** on: CBE Law 194/2020 PSP licensing of Model A money flow (PSP/PSO licensing rules issued June 2025, ~June 2026 transition), PDPL 151/2020 + Executive Regulations Decree 816/2025 (in force Nov 2025; compliance deadline **2026-11-01**), platform-role characterization. (Founder → counsel)
 5. **KYC ML architecture decision** — Textract/Rekognition do not exist in `me-central-1`; decide manual-only vs non-MENA ML region vs other provider. Manual review works today. (Founder/architecture)
-6. **Payment processor decision** — Paymob (DEC-004) vs Stripe (FLOWS/backlog) remains unresolved; do not write integration code until decided. (Founder)
+6. **Payment processor decision** — RESOLVED: Paymob primary (FD-01), Accept TEST verified end-to-end (collection + refund). Remaining: Paymob **Payouts** is a separately provisioned OAuth2 product — disbursement requires `PAYMOB_PAYOUT_CLIENT_ID`/`CLIENT_SECRET`/`USERNAME`/`PASSWORD` (Founder → Paymob).
 7. **`ENVIRONMENT=production`** on Railway before public traffic — disables `/auth/dev-token`. (Ops)
 
 ### B. Required before production
@@ -328,7 +328,7 @@ Live DB fixture state is **PARTIALLY VERIFIED** — the seeds ran previously aga
 
 ### D. Deferred by decision
 
-19. Paymob outreach (`docs/legal/PAYMOB_REQUIREMENTS_REQUEST.md`) — ready to send; deferred pending processor decision.
+19. Paymob outreach (`docs/legal/PAYMOB_REQUIREMENTS_REQUEST.md`) — now actionable: request **Payouts product provisioning** (OAuth2 client credentials + sandbox recipient) for the verified merchant `1231991`.
 20. Refund-calculation function matching decided tiers — deferred (manual computation acceptable for 1–10 transaction alpha).
 21. Airbnb/Booking.com channel integrations — classified FUTURE CHANNEL.
 22. `{{refund_days}}` — **CLOSED**: `REFUND_PROCESSING_DAYS=5` is wired into `booking.cancelled` payloads (`reservations/services.py`, `bookings/services.py`) with test coverage.
@@ -345,7 +345,7 @@ Reconciled 2026-09-20 (post Web Acceptance Hardening). RB numbering is canonical
 | RB-02 | AWS storage unconfigured | Railway vars empty (verified); presign endpoints return 503 live | KYC upload, photo upload, payment-proof upload all blocked | Founder+Ops | AWS console admin access | OPEN | §13-A2 steps |
 | RB-02a | S3_PAYMENT_PROOF_BUCKET undefined | Not in Railway var list on any service | Proof presign will 503 even after AWS keys exist | Ops | Bucket created | OPEN | Add var + create private bucket |
 | RB-02b | KYC bucket CORS | `infra/terraform/s3.tf` has no CORS on KYC bucket; browser PUT required | Uploads blocked by browser even with credentials | Ops | Bucket exists | OPEN | Apply CORS block §13-A2 |
-| RB-03 | Payment processor conflict | `DECISION_LOG` DEC-004 (Paymob) vs `FLOWS.md`/`ENGINEERING_BACKLOG.md` (Stripe) | Blocks all gateway integration code | Founder | Decision | OPEN | Founder rules |
+| RB-03 | Payment processor conflict | `DECISION_LOG` DEC-004 (Paymob) vs `FLOWS.md`/`ENGINEERING_BACKLOG.md` (Stripe) | Resolved — Paymob primary, Accept TEST verified; Payouts provisioning remains external | Founder | Decision | RESOLVED | Paymob chosen (FD-01) |
 | RB-04 | Legal entity | `docs/legal/` drafts exist; no registration | ToS cannot publish; Art. 37 disclosure missing | Founder | Registration | OPEN | Founder registers entity |
 | RB-05 | CBE counsel | `LEGAL_COUNSEL_REVIEW_CHECKLIST.md`; readiness pack v3 | Money-flow model may need CBE PSP licensing (~Jun 2026 transition) | Founder→Counsel | Egyptian counsel | OPEN | Engage counsel |
 | RB-06 | PDPL counsel | PDPL 151/2020 + Exec Regs 816/2025 in force Nov 2025 — compliance by 2026-11-01 | Data-protection compliance | Founder→Counsel | Egyptian counsel | OPEN | Engage counsel |

@@ -153,7 +153,6 @@ async def create_page(
     page.blocks = []
     session.add(page)
     await session.flush()
-    await session.refresh(page)
     return _page_detail(page)
 
 
@@ -229,7 +228,6 @@ async def create_block(
     session.add(block)
     page.updated_by = user.id
     await session.flush()
-    await session.refresh(block)
     return _block_response(block)
 
 
@@ -571,7 +569,6 @@ async def register_media(
     )
     session.add(media)
     await session.flush()
-    await session.refresh(media)
     return MediaResponse(
         id=media.id,
         s3_key=media.s3_key,

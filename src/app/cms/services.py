@@ -188,7 +188,7 @@ async def update_page(
         page.seo = _validate_seo(request.seo)
     page.updated_by = user.id
     await session.flush()
-    return _page_detail(page)
+    return await get_page_detail(session, page_id)
 
 
 async def delete_page(session: AsyncSession, page_id: str) -> None:
@@ -327,7 +327,7 @@ async def publish_page(
         )
     )
     await session.flush()
-    return _page_detail(page)
+    return await get_page_detail(session, page_id)
 
 
 async def unpublish_page(
@@ -341,7 +341,7 @@ async def unpublish_page(
     page.status = PageStatus.DRAFT.value
     page.updated_by = user.id
     await session.flush()
-    return _page_detail(page)
+    return await get_page_detail(session, page_id)
 
 
 async def list_revisions(
@@ -397,8 +397,7 @@ async def restore_revision(
             )
         )
     await session.flush()
-    await session.refresh(page, ["blocks"])
-    return _page_detail(page)
+    return await get_page_detail(session, page_id)
 
 
 # --- Public (published-only) --------------------------------------------

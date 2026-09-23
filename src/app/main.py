@@ -17,6 +17,7 @@ from app.auth import services as auth_services
 from app.auth import staff_router as staff_router
 from app.availability import router as availability_router
 from app.bookings import router as bookings_router
+from app.cms import router as cms_router
 from app.config import settings
 from app.database import get_session
 from app.discovery import router as discovery_router
@@ -225,6 +226,8 @@ app.include_router(host_router.router, prefix="/api/v1")
 app.include_router(disputes_router.router, prefix="/api/v1")
 app.include_router(staff_router.router, prefix="/api/v1")
 app.include_router(admin_router.router, prefix="/api/v1")
+app.include_router(cms_router.admin_router, prefix="/api/v1")
+app.include_router(cms_router.public_router, prefix="/api/v1")
 
 
 async def _db_status(session: AsyncSession) -> str:

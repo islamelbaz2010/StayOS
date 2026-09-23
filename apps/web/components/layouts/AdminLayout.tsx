@@ -51,6 +51,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     { label: t("disputes"), href: `/${locale}/admin/disputes`, perm: "disputes", badgeKey: "disputes" },
     { label: t("discovery"), href: `/${locale}/admin/discovery`, perm: "discovery", badgeKey: null },
     { label: t("import"), href: `/${locale}/admin/import`, perm: "listings", badgeKey: null },
+    { label: t("content"), href: `/${locale}/admin/content`, perm: "content", badgeKey: null },
   ];
   const navItems = [
     ...(isStaff

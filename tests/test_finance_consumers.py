@@ -144,6 +144,7 @@ async def test_poll_and_process_outbox(monkeypatch) -> None:
     with patch("app.finance.consumers.AsyncSessionLocal") as session_local:
         session = AsyncMock()
         session.begin = MagicMock(return_value=AsyncMock())
+        session.begin_nested = MagicMock(return_value=AsyncMock())
         result = MagicMock()
         result.scalars.return_value.all.return_value = [event]
         session.execute = AsyncMock(return_value=result)
@@ -165,6 +166,7 @@ async def test_consume_single_event(monkeypatch) -> None:
     with patch("app.finance.consumers.AsyncSessionLocal") as session_local:
         session = AsyncMock()
         session.begin = MagicMock(return_value=AsyncMock())
+        session.begin_nested = MagicMock(return_value=AsyncMock())
         result = MagicMock()
         result.scalar_one_or_none.return_value = event
         session.execute = AsyncMock(return_value=result)
@@ -184,6 +186,7 @@ async def test_consume_single_event_not_found(monkeypatch) -> None:
     with patch("app.finance.consumers.AsyncSessionLocal") as session_local:
         session = AsyncMock()
         session.begin = MagicMock(return_value=AsyncMock())
+        session.begin_nested = MagicMock(return_value=AsyncMock())
         result = MagicMock()
         result.scalar_one_or_none.return_value = None
         session.execute = AsyncMock(return_value=result)
@@ -193,3 +196,38 @@ async def test_consume_single_event_not_found(monkeypatch) -> None:
         ok = await consumers.consume_single_event("evt-1")
 
     assert ok is False
+
+@pytest.mark.asyncio
+async def test_poll_isolates_poison_event(monkeypatch) -> None:
+    """Regression: one failing event must not roll back or starve the rest
+    of the batch — each event is contained in its own savepoint."""
+    from app.finance import consumers
+
+    good = _make_event("booking.checked_in", {"reservation_id": "res-good"})
+    bad = _make_event("booking.payment_confirmed", {"reservation_id": "res-bad"})
+
+    calls: list[str] = []
+
+    async def _process(session, event):
+        if event is bad:
+            raise RuntimeError("boom")
+        calls.append(str(event.id))
+
+    with patch("app.finance.consumers.AsyncSessionLocal") as session_local:
+        session = AsyncMock()
+        session.begin = MagicMock(return_value=AsyncMock())
+        session.begin_nested = MagicMock(return_value=AsyncMock())
+        session.begin_nested = MagicMock(return_value=AsyncMock())
+        result = MagicMock()
+        result.scalars.return_value.all.return_value = [bad, good]
+        session.execute = AsyncMock(return_value=result)
+        session_local.return_value.__aenter__ = AsyncMock(return_value=session)
+        session_local.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with patch.object(
+            consumers, "process_outbox_event", new=_process
+        ):
+            count = await consumers.poll_and_process_outbox(10)
+
+    assert count == 1
+    assert calls == [str(good.id)]

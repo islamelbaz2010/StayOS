@@ -113,6 +113,7 @@ async def test_poll_and_process_outbox(monkeypatch) -> None:
     with patch("app.operations.consumers.AsyncSessionLocal") as session_local:
         session = AsyncMock()
         session.begin = MagicMock(return_value=AsyncMock())
+        session.begin_nested = MagicMock(return_value=AsyncMock())
         result = MagicMock()
         result.scalars.return_value.all.return_value = [event]
         session.execute = AsyncMock(return_value=result)

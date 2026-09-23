@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -8,6 +9,8 @@ from app.shared import redis as redis_state
 from app.shared.models import OutboxEvent
 
 from . import services as finance_services
+
+logger = logging.getLogger(__name__)
 
 CONSUMER_NAME = "finance"
 
@@ -64,9 +67,20 @@ async def poll_and_process_outbox(batch_size: int = 100) -> int:
                 .with_for_update(skip_locked=True)
             )
             events = result.scalars().all()
+            processed = 0
             for event in events:
-                await process_outbox_event(session, event)
-            return len(events)
+                try:
+                    async with session.begin_nested():
+                        await process_outbox_event(session, event)
+                    processed += 1
+                except Exception:
+                    logger.exception(
+                        "Outbox event %s (%s) failed for consumer %s",
+                        event.id,
+                        event.event_type,
+                        CONSUMER_NAME,
+                    )
+            return processed
 
 
 async def consume_single_event(event_id: str) -> bool:

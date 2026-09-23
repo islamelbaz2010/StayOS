@@ -72,6 +72,15 @@ async def poll_and_process_outbox(batch_size: int = 100) -> int:
             )
             events = result.scalars().all()
             for event in events:
-                await process_outbox_event(session, event)
-                count += 1
+                try:
+                    async with session.begin_nested():
+                        await process_outbox_event(session, event)
+                    count += 1
+                except Exception:
+                    logger.exception(
+                        "Outbox event %s (%s) failed for consumer %s",
+                        event.id,
+                        event.event_type,
+                        CONSUMER_NAME,
+                    )
     return count

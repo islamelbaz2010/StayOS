@@ -607,6 +607,9 @@ async def process_payout(
         wallet.available_balance_egp += payout.amount_egp
         session.add(wallet)
         await session.flush()
+        # Refresh so response serialization can't trigger a lazy load that
+        # would raise and roll back the failure bookkeeping.
+        await session.refresh(payout)
         return payout
 
     await finance_repository.update_payout_status(
@@ -642,6 +645,9 @@ async def process_payout(
         wallet.available_balance_egp += payout.amount_egp
         session.add(wallet)
         await session.flush()
+        # Refresh so response serialization can't trigger a lazy load that
+        # would raise and roll back the failure bookkeeping.
+        await session.refresh(payout)
         return payout
 
     platform_wallet = await finance_repository.get_platform_wallet(session)

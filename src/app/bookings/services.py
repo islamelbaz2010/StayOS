@@ -423,15 +423,28 @@ def _evaluate_cancellation_refund(
     # Rows predating the amount breakdown have no recorded fee — treat the
     # whole amount as refundable accommodation rather than guessing.
     service_fee = payment.guest_service_fee_egp or 0 if payment is not None else 0
+    vat_egp = payment.vat_egp or 0 if payment is not None else 0
+    taxable = total_paid - vat_egp - service_fee
     accommodation = (
         payment.accommodation_amount_egp
         if payment is not None and payment.accommodation_amount_egp is not None
-        else total_paid - service_fee
+        else taxable
     )
     accommodation_refund = _compute_guest_accommodation_refund(
         booking=booking, listing=listing, accommodation_amount_egp=accommodation
     )
-    return accommodation_refund, total_paid, min(service_fee, total_paid - accommodation_refund)
+    # VAT is a separate tax on the taxable booking amount: the refunded
+    # taxable portion carries its VAT share back to the guest. A full
+    # taxable refund returns the full VAT; a partial one is proportional.
+    vat_refund = (
+        int(round(vat_egp * accommodation_refund / accommodation))
+        if accommodation > 0
+        else 0
+    )
+    refund_amount = accommodation_refund + vat_refund
+    return refund_amount, total_paid, min(
+        service_fee, total_paid - refund_amount
+    )
 
 
 async def _settle_payment_on_cancel(

@@ -360,12 +360,12 @@ export default function AdminEarningsPage() {
                       }
                     />
                     <Row
-                      label={t("vat")}
-                      value={egp(ctx.data.financials.vat_egp)}
+                      label={t("taxableAmount")}
+                      value={egp(ctx.data.financials.taxable_amount_egp)}
                     />
                     <Row
-                      label={t("netRevenue")}
-                      value={egp(ctx.data.financials.platform_net_revenue_egp)}
+                      label={t("vat")}
+                      value={egp(ctx.data.financials.vat_egp)}
                     />
                     <Row
                       label={t("hostPayable")}

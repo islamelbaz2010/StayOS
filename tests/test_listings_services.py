@@ -307,7 +307,8 @@ async def test_search_listings_selected_dates_total_and_nights(fake_session: Asy
     assert len(result.data) == 1
     assert result.data[0].available_for_dates is True
     assert result.data[0].nights == 3
-    assert result.data[0].total_egp == 1500 * 3
+    # 1500 × 3 = 4500 taxable + 14% VAT (630)
+    assert result.data[0].total_egp == 1500 * 3 + 630
 
 
 @pytest.mark.asyncio
@@ -346,8 +347,8 @@ async def test_search_listings_calendar_rule_override_respected(fake_session: As
     filters = ListingSearchFilters(check_in=check_in, check_out=check_out)
     result = await search_listings(fake_session, filters)
     assert result.data[0].nights == 3
-    # 1500 + 3000 (override) + 1500
-    assert result.data[0].total_egp == 6000
+    # 1500 + 3000 (override) + 1500 = 6000 taxable + 14% VAT (840)
+    assert result.data[0].total_egp == 6000 + 840
 
 
 @pytest.mark.asyncio
@@ -386,7 +387,8 @@ async def test_search_listings_adjacent_blocked_rule_excludes_correctly(fake_ses
     filters = ListingSearchFilters(check_in=check_in, check_out=check_out)
     result = await search_listings(fake_session, filters)
     assert result.data[0].nights == 1
-    assert result.data[0].total_egp == 1500
+    # 1500 taxable + 14% VAT (210)
+    assert result.data[0].total_egp == 1500 + 210
 
 
 @pytest.mark.asyncio

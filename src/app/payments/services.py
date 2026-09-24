@@ -152,7 +152,9 @@ def _to_response(payment: Payment, *, include_breakdown: bool = False) -> Paymen
         cleaning_fee_egp=(
             payment.cleaning_fee_egp if include_breakdown else None
         ),
-        vat_egp=(payment.vat_egp if include_breakdown else None),
+        # VAT is the guest's own tax line — visible to everyone; the
+        # internal economics breakdown stays gated by include_breakdown.
+        vat_egp=payment.vat_egp,
         refund_amount_egp=payment.refund_amount_egp,
         nights=payment.nights,
         reference_number=payment.reference_number,
@@ -269,14 +271,18 @@ async def get_booking_quote(
     internal = await compute_booking_quote(
         session, unit_id, check_in.isoformat(), check_out.isoformat(), listing, nights
     )
-    # Guest-facing contract: total-only. Internal components never leave
-    # this function on the public path.
+    # Guest-facing contract: the booking components the guest is paying
+    # for (accommodation, cleaning, VAT) plus the total. Internal
+    # economics — platform share, host net — never leave this function.
     return BookingQuote(
         unit_id=internal.unit_id,
         check_in=internal.check_in,
         check_out=internal.check_out,
         nights=internal.nights,
         nightly_rate_egp=internal.nightly_rate_egp,
+        accommodation_egp=internal.accommodation_egp,
+        cleaning_fee_egp=internal.cleaning_fee_egp,
+        vat_egp=internal.vat_egp,
         total_egp=internal.total_egp,
     )
 
@@ -289,10 +295,9 @@ async def compute_booking_quote(
     listing: UnitListing,
     nights: int,
 ) -> "InternalQuote":
-    """Single source of truth for guest pricing: nightly base + cleaning fee
-    + the V1 guest service fee (waived while the alpha free-booking
-    incentive still applies). Shared by the quote endpoint and payment
-    creation so clients never have to guess the total.
+    """Single source of truth for guest pricing: nightly base + cleaning
+    fee + VAT on the taxable amount. Shared by the quote endpoint and
+    payment creation so clients never have to guess the total.
 
     Uses the same pricing engine as search results — weekend multipliers
     and calendar-rule price overrides are applied per night — so the
@@ -318,8 +323,9 @@ async def compute_booking_quote(
 
     # All-inclusive guest pricing (Founder commercial decision): the guest
     # total is the discounted accommodation amount plus host-set charges
-    # like cleaning. StayOS's 12% economics come OUT of this amount via the
-    # canonical engine — never on top, never as a guest-facing line item.
+    # like cleaning, plus VAT on that taxable amount. StayOS's 12%
+    # economics come OUT of the taxable amount via the canonical engine —
+    # never on top, never a guest-facing line item.
     economics = commercial.compute_booking_economics(
         discounted_accommodation_egp, cleaning_fee_egp
     )
@@ -332,6 +338,7 @@ async def compute_booking_quote(
         nightly_rate_egp=nightly_rate_egp,
         accommodation_egp=discounted_accommodation_egp,
         cleaning_fee_egp=cleaning_fee_egp,
+        vat_egp=economics.vat_egp,
         total_egp=economics.guest_total_egp,
     )
 
@@ -358,29 +365,24 @@ async def create_payment_for_booking(
         nights,
     )
     # A host custom offer (FD-07) overrides the listing-priced quote: the
-    # offered total IS the all-inclusive guest price.
+    # offered total IS the all-inclusive guest price — the guest pays
+    # exactly what the host offered, so VAT is the tax component inside
+    # that VAT-inclusive total.
     if booking.custom_total_egp is not None:
-        subtotal = booking.custom_total_egp
+        amount = booking.custom_total_egp
+        vat_egp = commercial.vat_inclusive_portion(amount)
+        subtotal = amount - vat_egp
         cleaning_fee = 0
-        amount = subtotal
     else:
         subtotal = quote.accommodation_egp + quote.cleaning_fee_egp
         cleaning_fee = quote.cleaning_fee_egp
+        vat_egp = commercial.compute_vat(subtotal)
         amount = quote.total_egp
 
-    # VAT is computed at creation by the same canonical engine the ledger
-    # uses — it sits inside the platform share (VAT-inclusive), so the
-    # guest total and host net are unchanged. The closed-alpha share
-    # waiver applies here too: a waived booking has no platform share and
-    # therefore no VAT component.
-    host_completed = await bookings_repository.count_host_completed_bookings(
-        session, unit.host_id, exclude_booking_id=booking.id
-    )
-    vat_egp = commercial.compute_booking_economics(
-        subtotal - cleaning_fee,
-        cleaning_fee,
-        platform_share_waived=host_completed < settings.ALPHA_HOST_FREE_BOOKINGS,
-    ).vat_egp
+    # VAT is a separate tax on the taxable booking amount (accommodation
+    # + cleaning) — computed by the canonical engine and added on top of
+    # the taxable total. It is NOT part of the 12% StayOS share and is
+    # never waived by the alpha free-bookings incentive.
 
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()
@@ -614,7 +616,9 @@ async def confirm_payment_by_provider(
             "accommodation_egp": (
                 payment.accommodation_amount_egp
                 if payment.accommodation_amount_egp is not None
-                else payment.amount_egp - (payment.cleaning_fee_egp or 0)
+                else payment.amount_egp
+                - (payment.cleaning_fee_egp or 0)
+                - (payment.vat_egp or 0)
             ),
             "cleaning_fee_egp": payment.cleaning_fee_egp or 0,
         },
@@ -888,7 +892,9 @@ async def verify_payment(
             "accommodation_egp": (
                 payment.accommodation_amount_egp
                 if payment.accommodation_amount_egp is not None
-                else payment.amount_egp - (payment.cleaning_fee_egp or 0)
+                else payment.amount_egp
+                - (payment.cleaning_fee_egp or 0)
+                - (payment.vat_egp or 0)
             ),
             "cleaning_fee_egp": payment.cleaning_fee_egp or 0,
         },

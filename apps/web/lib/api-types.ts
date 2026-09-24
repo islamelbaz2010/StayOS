@@ -1523,6 +1523,12 @@ export interface components {
       nights: number;
       /** Nightly Rate Egp */
       nightly_rate_egp: number;
+      /** Accommodation Egp */
+      accommodation_egp: number;
+      /** Cleaning Fee Egp */
+      cleaning_fee_egp: number;
+      /** Vat Egp */
+      vat_egp: number;
       /** Total Egp */
       total_egp: number;
     };
@@ -2392,6 +2398,8 @@ export interface components {
       discount_egp: number;
       /** Cleaning Fee Egp */
       cleaning_fee_egp: number;
+      /** Vat Egp */
+      vat_egp: number;
       /** Guest Total Egp */
       guest_total_egp: number;
       /** Stayos Share Egp */

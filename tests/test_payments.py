@@ -1294,8 +1294,9 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
     """Payment creation must record the 24h proof deadline and the
-    all-inclusive total (FD-19): the guest pays accommodation + cleaning
-    exactly — StayOS's 12% is internal and never added on top."""
+    all-inclusive total (FD-19): the guest pays the taxable amount
+    (accommodation + cleaning) plus VAT — StayOS's 12% is internal and
+    never added on top."""
     from app.config import settings
 
     guest = _make_user(role=UserRole.GUEST)
@@ -1334,11 +1335,13 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
     await payment_services.create_payment_for_booking(fake_session, booking, guest)
 
     kwargs = create_mock.call_args.kwargs
-    # All-inclusive: 500*4 + 50 cleaning = 2050 — no guest service fee,
-    # no amount added on top of the advertised price.
+    # Taxable: 500*4 + 50 cleaning = 2050 — no guest service fee.
+    # VAT is a separate 14% tax on the taxable amount: 287 → the guest
+    # pays 2337.
     assert kwargs["accommodation_amount_egp"] == 2050
     assert kwargs["guest_service_fee_egp"] == 0
-    assert kwargs["amount_egp"] == 2050
+    assert kwargs["vat_egp"] == 287
+    assert kwargs["amount_egp"] == 2337
     deadline = kwargs["payment_deadline_at"]
     assert deadline is not None
     delta = (deadline - before).total_seconds() / 3600
@@ -1493,8 +1496,8 @@ def test_payment_proof_bucket_requires_private_config(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_get_booking_quote_all_inclusive(fake_session: AsyncMock, monkeypatch) -> None:
-    """FD-19: the guest quote is the final all-inclusive price — no fee
-    fields are exposed at all."""
+    """FD-19: the guest quote is the final all-inclusive price —
+    taxable booking amount plus VAT, no internal economics exposed."""
     host = _make_user(user_id="host-1", role=UserRole.HOST)
     unit = _make_unit(host_id=host.id)
     unit.listing = _make_listing(unit)
@@ -1513,12 +1516,16 @@ async def test_get_booking_quote_all_inclusive(fake_session: AsyncMock, monkeypa
     )
     assert quote.nights == 4
     assert quote.nightly_rate_egp == 500
-    # 500 × 4 nights + 50 cleaning = 2050 — the final price, nothing added.
-    assert quote.total_egp == 2050
-    # No fee/breakdown fields exist on the guest-facing contract.
-    assert not hasattr(quote, "accommodation_egp")
+    # 500 × 4 nights + 50 cleaning = 2050 taxable + 14% VAT (287) = 2337.
+    assert quote.accommodation_egp == 2000
+    assert quote.cleaning_fee_egp == 50
+    assert quote.vat_egp == 287
+    assert quote.total_egp == 2337
+    # No internal economics or fee fields exist on the guest-facing contract.
     assert not hasattr(quote, "service_fee_egp")
     assert not hasattr(quote, "guest_service_fee_egp")
+    assert not hasattr(quote, "platform_share_egp")
+    assert not hasattr(quote, "host_net_egp")
 
 
 @pytest.mark.asyncio
@@ -1544,9 +1551,11 @@ async def test_get_booking_quote_weekly_discount(
     quote = await payment_services.get_booking_quote(
         fake_session, "unit-1", date(2026, 9, 10), date(2026, 9, 18)
     )
-    # 8 nights: 500 × 8 = 4000 − 10% = 3600 + 50 cleaning = 3650
+    # 8 nights: 500 × 8 = 4000 − 10% = 3600 + 50 cleaning = 3650 taxable
+    # + 14% VAT (511) = 4161.
     assert quote.nights == 8
-    assert quote.total_egp == 3650
+    assert quote.vat_egp == 511
+    assert quote.total_egp == 4161
 
 
 @pytest.mark.asyncio
@@ -1583,7 +1592,9 @@ async def test_get_booking_quote_applies_weekend_multiplier(
     )
     assert quote.nights == 4
     # 2 weekday nights @ 500 + 2 weekend nights @ 750 = 2500 + 50 cleaning
-    assert quote.total_egp == 2550
+    # = 2550 taxable + 14% VAT (357) = 2907.
+    assert quote.vat_egp == 357
+    assert quote.total_egp == 2907
 
 
 @pytest.mark.asyncio

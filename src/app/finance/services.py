@@ -72,7 +72,15 @@ async def booking_economics(
 
     Returns ``(economics, waived)`` so callers can surface whether the
     platform share was waived for this booking.
+
+    VAT is a separate tax on the taxable amount (accommodation +
+    cleaning) — never part of the share and never waived by the alpha
+    incentive. The stored ``payment.vat_egp`` is authoritative: rows
+    created before VAT existed carry NULL and are treated as VAT-free so
+    their escrow splits still balance against what was actually charged.
     """
+    from dataclasses import replace
+
     from app.bookings import repository as bookings_repository
 
     host_completed = await bookings_repository.count_host_completed_bookings(
@@ -81,18 +89,23 @@ async def booking_economics(
     waived = host_completed < settings.ALPHA_HOST_FREE_BOOKINGS
     fee_base = payment.accommodation_amount_egp
     if fee_base is None:
-        fee_base = payment.amount_egp
+        fee_base = payment.amount_egp - (payment.vat_egp or 0)
     fee_base -= payment.cleaning_fee_egp or 0
     if fee_base < 0:
-        fee_base = payment.amount_egp
-    return (
-        commercial.compute_booking_economics(
-            fee_base,
-            payment.cleaning_fee_egp or 0,
-            platform_share_waived=waived,
-        ),
-        waived,
+        fee_base = payment.amount_egp - (payment.vat_egp or 0)
+    economics = commercial.compute_booking_economics(
+        fee_base,
+        payment.cleaning_fee_egp or 0,
+        platform_share_waived=waived,
     )
+    stored_vat = payment.vat_egp or 0
+    if stored_vat != economics.vat_egp:
+        economics = replace(
+            economics,
+            vat_egp=stored_vat,
+            guest_total_egp=economics.taxable_amount_egp + stored_vat,
+        )
+    return economics, waived
 
 
 async def _booking_host_net(session: AsyncSession, payment) -> int:
@@ -146,17 +159,25 @@ def derive_payout_state(
     }
 
 
-async def _resolve_host_amount(session: AsyncSession, reservation_id: str) -> int:
-    """Host net for an escrowed booking — legacy reservations carry the
-    figure on the row; live bookings derive it from the payment via the
-    canonical commercial engine."""
+async def _resolve_escrow_split(
+    session: AsyncSession, reservation_id: str, escrow_total: int
+) -> tuple[int, int]:
+    """Resolve (host_amount, vat) behind an escrowed booking.
+
+    Legacy reservations carry host/platform amounts on the row — VAT is
+    whatever remains of the total (0 for pre-VAT rows). Live bookings
+    derive the host net from the canonical engine and use the VAT that was
+    actually persisted on the payment (NULL → 0 for pre-VAT rows).
+    """
     reservation = await _reservation_or_none(session, reservation_id)
     if reservation is not None:
-        return reservation.host_amount_egp
+        vat = escrow_total - reservation.host_amount_egp - reservation.platform_fee_egp
+        return reservation.host_amount_egp, max(vat, 0)
     payment = await _payment_or_none(session, reservation_id)
     if payment is None:
         raise NotFoundError("Payment not found for escrow release")
-    return await _booking_host_net(session, payment)
+    economics, _ = await booking_economics(session, payment)
+    return economics.host_net_egp, economics.vat_egp
 
 
 async def escrow_host_amount(
@@ -166,18 +187,29 @@ async def escrow_host_amount(
 
     Same resolution the escrow-release path uses — reservation rows carry
     the figure; booking-path payments derive it from the commercial engine.
+    VAT never counts toward the host amount.
     """
-    return await _resolve_host_amount(session, escrow.reservation_id)
+    host_amount, _ = await _resolve_escrow_split(
+        session, escrow.reservation_id, escrow.amount_egp
+    )
+    return host_amount
 
 
 async def _ensure_reservation_amounts(
     session: AsyncSession,
     reservation_id: str,
     payload: dict[str, Any],
-) -> tuple[int, int, str]:
+) -> tuple[int, int, int, str]:
+    """Resolve (total, host_amount, vat, host_id) for a finance event.
+
+    VAT is whatever was actually charged: persisted on the payment row
+    for booking-path payments, or derivable as ``total − host −
+    platform_fee`` on legacy reservations (0 for pre-VAT rows).
+    """
     total = payload.get("amount_egp")
     host_amount = payload.get("host_amount_egp")
     host_id = payload.get("host_id")
+    vat_egp = payload.get("vat_egp") or 0
 
     if total is None or host_amount is None or host_id is None:
         reservation = await _reservation_or_none(session, reservation_id)
@@ -191,11 +223,15 @@ async def _ensure_reservation_amounts(
                 if host_amount is not None
                 else await _booking_host_net(session, payment)
             )
+            vat_egp = vat_egp or (payment.vat_egp or 0)
             host_id = host_id if host_id is not None else payment.host_id
         else:
             total = total if total is not None else reservation.total_amount_egp
             host_amount = (
                 host_amount if host_amount is not None else reservation.host_amount_egp
+            )
+            vat_egp = vat_egp or max(
+                total - host_amount - reservation.platform_fee_egp, 0
             )
             unit = await listings_repository.get_unit_with_listing(
                 session, reservation.unit_id
@@ -209,7 +245,7 @@ async def _ensure_reservation_amounts(
     if host_id is None:
         raise ValidationError("Host id is required for finance processing")
 
-    return total, host_amount, host_id
+    return total, host_amount, vat_egp, host_id
 
 
 async def _post_ledger_for_escrow_create(
@@ -248,8 +284,15 @@ async def _post_ledger_for_escrow_release(
     host_wallet: Wallet,
     host_amount: int,
     platform_revenue: int,
+    vat_egp: int,
 ) -> None:
-    total = host_amount + platform_revenue
+    """Release an escrow into its three canonical components.
+
+    The escrow principal is the full guest payment (taxable + VAT). VAT
+    is a separate tax — it posts to VAT_PAYABLE, never to platform
+    revenue or the host. ``host + platform_revenue + vat == total``.
+    """
+    total = host_amount + platform_revenue + vat_egp
     await finance_repository.create_ledger_entry(
         session,
         transaction_id=tx.id,
@@ -271,8 +314,24 @@ async def _post_ledger_for_escrow_release(
         description="Host payout owed",
     )
     if platform_revenue > 0:
-        await _post_platform_revenue_with_vat(
-            session, tx, platform_revenue, "Platform fees and guest service fee"
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.PLATFORM_REVENUE,
+            account_type=AccountType.REVENUE,
+            entry_type=LedgerEntryType.CREDIT,
+            amount_egp=platform_revenue,
+            description="Platform fees and guest service fee",
+        )
+    if vat_egp > 0:
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.VAT_PAYABLE,
+            account_type=AccountType.LIABILITY,
+            entry_type=LedgerEntryType.CREDIT,
+            amount_egp=vat_egp,
+            description="VAT on taxable booking amount",
         )
 
 
@@ -283,6 +342,7 @@ async def _post_ledger_for_escrow_refund(
     platform_wallet: Wallet,
     refund_amount: int,
     retained: int,
+    vat_total_egp: int,
     provider_confirmed: bool,
 ) -> None:
     total = refund_amount + retained
@@ -324,43 +384,33 @@ async def _post_ledger_for_escrow_refund(
                 description="Refund owed to guest",
             )
     if retained > 0:
-        await _post_platform_revenue_with_vat(
-            session, tx, retained, "Retained cancellation fees"
-        )
-
-
-async def _post_platform_revenue_with_vat(
-    session: AsyncSession,
-    tx: FinancialTransaction,
-    gross_revenue: int,
-    description: str,
-) -> None:
-    """Recognise platform revenue split into net revenue + VAT payable.
-
-    The platform share is VAT-inclusive: the VAT component is a liability
-    owed to the tax authority, only the net remainder is StayOS revenue.
-    """
-    vat, net = commercial.split_vat(gross_revenue)
-    if net > 0:
-        await finance_repository.create_ledger_entry(
-            session,
-            transaction_id=tx.id,
-            ledger_account=LedgerAccount.PLATFORM_REVENUE,
-            account_type=AccountType.REVENUE,
-            entry_type=LedgerEntryType.CREDIT,
-            amount_egp=net,
-            description=description,
-        )
-    if vat > 0:
-        await finance_repository.create_ledger_entry(
-            session,
-            transaction_id=tx.id,
-            ledger_account=LedgerAccount.VAT_PAYABLE,
-            account_type=AccountType.LIABILITY,
-            entry_type=LedgerEntryType.CREDIT,
-            amount_egp=vat,
-            description="VAT on platform service share",
-        )
+        # The retained cancellation amount keeps its VAT component: the
+        # VAT portion of what the guest was charged stays a tax liability,
+        # only the taxable remainder is platform revenue.
+        total = refund_amount + retained
+        refund_vat = int(round(vat_total_egp * refund_amount / total)) if total else 0
+        retained_vat = vat_total_egp - refund_vat
+        retained_taxable = retained - retained_vat
+        if retained_taxable > 0:
+            await finance_repository.create_ledger_entry(
+                session,
+                transaction_id=tx.id,
+                ledger_account=LedgerAccount.PLATFORM_REVENUE,
+                account_type=AccountType.REVENUE,
+                entry_type=LedgerEntryType.CREDIT,
+                amount_egp=retained_taxable,
+                description="Retained cancellation fees",
+            )
+        if retained_vat > 0:
+            await finance_repository.create_ledger_entry(
+                session,
+                transaction_id=tx.id,
+                ledger_account=LedgerAccount.VAT_PAYABLE,
+                account_type=AccountType.LIABILITY,
+                entry_type=LedgerEntryType.CREDIT,
+                amount_egp=retained_vat,
+                description="VAT on retained cancellation amount",
+            )
 
 
 async def _post_ledger_for_payout(
@@ -420,7 +470,7 @@ async def handle_payment_confirmed(
     if not reservation_id:
         return None
 
-    total, host_amount, host_id = await _ensure_reservation_amounts(
+    total, host_amount, vat_egp, host_id = await _ensure_reservation_amounts(
         session, reservation_id, payload
     )
 
@@ -467,7 +517,8 @@ async def handle_payment_confirmed(
             "host_id": host_id,
             "amount_egp": total,
             "host_amount_egp": host_amount,
-            "platform_revenue_egp": total - host_amount,
+            # VAT is excluded — it is a liability, not platform revenue.
+            "platform_revenue_egp": total - host_amount - vat_egp,
         },
     )
 
@@ -485,7 +536,7 @@ async def handle_checkin_event(
     if escrow is None:
         # Fallback path for bookings whose payment predates escrow
         # creation — the escrow always represents the full collected total.
-        total, _, host_id = await _ensure_reservation_amounts(
+        total, _, _, host_id = await _ensure_reservation_amounts(
             session, reservation_id, payload
         )
         _, _ = await _get_or_create_wallets(session, host_id)
@@ -541,8 +592,12 @@ async def release_escrow(
         return escrow
 
     total = escrow.amount_egp
-    host_amount = await _resolve_host_amount(session, escrow.reservation_id)
-    platform_revenue = total - host_amount
+    host_amount, vat_egp = await _resolve_escrow_split(
+        session, escrow.reservation_id, total
+    )
+    # StayOS revenue is the commercial share only — VAT is a separate
+    # liability, never revenue.
+    platform_revenue = total - host_amount - vat_egp
 
     _, host_wallet = await _get_or_create_wallets(session, escrow.host_id)
 
@@ -556,7 +611,7 @@ async def release_escrow(
     )
 
     await _post_ledger_for_escrow_release(
-        session, tx, escrow, host_wallet, host_amount, platform_revenue
+        session, tx, escrow, host_wallet, host_amount, platform_revenue, vat_egp
     )
 
     escrow.status = EscrowStatus.RELEASED
@@ -604,6 +659,17 @@ async def handle_cancel_event(
     if refund_amount > total:
         refund_amount = total
     retained = total - refund_amount
+    # VAT follows the refunded taxable amount: the refunded portion's VAT
+    # returns to the guest inside refund_amount; only the retained VAT
+    # portion stays a liability. When neither a payment nor a reservation
+    # row resolves (legacy payload-created escrows), no VAT was ever
+    # recorded — the retained amount is then entirely platform revenue.
+    try:
+        _, vat_total_egp = await _resolve_escrow_split(
+            session, reservation_id, total
+        )
+    except NotFoundError:
+        vat_total_egp = 0
 
     platform_wallet, _ = await _get_or_create_wallets(session, escrow.host_id)
 
@@ -642,6 +708,7 @@ async def handle_cancel_event(
         platform_wallet,
         refund_amount,
         retained,
+        vat_total_egp,
         provider_confirmed,
     )
 

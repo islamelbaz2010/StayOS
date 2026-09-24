@@ -27,10 +27,12 @@ class Settings(BaseSettings):
     )
     VAT_RATE_PCT: float = Field(
         default=0.14,
-        description="StayOS configured VAT rate applied to the platform "
-        "service share. The guest-facing all-inclusive total and the host "
-        "net are unchanged — VAT is carved out of the platform share and "
-        "recorded to the VAT_PAYABLE ledger account (see finance/commercial.py).",
+        description="StayOS configured VAT rate applied to the taxable "
+        "booking amount (accommodation + cleaning after discounts). VAT "
+        "is added to the guest total on top of the taxable amount and "
+        "recorded to the VAT_PAYABLE ledger account — it is never part "
+        "of the 12% platform share, platform revenue, or host earnings "
+        "(see finance/commercial.py).",
     )
 
     FIREBASE_PROJECT_ID: str = Field(default="", description="Firebase project ID")

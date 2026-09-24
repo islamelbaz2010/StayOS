@@ -908,7 +908,8 @@
     "messageToHostHint": "Optional — sent to the host with your booking request",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
-    "signInToBook": "Sign in to book"
+    "signInToBook": "Sign in to book",
+    "vatLine": "VAT 14%"
   },
   "hostBookings": {
     "title": "Booking requests",
@@ -1238,7 +1239,8 @@
     "returnLinkInvalidHint": "Sign in to see the status of your payment and booking.",
     "returnStillProcessing": "Payment still processing",
     "returnStillProcessingHint": "We have not received final confirmation yet. Your status updates automatically, or sign in to check your booking.",
-    "returnSignInHint": "Sign in to see your full booking and payment details."
+    "returnSignInHint": "Sign in to see your full booking and payment details.",
+    "vatLine": "VAT 14%"
   },
   "kyc": {
     "pageTitle": "Identity Verification",
@@ -1946,7 +1948,7 @@
     "paidAt": "Paid at",
     "providerPayout": "Provider payout",
     "vat": "VAT (14%)",
-    "netRevenue": "Net StayOS revenue (after VAT)",
+    "taxableAmount": "Taxable booking amount",
     "emptyDrill": "No records in this category.",
     "loading": "Loading…",
     "drill": {

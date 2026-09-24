@@ -48,7 +48,8 @@ class PaymentResponse(BaseModel):
     accommodation_amount_egp: int | None = None
     guest_service_fee_egp: int | None = None
     cleaning_fee_egp: int | None = None
-    # VAT inside the platform service share — admin/staff breakdown only.
+    # VAT on the taxable booking amount — the payer's own tax line,
+    # visible to the guest. Internal economics stay breakdown-gated.
     vat_egp: int | None = None
     nights: int
     reference_number: str
@@ -86,6 +87,12 @@ class BookingQuote(BaseModel):
     check_out: str
     nights: int
     nightly_rate_egp: int
+    # Guest-facing booking components — what the guest is paying for.
+    accommodation_egp: int
+    cleaning_fee_egp: int
+    # VAT is a separate tax on the taxable booking amount, shown to the
+    # guest as its own line ("VAT 14%") — never part of StayOS economics.
+    vat_egp: int
     total_egp: int
 
 
@@ -100,6 +107,7 @@ class InternalQuote(BaseModel):
     nightly_rate_egp: int
     accommodation_egp: int
     cleaning_fee_egp: int
+    vat_egp: int
     total_egp: int
 
 

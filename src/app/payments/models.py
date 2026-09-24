@@ -57,9 +57,11 @@ class Payment(UUIDMixin, TimestampMixin, Base):
     cleaning_fee_egp: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )
-    # VAT component inside the platform service share (configured
-    # VAT_RATE_PCT, VAT-inclusive). Captured at creation via the canonical
-    # commercial engine; NULL on rows created before VAT tracking.
+    # Separate VAT on the taxable booking amount (accommodation +
+    # cleaning after discounts, configured VAT_RATE_PCT) — added on top
+    # of the taxable amount in amount_egp. Captured at creation via the
+    # canonical commercial engine; NULL on rows created before VAT
+    # tracking. Never part of platform revenue or host earnings.
     vat_egp: Mapped[int | None] = mapped_column(Integer, nullable=True)
     nights: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     reference_number: Mapped[str] = mapped_column(String(36), nullable=False)

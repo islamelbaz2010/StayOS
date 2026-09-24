@@ -416,8 +416,9 @@ async def test_earnings_simulator_uses_canonical_engine() -> None:
             nightly_price_egp=500, nights=4, cleaning_fee_egp=50
         ),
     )
-    # 500 × 4 = 2000 + 50 cleaning = 2050 guest total
-    assert resp.guest_total_egp == 2050
+    # 500 × 4 = 2000 + 50 cleaning = 2050 taxable; VAT 287 → guest 2337
+    assert resp.vat_egp == 287
+    assert resp.guest_total_egp == 2337
     # 12% of accommodation (2000) = 240; host net = 1810
     assert resp.stayos_share_egp == 240
     assert resp.host_net_egp == 1810
@@ -436,10 +437,11 @@ async def test_earnings_simulator_with_discount() -> None:
             discount_pct=10,
         ),
     )
-    # 4000 − 10% = 3600; share 432; host net 3168
+    # 4000 − 10% = 3600; VAT 504 → guest 4104; share 432; host net 3168
     assert resp.accommodation_egp == 3600
     assert resp.discount_egp == 400
-    assert resp.guest_total_egp == 3600
+    assert resp.vat_egp == 504
+    assert resp.guest_total_egp == 4104
     assert resp.stayos_share_egp == 432
     assert resp.host_net_egp == 3168
 

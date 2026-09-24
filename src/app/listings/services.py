@@ -740,13 +740,15 @@ async def search_listings(
             )
             # All-inclusive pricing (Founder commercial decision): the
             # search-card total is the final guest price — the applicable
-            # host discount applied, cleaning included, no added fee.
+            # host discount applied, cleaning included, VAT added, no
+            # other fee.
             discount_pct = pricing.applicable_discount_pct(listing, nights)
             accommodation -= int(round(accommodation * discount_pct / 100))
             cleaning = listing.cleaning_fee_egp or 0
-            fee_base = accommodation + cleaning
-            item["total_egp"] = fee_base
-            effective_nightly = int(round(fee_base / nights)) if nights else None
+            taxable = accommodation + cleaning
+            guest_total = taxable + int(round(taxable * settings.VAT_RATE_PCT))
+            item["total_egp"] = guest_total
+            effective_nightly = int(round(guest_total / nights)) if nights else None
             item["effective_nightly_egp"] = effective_nightly
             item["discounted"] = bool(
                 effective_nightly is not None

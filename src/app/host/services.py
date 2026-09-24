@@ -1276,6 +1276,7 @@ async def simulate_earnings(
         accommodation_egp=economics.accommodation_egp,
         discount_egp=base - discounted,
         cleaning_fee_egp=request.cleaning_fee_egp,
+        vat_egp=economics.vat_egp,
         guest_total_egp=economics.guest_total_egp,
         stayos_share_egp=economics.platform_share_egp,
         host_net_egp=economics.host_net_egp,

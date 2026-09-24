@@ -554,7 +554,28 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
                 <span className="text-neutral-600">
                   {formatMoney(quote?.nightly_rate_egp ?? listing.price, listing.currency, moneyLocale)} × {nights} {t("nights")}
                 </span>
+                <span className="font-medium text-brand-900">
+                  {formatMoney(quote?.accommodation_egp ?? 0, listing.currency, moneyLocale)}
+                </span>
               </div>
+
+              {quote?.cleaning_fee_egp ? (
+                <div className="flex justify-between">
+                  <span className="text-neutral-600">{t("cleaningFee")}</span>
+                  <span className="font-medium text-brand-900">
+                    {formatMoney(quote.cleaning_fee_egp, listing.currency, moneyLocale)}
+                  </span>
+                </div>
+              ) : null}
+
+              {quote?.vat_egp ? (
+                <div className="flex justify-between">
+                  <span className="text-neutral-600">{t("vatLine")}</span>
+                  <span className="font-medium text-brand-900">
+                    {formatMoney(quote.vat_egp, listing.currency, moneyLocale)}
+                  </span>
+                </div>
+              ) : null}
 
               <div className="flex justify-between">
                 <span className="text-neutral-600">{t("guests")}</span>

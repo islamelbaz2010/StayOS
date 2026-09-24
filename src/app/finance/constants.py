@@ -63,6 +63,7 @@ class LedgerAccount(StrEnum):
     PLATFORM_REVENUE = "platform_revenue"
     PAYOUT_FEE_EXPENSE = "payout_fee_expense"
     GUEST_REFUND_PAYABLE = "guest_refund_payable"
-    # VAT owed to the tax authority on the platform service share — carved
-    # out of PLATFORM_REVENUE at recognition time (see finance/commercial).
+    # VAT owed to the tax authority on the taxable booking amount —
+    # posted independently at recognition time; never inside
+    # PLATFORM_REVENUE (see finance/commercial).
     VAT_PAYABLE = "vat_payable"

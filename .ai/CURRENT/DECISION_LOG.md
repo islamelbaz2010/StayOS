@@ -826,3 +826,45 @@ The consolidated product-completion pass surfaced two product gaps that required
 - **Positive**: VAT is a first-class, ledger-consistent financial component; the normal booking path is Search → Listing → dates → quote → checkout → pay → confirmed.
 - **Negative**: None for guests/hosts. Admin earnings now exposes a VAT card and drill-down; historical ledger entries remain as recorded (not rewritten).
 - **Neutral**: Request-to-book continues to exist for listings where the host opts out.
+
+---
+
+### DEC-021: VAT 14% Is a Separate Tax on the Taxable Booking Amount — Supersedes DEC-020 §1
+
+**Status**: Accepted
+**Date**: 2026-10-24
+**Decision Maker**: Founder
+**Urgency**: PRE-LAUNCH
+**Reversibility**: HIGH
+
+#### Context
+
+DEC-020 §1 modeled VAT as a component carved out of the VAT-inclusive 12% platform share: guest total and host net were unchanged, and `platform_share = platform_revenue + vat`. The Founder has corrected this: VAT is a **separate tax** added to the taxable booking amount, not a slice of StayOS economics.
+
+#### Decision
+
+1. **Taxable base**: `taxable_booking_amount = accommodation + cleaning` after applicable booking/listing discounts. No other tax base is introduced.
+2. **VAT**: `vat_egp = taxable_booking_amount × 14%`. VAT is added to the guest payable total: `guest_total = taxable + vat`.
+3. **Independence**: The StayOS 12% commercial/service share is computed on its existing canonical base and is **not** reduced by, inclusive of, or otherwise conflated with VAT. VAT is not StayOS revenue and not host earnings.
+4. **Ledger**: `VAT_PAYABLE` receives the full VAT amount at escrow release / retained-fee recognition. `PLATFORM_REVENUE` contains only the StayOS commercial share. `HOST_PAYABLE` contains host economics only. `guest_total = host_payable + vat_payable + platform_revenue`.
+5. **Refunds**: VAT follows the underlying taxable amount through the existing provider-authoritative refund lifecycle — proportional on partial refunds, fully reversed on full refunds, liability-held until provider confirmation.
+6. **Alpha waiver**: The alpha free-bookings waiver removes only the StayOS commercial share. VAT still applies to the taxable booking amount on waived bookings.
+7. **Custom offers**: A custom offer total is a VAT-inclusive final guest price; the taxable amount and VAT are back-derived at the configured rate.
+8. **History**: Historical payment rows and ledger postings are not rewritten; `payments.vat_egp` stays NULL on pre-VAT rows.
+9. DEC-020 §2 (Instant Book default) is unchanged.
+
+#### Rationale
+
+- VAT is a tax liability owed to the tax authority, not a revenue component; conflating it with the platform share misstates both revenue and liability.
+- The guest price must show the tax transparently (subtotal + VAT + total); host economics must never be inflated by tax collected on the booking.
+
+#### Consequences
+
+- **Positive**: VAT, platform revenue, host earnings, escrow, and refunds are five cleanly separated concepts; reconciliation `guest_total = host + VAT + share` holds exactly.
+- **Negative**: Guest payable totals rise by 14% over the taxable amount versus the prior carve-out display (which left totals unchanged). This is the intended correction.
+- **Neutral**: Paymob amounts change only by the now-included VAT; payout/escrow timing, cancellation rules, discount rules, and the 12% rate are unchanged.
+
+#### Related Decisions
+
+- DEC-020: superseded in §1 (VAT placement); §2 (Instant Book default) remains in force.
+- FD-19 / DEC-018-era commercial model: the 12% share, internal 6%+6% allocation, and discount rules are unchanged.

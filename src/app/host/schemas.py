@@ -60,6 +60,7 @@ class EarningsSimulateResponse(BaseModel):
     accommodation_egp: int  # after discount
     discount_egp: int
     cleaning_fee_egp: int
+    vat_egp: int  # separate 14% tax on the taxable amount — not host earnings
     guest_total_egp: int  # all-inclusive price the guest would pay
     stayos_share_egp: int  # platform economics — host-facing only
     host_net_egp: int  # estimated host payout

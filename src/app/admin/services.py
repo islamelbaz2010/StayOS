@@ -320,9 +320,11 @@ async def _booking_financials(
         "guest_paid_egp": payment.amount_egp,
         "accommodation_egp": economics.accommodation_egp,
         "cleaning_fee_egp": economics.cleaning_fee_egp,
-        "platform_share_egp": economics.platform_share_egp,
+        # VAT is a separate tax on the taxable booking amount — not part
+        # of the platform share, not revenue, not host earnings.
+        "taxable_amount_egp": economics.taxable_amount_egp,
         "vat_egp": economics.vat_egp,
-        "platform_net_revenue_egp": economics.platform_net_revenue_egp,
+        "platform_share_egp": economics.platform_share_egp,
         "host_side_share_egp": economics.host_side_share_egp,
         "guest_side_share_egp": economics.guest_side_share_egp,
         "host_net_egp": economics.host_net_egp,

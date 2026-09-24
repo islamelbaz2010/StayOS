@@ -373,6 +373,10 @@ async def test_handle_cancel_event_refund(fake_session: AsyncMock, monkeypatch) 
         AsyncMock(return_value=platform_wallet),
     )
     monkeypatch.setattr(
+        "app.finance.services._reservation_or_none",
+        AsyncMock(return_value=_make_reservation(host_id=escrow.host_id)),
+    )
+    monkeypatch.setattr(
         finance_repository,
         "get_transaction_by_idempotency_key",
         AsyncMock(return_value=None),
@@ -1146,6 +1150,14 @@ async def test_handle_cancel_event_posts_cash_when_provider_confirmed(
         finance_repository,
         "get_or_create_wallet",
         AsyncMock(return_value=platform_wallet),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._reservation_or_none",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        "app.payments.repository.get_payment_by_booking",
+        AsyncMock(return_value=None),
     )
     monkeypatch.setattr(
         finance_repository,

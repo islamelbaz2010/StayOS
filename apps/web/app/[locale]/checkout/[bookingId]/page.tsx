@@ -10,10 +10,11 @@ import { GuestLayout } from "@/components/layouts";
 import { ProofUpload } from "@/components/payments/ProofUpload";
 import { useBooking, useStayInfo } from "@/lib/queries/bookings";
 import {
+  useCheckoutSession,
   usePaymentByBooking,
   usePaymentProofDownloadUrl,
 } from "@/lib/queries/payments";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getApiErrorMessage } from "@/lib/utils";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
@@ -67,7 +68,24 @@ function CheckoutContent({
     refetch: refetchPayment,
   } = usePaymentByBooking(bookingId);
   const proofDownload = usePaymentProofDownloadUrl();
+  const checkoutSession = useCheckoutSession();
   const { data: stayInfo } = useStayInfo(bookingId);
+
+  function handlePayByCard() {
+    if (!payment) return;
+    if (payment.checkout_url) {
+      window.location.href = payment.checkout_url;
+      return;
+    }
+    checkoutSession.mutate(payment.id, {
+      onSuccess: (data) => {
+        const url = data.checkout_url;
+        if (url) {
+          window.location.href = url;
+        }
+      },
+    });
+  }
 
   if (bookingLoading || paymentLoading) {
     return (
@@ -235,14 +253,37 @@ function CheckoutContent({
         </dl>
       </div>
 
-      <div className="card p-5 sm:p-6">
-        <h2 className="mb-4 text-lg font-bold text-brand-900">
-          {t("paymentInstructions")}
-        </h2>
-        <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-neutral-700">
-          {payment.instructions}
-        </pre>
-      </div>
+      {canUpload && (
+        <div className="card p-5 sm:p-6">
+          <h2 className="text-lg font-bold text-brand-900">
+            {t("payByCardTitle")}
+          </h2>
+          <p className="mt-1 text-sm text-neutral-600">{t("payByCardHint")}</p>
+          <button
+            type="button"
+            onClick={handlePayByCard}
+            disabled={checkoutSession.isPending}
+            className="btn-primary mt-4 w-full py-3 text-sm font-semibold disabled:opacity-60"
+          >
+            {checkoutSession.isPending
+              ? tc("loading")
+              : t("payByCardCta", {
+                  amount: payment.amount_egp.toLocaleString(dateLocale),
+                })}
+          </button>
+          {checkoutSession.isError && (
+            <p className="mt-2 text-sm text-danger-600" role="alert">
+              {getApiErrorMessage(
+                checkoutSession.error,
+                t("payByCardError")
+              )}
+            </p>
+          )}
+          <p className="mt-3 text-center text-xs text-neutral-500">
+            {t("payByCardSecure")}
+          </p>
+        </div>
+      )}
 
       {stayInfo?.property?.cancellation_policy && (
         <div className="card p-5 sm:p-6">
@@ -255,10 +296,27 @@ function CheckoutContent({
         </div>
       )}
 
-      <div className="card p-5 sm:p-6">
-        <h2 className="mb-4 text-lg font-bold text-brand-900">
+      <details className="card p-5 sm:p-6" open={!canUpload}>
+        <summary className="cursor-pointer text-sm font-semibold text-brand-900">
+          {t("manualTransferTitle")}
+        </summary>
+        <p className="mt-2 text-sm text-neutral-600">
+          {t("manualTransferHint")}
+        </p>
+
+        <div className="mt-4 rounded-lg bg-neutral-50 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-brand-900">
+            {t("paymentInstructions")}
+          </h3>
+          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-neutral-700">
+            {payment.instructions}
+          </pre>
+        </div>
+
+      <div className="mt-4">
+        <h3 className="mb-2 text-sm font-semibold text-brand-900">
           {t("uploadProofTitle")}
-        </h2>
+        </h3>
         <p className="mb-4 text-sm text-neutral-600">{t("uploadProofHint")}</p>
 
         {payment.proof_s3_key && (
@@ -287,6 +345,7 @@ function CheckoutContent({
           <p className="text-sm text-neutral-500">{t("uploadDisabled")}</p>
         )}
       </div>
+      </details>
     </div>
   );
 }

@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.bookings import repository as bookings_repository
@@ -988,6 +989,7 @@ async def get_host_profile(
         id=host.id,
         display_name=host.display_name,
         bio=host.bio,
+        avatar_url=auth_services.avatar_url(host),
         kyc_status=host.kyc_status,
         joined_at=str(host.created_at) if host.created_at else None,
         languages=list(host.languages or []),

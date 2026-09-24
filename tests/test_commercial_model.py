@@ -164,6 +164,7 @@ async def _create_payment(monkeypatch, listing, custom_total=None):
         return MagicMock(
             id=str(uuid.uuid4()), booking_id=booking.id, guest_id="g1",
             host_id="host-1", unit_id="u1", status="pending", method="manual",
+            provider=None, checkout_url=None,
             amount_egp=kwargs.get("amount_egp", 0), nights=4,
             reference_number="REF", proof_s3_key=None, proof_url=None,
             proof_uploaded_at=None, verified_at=None, verified_by=None,
@@ -216,6 +217,7 @@ async def test_weekly_discount_applies(monkeypatch) -> None:
         return MagicMock(
             id=str(uuid.uuid4()), booking_id=booking.id, guest_id="g1",
             host_id="h", unit_id="u1", status="pending", method="manual",
+            provider=None, checkout_url=None,
             amount_egp=kwargs["amount_egp"], nights=booking_nights,
             reference_number="R", proof_s3_key=None, proof_url=None,
             proof_uploaded_at=None, verified_at=None, verified_by=None,
@@ -259,6 +261,8 @@ def test_payment_response_hides_breakdown_for_guests() -> None:
     payment.unit_id = "u1"
     payment.status = "verified"
     payment.method = "manual"
+    payment.provider = None
+    payment.checkout_url = None
     payment.amount_egp = 2050
     payment.accommodation_amount_egp = 2000
     payment.guest_service_fee_egp = 0

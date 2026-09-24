@@ -51,6 +51,21 @@ export interface paths {
      */
     post: operations["set_password_api_v1_auth_password_post"];
   };
+  "/api/v1/auth/password/forgot": {
+    /**
+     * Forgot Password
+     * @description Send an OTP recovery code to the account's phone on file. Always
+     * returns 204 — it never reveals whether the identifier matched.
+     */
+    post: operations["forgot_password_api_v1_auth_password_forgot_post"];
+  };
+  "/api/v1/auth/password/reset": {
+    /**
+     * Reset Password
+     * @description Set a new password after a successful OTP recovery challenge.
+     */
+    post: operations["reset_password_api_v1_auth_password_reset_post"];
+  };
   "/api/v1/auth/refresh": {
     /** Refresh Token */
     post: operations["refresh_token_api_v1_auth_refresh_post"];
@@ -64,6 +79,21 @@ export interface paths {
     get: operations["get_me_api_v1_auth_me_get"];
     /** Delete My Account */
     delete: operations["delete_my_account_api_v1_auth_me_delete"];
+  };
+  "/api/v1/auth/me/avatar/presign": {
+    /**
+     * Presign Avatar
+     * @description Issue a presigned upload URL for the user's profile photo. Fails
+     * closed when object storage is not configured.
+     */
+    post: operations["presign_avatar_api_v1_auth_me_avatar_presign_post"];
+  };
+  "/api/v1/auth/me/avatar": {
+    /**
+     * Confirm Avatar
+     * @description Persist the uploaded profile photo after a successful S3 PUT.
+     */
+    post: operations["confirm_avatar_api_v1_auth_me_avatar_post"];
   };
   "/api/v1/auth/me/account": {
     /** Get Account */
@@ -504,6 +534,13 @@ export interface paths {
     /** List My Payments */
     get: operations["list_my_payments_api_v1_payments_get"];
   };
+  "/api/v1/payments/{payment_id}/checkout-session": {
+    /**
+     * Create Checkout Session
+     * @description Canonical card path: issue a Paymob hosted-checkout session.
+     */
+    post: operations["create_checkout_session_api_v1_payments__payment_id__checkout_session_post"];
+  };
   "/api/v1/payments/{payment_id}/proof/presign": {
     /** Presign Proof */
     post: operations["presign_proof_api_v1_payments__payment_id__proof_presign_post"];
@@ -573,6 +610,16 @@ export interface paths {
   "/api/v1/finance/payouts/{payout_id}/process": {
     /** Process Payout Endpoint */
     post: operations["process_payout_endpoint_api_v1_finance_payouts__payout_id__process_post"];
+  };
+  "/api/v1/finance/payment-intents/{intent_id}/refund": {
+    /**
+     * Refund Payment Intent Endpoint
+     * @description Issue/reconcile the provider refund for a refund-pending card intent.
+     *
+     * The intent flips to refunded only when Paymob confirms the refund —
+     * fail-closed by design.
+     */
+    post: operations["refund_payment_intent_endpoint_api_v1_finance_payment_intents__intent_id__refund_post"];
   };
   "/api/v1/finance/webhooks/paymob": {
     /** Paymob Webhook */
@@ -796,6 +843,68 @@ export interface paths {
   "/api/v1/admin/disputes/{dispute_id}/context": {
     /** Get Dispute Context Endpoint */
     get: operations["get_dispute_context_endpoint_api_v1_admin_disputes__dispute_id__context_get"];
+  };
+  "/api/v1/admin/cms/pages": {
+    /** List Pages */
+    get: operations["list_pages_api_v1_admin_cms_pages_get"];
+    /** Create Page */
+    post: operations["create_page_api_v1_admin_cms_pages_post"];
+  };
+  "/api/v1/admin/cms/pages/{page_id}": {
+    /** Get Page */
+    get: operations["get_page_api_v1_admin_cms_pages__page_id__get"];
+    /** Delete Page */
+    delete: operations["delete_page_api_v1_admin_cms_pages__page_id__delete"];
+    /** Update Page */
+    patch: operations["update_page_api_v1_admin_cms_pages__page_id__patch"];
+  };
+  "/api/v1/admin/cms/pages/{page_id}/blocks": {
+    /** Create Block */
+    post: operations["create_block_api_v1_admin_cms_pages__page_id__blocks_post"];
+  };
+  "/api/v1/admin/cms/blocks/{block_id}": {
+    /** Delete Block */
+    delete: operations["delete_block_api_v1_admin_cms_blocks__block_id__delete"];
+    /** Update Block */
+    patch: operations["update_block_api_v1_admin_cms_blocks__block_id__patch"];
+  };
+  "/api/v1/admin/cms/pages/{page_id}/publish": {
+    /** Publish Page */
+    post: operations["publish_page_api_v1_admin_cms_pages__page_id__publish_post"];
+  };
+  "/api/v1/admin/cms/pages/{page_id}/unpublish": {
+    /** Unpublish Page */
+    post: operations["unpublish_page_api_v1_admin_cms_pages__page_id__unpublish_post"];
+  };
+  "/api/v1/admin/cms/pages/{page_id}/revisions": {
+    /** List Revisions */
+    get: operations["list_revisions_api_v1_admin_cms_pages__page_id__revisions_get"];
+  };
+  "/api/v1/admin/cms/pages/{page_id}/revisions/{version}/restore": {
+    /** Restore Revision */
+    post: operations["restore_revision_api_v1_admin_cms_pages__page_id__revisions__version__restore_post"];
+  };
+  "/api/v1/admin/cms/pages/{page_id}/preview": {
+    /** Preview Page */
+    get: operations["preview_page_api_v1_admin_cms_pages__page_id__preview_get"];
+  };
+  "/api/v1/admin/cms/media/presign": {
+    /** Presign Media */
+    post: operations["presign_media_api_v1_admin_cms_media_presign_post"];
+  };
+  "/api/v1/admin/cms/media": {
+    /** List Media */
+    get: operations["list_media_api_v1_admin_cms_media_get"];
+    /** Register Media */
+    post: operations["register_media_api_v1_admin_cms_media_post"];
+  };
+  "/api/v1/content/pages": {
+    /** List Public Pages */
+    get: operations["list_public_pages_api_v1_content_pages_get"];
+  };
+  "/api/v1/content/pages/{slug}": {
+    /** Get Public Page */
+    get: operations["get_public_page_api_v1_content_pages__slug__get"];
   };
   "/health": {
     /** Health Check */
@@ -1034,6 +1143,79 @@ export interface components {
     AvailabilityUpdateResponse: {
       /** Rules */
       rules: components["schemas"]["app__availability__schemas__CalendarRuleResponse"][];
+    };
+    /** AvatarConfirmRequest */
+    AvatarConfirmRequest: {
+      /** S3 Key */
+      s3_key: string;
+    };
+    /** AvatarPresignRequest */
+    AvatarPresignRequest: {
+      /** Filename */
+      filename: string;
+      /** Content Type */
+      content_type: string;
+    };
+    /** AvatarPresignResponse */
+    AvatarPresignResponse: {
+      /** Upload Url */
+      upload_url: string;
+      /** S3 Key */
+      s3_key: string;
+    };
+    /** BlockCreateRequest */
+    BlockCreateRequest: {
+      /** Block Type */
+      block_type: string;
+      /**
+       * Sort Order
+       * @default 0
+       */
+      sort_order?: number;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled?: boolean;
+      /** Content */
+      content?: {
+        [key: string]: unknown;
+      };
+    };
+    /** BlockResponse */
+    BlockResponse: {
+      /** Id */
+      id: string;
+      /** Page Id */
+      page_id: string;
+      /** Block Type */
+      block_type: string;
+      /** Sort Order */
+      sort_order: number;
+      /** Enabled */
+      enabled: boolean;
+      /** Content */
+      content: {
+        [key: string]: unknown;
+      };
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** BlockUpdateRequest */
+    BlockUpdateRequest: {
+      /** Block Type */
+      block_type?: string | null;
+      /** Sort Order */
+      sort_order?: number | null;
+      /** Enabled */
+      enabled?: boolean | null;
+      /** Content */
+      content?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** Body_preview_import_api_v1_import_preview_post */
     Body_preview_import_api_v1_import_preview_post: {
@@ -3818,6 +4000,53 @@ export interface components {
     };
     /** MarkReadRequest */
     MarkReadRequest: Record<string, never>;
+    /** MediaCreateRequest */
+    MediaCreateRequest: {
+      /** S3 Key */
+      s3_key?: string | null;
+      /** Url */
+      url?: string | null;
+      /** Content Type */
+      content_type?: string | null;
+      /** Alt En */
+      alt_en?: string | null;
+      /** Alt Ar */
+      alt_ar?: string | null;
+    };
+    /** MediaPresignRequest */
+    MediaPresignRequest: {
+      /** Filename */
+      filename: string;
+      /** Content Type */
+      content_type: string;
+    };
+    /** MediaPresignResponse */
+    MediaPresignResponse: {
+      /** Upload Url */
+      upload_url: string;
+      /** Media Key */
+      media_key: string;
+    };
+    /** MediaResponse */
+    MediaResponse: {
+      /** Id */
+      id: string;
+      /** S3 Key */
+      s3_key: string | null;
+      /** Url */
+      url: string | null;
+      /** Content Type */
+      content_type: string | null;
+      /** Alt En */
+      alt_en: string | null;
+      /** Alt Ar */
+      alt_ar: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
     /** MessageCreate */
     MessageCreate: {
       /** Content */
@@ -3929,6 +4158,86 @@ export interface components {
       /** Code */
       code: string;
     };
+    /** PageCreateRequest */
+    PageCreateRequest: {
+      /** Slug */
+      slug: string;
+      /** Title En */
+      title_en?: string | null;
+      /** Title Ar */
+      title_ar?: string | null;
+      /** Seo */
+      seo?: {
+        [key: string]: unknown;
+      };
+    };
+    /** PageDetailResponse */
+    PageDetailResponse: {
+      /** Id */
+      id: string;
+      /** Slug */
+      slug: string;
+      /** Status */
+      status: string;
+      /** Title En */
+      title_en: string | null;
+      /** Title Ar */
+      title_ar: string | null;
+      /** Version */
+      version: number;
+      /** Published At */
+      published_at: string | null;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /** Seo */
+      seo: {
+        [key: string]: unknown;
+      };
+      /** Published By */
+      published_by: string | null;
+      /** Updated By */
+      updated_by: string | null;
+      /** Blocks */
+      blocks: components["schemas"]["BlockResponse"][];
+    };
+    /** PageListItem */
+    PageListItem: {
+      /** Id */
+      id: string;
+      /** Slug */
+      slug: string;
+      /** Status */
+      status: string;
+      /** Title En */
+      title_en: string | null;
+      /** Title Ar */
+      title_ar: string | null;
+      /** Version */
+      version: number;
+      /** Published At */
+      published_at: string | null;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** PageUpdateRequest */
+    PageUpdateRequest: {
+      /** Slug */
+      slug?: string | null;
+      /** Title En */
+      title_en?: string | null;
+      /** Title Ar */
+      title_ar?: string | null;
+      /** Seo */
+      seo?: {
+        [key: string]: unknown;
+      } | null;
+    };
     /** PaginatedResponse[BookingResponse] */
     PaginatedResponse_BookingResponse_: {
       /** Items */
@@ -3961,6 +4270,26 @@ export interface components {
       last_read_at: string | null;
     };
     /**
+     * PasswordForgotRequest
+     * @description Password recovery via the account's verified phone number (OTP).
+     *
+     * ``identifier`` accepts the account email or phone number; the recovery
+     * code always goes to the phone on file — never to an arbitrary address.
+     */
+    PasswordForgotRequest: {
+      /** Identifier */
+      identifier: string;
+    };
+    /** PasswordResetRequest */
+    PasswordResetRequest: {
+      /** Identifier */
+      identifier: string;
+      /** Code */
+      code: string;
+      /** New Password */
+      new_password: string;
+    };
+    /**
      * PasswordSetRequest
      * @description Set or change the account password. ``current_password`` is required
      * only when the account already has one — OTP/Firebase-only accounts can
@@ -3977,6 +4306,27 @@ export interface components {
       provider: components["schemas"]["PaymentProvider"];
       /** Provider Ref */
       provider_ref: string;
+    };
+    /** PaymentIntentRefundRequest */
+    PaymentIntentRefundRequest: {
+      /** Provider Transaction Id */
+      provider_transaction_id?: string | null;
+    };
+    /** PaymentIntentRefundResponse */
+    PaymentIntentRefundResponse: {
+      /**
+       * Success
+       * @default true
+       */
+      success?: boolean;
+      /** Message */
+      message?: string | null;
+      /** Payment Intent Id */
+      payment_intent_id: string;
+      /** Status */
+      status: string;
+      /** Refund Provider Ref */
+      refund_provider_ref?: string | null;
     };
     /** PaymentIntentResponse */
     PaymentIntentResponse: {
@@ -4107,6 +4457,10 @@ export interface components {
       status: string;
       /** Method */
       method: string;
+      /** Provider */
+      provider?: string | null;
+      /** Checkout Url */
+      checkout_url?: string | null;
       /** Amount Egp */
       amount_egp: number;
       /** Accommodation Amount Egp */
@@ -4397,6 +4751,52 @@ export interface components {
       blocked_until?: string | null;
       /** Reason */
       reason?: string | null;
+    };
+    /** PublicBlock */
+    PublicBlock: {
+      /** Id */
+      id: string;
+      /** Block Type */
+      block_type: string;
+      /** Sort Order */
+      sort_order: number;
+      /** Content */
+      content: {
+        [key: string]: unknown;
+      };
+    };
+    /** PublicPageListItem */
+    PublicPageListItem: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string | null;
+      /** Published At */
+      published_at: string | null;
+    };
+    /** PublicPageResponse */
+    PublicPageResponse: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string | null;
+      /** Locale */
+      locale: string;
+      /** Seo */
+      seo: {
+        [key: string]: unknown;
+      };
+      /** Version */
+      version: number;
+      /** Published At */
+      published_at: string | null;
+      /** Blocks */
+      blocks: components["schemas"]["PublicBlock"][];
+    };
+    /** PublishRequest */
+    PublishRequest: {
+      /** Note */
+      note?: string | null;
     };
     /**
      * ReadinessStatus
@@ -4690,6 +5090,24 @@ export interface components {
       host_response?: string | null;
       /** Host Response At */
       host_response_at?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** RevisionResponse */
+    RevisionResponse: {
+      /** Id */
+      id: string;
+      /** Page Id */
+      page_id: string;
+      /** Version */
+      version: number;
+      /** Note */
+      note: string | null;
+      /** Created By */
+      created_by: string | null;
       /**
        * Created At
        * Format: date-time
@@ -5071,6 +5489,8 @@ export interface components {
       has_password?: boolean;
       /** Guest Preferences */
       guest_preferences?: string[] | null;
+      /** Avatar Url */
+      avatar_url?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -5190,6 +5610,8 @@ export interface components {
       display_name: string | null;
       /** Bio */
       bio?: string | null;
+      /** Avatar Url */
+      avatar_url?: string | null;
       /** Phone Number */
       phone_number: string | null;
       /** Email */
@@ -5262,6 +5684,8 @@ export interface components {
       display_name: string | null;
       /** Bio */
       bio?: string | null;
+      /** Avatar Url */
+      avatar_url?: string | null;
       /** Kyc Status */
       kyc_status: string | null;
       /** Joined At */
@@ -5448,6 +5872,53 @@ export interface operations {
       };
     };
   };
+  /**
+   * Forgot Password
+   * @description Send an OTP recovery code to the account's phone on file. Always
+   * returns 204 — it never reveals whether the identifier matched.
+   */
+  forgot_password_api_v1_auth_password_forgot_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PasswordForgotRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Reset Password
+   * @description Set a new password after a successful OTP recovery challenge.
+   */
+  reset_password_api_v1_auth_password_reset_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PasswordResetRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Refresh Token */
   refresh_token_api_v1_auth_refresh_post: {
     requestBody: {
@@ -5512,6 +5983,57 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["UserDeleteResponse"];
+        };
+      };
+    };
+  };
+  /**
+   * Presign Avatar
+   * @description Issue a presigned upload URL for the user's profile photo. Fails
+   * closed when object storage is not configured.
+   */
+  presign_avatar_api_v1_auth_me_avatar_presign_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AvatarPresignRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AvatarPresignResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Confirm Avatar
+   * @description Persist the uploaded profile photo after a successful S3 PUT.
+   */
+  confirm_avatar_api_v1_auth_me_avatar_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AvatarConfirmRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["UserResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -8098,6 +8620,31 @@ export interface operations {
       };
     };
   };
+  /**
+   * Create Checkout Session
+   * @description Canonical card path: issue a Paymob hosted-checkout session.
+   */
+  create_checkout_session_api_v1_payments__payment_id__checkout_session_post: {
+    parameters: {
+      path: {
+        payment_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   /** Presign Proof */
   presign_proof_api_v1_payments__payment_id__proof_presign_post: {
     parameters: {
@@ -8507,6 +9054,39 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["PayoutRequestResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Refund Payment Intent Endpoint
+   * @description Issue/reconcile the provider refund for a refund-pending card intent.
+   *
+   * The intent flips to refunded only when Paymob confirms the refund —
+   * fail-closed by design.
+   */
+  refund_payment_intent_endpoint_api_v1_finance_payment_intents__intent_id__refund_post: {
+    parameters: {
+      path: {
+        intent_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PaymentIntentRefundRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentIntentRefundResponse"];
         };
       };
       /** @description Validation Error */
@@ -9663,6 +10243,403 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["DisputeContextResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Pages */
+  list_pages_api_v1_admin_cms_pages_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PageListItem"][];
+        };
+      };
+    };
+  };
+  /** Create Page */
+  create_page_api_v1_admin_cms_pages_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PageCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["PageDetailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Page */
+  get_page_api_v1_admin_cms_pages__page_id__get: {
+    parameters: {
+      path: {
+        page_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PageDetailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Delete Page */
+  delete_page_api_v1_admin_cms_pages__page_id__delete: {
+    parameters: {
+      path: {
+        page_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Page */
+  update_page_api_v1_admin_cms_pages__page_id__patch: {
+    parameters: {
+      path: {
+        page_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PageUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PageDetailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Create Block */
+  create_block_api_v1_admin_cms_pages__page_id__blocks_post: {
+    parameters: {
+      path: {
+        page_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BlockCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["BlockResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Delete Block */
+  delete_block_api_v1_admin_cms_blocks__block_id__delete: {
+    parameters: {
+      path: {
+        block_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Block */
+  update_block_api_v1_admin_cms_blocks__block_id__patch: {
+    parameters: {
+      path: {
+        block_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BlockUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["BlockResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Publish Page */
+  publish_page_api_v1_admin_cms_pages__page_id__publish_post: {
+    parameters: {
+      path: {
+        page_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PublishRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PageDetailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Unpublish Page */
+  unpublish_page_api_v1_admin_cms_pages__page_id__unpublish_post: {
+    parameters: {
+      path: {
+        page_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PageDetailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Revisions */
+  list_revisions_api_v1_admin_cms_pages__page_id__revisions_get: {
+    parameters: {
+      path: {
+        page_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["RevisionResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Restore Revision */
+  restore_revision_api_v1_admin_cms_pages__page_id__revisions__version__restore_post: {
+    parameters: {
+      path: {
+        page_id: string;
+        version: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PageDetailResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Preview Page */
+  preview_page_api_v1_admin_cms_pages__page_id__preview_get: {
+    parameters: {
+      query?: {
+        lang?: string | null;
+      };
+      path: {
+        page_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PublicPageResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Presign Media */
+  presign_media_api_v1_admin_cms_media_presign_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MediaPresignRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MediaPresignResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Media */
+  list_media_api_v1_admin_cms_media_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MediaResponse"][];
+        };
+      };
+    };
+  };
+  /** Register Media */
+  register_media_api_v1_admin_cms_media_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MediaCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["MediaResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Public Pages */
+  list_public_pages_api_v1_content_pages_get: {
+    parameters: {
+      query?: {
+        lang?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PublicPageListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Public Page */
+  get_public_page_api_v1_content_pages__slug__get: {
+    parameters: {
+      query?: {
+        lang?: string | null;
+      };
+      path: {
+        slug: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PublicPageResponse"];
         };
       };
       /** @description Validation Error */

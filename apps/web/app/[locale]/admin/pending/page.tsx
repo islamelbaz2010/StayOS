@@ -146,7 +146,7 @@ export default function AdminPendingListingsPage() {
   return (
     <ProtectedRoute allowedRoles={["admin", "staff"]}>
       <AdminLayout>
-        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <section className="mx-auto w-full max-w-[1600px] py-2">
           <div className="space-y-6">
             <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">

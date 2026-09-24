@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -55,8 +56,21 @@ export default function HostProfilePage() {
             <>
               <div className="rounded-xl bg-white p-6 shadow-card sm:p-8">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-2xl font-bold text-brand-700 sm:h-20 sm:w-20">
-                    {(host.displayName || "?").charAt(0).toUpperCase()}
+                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full bg-brand-100 sm:h-20 sm:w-20">
+                    {host.avatarUrl ? (
+                      <Image
+                        src={host.avatarUrl}
+                        alt={host.displayName || t("title")}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-brand-700">
+                        {(host.displayName || "?").charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">

@@ -43,7 +43,12 @@ from app.notifications.models import Notification
 from app.payments.models import Payment
 from app.reviews.models import Review
 from app.shared import redis as redis_state
-from app.shared.exceptions import AuthenticationError, StayOSError, ValidationError
+from app.shared.exceptions import (
+    AuthenticationError,
+    ServiceUnavailableError,
+    StayOSError,
+    ValidationError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -644,6 +649,156 @@ async def set_password(
             raise AuthenticationError("Current password is incorrect")
     await auth_repository.update_user(
         session, user, password_hash=_hash_password(request.new_password)
+    )
+
+
+async def request_password_reset(
+    session: AsyncSession, request: auth_schemas.PasswordForgotRequest
+) -> None:
+    """Send an OTP recovery code to the account's phone on file.
+
+    Always returns without revealing whether the identifier matched an
+    account (no user enumeration). The code travels through the existing
+    Akedly OTP channel, so the same rate limits apply.
+    """
+    identifier = request.identifier.strip()
+    user: User | None = None
+    if identifier.startswith("+"):
+        user = await auth_repository.get_user_by_phone(session, identifier)
+    elif "@" in identifier:
+        user = await auth_repository.get_user_by_email(
+            session, _normalize_email(identifier)
+        )
+    if user is None or not user.phone_number or not user.is_active:
+        return
+    await send_otp(OtpSendRequest(phone_number=user.phone_number))
+
+
+async def reset_password(
+    session: AsyncSession, request: auth_schemas.PasswordResetRequest
+) -> None:
+    """Set a new password after a successful phone-OTP recovery challenge."""
+    identifier = request.identifier.strip()
+    user: User | None = None
+    if identifier.startswith("+"):
+        user = await auth_repository.get_user_by_phone(session, identifier)
+    elif "@" in identifier:
+        user = await auth_repository.get_user_by_email(
+            session, _normalize_email(identifier)
+        )
+    if user is None or not user.phone_number or not user.is_active:
+        raise AuthenticationError("Invalid recovery request")
+
+    verified = await verify_otp(
+        OtpVerifyRequest(phone_number=user.phone_number, code=request.code)
+    )
+    if not verified:
+        raise AuthenticationError("Invalid or expired recovery code")
+
+    await auth_repository.update_user(
+        session, user, password_hash=_hash_password(request.new_password)
+    )
+    # Recovery rotates credentials — revoke every existing session so a
+    # stolen token can't survive the reset.
+    from app.auth.models import RefreshToken
+
+    result = await session.execute(
+        select(RefreshToken).where(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked_at.is_(None),
+        )
+    )
+    now = datetime.now(UTC)
+    for token in result.scalars().all():
+        token.revoked_at = now
+        session.add(token)
+
+
+_AVATAR_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_AVATAR_UPLOAD_TTL_SECONDS = 900
+
+
+def avatar_url(user: User) -> str | None:
+    """Public read URL for the user's profile photo.
+
+    The listings bucket serves uploaded media by plain HTTPS URL (same
+    convention as stored listing ``photo.url`` values). Returns None when
+    the user has no photo or storage is not configured.
+    """
+    if not user.avatar_s3_key or not settings.S3_LISTINGS_BUCKET:
+        return None
+    region = settings.AWS_REGION or "us-east-1"
+    return (
+        f"https://{settings.S3_LISTINGS_BUCKET}.s3.{region}.amazonaws.com/"
+        f"{user.avatar_s3_key}"
+    )
+
+
+async def presign_avatar_upload(
+    user: User, request: auth_schemas.AvatarPresignRequest
+) -> auth_schemas.AvatarPresignResponse:
+    """Issue a presigned PUT for the user's profile photo.
+
+    Reuses the same S3 mechanism and bucket as listing photos; fails
+    closed when object storage is not configured.
+    """
+    if request.content_type not in _AVATAR_CONTENT_TYPES:
+        raise ValidationError("Only JPG, PNG or WebP images are accepted")
+    missing = [
+        name
+        for name in (
+            "S3_LISTINGS_BUCKET",
+            "AWS_REGION",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+        )
+        if not getattr(settings, name)
+    ]
+    if missing:
+        raise ServiceUnavailableError(
+            "Profile photo storage is not configured "
+            f"(missing: {', '.join(missing)})"
+        )
+
+    import boto3
+
+    ext = (
+        request.filename.rsplit(".", 1)[-1].lower()
+        if "." in request.filename
+        else "jpg"
+    )
+    if ext not in ("jpg", "jpeg", "png", "webp"):
+        ext = "jpg"
+    s3_key = f"avatars/{user.id}/avatar_{uuid.uuid4().hex}.{ext}"
+    client = boto3.client(
+        "s3",
+        region_name=settings.AWS_REGION,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    )
+    upload_url = client.generate_presigned_url(
+        "put_object",
+        Params={
+            "Bucket": settings.S3_LISTINGS_BUCKET,
+            "Key": s3_key,
+            "ContentType": request.content_type,
+        },
+        ExpiresIn=_AVATAR_UPLOAD_TTL_SECONDS,
+    )
+    return auth_schemas.AvatarPresignResponse(
+        upload_url=upload_url, s3_key=s3_key
+    )
+
+
+async def confirm_avatar(
+    session: AsyncSession, user: User, request: auth_schemas.AvatarConfirmRequest
+) -> None:
+    """Persist the uploaded avatar key — only keys minted for this user."""
+    expected_prefix = f"avatars/{user.id}/"
+    if not request.s3_key.startswith(expected_prefix):
+        raise ValidationError("Invalid avatar key")
+    await auth_repository.update_user(
+        session, user, avatar_s3_key=request.s3_key
     )
 
 

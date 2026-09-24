@@ -90,7 +90,7 @@ export default function AdminPaymentDetailPage() {
   return (
     <ProtectedRoute allowedRoles={["admin", "staff"]}>
       <AdminLayout>
-        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <section className="mx-auto w-full max-w-[1600px] py-2">
           <Link
             href={`/${locale}/admin/payments`}
             className="mb-4 inline-block text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline"
@@ -124,128 +124,165 @@ export default function AdminPaymentDetailPage() {
           )}
 
           {payment && (
-            <div className="card space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                <div className="relative h-28 w-40 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
-                  <Image
-                    src={payment.unit_cover_image || PLACEHOLDER_IMAGE}
-                    alt={payment.unit_title || payment.reference_number}
-                    fill
-                    sizes="160px"
-                    className="object-cover"
-                  />
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="card p-5 lg:col-span-2">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                  <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                    <Image
+                      src={payment.unit_cover_image || PLACEHOLDER_IMAGE}
+                      alt={payment.unit_title || payment.reference_number}
+                      fill
+                      sizes="144px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <p className="text-lg font-semibold text-brand-900">
+                      {payment.unit_title || t("untitledListing")}
+                    </p>
+                    <p className="font-mono text-sm font-medium text-brand-900">
+                      {payment.reference_number}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status={payment.status} />
+                      <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
+                        {payment.provider === "paymob"
+                          ? "Paymob"
+                          : payment.method === "bank_transfer"
+                            ? t("methodBankTransfer")
+                            : payment.method === "vodafone_cash"
+                              ? t("methodVodafoneCash")
+                              : payment.method}
+                      </span>
+                    </div>
+                    {payment.reject_reason && (
+                      <p className="rounded-md bg-danger-50 p-2 text-sm text-danger-700">
+                        {t("rejectReason")}: {payment.reject_reason}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 space-y-2">
-                  <p className="text-lg font-semibold text-brand-900">
-                    {payment.unit_title || t("untitledListing")}
-                  </p>
-                  <p className="font-mono text-sm font-medium text-brand-900">
-                    {payment.reference_number}
-                  </p>
-                  <StatusBadge status={payment.status} />
-                </div>
-              </div>
 
-              <hr className="border-neutral-200" />
+                <hr className="my-4 border-neutral-200" />
 
-              <dl className="space-y-4">
-                <Field label={t("amount")}>
-                  {formatMoney(payment.amount_egp, "EGP", dateLocale)}
-                </Field>
-
-                {payment.accommodation_amount_egp != null && (
-                  <Field label={t("accommodationAmount")}>
-                    {formatMoney(payment.accommodation_amount_egp, "EGP", dateLocale)}
+                <dl className="space-y-3">
+                  <Field label={t("amount")}>
+                    <span className="text-base font-bold text-brand-900">
+                      {formatMoney(payment.amount_egp, "EGP", dateLocale)}
+                    </span>
                   </Field>
-                )}
 
-                {payment.cleaning_fee_egp != null && payment.cleaning_fee_egp > 0 && (
-                  <Field label={t("cleaningFee")}>
-                    {formatMoney(payment.cleaning_fee_egp, "EGP", dateLocale)}
-                  </Field>
-                )}
-
-                {payment.guest_service_fee_egp != null && (
-                  <Field label={t("serviceFee")}>
-                    {formatMoney(payment.guest_service_fee_egp, "EGP", dateLocale)}
-                  </Field>
-                )}
-
-                {(payment.status === "refund_pending" ||
-                  payment.status === "refunded") &&
-                  payment.refund_amount_egp != null && (
-                    <Field label={t("refundAmount")}>
-                      {formatMoney(payment.refund_amount_egp, "EGP", dateLocale)}
+                  {payment.accommodation_amount_egp != null && (
+                    <Field label={t("accommodationAmount")}>
+                      {formatMoney(payment.accommodation_amount_egp, "EGP", dateLocale)}
                     </Field>
                   )}
 
-                <Field label={t("bookingId")}>{payment.booking_id}</Field>
-                <Field label={t("guestId")}>{payment.guest_id}</Field>
-                <Field label={t("hostId")}>{payment.host_id}</Field>
-                <Field label={t("unitId")}>{payment.unit_id}</Field>
+                  {payment.cleaning_fee_egp != null && payment.cleaning_fee_egp > 0 && (
+                    <Field label={t("cleaningFee")}>
+                      {formatMoney(payment.cleaning_fee_egp, "EGP", dateLocale)}
+                    </Field>
+                  )}
 
-                <DateField
-                  label={t("paymentDeadline")}
-                  date={payment.payment_deadline_at}
-                  locale={locale}
-                />
-                <DateField
-                  label={t("proofUploaded")}
-                  date={payment.proof_uploaded_at}
-                  locale={locale}
-                />
-                <DateField
-                  label={t("verifiedAt")}
-                  date={payment.verified_at}
-                  locale={locale}
-                />
-                <DateField
-                  label={t("rejectedAt")}
-                  date={payment.rejected_at}
-                  locale={locale}
-                />
-                {payment.reject_reason && (
-                  <Field label={t("rejectReason")}>{payment.reject_reason}</Field>
-                )}
-                <DateField
-                  label={t("cancelledAt")}
-                  date={payment.cancelled_at}
-                  locale={locale}
-                />
-                <DateField
-                  label={t("refundedAt")}
-                  date={payment.refunded_at}
-                  locale={locale}
-                />
-                <DateField
-                  label={t("createdAt")}
-                  date={payment.created_at}
-                  locale={locale}
-                />
-                <DateField
-                  label={t("updatedAt")}
-                  date={payment.updated_at}
-                  locale={locale}
-                />
-              </dl>
+                  {payment.guest_service_fee_egp != null && (
+                    <Field label={t("serviceFee")}>
+                      {formatMoney(payment.guest_service_fee_egp, "EGP", dateLocale)}
+                    </Field>
+                  )}
 
-              {payment.proof_s3_key && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    disabled={proofDownload.isPending}
-                    onClick={() =>
-                      proofDownload.mutate(payment.id, {
-                        onSuccess: (url) =>
-                          window.open(url, "_blank", "noopener,noreferrer"),
-                      })
-                    }
-                    className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline disabled:opacity-50"
-                  >
-                    {proofDownload.isPending ? tc("loading") : t("viewPdf")}
-                  </button>
+                  {(payment.status === "refund_pending" ||
+                    payment.status === "refunded") &&
+                    payment.refund_amount_egp != null && (
+                      <Field label={t("refundAmount")}>
+                        {formatMoney(payment.refund_amount_egp, "EGP", dateLocale)}
+                      </Field>
+                    )}
+                </dl>
+              </div>
+
+              <div className="space-y-4">
+                <div className="card p-5">
+                  <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent-600">
+                    {t("timelineTitle")}
+                  </h2>
+                  <dl className="space-y-2.5">
+                    <DateField
+                      label={t("createdAt")}
+                      date={payment.created_at}
+                      locale={locale}
+                    />
+                    <DateField
+                      label={t("paymentDeadline")}
+                      date={payment.payment_deadline_at}
+                      locale={locale}
+                    />
+                    <DateField
+                      label={t("proofUploaded")}
+                      date={payment.proof_uploaded_at}
+                      locale={locale}
+                    />
+                    <DateField
+                      label={t("verifiedAt")}
+                      date={payment.verified_at}
+                      locale={locale}
+                    />
+                    <DateField
+                      label={t("rejectedAt")}
+                      date={payment.rejected_at}
+                      locale={locale}
+                    />
+                    <DateField
+                      label={t("cancelledAt")}
+                      date={payment.cancelled_at}
+                      locale={locale}
+                    />
+                    <DateField
+                      label={t("refundedAt")}
+                      date={payment.refunded_at}
+                      locale={locale}
+                    />
+                    <DateField
+                      label={t("updatedAt")}
+                      date={payment.updated_at}
+                      locale={locale}
+                    />
+                  </dl>
                 </div>
-              )}
+
+                {payment.proof_s3_key && (
+                  <div className="card p-5">
+                    <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-accent-600">
+                      {t("proofSection")}
+                    </h2>
+                    <button
+                      type="button"
+                      disabled={proofDownload.isPending}
+                      onClick={() =>
+                        proofDownload.mutate(payment.id, {
+                          onSuccess: (url) =>
+                            window.open(url, "_blank", "noopener,noreferrer"),
+                        })
+                      }
+                      className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline disabled:opacity-50"
+                    >
+                      {proofDownload.isPending ? tc("loading") : t("viewPdf")}
+                    </button>
+                  </div>
+                )}
+
+                <details className="card p-5">
+                  <summary className="cursor-pointer text-sm font-semibold text-neutral-600">
+                    {t("technicalDetails")}
+                  </summary>
+                  <dl className="mt-3 space-y-2.5">
+                    <Field label={t("paymentId")}>{payment.id}</Field>
+                    <Field label={t("bookingId")}>{payment.booking_id}</Field>
+                    <Field label={t("guestId")}>{payment.guest_id}</Field>
+                    <Field label={t("hostId")}>{payment.host_id}</Field>
+                    <Field label={t("unitId")}>{payment.unit_id}</Field>
+                  </dl>
+                </details>
+              </div>
             </div>
           )}
         </section>

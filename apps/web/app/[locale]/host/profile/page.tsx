@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
+import { Avatar } from "@/components/profile/Avatar";
 import { useAuth } from "@/lib/auth/useAuth";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getApiErrorMessage } from "@/lib/utils";
@@ -50,6 +51,7 @@ export default function HostProfilePage() {
   const [bio, setBio] = useState("");
   const [email, setEmail] = useState("");
   const [languages, setLanguages] = useState<string[]>([]);
+  const [langSearch, setLangSearch] = useState("");
 
   if (isLoading) {
     return (
@@ -80,6 +82,7 @@ export default function HostProfilePage() {
     setBio(profile.bio ?? "");
     setEmail(profile.email ?? "");
     setLanguages(profile.languages ?? []);
+    setLangSearch("");
     setIsEditing(true);
   };
 
@@ -113,9 +116,11 @@ export default function HostProfilePage() {
 
             <div className="card p-5 sm:p-6">
               <div className="flex items-start gap-4">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent-100 text-2xl font-bold text-accent-700">
-                  {(profile.display_name?.charAt(0) ?? "?").toUpperCase()}
-                </div>
+                <Avatar
+                  url={profile.avatar_url}
+                  name={profile.display_name}
+                  editable
+                />
                 <div className="min-w-0 flex-1">
                   {isEditing ? (
                     <form
@@ -175,28 +180,54 @@ export default function HostProfilePage() {
                         <p className="mb-2 text-sm font-medium text-neutral-700">
                           {t("languages")}
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                          {SPOKEN_LANGUAGES.map((lang) => {
-                            const selected = languages.includes(lang);
-                            return (
+                        {languages.length > 0 && (
+                          <div className="mb-2 flex flex-wrap gap-1.5">
+                            {languages.map((lang) => (
                               <button
                                 key={lang}
                                 type="button"
                                 onClick={() => toggleLanguage(lang)}
-                                className={`
-                                  rounded-full border px-3 py-1 text-xs font-medium transition
-                                  ${
-                                    selected
-                                      ? "border-brand-600 bg-brand-600 text-white"
-                                      : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-                                  }
-                                `}
-                                aria-pressed={selected}
+                                className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white"
+                                aria-label={`${t("removeLanguage")}: ${tl(`languages.${lang}`, { default: lang })}`}
                               >
                                 {tl(`languages.${lang}`, { default: lang })}
+                                <span aria-hidden="true">✕</span>
                               </button>
-                            );
-                          })}
+                            ))}
+                          </div>
+                        )}
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={langSearch}
+                            onChange={(e) => setLangSearch(e.target.value)}
+                            placeholder={t("addLanguage")}
+                            className="input w-full text-sm"
+                          />
+                          {langSearch.trim() && (
+                            <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white py-1 shadow-lg">
+                              {SPOKEN_LANGUAGES.filter(
+                                (lang) =>
+                                  !languages.includes(lang) &&
+                                  tl(`languages.${lang}`, { default: lang })
+                                    .toLowerCase()
+                                    .includes(langSearch.trim().toLowerCase())
+                              ).map((lang) => (
+                                <li key={lang}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      toggleLanguage(lang);
+                                      setLangSearch("");
+                                    }}
+                                    className="w-full px-3 py-2 text-start text-sm text-neutral-700 hover:bg-neutral-100"
+                                  >
+                                    {tl(`languages.${lang}`, { default: lang })}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2">

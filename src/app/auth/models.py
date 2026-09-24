@@ -33,6 +33,9 @@ class User(UUIDMixin, TimestampMixin, Base):
         String(128), unique=True, nullable=True, index=True
     )
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Profile photo stored via the existing S3 presigned-upload mechanism;
+    # NULL until the user uploads one.
+    avatar_s3_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     # bcrypt hash for email+password sign-in; NULL for OTP/Firebase-only accounts.
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Free-text host bio shown on the public host profile (Airbnb parity).

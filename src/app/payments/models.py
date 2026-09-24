@@ -1,6 +1,8 @@
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
+    JSON,
     DateTime,
     ForeignKey,
     Index,
@@ -94,6 +96,19 @@ class Payment(UUIDMixin, TimestampMixin, Base):
     refund_amount_egp: Mapped[int | None] = mapped_column(Integer, nullable=True)
     refunded_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    # Card payments through Paymob hosted checkout (canonical card path):
+    # provider_ref = Paymob order/intention id used for webhook correlation,
+    # transaction_ref = confirmed Paymob transaction id used for refunds,
+    # checkout_url = hosted checkout URL issued to the guest.
+    provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    provider_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    transaction_ref: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    checkout_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    provider_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
     )
     instructions: Mapped[str] = mapped_column(Text, nullable=False, default="")
     unit: Mapped["Unit"] = relationship("Unit", foreign_keys=[unit_id])

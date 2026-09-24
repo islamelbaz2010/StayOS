@@ -440,11 +440,11 @@ async def _settle_payment_on_cancel(
     """Apply cancellation consequences to the booking's payment record.
 
     Returns the resulting payment status label for the audit/notification
-    event. This platform only collects payment manually (bank transfer /
-    Vodafone Cash) — there is no payment-provider refund API to call
-    automatically, so money owed back is flagged REFUND_PENDING for finance
-    to wire back and reconcile by hand. Never mark REFUNDED here: that would
-    claim money moved when it didn't.
+    event. Manually collected payments (bank transfer / Vodafone Cash) flag
+    money owed back as REFUND_PENDING for finance to wire back and reconcile
+    by hand. Card payments attempt a provider refund via Paymob first, with
+    REFUND_PENDING as the honest fallback. Never mark REFUNDED here without
+    provider confirmation: that would claim money moved when it didn't.
     """
     if payment is None:
         return "no_payment"
@@ -467,6 +467,35 @@ async def _settle_payment_on_cancel(
         return str(payment.status)
 
     if refund_amount > 0:
+        # Card payments carry a Paymob transaction_ref — issue the provider
+        # refund through the same API the reservation flow uses. A rejected
+        # or failed provider refund falls back to REFUND_PENDING so finance
+        # reconciles it by hand; we never mark REFUNDED without provider
+        # confirmation.
+        if payment.provider == "paymob" and payment.transaction_ref:
+            from app.finance import providers as payment_providers
+
+            try:
+                await payment_providers.paymob_refund(
+                    payment.transaction_ref, refund_amount * 100
+                )
+            except Exception:
+                await payments_repository.update_payment(
+                    session,
+                    payment,
+                    status=PaymentStatus.REFUND_PENDING,
+                    refund_amount_egp=refund_amount,
+                )
+                return str(PaymentStatus.REFUND_PENDING)
+            await payments_repository.update_payment(
+                session,
+                payment,
+                status=PaymentStatus.REFUNDED,
+                refund_amount_egp=refund_amount,
+                refunded_at=datetime.now(UTC),
+            )
+            return str(PaymentStatus.REFUNDED)
+
         await payments_repository.update_payment(
             session,
             payment,

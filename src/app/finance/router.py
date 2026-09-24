@@ -320,12 +320,22 @@ async def paymob_webhook(
     )
 
     if payment_status not in ("true", "True", True, "success", "successful"):
-        await reservations_services.fail_reservation_by_provider(
+        failed = await reservations_services.fail_reservation_by_provider(
             session,
             reservation_id,
             provider_ref,
             failure_reason=f"paymob_status:{payment_status}",
         )
+        if failed is None:
+            # Booking-payment card checkout (merchant order id = booking id).
+            from app.payments import services as payments_services
+
+            await payments_services.fail_payment_by_provider(
+                session,
+                reservation_id,
+                provider_ref,
+                failure_reason=f"paymob_status:{payment_status}",
+            )
         return WebhookResponse(message="failed")
 
     try:
@@ -338,8 +348,19 @@ async def paymob_webhook(
             expected_amount_egp=amount,
         )
     except NotFoundError:
-        logger.warning("Reservation not found for Paymob webhook: %s", reservation_id)
-        return WebhookResponse(message="not found")
+        # Not a reservation — try the booking-payment card path where the
+        # merchant order id is the booking id.
+        from app.payments import services as payments_services
+
+        applied = await payments_services.confirm_payment_by_provider(
+            session, reservation_id, provider_ref, amount
+        )
+        if not applied:
+            logger.warning(
+                "No reservation or booking payment for Paymob webhook: %s",
+                reservation_id,
+            )
+            return WebhookResponse(message="not found")
     except ValidationError as exc:
         logger.warning("Paymob webhook validation error: %s", exc)
         return WebhookResponse(message="ignored")

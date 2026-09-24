@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { GuestLayout } from "@/components/layouts";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { Avatar } from "@/components/profile/Avatar";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useKycStatus } from "@/lib/queries/kyc";
 import { api } from "@/lib/api";
@@ -43,13 +44,11 @@ export default function ProfilePage() {
 
             <div className="rounded-xl bg-white p-6 shadow-card">
               <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100">
-                  <span className="text-xl font-bold text-brand-700">
-                    {(user?.display_name || user?.phone_number || user?.email || "?")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </span>
-                </div>
+                <Avatar
+                  url={user?.avatar_url}
+                  name={user?.display_name || user?.phone_number || user?.email}
+                  editable
+                />
                 <div>
                   <p className="text-lg font-semibold text-neutral-900">
                     {user?.display_name || user?.phone_number || user?.email}

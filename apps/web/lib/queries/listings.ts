@@ -362,6 +362,7 @@ export interface HostProfile {
   id: string;
   displayName: string | null;
   bio: string | null;
+  avatarUrl: string | null;
   kycStatus: string | null;
   joinedAt: string | null;
   languages: string[];
@@ -379,6 +380,7 @@ export function useHostProfile(hostId: string) {
         id: data.id,
         displayName: data.display_name,
         bio: data.bio ?? null,
+        avatarUrl: data.avatar_url ?? null,
         kycStatus: data.kyc_status,
         joinedAt: data.joined_at,
         languages: data.languages ?? [],

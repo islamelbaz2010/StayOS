@@ -66,7 +66,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col bg-surface-page">
       <Header />
       <div className="flex flex-1">
-        <aside className="hidden w-64 shrink-0 border-e border-neutral-200 bg-surface-card md:block">
+        <aside className="hidden w-56 shrink-0 border-e border-neutral-200 bg-surface-card md:block">
           <div className="border-b border-neutral-200 px-4 py-3">
             <span className="text-xs font-bold uppercase tracking-wider text-accent-600">
               {t("adminConsole")}
@@ -99,7 +99,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </ul>
           </nav>
         </aside>
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="min-w-0 flex-1 px-4 py-4 sm:px-6">
           <nav className="mb-4 flex gap-2 overflow-x-auto md:hidden">
             <span className="whitespace-nowrap rounded-full bg-accent-100 px-3 py-1.5 text-xs font-bold uppercase text-accent-700">
               {t("adminConsole")}

@@ -34,8 +34,23 @@ class UserResponse(BaseModel):
     # StayOS Local Fit (FD-24): the guest's stay preferences, a list of
     # supported rule keys. Empty/null means matching is not shown.
     guest_preferences: list[str] | None = None
+    avatar_url: str | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class AvatarPresignRequest(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=255)
+    content_type: str = Field(..., min_length=3, max_length=100)
+
+
+class AvatarPresignResponse(BaseModel):
+    upload_url: str
+    s3_key: str
+
+
+class AvatarConfirmRequest(BaseModel):
+    s3_key: str = Field(..., min_length=1, max_length=512)
 
 
 class AccountUpdate(BaseModel):
@@ -188,6 +203,22 @@ class PasswordSetRequest(BaseModel):
 
     new_password: str = Field(..., min_length=8, max_length=128)
     current_password: str | None = Field(default=None, max_length=128)
+
+
+class PasswordForgotRequest(BaseModel):
+    """Password recovery via the account's verified phone number (OTP).
+
+    ``identifier`` accepts the account email or phone number; the recovery
+    code always goes to the phone on file — never to an arbitrary address.
+    """
+
+    identifier: str = Field(..., min_length=3, max_length=255)
+
+
+class PasswordResetRequest(BaseModel):
+    identifier: str = Field(..., min_length=3, max_length=255)
+    code: str = Field(..., min_length=6, max_length=6)
+    new_password: str = Field(..., min_length=8, max_length=128)
 
 
 class DeviceTokenRegisterRequest(BaseModel):

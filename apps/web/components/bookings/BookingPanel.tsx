@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
 import type { ListingDetail } from "@/lib/queries/listings";
@@ -20,6 +20,7 @@ interface BookingPanelProps {
   listing: ListingDetail;
   initialCheckIn?: string;
   initialCheckOut?: string;
+  initialGuests?: GuestCounts;
 }
 
 interface GuestCounts {
@@ -38,14 +39,16 @@ function isValidIsoDate(value: string | undefined): value is string {
   return parseInputDate(value) !== null;
 }
 
-export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: BookingPanelProps) {
+export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initialGuests }: BookingPanelProps) {
   const t = useTranslations("booking");
   const locale = useLocale();
   const { isAuthenticated, isGuest, isLoading: isAuthLoading, user } = useAuth();
   const isKycVerified = user?.kyc_status === "verified";
+  const isUnauthenticated = !isAuthLoading && !isAuthenticated;
   const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const createBooking = useCreateBooking();
   const pathname = usePathname();
+  const router = useRouter();
 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toInputDate(today), [today]);
@@ -57,11 +60,9 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
 
   const [checkIn, setCheckIn] = useState<string>(defaultCheckIn);
   const [checkOut, setCheckOut] = useState<string>(defaultCheckOut);
-  const [guests, setGuests] = useState<GuestCounts>({
-    adults: 1,
-    children: 0,
-    infants: 0,
-  });
+  const [guests, setGuests] = useState<GuestCounts>(
+    initialGuests ?? { adults: 1, children: 0, infants: 0 }
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<BookingResponse | null>(null);
@@ -188,6 +189,24 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
 
   async function handleSubmit() {
     setErrors({});
+
+    // Unauthenticated visitors keep the CTA — clicking it preserves the
+    // booking context (dates + guests) in the redirect so sign-in returns
+    // them to this exact selection. The booking itself is never created
+    // before authentication.
+    if (isUnauthenticated) {
+      const params = new URLSearchParams();
+      if (checkIn) params.set("checkin", checkIn);
+      if (checkOut) params.set("checkout", checkOut);
+      params.set("adults", String(guests.adults));
+      params.set("children", String(guests.children));
+      params.set("infants", String(guests.infants));
+      const bookingUrl = `${pathname}?${params.toString()}`;
+      router.push(
+        `/${locale}/auth/login?redirect=${encodeURIComponent(bookingUrl)}`
+      );
+      return;
+    }
 
     if (!isAuthenticated || !isGuest) {
       return;
@@ -568,10 +587,12 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!canSubmit || createBooking.isPending}
+          disabled={
+            (!canSubmit && !isUnauthenticated) || createBooking.isPending
+          }
           className={cn(
             "w-full rounded-md px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2",
-            !canSubmit
+            !canSubmit && !isUnauthenticated
               ? "cursor-not-allowed bg-neutral-300 text-neutral-600"
               : "btn-primary"
           )}
@@ -579,9 +600,11 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut }: Booki
         >
           {createBooking.isPending
             ? t("submitting")
-            : listing.instantBook
-              ? t("instantBook")
-              : t("requestBooking")}
+            : isUnauthenticated
+              ? t("signInToBook")
+              : listing.instantBook
+                ? t("instantBook")
+                : t("requestBooking")}
         </button>
 
         <p className="text-center text-xs text-neutral-500">

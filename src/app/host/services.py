@@ -1121,10 +1121,13 @@ async def get_host_profile(
 
     co_host_units = await host_repository.count_co_hosted_units(session, user.id)
 
+    from app.auth import services as auth_services
+
     return host_schemas.HostProfileResponse(
         id=user.id,
         display_name=user.display_name,
         bio=user.bio,
+        avatar_url=auth_services.avatar_url(user),
         phone_number=user.phone_number,
         email=user.email,
         kyc_status=user.kyc_status,

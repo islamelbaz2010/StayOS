@@ -71,7 +71,7 @@
     "haveAccount": "لديك حساب بالفعل؟",
     "registerSubtitle": "أنشئ حساباً برقم هاتفك أو بريدك الإلكتروني",
     "password": "كلمة المرور",
-    "confirmPassword": "تأكيد كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور الجديدة",
     "displayName": "الاسم المعروض",
     "passwordHint": "8 أحرف على الأقل",
     "passwordMismatch": "كلمتا المرور غير متطابقتين",
@@ -85,7 +85,22 @@
     "currentPassword": "كلمة المرور الحالية",
     "newPassword": "كلمة المرور الجديدة",
     "passwordUpdated": "تم تحديث كلمة المرور",
-    "passwordSetHint": "عيّن كلمة مرور لتسجيل الدخول بالبريد الإلكتروني لاحقاً"
+    "passwordSetHint": "عيّن كلمة مرور لتسجيل الدخول بالبريد الإلكتروني لاحقاً",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "forgotPasswordTitle": "إعادة تعيين كلمة المرور",
+    "forgotPasswordHint": "أدخل البريد الإلكتروني أو رقم الهاتف لحسابك. سنرسل رمز الاستعادة إلى رقم الهاتف المسجل في حسابك.",
+    "identifierLabel": "البريد الإلكتروني أو رقم الهاتف",
+    "sendCode": "إرسال رمز الاستعادة",
+    "sending": "جارٍ الإرسال…",
+    "resetRequestFailed": "تعذر إرسال رمز الاستعادة الآن. حاول مرة أخرى.",
+    "resetCodeSentHint": "إذا كان الحساب موجودًا، تم إرسال رمز مكوّن من ٦ أرقام إلى هاتفه. أدخله مع كلمة المرور الجديدة.",
+    "codeLabel": "رمز الاستعادة",
+    "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين.",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "resetting": "جارٍ إعادة التعيين…",
+    "resetFailed": "تعذر إعادة تعيين كلمة المرور. تحقق من الرمز وحاول مرة أخرى.",
+    "resetSuccess": "تم تحديث كلمة المرور. يمكنك تسجيل الدخول بكلمة المرور الجديدة.",
+    "backToSignIn": "العودة إلى تسجيل الدخول"
   },
   "host": {
     "title": "منطقة المضيف",
@@ -891,7 +906,8 @@
     "messageToHostPlaceholder": "أخبر المضيف عن رحلتك...",
     "messageToHostHint": "اختياري — تُرسل للمضيف مع طلب الحجز",
     "prevMonth": "الشهر السابق",
-    "nextMonth": "الشهر التالي"
+    "nextMonth": "الشهر التالي",
+    "signInToBook": "سجّل الدخول للحجز"
   },
   "hostBookings": {
     "title": "طلبات الحجز",
@@ -1183,7 +1199,20 @@
     "rejectedAt": "تم الرفض في",
     "cancelledAt": "تم الإلغاء في",
     "createdAt": "تاريخ الإنشاء",
-    "updatedAt": "تاريخ التحديث"
+    "updatedAt": "تاريخ التحديث",
+    "payByCardTitle": "الدفع بالبطاقة",
+    "payByCardHint": "ادفع بأمان عبر الإنترنت — يتم تأكيد حجزك فورًا عند نجاح الدفع.",
+    "payByCardCta": "ادفع {amount} جنيه بأمان",
+    "payByCardSecure": "تتم المعالجة عبر Paymob — بيانات بطاقتك لا تصل إلى StayOS أبدًا.",
+    "payByCardError": "الدفع بالبطاقة غير متاح حاليًا. حاول مرة أخرى أو استخدم التحويل البنكي أدناه.",
+    "manualTransferTitle": "أو ادفع بالتحويل البنكي / فودافون كاش",
+    "manualTransferHint": "حوّل المبلغ إلى الحساب أدناه ثم ارفع إيصال الدفع. تتم مراجعة المدفوعات اليدوية خلال ٢٤ ساعة.",
+    "methodBankTransfer": "تحويل بنكي",
+    "methodVodafoneCash": "فودافون كاش",
+    "timelineTitle": "الخط الزمني",
+    "proofSection": "إثبات الدفع",
+    "technicalDetails": "تفاصيل تقنية",
+    "paymentId": "معرّف الدفعة"
   },
   "kyc": {
     "pageTitle": "التحقق من الهوية",
@@ -1298,7 +1327,10 @@
     "accountStatus": "حالة الحساب",
     "active": "نشط",
     "inactive": "غير نشط",
-    "allPermissions": "جميع الصلاحيات (مدير)"
+    "allPermissions": "جميع الصلاحيات (مدير)",
+    "profilePhoto": "الصورة الشخصية",
+    "changePhoto": "تغيير الصورة",
+    "avatarUploadError": "تعذّر رفع الصورة. حاول مرة أخرى."
   },
   "hostNav": {
     "dashboard": "لوحة التحكم",
@@ -1424,7 +1456,9 @@
     "totalRevenue": "الإيرادات",
     "netEarnings": "صافي الأرباح",
     "completedStays": "الإقامات المكتملة",
-    "viewEarnings": "عرض الأرباح"
+    "viewEarnings": "عرض الأرباح",
+    "addLanguage": "اكتب لإضافة لغة…",
+    "removeLanguage": "إزالة اللغة"
   },
   "coHosts": {
     "loadError": "تعذّر تحميل الشركاء.",
@@ -1471,7 +1505,9 @@
     "openWhatsApp": "الدردشة على واتساب",
     "notConfigured": "تفاصيل التواصل مع الدعم ستكون متاحة قريباً.",
     "backToHome": "العودة للرئيسية",
-    "whatsappMessage": "مرحباً فريق دعم StayOS، أحتاج مساعدة في حجزي."
+    "whatsappMessage": "مرحباً فريق دعم StayOS، أحتاج مساعدة في حجزي.",
+    "contactTitle": "تواصل معنا",
+    "browseFaq": "تصفح الأسئلة الشائعة"
   },
   "footer": {
     "support": "الدعم"
@@ -1706,7 +1742,8 @@
       "payments": "المدفوعات",
       "operations": "العمليات",
       "disputes": "النزاعات",
-      "discovery": "اكتشاف المعروض"
+      "discovery": "اكتشاف المعروض",
+      "content": "المحتوى"
     },
     "signInHint": "يسجّل فريق العمل الدخول برقم الهاتف (OTP)، ثم يمكنه تعيين كلمة مرور للبريد الإلكتروني من الحساب ← تعيين كلمة المرور.",
     "passwordSet": "كلمة المرور مُعيّنة",

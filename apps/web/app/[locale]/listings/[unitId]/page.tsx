@@ -64,6 +64,13 @@ export default function ListingDetailPage() {
   const locale = params?.locale ?? "ar";
   const initialCheckIn = searchParams?.get("checkin") ?? undefined;
   const initialCheckOut = searchParams?.get("checkout") ?? undefined;
+  const clamp = (v: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, Number.isFinite(v) ? v : min));
+  const initialGuests = {
+    adults: clamp(Number(searchParams?.get("adults") || 1), 1, 10),
+    children: clamp(Number(searchParams?.get("children") || 0), 0, 10),
+    infants: clamp(Number(searchParams?.get("infants") || 0), 0, 5),
+  };
   const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const [copied, setCopied] = useState(false);
 
@@ -525,6 +532,7 @@ export default function ListingDetailPage() {
                     listing={listing}
                     initialCheckIn={initialCheckIn}
                     initialCheckOut={initialCheckOut}
+                    initialGuests={initialGuests}
                   />
                 </div>
               </aside>
@@ -564,6 +572,7 @@ export default function ListingDetailPage() {
                 listing={listing}
                 initialCheckIn={initialCheckIn}
                 initialCheckOut={initialCheckOut}
+                initialGuests={initialGuests}
               />
             </div>
           </article>

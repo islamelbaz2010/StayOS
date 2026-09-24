@@ -5,18 +5,21 @@ import { NextIntlClientProvider } from "next-intl";
 
 import messages from "@/messages/en.json";
 
+const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
   usePathname: () => "/en/listings/unit-1",
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: pushMock }),
 }));
 
+let mockAuth: Record<string, unknown> = {
+  isAuthenticated: true,
+  isGuest: true,
+  isLoading: false,
+  user: { id: "guest-1", role: "guest", kyc_status: "verified" },
+};
+
 vi.mock("@/lib/auth/useAuth", () => ({
-  useAuth: () => ({
-    isAuthenticated: true,
-    isGuest: true,
-    isLoading: false,
-    user: { id: "guest-1", role: "guest", kyc_status: "verified" },
-  }),
+  useAuth: () => mockAuth,
 }));
 
 vi.mock("@/lib/queries/bookings", () => ({
@@ -63,6 +66,15 @@ const listing = {
   instantBook: false,
 } as ListingDetail;
 
+beforeEach(() => {
+  mockAuth = {
+    isAuthenticated: true,
+    isGuest: true,
+    isLoading: false,
+    user: { id: "guest-1", role: "guest", kyc_status: "verified" },
+  };
+});
+
 function renderPanel() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -79,6 +91,46 @@ function renderPanel() {
     </QueryClientProvider>
   );
 }
+
+describe("BookingPanel unauthenticated CTA", () => {
+  beforeEach(() => {
+    mockDays = [];
+    pushMock.mockClear();
+    mockAuth = {
+      isAuthenticated: false,
+      isGuest: false,
+      isLoading: false,
+      user: null,
+    };
+  });
+
+  it("keeps the CTA clickable as a sign-in prompt for visitors", () => {
+    renderPanel();
+    const cta = screen.getByRole("button", { name: "Sign in to book" });
+    expect(cta).toBeEnabled();
+  });
+
+  it("redirects to login preserving listing, dates and guests", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "Sign in to book" }));
+
+    expect(pushMock).toHaveBeenCalledTimes(1);
+    const target = pushMock.mock.calls[0][0] as string;
+    expect(target).toMatch(/^\/en\/auth\/login\?redirect=/);
+    const redirect = decodeURIComponent(target.split("redirect=")[1]);
+    expect(redirect).toContain("/en/listings/unit-1");
+    expect(redirect).toContain("checkin=2030-01-10");
+    expect(redirect).toContain("checkout=2030-01-14");
+    expect(redirect).toContain("adults=1");
+  });
+
+  it("does not create a booking before authentication", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "Sign in to book" }));
+    // The mutation is never invoked — no unauthenticated booking.
+    expect(pushMock).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("BookingPanel calendar popover", () => {
   beforeEach(() => {

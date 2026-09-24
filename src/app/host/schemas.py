@@ -181,6 +181,7 @@ class HostProfileResponse(BaseModel):
     id: str
     display_name: str | None
     bio: str | None = None
+    avatar_url: str | None = None
     phone_number: str | None
     email: str | None
     kyc_status: str

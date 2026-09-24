@@ -129,6 +129,8 @@ def _to_response(payment: Payment, *, include_breakdown: bool = False) -> Paymen
         unit_id=payment.unit_id,
         status=payment.status,
         method=payment.method,
+        provider=payment.provider,
+        checkout_url=payment.checkout_url,
         amount_egp=payment.amount_egp,
         accommodation_amount_egp=(
             payment.accommodation_amount_egp if include_breakdown else None
@@ -402,6 +404,159 @@ async def _can_view_breakdown(session: AsyncSession, user: User) -> bool:
     """Only admin/staff holding the payments permission may see internal
     amount breakdowns — guests and hosts get total-only responses."""
     return await has_permission(session, user, "payments")
+
+
+async def create_card_checkout_session(
+    session: AsyncSession, user: User, payment_id: str
+) -> PaymentResponse:
+    """Issue a Paymob hosted-checkout session for a pending booking payment.
+
+    Canonical card path: the Paymob merchant order id is the booking id so
+    the signed transaction callback resolves back to this payment. The
+    server stays authoritative for the amount — the provider intention is
+    created from ``payment.amount_egp``, never from client input.
+    """
+    payment = await payments_repository.get_payment_or_raise(session, payment_id)
+    if payment.guest_id != user.id:
+        raise AuthorizationError("Only the guest can pay this booking")
+    if payment.status not in (PaymentStatus.PENDING, PaymentStatus.REJECTED):
+        raise ValidationError(
+            "Card checkout is only available for a pending payment"
+        )
+
+    from app.finance import providers as payment_providers
+
+    try:
+        result = await payment_providers.create_paymob_payment(
+            payment.booking_id, payment.amount_egp
+        )
+    except Exception as exc:
+        raise ServiceUnavailableError(
+            "Card checkout is unavailable right now"
+        ) from exc
+
+    provider_ref = result.get("order_id") or result.get("payment_intent_id")
+    if not provider_ref:
+        raise ServiceUnavailableError("Payment provider did not return a reference")
+
+    updated = await payments_repository.update_payment(
+        session,
+        payment,
+        provider="paymob",
+        provider_ref=str(provider_ref),
+        checkout_url=result.get("iframe_url"),
+        provider_metadata={
+            "checkout_token": result.get("payment_token")
+            or result.get("client_secret"),
+            "checkout_url": result.get("checkout_url") or result.get("iframe_url"),
+        },
+    )
+    return _to_response(updated)
+
+
+async def confirm_payment_by_provider(
+    session: AsyncSession,
+    booking_id: str,
+    provider_ref: str,
+    amount_egp: int | None,
+) -> bool:
+    """Reconcile a successful Paymob callback to a booking payment.
+
+    Returns True when the callback was applied; False when no pending
+    provider payment exists for the booking id (the webhook then reports
+    "not found"). Amount is verified against the stored payment so a
+    tampered callback cannot mark the wrong amount as collected.
+    """
+    payment = await payments_repository.get_payment_by_booking(session, booking_id)
+    if payment is None or payment.provider != "paymob":
+        return False
+    if payment.status == PaymentStatus.VERIFIED:
+        return True
+    if payment.status not in (PaymentStatus.PENDING, PaymentStatus.REJECTED):
+        return False
+    if amount_egp is not None and int(amount_egp) != payment.amount_egp:
+        raise ValidationError("Callback amount does not match the payment")
+
+    now = datetime.now(UTC)
+    updated = await payments_repository.update_payment(
+        session,
+        payment,
+        status=PaymentStatus.VERIFIED,
+        method="paymob",
+        transaction_ref=provider_ref,
+        verified_at=now,
+        verified_by=None,
+    )
+
+    booking = await bookings_repository.get_booking(session, payment.booking_id)
+    if booking is not None:
+        await bookings_repository.update_booking(
+            session, booking, status=BookingStatus.CONFIRMED
+        )
+
+    guest = await session.execute(select(User).where(User.id == payment.guest_id))
+    guest_user = guest.scalar_one_or_none()
+
+    await _emit_outbox_event(
+        session,
+        aggregate_id=payment.id,
+        event_type="payment.verified",
+        payload={
+            "payment_id": payment.id,
+            "booking_id": payment.booking_id,
+            "guest_name": guest_user.display_name if guest_user else "Guest",
+            "guest_phone": guest_user.phone_number if guest_user else None,
+            "guest_email": guest_user.email if guest_user else None,
+            "locale": guest_user.locale if guest_user else "ar",
+        },
+    )
+    await _emit_outbox_event(
+        session,
+        aggregate_id=payment.id,
+        event_type="booking.payment_confirmed",
+        payload={
+            "reservation_id": payment.booking_id,
+            "booking_id": payment.booking_id,
+            "payment_id": payment.id,
+            "amount_egp": payment.amount_egp,
+            "host_id": payment.host_id,
+            "accommodation_egp": (
+                payment.accommodation_amount_egp
+                if payment.accommodation_amount_egp is not None
+                else payment.amount_egp - (payment.cleaning_fee_egp or 0)
+            ),
+            "cleaning_fee_egp": payment.cleaning_fee_egp or 0,
+        },
+    )
+    return bool(updated)
+
+
+async def fail_payment_by_provider(
+    session: AsyncSession,
+    booking_id: str,
+    provider_ref: str,
+    failure_reason: str,
+) -> bool:
+    """Record a failed card attempt on a booking payment.
+
+    The payment stays PENDING so the guest can retry within the payment
+    deadline — a declined card must not cancel the accepted booking.
+    """
+    payment = await payments_repository.get_payment_by_booking(session, booking_id)
+    if payment is None or payment.provider != "paymob":
+        return False
+    if payment.status != PaymentStatus.PENDING:
+        return True
+    metadata = dict(payment.provider_metadata or {})
+    metadata["last_failure"] = {
+        "provider_ref": provider_ref,
+        "reason": failure_reason,
+        "at": datetime.now(UTC).isoformat(),
+    }
+    await payments_repository.update_payment(
+        session, payment, provider_metadata=metadata
+    )
+    return True
 
 
 async def get_payment(

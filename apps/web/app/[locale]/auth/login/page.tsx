@@ -260,6 +260,14 @@ export default function LoginPage() {
           >
             {submitting ? t("signingIn") : t("signIn")}
           </button>
+          <p className="text-center">
+            <Link
+              href={`/${locale}/auth/forgot-password?redirect=${encodeURIComponent(redirect)}`}
+              className="text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline"
+            >
+              {t("forgotPassword")}
+            </Link>
+          </p>
         </form>
       ) : step === "phone" ? (
         <form onSubmit={handleSend} className="mt-6 space-y-4">

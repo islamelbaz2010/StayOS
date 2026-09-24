@@ -10,6 +10,8 @@ export interface PaymentResponse {
   unit_id: string;
   status: string;
   method: string;
+  provider: string | null;
+  checkout_url: string | null;
   amount_egp: number;
   nights: number;
   reference_number: string;
@@ -185,6 +187,15 @@ export async function refundPayment(paymentId: string): Promise<PaymentResponse>
   return data;
 }
 
+export async function createCheckoutSession(
+  paymentId: string
+): Promise<PaymentResponse> {
+  const { data } = await api.post<PaymentResponse>(
+    `/payments/${paymentId}/checkout-session`
+  );
+  return data;
+}
+
 export function usePaymentByBooking(bookingId: string) {
   return useQuery({
     queryKey: ["payment", "booking", bookingId],
@@ -314,6 +325,21 @@ export function useRejectPayment() {
       });
       queryClient.invalidateQueries({
         queryKey: ["payment-queue"],
+      });
+    },
+  });
+}
+
+export function useCheckoutSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createCheckoutSession,
+    onSuccess: (_data, paymentId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["payment", paymentId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["payment", "booking"],
       });
     },
   });

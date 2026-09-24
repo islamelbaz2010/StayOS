@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { useInitiateKyc, useKycStatus, useSubmitKyc, useUpgradeRole } from "@/lib/queries/kyc";
 import { useAuth } from "@/lib/auth/useAuth";
+import { getApiErrorMessage } from "@/lib/utils";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -121,8 +122,8 @@ export function KycUpload() {
       await uploadToS3(initiate.upload_urls.selfie, selfieFile, "selfie");
 
       await submitMutation.mutateAsync(initiate.document_id);
-    } catch {
-      setError(t("submitFailed"));
+    } catch (err) {
+      setError(getApiErrorMessage(err, t("submitFailed")));
     }
   };
 

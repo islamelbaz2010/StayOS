@@ -19,6 +19,7 @@ from .schemas import (
     PaymentVerifyRequest,
 )
 from .services import (
+    create_card_checkout_session,
     get_booking_quote,
     get_payment,
     get_payment_by_booking,
@@ -98,6 +99,19 @@ async def list_my_payments(
 ) -> list[PaymentListItem]:
     try:
         return await list_guest_payments(session, user, limit, offset)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/{payment_id}/checkout-session", response_model=PaymentResponse)
+async def create_checkout_session(
+    payment_id: str,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> PaymentResponse:
+    """Canonical card path: issue a Paymob hosted-checkout session."""
+    try:
+        return await create_card_checkout_session(session, user, payment_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

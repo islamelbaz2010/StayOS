@@ -39,6 +39,8 @@ class PaymentResponse(BaseModel):
     unit_id: str
     status: str
     method: str
+    provider: str | None = None
+    checkout_url: str | None = None
     amount_egp: int
     # Amount breakdown is internal commercial data: serialized only for
     # admin/staff viewers (``include_breakdown``). Guests and hosts always

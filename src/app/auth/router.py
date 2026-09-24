@@ -113,6 +113,31 @@ async def set_password(
         raise to_http_exception(exc) from exc
 
 
+@router.post("/password/forgot", status_code=204)
+async def forgot_password(
+    request: auth_schemas.PasswordForgotRequest,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """Send an OTP recovery code to the account's phone on file. Always
+    returns 204 — it never reveals whether the identifier matched."""
+    try:
+        await auth_services.request_password_reset(session, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/password/reset", status_code=204)
+async def reset_password(
+    request: auth_schemas.PasswordResetRequest,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """Set a new password after a successful OTP recovery challenge."""
+    try:
+        await auth_services.reset_password(session, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
 @router.post("/refresh", response_model=auth_schemas.TokenPair)
 async def refresh_token(
     request: auth_schemas.TokenRefreshRequest,
@@ -146,6 +171,7 @@ async def get_me(
 ) -> auth_schemas.UserResponse:
     response = auth_schemas.UserResponse.model_validate(user)
     response.has_password = bool(user.password_hash)
+    response.avatar_url = auth_services.avatar_url(user)
     from app.auth.constants import UserRole
 
     if user.role == UserRole.STAFF:
@@ -160,6 +186,36 @@ async def get_me(
             )
         )
         response.staff_permissions = list(result.scalars().all())
+    return response
+
+
+@router.post("/me/avatar/presign", response_model=auth_schemas.AvatarPresignResponse)
+async def presign_avatar(
+    request: auth_schemas.AvatarPresignRequest,
+    user: User = Depends(auth_dependencies.require_active_user),
+) -> auth_schemas.AvatarPresignResponse:
+    """Issue a presigned upload URL for the user's profile photo. Fails
+    closed when object storage is not configured."""
+    try:
+        return await auth_services.presign_avatar_upload(user, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/me/avatar", response_model=auth_schemas.UserResponse)
+async def confirm_avatar(
+    request: auth_schemas.AvatarConfirmRequest,
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.UserResponse:
+    """Persist the uploaded profile photo after a successful S3 PUT."""
+    try:
+        await auth_services.confirm_avatar(session, user, request)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    response = auth_schemas.UserResponse.model_validate(user)
+    response.has_password = bool(user.password_hash)
+    response.avatar_url = auth_services.avatar_url(user)
     return response
 
 

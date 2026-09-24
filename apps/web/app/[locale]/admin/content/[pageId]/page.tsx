@@ -240,7 +240,7 @@ export default function AdminContentEditorPage() {
   return (
     <ProtectedRoute allowedRoles={["admin", "staff"]}>
       <AdminLayout>
-        <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <section className="mx-auto w-full max-w-[1600px] py-2">
           {isError && (
             <ErrorState onRetry={() => refetch()} />
           )}

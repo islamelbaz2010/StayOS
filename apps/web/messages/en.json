@@ -71,7 +71,7 @@
     "haveAccount": "Already have an account?",
     "registerSubtitle": "Create an account with your phone number or email",
     "password": "Password",
-    "confirmPassword": "Confirm password",
+    "confirmPassword": "Confirm new password",
     "displayName": "Display name",
     "passwordHint": "At least 8 characters",
     "passwordMismatch": "Passwords do not match",
@@ -85,7 +85,22 @@
     "currentPassword": "Current password",
     "newPassword": "New password",
     "passwordUpdated": "Password updated",
-    "passwordSetHint": "Set a password to sign in with email next time"
+    "passwordSetHint": "Set a password to sign in with email next time",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Reset your password",
+    "forgotPasswordHint": "Enter your account email or phone number. We'll send a recovery code to the phone number on your account.",
+    "identifierLabel": "Email or phone number",
+    "sendCode": "Send recovery code",
+    "sending": "Sending…",
+    "resetRequestFailed": "Could not send a recovery code right now. Try again.",
+    "resetCodeSentHint": "If the account exists, a 6-digit code was sent to its phone number. Enter it with your new password.",
+    "codeLabel": "Recovery code",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "resetPassword": "Reset password",
+    "resetting": "Resetting…",
+    "resetFailed": "Could not reset the password. Check the code and try again.",
+    "resetSuccess": "Password updated. You can sign in with your new password.",
+    "backToSignIn": "Back to sign in"
   },
   "host": {
     "title": "Host area",
@@ -891,7 +906,8 @@
     "messageToHostPlaceholder": "Tell the host about your trip...",
     "messageToHostHint": "Optional — sent to the host with your booking request",
     "prevMonth": "Previous month",
-    "nextMonth": "Next month"
+    "nextMonth": "Next month",
+    "signInToBook": "Sign in to book"
   },
   "hostBookings": {
     "title": "Booking requests",
@@ -1183,7 +1199,20 @@
     "rejectedAt": "Rejected at",
     "cancelledAt": "Cancelled at",
     "createdAt": "Created at",
-    "updatedAt": "Updated at"
+    "updatedAt": "Updated at",
+    "payByCardTitle": "Pay by card",
+    "payByCardHint": "Pay securely online — your booking is confirmed instantly once the payment succeeds.",
+    "payByCardCta": "Pay {amount} EGP securely",
+    "payByCardSecure": "Processed by Paymob — your card details never touch StayOS.",
+    "payByCardError": "Card checkout is unavailable right now. Try again or use bank transfer below.",
+    "manualTransferTitle": "Or pay by bank transfer / Vodafone Cash",
+    "manualTransferHint": "Transfer the amount to the account below, then upload your receipt. Manual payments are reviewed within 24 hours.",
+    "methodBankTransfer": "Bank transfer",
+    "methodVodafoneCash": "Vodafone Cash",
+    "timelineTitle": "Timeline",
+    "proofSection": "Payment proof",
+    "technicalDetails": "Technical details",
+    "paymentId": "Payment ID"
   },
   "kyc": {
     "pageTitle": "Identity Verification",
@@ -1298,7 +1327,10 @@
     "accountStatus": "Account status",
     "active": "Active",
     "inactive": "Inactive",
-    "allPermissions": "All permissions (admin)"
+    "allPermissions": "All permissions (admin)",
+    "profilePhoto": "Profile photo",
+    "changePhoto": "Change photo",
+    "avatarUploadError": "Could not upload the photo. Try again."
   },
   "hostNav": {
     "dashboard": "Dashboard",
@@ -1424,7 +1456,9 @@
     "totalRevenue": "Revenue",
     "netEarnings": "Net earnings",
     "completedStays": "Completed stays",
-    "viewEarnings": "View earnings"
+    "viewEarnings": "View earnings",
+    "addLanguage": "Type to add a language…",
+    "removeLanguage": "Remove language"
   },
   "coHosts": {
     "loadError": "Failed to load co-hosts.",
@@ -1471,7 +1505,9 @@
     "openWhatsApp": "Chat on WhatsApp",
     "notConfigured": "Our support contact details will be available shortly.",
     "backToHome": "Back to home",
-    "whatsappMessage": "Hello StayOS support, I need help with my booking."
+    "whatsappMessage": "Hello StayOS support, I need help with my booking.",
+    "contactTitle": "Contact us",
+    "browseFaq": "Browse frequently asked questions"
   },
   "footer": {
     "support": "Support"
@@ -1706,7 +1742,8 @@
       "payments": "Payments",
       "operations": "Operations",
       "disputes": "Disputes",
-      "discovery": "Discovery"
+      "discovery": "Discovery",
+      "content": "Content"
     },
     "signInHint": "Staff sign in with their phone number (OTP). They can then set an email password under Account → Set password.",
     "passwordSet": "Password set",

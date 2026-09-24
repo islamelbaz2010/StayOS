@@ -226,6 +226,13 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
         infants: guests.infants,
         message: message.trim() || undefined,
       });
+      // Instant Book: availability was validated and the payment request
+      // already exists — take the guest straight to checkout instead of a
+      // "request sent" screen. No host-approval wait on this path.
+      if (listing.instantBook) {
+        router.push(`/${locale}/checkout/${booking.id}`);
+        return;
+      }
       setCreatedBooking(booking);
       setSuccess(true);
     } catch (error) {

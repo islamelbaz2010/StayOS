@@ -1,16 +1,50 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useRef, useState, type FormEvent } from "react";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminLayout } from "@/components/layouts";
+import { ErrorState } from "@/components/ui/ErrorState";
 import {
   useAdminOverview,
   useBookingFinancialContext,
 } from "@/lib/queries/admin";
+import {
+  useEscrows,
+  usePaymentQueue,
+  usePayouts,
+  usePlatformLedger,
+  type EscrowRecord,
+  type LedgerRecord,
+  type PaymentListItem,
+  type PayoutRecord,
+} from "@/lib/queries/payments";
 import { formatMoney } from "@/lib/utils";
+
+type DrillView =
+  | "collected"
+  | "revenue"
+  | "vat"
+  | "funds_held"
+  | "host_payable"
+  | "payouts_pending"
+  | "paid_out"
+  | "refund_pending"
+  | "refunded";
+
+const DRILL_VIEWS: DrillView[] = [
+  "collected",
+  "revenue",
+  "vat",
+  "funds_held",
+  "host_payable",
+  "payouts_pending",
+  "paid_out",
+  "refund_pending",
+  "refunded",
+];
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -36,17 +70,60 @@ export default function AdminEarningsPage() {
 
   const overview = useAdminOverview();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const drillRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState(searchParams.get("booking") ?? "");
   const [bookingId, setBookingId] = useState<string | undefined>(
     searchParams.get("booking") ?? undefined
   );
   const ctx = useBookingFinancialContext(bookingId);
 
+  const viewParam = searchParams.get("view") ?? "";
+  const activeView = (DRILL_VIEWS as string[]).includes(viewParam)
+    ? (viewParam as DrillView)
+    : null;
+
+  const openView = (view: DrillView) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (activeView === view) params.delete("view");
+    else params.set("view", view);
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+    if (activeView !== view) {
+      requestAnimationFrame(() =>
+        drillRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      );
+    }
+  };
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const id = input.trim();
     if (id) setBookingId(id);
   };
+
+  const card = (
+    key: DrillView,
+    value: string,
+    label: string,
+    extra?: string
+  ) => (
+    <button
+      key={key}
+      type="button"
+      onClick={() => openView(key)}
+      className={`card p-4 text-start transition hover:border-accent-400 hover:shadow-md ${
+        activeView === key ? "border-accent-500 ring-1 ring-accent-400" : ""
+      }`}
+    >
+      <p className="text-2xl font-bold text-brand-900">{value}</p>
+      <p className="mt-1 text-xs text-neutral-500">
+        {label}
+        {extra ? ` · ${extra}` : ""}
+      </p>
+    </button>
+  );
 
   return (
     <ProtectedRoute allowedRoles={["admin", "staff"]}>
@@ -60,71 +137,55 @@ export default function AdminEarningsPage() {
           </div>
 
           {overview.data && (
-            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="card p-4">
-                <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.payments_verified_amount_egp)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {to("collectedAmount")}
-                </p>
-              </div>
-              <div className="card p-4">
-                <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.platform_revenue_egp)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {to("platformRevenue")}
-                </p>
-              </div>
-              <div className="card p-4">
-                <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.escrows_held_amount_egp)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {to("escrowsHeldAmount")} · {overview.data.escrows_held}
-                </p>
-              </div>
-              <div className="card p-4">
-                <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.host_payable_egp)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {to("hostPayable")}
-                </p>
-              </div>
-              <div className="card p-4">
-                <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.payouts_pending_amount_egp)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {to("payoutsAmount")}
-                </p>
-              </div>
-              <div className="card p-4">
-                <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.payouts_paid_amount_egp)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {to("payoutsPaid")}
-                </p>
-              </div>
-              <div className="card p-4">
-                <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.payments_refund_pending_amount_egp)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {to("refundPendingAmount")}
-                </p>
-              </div>
-              <div className="card p-4">
-                <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.payments_refunded_amount_egp)}
-                </p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {to("refundedAmount")}
-                </p>
-              </div>
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+              {card(
+                "collected",
+                egp(overview.data.payments_verified_amount_egp),
+                to("collectedAmount")
+              )}
+              {card(
+                "revenue",
+                egp(overview.data.platform_revenue_egp),
+                to("platformRevenue")
+              )}
+              {card("vat", egp(overview.data.vat_egp), to("vat"))}
+              {card(
+                "funds_held",
+                egp(overview.data.escrows_held_amount_egp),
+                to("escrowsHeldAmount"),
+                String(overview.data.escrows_held)
+              )}
+              {card(
+                "host_payable",
+                egp(overview.data.host_payable_egp),
+                to("hostPayable")
+              )}
+              {card(
+                "payouts_pending",
+                egp(overview.data.payouts_pending_amount_egp),
+                to("payoutsAmount")
+              )}
+              {card(
+                "paid_out",
+                egp(overview.data.payouts_paid_amount_egp),
+                to("payoutsPaid")
+              )}
+              {card(
+                "refund_pending",
+                egp(overview.data.payments_refund_pending_amount_egp),
+                to("refundPendingAmount")
+              )}
+              {card(
+                "refunded",
+                egp(overview.data.payments_refunded_amount_egp),
+                to("refundedAmount")
+              )}
+            </div>
+          )}
+
+          {activeView && (
+            <div ref={drillRef} className="mb-6 scroll-mt-24">
+              <DrillDown view={activeView} intlLocale={intlLocale} />
             </div>
           )}
 
@@ -229,6 +290,10 @@ export default function AdminEarningsPage() {
                       value={egp(ctx.data.cleaning_fee_egp)}
                     />
                     <Row
+                      label={t("vat")}
+                      value={egp(ctx.data.financials?.vat_egp)}
+                    />
+                    <Row
                       label={t("reference")}
                       value={ctx.data.reference_number}
                     />
@@ -293,6 +358,14 @@ export default function AdminEarningsPage() {
                           ? `${egp(0)} (${t("shareWaived")})`
                           : egp(ctx.data.financials.platform_share_egp)
                       }
+                    />
+                    <Row
+                      label={t("vat")}
+                      value={egp(ctx.data.financials.vat_egp)}
+                    />
+                    <Row
+                      label={t("netRevenue")}
+                      value={egp(ctx.data.financials.platform_net_revenue_egp)}
                     />
                     <Row
                       label={t("hostPayable")}
@@ -463,5 +536,225 @@ export default function AdminEarningsPage() {
         </section>
       </AdminLayout>
     </ProtectedRoute>
+  );
+}
+
+function DrillDown({
+  view,
+  intlLocale,
+}: {
+  view: DrillView;
+  intlLocale: string;
+}) {
+  const t = useTranslations("adminEarnings");
+  const egp = (v: number | null | undefined) =>
+    v != null ? formatMoney(v, "EGP", intlLocale) : "—";
+  const fmtDate = (v: string | null | undefined) =>
+    v ? new Date(v).toLocaleString(intlLocale) : "—";
+
+  const isQueue = view === "collected" || view === "refund_pending" || view === "refunded";
+  const isEscrow = view === "funds_held";
+  const isPayout = view === "payouts_pending" || view === "paid_out";
+
+  const queueStatus =
+    view === "collected"
+      ? "verified"
+      : view === "refund_pending"
+        ? "refund_pending"
+        : view === "refunded"
+          ? "refunded"
+          : undefined;
+  const ledgerAccount =
+    view === "revenue"
+      ? "platform_revenue"
+      : view === "vat"
+        ? "vat_payable"
+        : view === "host_payable"
+          ? "host_payable"
+          : undefined;
+  const payoutStatus =
+    view === "payouts_pending"
+      ? "pending"
+      : view === "paid_out"
+        ? "completed"
+        : undefined;
+
+  const queueQuery = usePaymentQueue(queueStatus, { enabled: isQueue });
+  const escrowQuery = useEscrows("created,held,disputed", { enabled: isEscrow });
+  const payoutQuery = usePayouts(payoutStatus, { enabled: isPayout });
+  const ledgerQuery = usePlatformLedger(ledgerAccount);
+
+  const query = isQueue
+    ? queueQuery
+    : isEscrow
+      ? escrowQuery
+      : isPayout
+        ? payoutQuery
+        : ledgerQuery;
+
+  return (
+    <div className="card p-5">
+      <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent-600">
+        {t(`drill.${view}`)}
+      </h2>
+      {query.isError ? (
+        <ErrorState onRetry={() => query.refetch()} />
+      ) : query.isPending ? (
+        <div className="py-6 text-center text-sm text-neutral-600">
+          {t("loading")}
+        </div>
+      ) : isQueue ? (
+        <QueueRows rows={(queueQuery.data ?? []) as PaymentListItem[]} egp={egp} fmtDate={fmtDate} />
+      ) : isEscrow ? (
+        <EscrowRows rows={(escrowQuery.data ?? []) as EscrowRecord[]} egp={egp} fmtDate={fmtDate} />
+      ) : isPayout ? (
+        <PayoutRows rows={(payoutQuery.data ?? []) as PayoutRecord[]} egp={egp} fmtDate={fmtDate} />
+      ) : (
+        <LedgerRows rows={(ledgerQuery.data ?? []) as LedgerRecord[]} egp={egp} fmtDate={fmtDate} />
+      )}
+    </div>
+  );
+}
+
+function EmptyList({ text }: { text: string }) {
+  return <p className="py-6 text-center text-sm text-neutral-500">{text}</p>;
+}
+
+function QueueRows({
+  rows,
+  egp,
+  fmtDate,
+}: {
+  rows: PaymentListItem[];
+  egp: (v: number | null | undefined) => string;
+  fmtDate: (v: string | null | undefined) => string;
+}) {
+  const t = useTranslations("adminEarnings");
+  if (rows.length === 0) return <EmptyList text={t("emptyDrill")} />;
+  return (
+    <div className="divide-y divide-neutral-100">
+      {rows.map((p) => (
+        <div
+          key={p.id}
+          className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
+        >
+          <div>
+            <p className="font-medium text-neutral-800">
+              {p.unit_title ?? p.unit_id.slice(0, 8)}
+            </p>
+            <p className="font-mono text-xs text-neutral-500">
+              {p.reference_number} · {fmtDate(p.created_at)}
+            </p>
+          </div>
+          <div className="text-end">
+            <p className="font-semibold text-brand-900">
+              {egp(p.amount_egp)}
+            </p>
+            <p className="text-xs text-neutral-500">{p.status}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EscrowRows({
+  rows,
+  egp,
+  fmtDate,
+}: {
+  rows: EscrowRecord[];
+  egp: (v: number | null | undefined) => string;
+  fmtDate: (v: string | null | undefined) => string;
+}) {
+  const t = useTranslations("adminEarnings");
+  if (rows.length === 0) return <EmptyList text={t("emptyDrill")} />;
+  return (
+    <div className="divide-y divide-neutral-100">
+      {rows.map((e) => (
+        <div
+          key={e.id}
+          className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
+        >
+          <div>
+            <p className="font-mono text-xs text-neutral-500">
+              {e.reservation_id.slice(0, 8)}
+            </p>
+            <p className="text-xs text-neutral-500">
+              {e.status}
+              {e.hold_until ? ` · ${t("holdUntil")} ${fmtDate(e.hold_until)}` : ""}
+            </p>
+          </div>
+          <p className="font-semibold text-brand-900">{egp(e.amount_egp)}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PayoutRows({
+  rows,
+  egp,
+  fmtDate,
+}: {
+  rows: PayoutRecord[];
+  egp: (v: number | null | undefined) => string;
+  fmtDate: (v: string | null | undefined) => string;
+}) {
+  const t = useTranslations("adminEarnings");
+  if (rows.length === 0) return <EmptyList text={t("emptyDrill")} />;
+  return (
+    <div className="divide-y divide-neutral-100">
+      {rows.map((p) => (
+        <div
+          key={p.id}
+          className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
+        >
+          <div>
+            <p className="font-mono text-xs text-neutral-500">
+              {p.provider_ref ?? p.id.slice(0, 8)}
+            </p>
+            <p className="text-xs text-neutral-500">
+              {p.status}
+              {p.processed_at ? ` · ${fmtDate(p.processed_at)}` : ` · ${fmtDate(p.created_at)}`}
+            </p>
+          </div>
+          <p className="font-semibold text-brand-900">{egp(p.amount_egp)}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LedgerRows({
+  rows,
+  egp,
+  fmtDate,
+}: {
+  rows: LedgerRecord[];
+  egp: (v: number | null | undefined) => string;
+  fmtDate: (v: string | null | undefined) => string;
+}) {
+  const t = useTranslations("adminEarnings");
+  if (rows.length === 0) return <EmptyList text={t("emptyDrill")} />;
+  return (
+    <div className="divide-y divide-neutral-100">
+      {rows.map((le) => (
+        <div
+          key={le.id}
+          className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
+        >
+          <div>
+            <p className="text-xs font-medium text-neutral-700">
+              {le.description ?? le.ledger_account}
+            </p>
+            <p className="font-mono text-xs text-neutral-500">
+              {le.entry_type} · {fmtDate(le.created_at)}
+            </p>
+          </div>
+          <p className="font-semibold text-brand-900">{egp(le.amount_egp)}</p>
+        </div>
+      ))}
+    </div>
   );
 }

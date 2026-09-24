@@ -113,7 +113,10 @@ class ListingCreate(BaseModel):
     weekly_discount_pct: int = Field(default=0, ge=0, le=90)
     monthly_discount_pct: int = Field(default=0, ge=0, le=90)
     cancellation_policy: str = Field(default="FLEXIBLE", min_length=1, max_length=50)
-    instant_book: bool = False
+    # Instant Book is the default booking mode for new listings (Founder
+    # direction: available inventory goes straight to checkout — hosts can
+    # still opt a listing into request-to-book via this toggle).
+    instant_book: bool = True
     weekend_mult: float = Field(default=1.0, ge=0.0)
     peak_mult: float = Field(default=1.0, ge=0.0)
     min_nights: int = Field(default=1, ge=1)

@@ -48,6 +48,8 @@ class PaymentResponse(BaseModel):
     accommodation_amount_egp: int | None = None
     guest_service_fee_egp: int | None = None
     cleaning_fee_egp: int | None = None
+    # VAT inside the platform service share — admin/staff breakdown only.
+    vat_egp: int | None = None
     nights: int
     reference_number: str
     payment_deadline_at: datetime | None = None

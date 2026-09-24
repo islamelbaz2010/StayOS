@@ -9,6 +9,8 @@ import {
   useState,
 } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { api } from "@/lib/api";
 
 import { firebaseAuth, isFirebaseConfigured } from "./firebase";
@@ -46,6 +48,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const fetchMe = useCallback(async () => {
     try {
@@ -79,9 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshToken: tokens.refresh_token,
         expiresAt,
       });
+      // Drop every cached query before resolving the new identity so no
+      // data fetched under a previous account can render for this one.
+      queryClient.clear();
       await fetchMe();
     },
-    [fetchMe]
+    [fetchMe, queryClient]
   );
 
   const logout = useCallback(async () => {
@@ -96,7 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSession();
     setUser(null);
     setIsLoading(false);
-  }, []);
+    // Wipe the query cache so the next session starts clean — no stale
+    // account data may survive a logout/login switch.
+    queryClient.clear();
+  }, [queryClient]);
 
   const sendOtp = useCallback(async (phone: string, buttonId: string) => {
     if (!firebaseAuth) {

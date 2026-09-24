@@ -152,6 +152,7 @@ def _to_response(payment: Payment, *, include_breakdown: bool = False) -> Paymen
         cleaning_fee_egp=(
             payment.cleaning_fee_egp if include_breakdown else None
         ),
+        vat_egp=(payment.vat_egp if include_breakdown else None),
         refund_amount_egp=payment.refund_amount_egp,
         nights=payment.nights,
         reference_number=payment.reference_number,
@@ -367,6 +368,20 @@ async def create_payment_for_booking(
         cleaning_fee = quote.cleaning_fee_egp
         amount = quote.total_egp
 
+    # VAT is computed at creation by the same canonical engine the ledger
+    # uses — it sits inside the platform share (VAT-inclusive), so the
+    # guest total and host net are unchanged. The closed-alpha share
+    # waiver applies here too: a waived booking has no platform share and
+    # therefore no VAT component.
+    host_completed = await bookings_repository.count_host_completed_bookings(
+        session, unit.host_id, exclude_booking_id=booking.id
+    )
+    vat_egp = commercial.compute_booking_economics(
+        subtotal - cleaning_fee,
+        cleaning_fee,
+        platform_share_waived=host_completed < settings.ALPHA_HOST_FREE_BOOKINGS,
+    ).vat_egp
+
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()
     # V1 policy §1.2 — the guest has PAYMENT_DEADLINE_HOURS from host
@@ -386,6 +401,7 @@ async def create_payment_for_booking(
         # kept for legacy rows whose stored value still drives refund math.
         guest_service_fee_egp=0,
         cleaning_fee_egp=cleaning_fee,
+        vat_egp=vat_egp,
         nights=nights,
         reference_number=reference,
         instructions=instructions,
@@ -1076,7 +1092,20 @@ _HOST_ACTIVITY_FILTERS: dict[str, list[str]] = {
         PaymentStatus.PROOF_UPLOADED,
         PaymentStatus.REJECTED,
     ],
+    # "Collected" mirrors the total_revenue_egp aggregate on the earnings
+    # summary — every payment where money was actually collected from the
+    # guest (verified, or collected-then-refunding/refunded).
+    "collected": [
+        PaymentStatus.VERIFIED,
+        PaymentStatus.REFUND_PENDING,
+        PaymentStatus.REFUNDED,
+    ],
 }
+
+# Escrow-lifecycle drill-downs — used by the host earnings cards. These
+# mirror the summary aggregates in host/services.get_host_earnings so the
+# list a card opens always matches the total it shows.
+_HOST_LIFECYCLE_FILTERS = {"funds_held", "payout_ready", "paid_out"}
 
 
 async def list_host_payments(
@@ -1088,11 +1117,21 @@ async def list_host_payments(
 ) -> list[PaymentListItem]:
     if user.role not in (UserRole.HOST, UserRole.ADMIN):
         raise AuthorizationError("Only hosts can view their payment activity")
-    statuses = _HOST_ACTIVITY_FILTERS.get(status) if status else None
-    if status and statuses is None:
+    lifecycle = status if status in _HOST_LIFECYCLE_FILTERS else None
+    statuses = (
+        _HOST_ACTIVITY_FILTERS.get(status)
+        if status and lifecycle is None
+        else None
+    )
+    if status and statuses is None and lifecycle is None:
         statuses = [status]
     payments = await payments_repository.list_host_payments(
-        session, user.id, statuses=statuses, limit=limit, offset=offset
+        session,
+        user.id,
+        statuses=statuses,
+        lifecycle=lifecycle,
+        limit=limit,
+        offset=offset,
     )
     items = [_to_list_item(p) for p in payments]
     await _attach_host_earnings(session, payments, items)

@@ -41,6 +41,12 @@ class BookingEconomics:
     # Internal 6% + 6% allocation — ledger/reporting only.
     host_side_share_egp: int
     guest_side_share_egp: int
+    # VAT (configured ``VAT_RATE_PCT``) is a platform-service tax component
+    # INSIDE ``platform_share_egp`` — the guest total and host net are
+    # deliberately unchanged. ``platform_net_revenue_egp`` is the revenue
+    # StayOS retains after remitting VAT.
+    vat_egp: int = 0
+    platform_net_revenue_egp: int = 0
 
 
 def compute_booking_economics(
@@ -70,6 +76,7 @@ def compute_booking_economics(
         round(accommodation_egp * settings.GUEST_SIDE_SHARE_PCT)
     ) if platform_share else 0
     host_side = platform_share - guest_side
+    vat, net_revenue = split_vat(platform_share)
     return BookingEconomics(
         accommodation_egp=accommodation_egp,
         cleaning_fee_egp=cleaning_fee_egp,
@@ -78,7 +85,26 @@ def compute_booking_economics(
         host_net_egp=host_net,
         host_side_share_egp=host_side,
         guest_side_share_egp=guest_side,
+        vat_egp=vat,
+        platform_net_revenue_egp=net_revenue,
     )
+
+
+def split_vat(platform_share_egp: int) -> tuple[int, int]:
+    """Split a VAT-inclusive platform share into (vat, net revenue).
+
+    Tax base rule (canonical): VAT at ``VAT_RATE_PCT`` applies to the
+    StayOS platform service share — the fee base is the discounted
+    accommodation amount only (post-discount, post-cleaning exclusion).
+    The guest pays the all-inclusive total unchanged and the host net is
+    unchanged: VAT is carved out of StayOS's own share, not added on top
+    and not taken from the host. ``vat + net == platform_share`` exactly.
+    """
+    if platform_share_egp <= 0:
+        return 0, platform_share_egp
+    rate = settings.VAT_RATE_PCT
+    net = int(round(platform_share_egp / (1 + rate)))
+    return platform_share_egp - net, net
 
 
 def guest_all_in_price_for_host_target(host_target_net_egp: int) -> int:

@@ -202,6 +202,10 @@ async def test_create_payment_for_booking_success(fake_session: AsyncMock, monke
         "app.bookings.repository.count_global_completed_bookings",
         AsyncMock(return_value=0),
     )
+    monkeypatch.setattr(
+        "app.bookings.repository.count_host_completed_bookings",
+        AsyncMock(return_value=10),
+    )
 
     result = await payment_services.create_payment_for_booking(fake_session, booking, guest)
     assert result.status == PaymentStatus.PENDING
@@ -1321,6 +1325,10 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
         "app.bookings.repository.count_global_completed_bookings",
         AsyncMock(return_value=50),
     )
+    monkeypatch.setattr(
+        "app.bookings.repository.count_host_completed_bookings",
+        AsyncMock(return_value=10),
+    )
 
     before = datetime.now(UTC)
     await payment_services.create_payment_for_booking(fake_session, booking, guest)
@@ -1628,6 +1636,10 @@ async def test_get_booking_quote_matches_payment_creation(fake_session: AsyncMoc
     )
     monkeypatch.setattr(
         "app.bookings.repository.count_global_completed_bookings",
+        AsyncMock(return_value=10),
+    )
+    monkeypatch.setattr(
+        "app.bookings.repository.count_host_completed_bookings",
         AsyncMock(return_value=10),
     )
 

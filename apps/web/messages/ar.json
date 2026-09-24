@@ -723,7 +723,7 @@
     "submitResponse": "إرسال الرد",
     "submitting": "جارٍ الإرسال...",
     "responseError": "فشل إرسال الرد",
-    "includesAllFees": "شامل جميع الرسوم",
+    "includesAllFees": "شامل جميع الرسوم وضريبة القيمة المضافة",
     "offer": "عرض"
   },
   "trust": {
@@ -865,7 +865,7 @@
     "cleaningFee": "رسوم التنظيف",
     "serviceFee": "رسوم الخدمة",
     "total": "الإجمالي",
-    "includesAllFees": "شامل جميع الرسوم",
+    "includesAllFees": "شامل جميع الرسوم وضريبة القيمة المضافة",
     "selectDates": "اختر التواريخ لرؤية الملخص.",
     "requestBooking": "إرسال طلب الحجز",
     "submitting": "جاري الإرسال...",
@@ -1129,7 +1129,7 @@
     "serviceFee": "رسوم الخدمة",
     "serviceFeeWaived": "مجاناً",
     "totalAmount": "المبلغ الإجمالي",
-    "includesAllFees": "شامل جميع الرسوم",
+    "includesAllFees": "شامل جميع الرسوم وضريبة القيمة المضافة",
     "egp": "ج.م",
     "selectProof": "اختر ملف الإيصال",
     "formatsHint": "JPG، PNG، WebP، أو PDF - بحد أقصى 10 ميجابايت",
@@ -1411,7 +1411,7 @@
     "noEarnings": "لا توجد أرباح بعد. بمجرد اكتمال إقامات الضيوف، ستظهر أرباحك هنا.",
     "netEarnings": "صافي الأرباح",
     "totalRevenue": "إجمالي الإيرادات",
-    "pendingVerification": "معلّق",
+    "pendingVerification": "دفعة معلّقة",
     "refundPending": "استرداد معلّق",
     "totalBookings": "إجمالي الحجوزات",
     "confirmedBookings": "حجوزات مؤكدة",
@@ -1423,8 +1423,12 @@
     "paymentActivity": "نشاط الدفع",
     "filter": {
       "all": "الكل",
-      "pending": "معلّق",
+      "pending": "دفعة معلّقة",
+      "collected": "محصّلة",
       "verified": "تم التحقق",
+      "funds_held": "مبالغ محتجزة",
+      "payout_ready": "جاهزة للصرف",
+      "paid_out": "تم صرفها",
       "refund_pending": "استرداد معلّق",
       "refunded": "تم الاسترداد",
       "cancelled": "ملغي"
@@ -1457,8 +1461,8 @@
     },
     "expectedPayout": "السحب المتوقع",
     "paidOn": "تم الدفع في",
-    "collected": "المبالغ المحصّلة",
-    "collectedHint": "مدفوعات الضيوف المحصّلة (قبل رسوم StayOS)",
+    "collected": "مدفوعات الضيوف المحصّلة",
+    "collectedHint": "مدفوعات الضيوف الموثّقة، قبل الاستردادات ورسوم StayOS",
     "yourEarningsHint": "نصيبك بعد رسوم StayOS",
     "fundsHeld": "مبالغ محتجزة",
     "fundsHeldHint": "نصيبك المحتجز حالياً في الضمان",
@@ -1466,7 +1470,14 @@
     "payoutReadyHint": "مؤهل الآن — بعد 24 ساعة من تسجيل وصول الضيف",
     "paidOut": "تم صرفه",
     "refunded": "تم الاسترداد",
-    "cancelledBookings": "حجوزات ملغية"
+    "cancelledBookings": "حجوزات ملغية",
+    "moneySection": "أموالك",
+    "bookingsSection": "الحجوزات",
+    "pendingPaymentHint": "مدفوعات الضيوف التي ما زالت قيد المعالجة أو التحقق",
+    "paidOutHint": "المبالغ التي تم إرسالها إليك بالفعل",
+    "refundPendingHint": "استردادات بانتظار تأكيد مزود الدفع",
+    "refundedHint": "مبالغ أُعيدت إلى الضيوف",
+    "noPayouts": "لا توجد مدفوعات مسحوبة بعد."
   },
   "hostToday": {
     "title": "اليوم",
@@ -1878,7 +1889,8 @@
     "hostPayable": "مستحق للمضيفين",
     "escrowsHeldAmount": "مبالغ محتجزة",
     "payoutsPaid": "تم صرفه",
-    "refundPendingAmount": "استرداد معلّق"
+    "refundPendingAmount": "استرداد معلّق",
+    "vat": "ضريبة القيمة المضافة المستحقة"
   },
   "adminEarnings": {
     "title": "الإيرادات والعمليات المالية",
@@ -1932,6 +1944,21 @@
     "expectedPayout": "السحب المتوقع",
     "payoutStatus": "حالة السحب",
     "paidAt": "تم الدفع في",
-    "providerPayout": "السحب عبر المزود"
+    "providerPayout": "السحب عبر المزود",
+    "vat": "ض.ق.م (14%)",
+    "netRevenue": "صافي إيراد StayOS (بعد الضريبة)",
+    "emptyDrill": "لا توجد سجلات في هذه الفئة.",
+    "loading": "جاري التحميل…",
+    "drill": {
+      "collected": "المحصّل — مدفوعات موثّقة",
+      "revenue": "إيراد StayOS — قيود دفتر الأستاذ",
+      "vat": "ضريبة القيمة المضافة المستحقة — قيود دفتر الأستاذ",
+      "funds_held": "مبالغ محتجزة — حسابات الضمان",
+      "host_payable": "مستحق للمضيفين — قيود دفتر الأستاذ",
+      "payouts_pending": "مدفوعات معلّقة",
+      "paid_out": "مدفوعات مكتملة",
+      "refund_pending": "استردادات بانتظار تأكيد المزود",
+      "refunded": "مدفوعات مستردة"
+    }
   }
 }

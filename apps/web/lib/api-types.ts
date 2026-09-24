@@ -595,6 +595,10 @@ export interface paths {
     /** List Wallet Ledger */
     get: operations["list_wallet_ledger_api_v1_finance_wallets__wallet_id__ledger_get"];
   };
+  "/api/v1/finance/ledger": {
+    /** List Platform Ledger */
+    get: operations["list_platform_ledger_api_v1_finance_ledger_get"];
+  };
   "/api/v1/finance/escrow": {
     /** List Escrows */
     get: operations["list_escrows_api_v1_finance_escrow_get"];
@@ -1114,6 +1118,11 @@ export interface components {
        * @default 0
        */
       platform_revenue_egp?: number;
+      /**
+       * Vat Egp
+       * @default 0
+       */
+      vat_egp?: number;
       /** Kyc Pending Documents */
       kyc_pending_documents: number;
       /** Disputes Open */
@@ -3520,7 +3529,7 @@ export interface components {
       cancellation_policy?: string;
       /**
        * Instant Book
-       * @default false
+       * @default true
        */
       instant_book?: boolean;
       /**
@@ -4563,6 +4572,8 @@ export interface components {
       guest_service_fee_egp?: number | null;
       /** Cleaning Fee Egp */
       cleaning_fee_egp?: number | null;
+      /** Vat Egp */
+      vat_egp?: number | null;
       /** Nights */
       nights: number;
       /** Reference Number */
@@ -9025,6 +9036,30 @@ export interface operations {
       };
       path: {
         wallet_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["LedgerListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Platform Ledger */
+  list_platform_ledger_api_v1_finance_ledger_get: {
+    parameters: {
+      query: {
+        ledger_account: string;
+        limit?: number;
+        offset?: number;
       };
     };
     responses: {

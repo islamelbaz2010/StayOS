@@ -25,6 +25,13 @@ class Settings(BaseSettings):
         "in the Paymob redirection_url. The token only unlocks a read-only "
         "payment-status view for a guest returning without a session.",
     )
+    VAT_RATE_PCT: float = Field(
+        default=0.14,
+        description="StayOS configured VAT rate applied to the platform "
+        "service share. The guest-facing all-inclusive total and the host "
+        "net are unchanged — VAT is carved out of the platform share and "
+        "recorded to the VAT_PAYABLE ledger account (see finance/commercial.py).",
+    )
 
     FIREBASE_PROJECT_ID: str = Field(default="", description="Firebase project ID")
     FIREBASE_CLIENT_EMAIL: str = Field(default="", description="Firebase service account email")

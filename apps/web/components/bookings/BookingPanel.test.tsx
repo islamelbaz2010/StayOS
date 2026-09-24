@@ -22,6 +22,8 @@ vi.mock("@/lib/auth/useAuth", () => ({
   useAuth: () => mockAuth,
 }));
 
+const createBookingMock = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
+
 vi.mock("@/lib/queries/bookings", () => ({
   useBookingQuote: () => ({
     data: {
@@ -30,7 +32,10 @@ vi.mock("@/lib/queries/bookings", () => ({
     },
     isLoading: false,
   }),
-  useCreateBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateBooking: () => ({
+    mutateAsync: createBookingMock.mutateAsync,
+    isPending: false,
+  }),
 }));
 
 let mockDays: { date: string; status: string; price_egp: number }[] | null = [];
@@ -208,9 +213,11 @@ describe("BookingPanel guest-facing summary", () => {
     expect(screen.queryByText(/cleaning fee/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/service fee/i)).not.toBeInTheDocument();
 
-    // Total and the all-inclusive note remain.
+    // Total and the all-inclusive note remain (VAT disclosure included).
     expect(screen.getByText("Total")).toBeInTheDocument();
-    expect(screen.getByText("Includes all fees")).toBeInTheDocument();
+    expect(
+      screen.getByText("Includes all fees and VAT")
+    ).toBeInTheDocument();
   });
 
   it("keeps the total mathematically correct (accommodation + fees)", () => {
@@ -267,5 +274,46 @@ describe("BookingPanel date validation feedback", () => {
     expect(
       screen.getByText("Minimum stay is 3 nights.")
     ).toBeInTheDocument();
+  });
+});
+
+describe("BookingPanel instant book", () => {
+  beforeEach(() => {
+    mockDays = [];
+    pushMock.mockClear();
+    createBookingMock.mutateAsync.mockReset();
+    mockAuth = {
+      isAuthenticated: true,
+      isGuest: true,
+      isLoading: false,
+      user: { id: "guest-1", role: "guest", kyc_status: "verified" },
+    };
+  });
+
+  it("goes straight to checkout — no request/approval screen", async () => {
+    createBookingMock.mutateAsync.mockResolvedValue({ id: "booking-9" });
+    const instantListing = { ...listing, instantBook: true } as ListingDetail;
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <NextIntlClientProvider locale="en" messages={messages}>
+          <BookingPanel
+            listing={instantListing}
+            initialCheckIn="2030-01-10"
+            initialCheckOut="2030-01-14"
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Instant Book" }));
+
+    await screen.findByRole("button", { name: "Instant Book" });
+    expect(createBookingMock.mutateAsync).toHaveBeenCalledTimes(1);
+    expect(pushMock).toHaveBeenCalledWith("/en/checkout/booking-9");
+    // The "request sent" success view must NOT render on this path.
+    expect(screen.queryByText(/view trips/i)).not.toBeInTheDocument();
   });
 });

@@ -723,7 +723,7 @@
     "submitResponse": "Submit response",
     "submitting": "Submitting...",
     "responseError": "Failed to submit response",
-    "includesAllFees": "Includes all fees",
+    "includesAllFees": "Includes all fees and VAT",
     "offer": "Offer"
   },
   "trust": {
@@ -865,7 +865,7 @@
     "cleaningFee": "Cleaning fee",
     "serviceFee": "Service fee",
     "total": "Total",
-    "includesAllFees": "Includes all fees",
+    "includesAllFees": "Includes all fees and VAT",
     "selectDates": "Select dates to see the summary.",
     "requestBooking": "Request booking",
     "submitting": "Submitting...",
@@ -1129,7 +1129,7 @@
     "serviceFee": "Service fee",
     "serviceFeeWaived": "Free",
     "totalAmount": "Total amount",
-    "includesAllFees": "Includes all fees",
+    "includesAllFees": "Includes all fees and VAT",
     "egp": "EGP",
     "selectProof": "Select receipt file",
     "formatsHint": "JPG, PNG, WebP, or PDF - max 10MB",
@@ -1411,7 +1411,7 @@
     "noEarnings": "No earnings yet. Once guests complete stays, your earnings will appear here.",
     "netEarnings": "Net earnings",
     "totalRevenue": "Total revenue",
-    "pendingVerification": "Pending",
+    "pendingVerification": "Pending payment",
     "refundPending": "Refund pending",
     "totalBookings": "Total bookings",
     "confirmedBookings": "Confirmed bookings",
@@ -1423,8 +1423,12 @@
     "paymentActivity": "Payment activity",
     "filter": {
       "all": "All",
-      "pending": "Pending",
+      "pending": "Pending payment",
+      "collected": "Collected",
       "verified": "Verified",
+      "funds_held": "Funds held",
+      "payout_ready": "Ready for payout",
+      "paid_out": "Paid out",
       "refund_pending": "Refund pending",
       "refunded": "Refunded",
       "cancelled": "Cancelled"
@@ -1457,8 +1461,8 @@
     },
     "expectedPayout": "Expected payout",
     "paidOn": "Paid on",
-    "collected": "Collected",
-    "collectedHint": "Guest payments collected (before the StayOS fee)",
+    "collected": "Guest payments collected",
+    "collectedHint": "Verified guest payments, before refunds and the StayOS fee",
     "yourEarningsHint": "Your share after the StayOS fee",
     "fundsHeld": "Funds held",
     "fundsHeldHint": "Your share currently held in escrow",
@@ -1466,7 +1470,14 @@
     "payoutReadyHint": "Eligible now — 24 hours after guest check-in",
     "paidOut": "Paid out",
     "refunded": "Refunded",
-    "cancelledBookings": "Cancelled bookings"
+    "cancelledBookings": "Cancelled bookings",
+    "moneySection": "Your money",
+    "bookingsSection": "Bookings",
+    "pendingPaymentHint": "Guest payments still being processed or verified",
+    "paidOutHint": "Payouts already sent to you",
+    "refundPendingHint": "Refunds waiting for provider confirmation",
+    "refundedHint": "Refunds returned to guests",
+    "noPayouts": "No payouts yet."
   },
   "hostToday": {
     "title": "Today",
@@ -1878,7 +1889,8 @@
     "hostPayable": "Host payable",
     "escrowsHeldAmount": "Funds held",
     "payoutsPaid": "Paid out",
-    "refundPendingAmount": "Refund pending"
+    "refundPendingAmount": "Refund pending",
+    "vat": "VAT payable"
   },
   "adminEarnings": {
     "title": "Earnings & Financial Operations",
@@ -1932,6 +1944,21 @@
     "expectedPayout": "Expected payout",
     "payoutStatus": "Payout status",
     "paidAt": "Paid at",
-    "providerPayout": "Provider payout"
+    "providerPayout": "Provider payout",
+    "vat": "VAT (14%)",
+    "netRevenue": "Net StayOS revenue (after VAT)",
+    "emptyDrill": "No records in this category.",
+    "loading": "Loading…",
+    "drill": {
+      "collected": "Collected — verified payments",
+      "revenue": "StayOS revenue — ledger entries",
+      "vat": "VAT payable — ledger entries",
+      "funds_held": "Funds held — escrow accounts",
+      "host_payable": "Host payable — ledger entries",
+      "payouts_pending": "Pending payouts",
+      "paid_out": "Completed payouts",
+      "refund_pending": "Refunds awaiting provider confirmation",
+      "refunded": "Refunded payments"
+    }
   }
 }

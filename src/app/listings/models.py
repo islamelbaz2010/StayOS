@@ -173,7 +173,7 @@ class UnitListing(UUIDMixin, Base):
     # request is created immediately. Payment still follows the existing
     # manual-proof + admin-verify contract — no new payment policy.
     instant_book: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, server_default=text("false")
+        Boolean, nullable=False, default=True, server_default=text("true")
     )
     cover_photo_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("pms.unit_photos.id"), nullable=True

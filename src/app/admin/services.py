@@ -188,6 +188,12 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
             LedgerEntry.ledger_account == LedgerAccount.PLATFORM_REVENUE
         ),
     )
+    vat_amount = await _count(
+        session,
+        select(ledger_net).where(
+            LedgerEntry.ledger_account == LedgerAccount.VAT_PAYABLE
+        ),
+    )
     payouts_paid_amount = await _count(
         session,
         select(func.coalesce(func.sum(PayoutRequest.amount_egp), 0)).where(
@@ -288,6 +294,7 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
         escrows_held_amount_egp=escrows_held_amount,
         host_payable_egp=host_payable_amount,
         platform_revenue_egp=platform_revenue_amount,
+        vat_egp=vat_amount,
         kyc_pending_documents=kyc_pending,
         disputes_open=disputes_open,
         disputes_in_review=disputes_in_review,
@@ -314,6 +321,8 @@ async def _booking_financials(
         "accommodation_egp": economics.accommodation_egp,
         "cleaning_fee_egp": economics.cleaning_fee_egp,
         "platform_share_egp": economics.platform_share_egp,
+        "vat_egp": economics.vat_egp,
+        "platform_net_revenue_egp": economics.platform_net_revenue_egp,
         "host_side_share_egp": economics.host_side_share_egp,
         "guest_side_share_egp": economics.guest_side_share_egp,
         "host_net_egp": economics.host_net_egp,

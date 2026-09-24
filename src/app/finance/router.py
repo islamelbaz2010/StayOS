@@ -86,6 +86,22 @@ async def list_wallet_ledger(
         raise to_http_exception(exc) from exc
 
 
+@router.get("/ledger", response_model=LedgerListResponse)
+async def list_platform_ledger(
+    ledger_account: str,
+    limit: int = 100,
+    offset: int = 0,
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> LedgerListResponse:
+    # Platform-wide ledger read for admin financial drill-downs (e.g. the
+    # StayOS revenue / VAT / host-payable cards on the earnings page).
+    entries = await finance_repository.list_ledger_entries(
+        session, ledger_account=ledger_account, limit=limit, offset=offset
+    )
+    return LedgerListResponse(data=entries)
+
+
 @router.get("/escrow", response_model=EscrowListResponse)
 async def list_escrows(
     host_id: str | None = None,

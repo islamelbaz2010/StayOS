@@ -345,7 +345,13 @@ async def test_release_escrow(fake_session: AsyncMock, monkeypatch) -> None:
     assert escrow.status == EscrowStatus.RELEASED
     assert escrow.released_at is not None
     finance_repository.create_financial_transaction.assert_awaited_once()
-    assert finance_repository.create_ledger_entry.await_count == 3
+    # ESCROW debit + HOST_PAYABLE + PLATFORM_REVENUE (net) + VAT_PAYABLE —
+    # the platform share posts as net revenue and VAT liability, not gross.
+    calls = finance_repository.create_ledger_entry.await_args_list
+    accounts = {c.kwargs["ledger_account"] for c in calls}
+    assert len(calls) == 4
+    assert LedgerAccount.VAT_PAYABLE in accounts
+    assert LedgerAccount.PLATFORM_REVENUE in accounts
 
 
 @pytest.mark.asyncio

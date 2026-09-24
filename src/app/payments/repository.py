@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -26,6 +26,7 @@ async def create_payment(
     accommodation_amount_egp: int | None = None,
     guest_service_fee_egp: int | None = None,
     cleaning_fee_egp: int | None = None,
+    vat_egp: int | None = None,
     payment_deadline_at: datetime | None = None,
 ) -> Payment:
     payment = Payment(
@@ -39,6 +40,7 @@ async def create_payment(
         accommodation_amount_egp=accommodation_amount_egp,
         guest_service_fee_egp=guest_service_fee_egp,
         cleaning_fee_egp=cleaning_fee_egp,
+        vat_egp=vat_egp,
         nights=nights,
         reference_number=reference_number,
         instructions=instructions,
@@ -182,9 +184,23 @@ async def list_host_payments(
     session: AsyncSession,
     host_id: str,
     statuses: list[str] | None = None,
+    lifecycle: str | None = None,
     limit: int = 50,
     offset: int = 0,
 ) -> list[Payment]:
+    """Host payment activity.
+
+    ``statuses`` filters by canonical PaymentStatus. ``lifecycle`` filters
+    by the booking's escrow state so the earnings cards can drill down
+    into the exact record set behind their totals:
+
+    - ``funds_held``   → escrow CREATED/HELD/DISPUTED (host share held)
+    - ``payout_ready`` → escrow HELD whose hold_until has elapsed
+    - ``paid_out``     → escrow RELEASED (funds moved to host payable)
+    """
+    from app.finance.constants import EscrowStatus
+    from app.finance.models import EscrowAccount
+
     stmt = (
         select(Payment)
         .options(
@@ -200,5 +216,32 @@ async def list_host_payments(
     )
     if statuses:
         stmt = stmt.where(Payment.status.in_(statuses))
+    if lifecycle == "funds_held":
+        stmt = stmt.join(
+            EscrowAccount,
+            EscrowAccount.reservation_id == Payment.booking_id,
+        ).where(
+            EscrowAccount.status.in_(
+                [
+                    EscrowStatus.CREATED,
+                    EscrowStatus.HELD,
+                    EscrowStatus.DISPUTED,
+                ]
+            )
+        )
+    elif lifecycle == "payout_ready":
+        stmt = stmt.join(
+            EscrowAccount,
+            EscrowAccount.reservation_id == Payment.booking_id,
+        ).where(
+            EscrowAccount.status == EscrowStatus.HELD,
+            EscrowAccount.hold_until.isnot(None),
+            EscrowAccount.hold_until <= datetime.now(UTC),
+        )
+    elif lifecycle == "paid_out":
+        stmt = stmt.join(
+            EscrowAccount,
+            EscrowAccount.reservation_id == Payment.booking_id,
+        ).where(EscrowAccount.status == EscrowStatus.RELEASED)
     result = await session.execute(stmt)
     return list(result.scalars().all())

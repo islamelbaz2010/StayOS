@@ -1,24 +1,38 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
+import { useRef } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostLayout } from "@/components/layouts";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useHostEarnings } from "@/lib/queries/hostEarnings";
-import { useHostPayments, type PaymentListItem } from "@/lib/queries/payments";
+import {
+  useHostPayments,
+  usePayouts,
+  type PaymentListItem,
+  type PayoutRecord,
+} from "@/lib/queries/payments";
 import { formatMoney } from "@/lib/utils";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
+const ACTIVITY_SECTION_ID = "payment-activity";
 
+// Activity filters — `status` is the backend query value. Payment-status
+// filters map to Payment.status; the lifecycle filters join the escrow
+// lifecycle so the list always matches the card aggregate above it.
+// `paid_out` renders completed payout records (the card's source rows).
 const FILTERS: { key: string; status: string | undefined }[] = [
   { key: "all", status: undefined },
-  // The backend maps "pending" to every unverified payment state
-  // (no proof yet, proof under review, rejected awaiting resubmission).
   { key: "pending", status: "pending" },
+  { key: "collected", status: "collected" },
   { key: "verified", status: "verified" },
+  { key: "funds_held", status: "funds_held" },
+  { key: "payout_ready", status: "payout_ready" },
+  { key: "paid_out", status: "paid_out" },
   { key: "refund_pending", status: "refund_pending" },
   { key: "refunded", status: "refunded" },
   { key: "cancelled", status: "cancelled" },
@@ -38,9 +52,22 @@ export default function HostEarningsPage() {
   const locale = useLocale();
   const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { data, isLoading, isError, refetch } = useHostEarnings();
+  const router = useRouter();
+  const pathname = usePathname();
+  const activityRef = useRef<HTMLDivElement>(null);
 
   const hasEarnings =
     data && (data.total_revenue_egp > 0 || data.total_bookings > 0);
+
+  const openActivity = (filterKey: string) => {
+    const params = new URLSearchParams();
+    if (filterKey !== "all") params.set("status", filterKey);
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+    requestAnimationFrame(() =>
+      activityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+  };
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
@@ -62,63 +89,89 @@ export default function HostEarningsPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard
-                  label={t("yourEarnings")}
-                  value={formatMoney(data.host_earnings_egp ?? 0, "EGP", moneyLocale)}
-                  hint={t("yourEarningsHint")}
-                  highlight
-                />
-                <StatCard
-                  label={t("fundsHeld")}
-                  value={formatMoney(data.funds_held_egp ?? 0, "EGP", moneyLocale)}
-                  hint={t("fundsHeldHint")}
-                />
-                <StatCard
-                  label={t("payoutReady")}
-                  value={formatMoney(data.payout_ready_egp ?? 0, "EGP", moneyLocale)}
-                  hint={t("payoutReadyHint")}
-                />
-                <StatCard
-                  label={t("paidOut")}
-                  value={formatMoney(data.paid_out_egp ?? 0, "EGP", moneyLocale)}
-                />
-                <StatCard
-                  label={t("collected")}
-                  value={formatMoney(data.total_revenue_egp, "EGP", moneyLocale)}
-                  hint={t("collectedHint")}
-                />
-                <StatCard
-                  label={t("refundPending")}
-                  value={formatMoney(data.refund_pending_egp, "EGP", moneyLocale)}
-                />
-                <StatCard
-                  label={t("refunded")}
-                  value={formatMoney(data.refunded_egp ?? 0, "EGP", moneyLocale)}
-                />
-                <StatCard
-                  label={t("pendingVerification")}
-                  value={formatMoney(data.pending_verification_egp, "EGP", moneyLocale)}
-                />
+              <div>
+                <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">
+                  {t("moneySection")}
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <StatCard
+                    label={t("yourEarnings")}
+                    value={formatMoney(data.host_earnings_egp ?? 0, "EGP", moneyLocale)}
+                    hint={t("yourEarningsHint")}
+                    highlight
+                    onClick={() => openActivity("verified")}
+                  />
+                  <StatCard
+                    label={t("fundsHeld")}
+                    value={formatMoney(data.funds_held_egp ?? 0, "EGP", moneyLocale)}
+                    hint={t("fundsHeldHint")}
+                    onClick={() => openActivity("funds_held")}
+                  />
+                  <StatCard
+                    label={t("payoutReady")}
+                    value={formatMoney(data.payout_ready_egp ?? 0, "EGP", moneyLocale)}
+                    hint={t("payoutReadyHint")}
+                    onClick={() => openActivity("payout_ready")}
+                  />
+                  <StatCard
+                    label={t("paidOut")}
+                    value={formatMoney(data.paid_out_egp ?? 0, "EGP", moneyLocale)}
+                    hint={t("paidOutHint")}
+                    onClick={() => openActivity("paid_out")}
+                  />
+                  <StatCard
+                    label={t("collected")}
+                    value={formatMoney(data.total_revenue_egp, "EGP", moneyLocale)}
+                    hint={t("collectedHint")}
+                    onClick={() => openActivity("collected")}
+                  />
+                  <StatCard
+                    label={t("refundPending")}
+                    value={formatMoney(data.refund_pending_egp, "EGP", moneyLocale)}
+                    hint={t("refundPendingHint")}
+                    onClick={() => openActivity("refund_pending")}
+                  />
+                  <StatCard
+                    label={t("refunded")}
+                    value={formatMoney(data.refunded_egp ?? 0, "EGP", moneyLocale)}
+                    hint={t("refundedHint")}
+                    onClick={() => openActivity("refunded")}
+                  />
+                  <StatCard
+                    label={t("pendingVerification")}
+                    value={formatMoney(data.pending_verification_egp, "EGP", moneyLocale)}
+                    hint={t("pendingPaymentHint")}
+                    onClick={() => openActivity("pending")}
+                  />
+                </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard
-                  label={t("totalBookings")}
-                  value={String(data.total_bookings)}
-                />
-                <StatCard
-                  label={t("confirmedBookings")}
-                  value={String(data.confirmed_bookings)}
-                />
-                <StatCard
-                  label={t("completedStays")}
-                  value={String(data.completed_stays)}
-                />
-                <StatCard
-                  label={t("cancelledBookings")}
-                  value={String(data.cancelled_bookings ?? 0)}
-                />
+              <div>
+                <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">
+                  {t("bookingsSection")}
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <StatCard
+                    label={t("totalBookings")}
+                    value={String(data.total_bookings)}
+                    href={`/${locale}/host/bookings`}
+                  />
+                  <StatCard
+                    label={t("confirmedBookings")}
+                    value={String(data.confirmed_bookings)}
+                    href={`/${locale}/host/bookings?status=confirmed`}
+                  />
+                  <StatCard
+                    label={t("completedStays")}
+                    value={String(data.completed_stays)}
+                    href={`/${locale}/host/bookings?status=completed`}
+                  />
+                  <StatCard
+                    label={t("cancelledBookings")}
+                    value={String(data.cancelled_bookings ?? 0)}
+                    href={`/${locale}/host/bookings?status=cancelled`}
+                  />
+                </div>
               </div>
 
               {data.per_unit && data.per_unit.length > 0 && (
@@ -160,7 +213,9 @@ export default function HostEarningsPage() {
                 </div>
               )}
 
-              <PaymentActivity locale={moneyLocale} />
+              <div ref={activityRef} id={ACTIVITY_SECTION_ID} className="scroll-mt-24">
+                <PaymentActivity locale={moneyLocale} />
+              </div>
 
               <p className="text-sm text-neutral-500">{t("disclaimer")}</p>
             </div>
@@ -176,14 +231,18 @@ function StatCard({
   value,
   hint,
   highlight,
+  onClick,
+  href,
 }: {
   label: string;
   value: string;
   hint?: string;
   highlight?: boolean;
+  onClick?: () => void;
+  href?: string;
 }) {
-  return (
-    <div className="card p-5">
+  const body = (
+    <>
       <p className="text-sm text-neutral-500">{label}</p>
       <p
         className={`mt-1 text-xl font-bold ${
@@ -193,8 +252,26 @@ function StatCard({
         {value}
       </p>
       {hint && <p className="mt-1 text-xs text-neutral-400">{hint}</p>}
-    </div>
+    </>
   );
+  const cls = `card p-5 text-start transition ${
+    onClick || href ? "cursor-pointer hover:border-accent-400 hover:shadow-md" : ""
+  }`;
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {body}
+      </Link>
+    );
+  }
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls}>
+        {body}
+      </button>
+    );
+  }
+  return <div className={cls}>{body}</div>;
 }
 
 const HOST_STATUS_COLORS: Record<string, string> = {
@@ -241,9 +318,27 @@ function HostPaymentStatusBadge({
 function PaymentActivity({ locale }: { locale: string }) {
   const t = useTranslations("hostEarnings");
   const tp = useTranslations("payment");
-  const [filter, setFilter] = useState<string>("all");
-  const status = FILTERS.find((f) => f.key === filter)?.status;
-  const { data: payments, isPending, isError, refetch } = useHostPayments(status);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const filter = searchParams.get("status") ?? "all";
+  const active = FILTERS.some((f) => f.key === filter) ? filter : "all";
+  const status = FILTERS.find((f) => f.key === active)?.status;
+  const showPayouts = active === "paid_out";
+  const paymentsQuery = useHostPayments(status, { enabled: !showPayouts });
+  const payoutsQuery = usePayouts("completed", { enabled: showPayouts });
+
+  const setFilter = (key: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (key === "all") params.delete("status");
+    else params.set("status", key);
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+  };
+
+  const isPending = showPayouts ? payoutsQuery.isPending : paymentsQuery.isPending;
+  const isError = showPayouts ? payoutsQuery.isError : paymentsQuery.isError;
+  const refetch = showPayouts ? payoutsQuery.refetch : paymentsQuery.refetch;
 
   return (
     <div className="card p-5 sm:p-6">
@@ -258,7 +353,7 @@ function PaymentActivity({ locale }: { locale: string }) {
             type="button"
             onClick={() => setFilter(f.key)}
             className={`rounded-full px-3 py-1 text-sm font-medium transition ${
-              filter === f.key
+              active === f.key
                 ? "bg-brand-900 text-white"
                 : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
             }`}
@@ -272,9 +367,11 @@ function PaymentActivity({ locale }: { locale: string }) {
         <ErrorState onRetry={() => refetch()} />
       ) : isPending ? (
         <div className="py-8 text-center text-neutral-600">{t("loading")}</div>
-      ) : payments && payments.length > 0 ? (
+      ) : showPayouts ? (
+        <PayoutList payouts={payoutsQuery.data ?? []} locale={locale} />
+      ) : paymentsQuery.data && paymentsQuery.data.length > 0 ? (
         <div className="divide-y divide-neutral-100">
-          {payments.map((payment: PaymentListItem) => (
+          {paymentsQuery.data.map((payment: PaymentListItem) => (
             <div
               key={payment.id}
               className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between"
@@ -387,6 +484,49 @@ function PaymentActivity({ locale }: { locale: string }) {
       ) : (
         <div className="py-8 text-center text-neutral-500">{t("noPayments")}</div>
       )}
+    </div>
+  );
+}
+
+function PayoutList({
+  payouts,
+  locale,
+}: {
+  payouts: PayoutRecord[];
+  locale: string;
+}) {
+  const t = useTranslations("hostEarnings");
+  if (payouts.length === 0) {
+    return (
+      <div className="py-8 text-center text-neutral-500">{t("noPayouts")}</div>
+    );
+  }
+  return (
+    <div className="divide-y divide-neutral-100">
+      {payouts.map((payout) => (
+        <div
+          key={payout.id}
+          className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="space-y-1">
+            <p className="font-mono text-xs text-neutral-500">
+              {payout.provider_ref ?? payout.id.slice(0, 8)}
+            </p>
+            <span className="inline-flex items-center rounded-full bg-success-100 px-2.5 py-0.5 text-xs font-medium text-success-700">
+              {t(`payoutStatuses.${payout.status}`)}
+            </span>
+            {payout.processed_at && (
+              <p className="text-xs text-neutral-500">
+                {t("paidOn")}{" "}
+                {new Date(payout.processed_at).toLocaleString(locale)}
+              </p>
+            )}
+          </div>
+          <p className="text-sm font-semibold text-brand-900">
+            {formatMoney(payout.amount_egp, "EGP", locale)}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }

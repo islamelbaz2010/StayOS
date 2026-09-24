@@ -222,20 +222,22 @@ async def test_admin_overview_financial_fields(fake_session: AsyncMock) -> None:
     # 13 payments_verified, 14 payments_verified_amount,
     # 15 payments_refunded_amount, 16 payments_refund_pending_amount,
     # 17 escrows_held_amount, 18 host_payable, 19 platform_revenue,
-    # 20 payouts_paid_amount, 21 payouts_pending, 22 payouts_pending_amount,
-    # 23 escrows_held, 24 kyc_pending, 25 disputes_open, 26 disputes_in_review,
-    # 27 maintenance_open, 28 tasks_pending, 29 tasks_overdue,
-    # 30-35 bookings by status (requested, accepted, confirmed, completed,
+    # 20 vat_payable, 21 payouts_paid_amount, 22 payouts_pending,
+    # 23 payouts_pending_amount, 24 escrows_held, 25 kyc_pending,
+    # 26 disputes_open, 27 disputes_in_review,
+    # 28 maintenance_open, 29 tasks_pending, 30 tasks_overdue,
+    # 31-36 bookings by status (requested, accepted, confirmed, completed,
     # cancelled, rejected)
-    scalars = [0] * 36
+    scalars = [0] * 37
     scalars[15] = 3150   # refunded
     scalars[16] = 6000   # refund pending
     scalars[17] = 9000   # escrow held amount
     scalars[18] = 442800 # host payable net
     scalars[19] = 67200  # platform revenue net
-    scalars[20] = 50000  # payouts paid
-    scalars[22] = 100000 # payouts pending amount
-    scalars[23] = 3      # escrows held count
+    scalars[20] = 9680   # vat payable net
+    scalars[21] = 50000  # payouts paid
+    scalars[23] = 100000 # payouts pending amount
+    scalars[24] = 3      # escrows held count
     fake_session.scalar = AsyncMock(side_effect=scalars)
 
     gov_result = MagicMock()
@@ -250,6 +252,7 @@ async def test_admin_overview_financial_fields(fake_session: AsyncMock) -> None:
     assert overview.escrows_held == 3
     assert overview.host_payable_egp == 442800
     assert overview.platform_revenue_egp == 67200
+    assert overview.vat_egp == 9680
     assert overview.payouts_paid_amount_egp == 50000
     assert overview.payouts_pending_amount_egp == 100000
 
@@ -419,3 +422,62 @@ def test_importer_rejects_noncanonical_property_type() -> None:
 
     # Rows 4 and 5 share title+city+governorate → second is a duplicate.
     assert find_duplicates(rows) == {5}
+
+
+@pytest.mark.asyncio
+async def test_host_collected_filter_covers_collected_statuses(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """"Collected" mirrors the total_revenue_egp aggregate: every payment
+    where money was actually collected (verified + collected-then-
+    refunding/refunded)."""
+    from app.payments import repository as payments_repository
+    from app.payments import services as payment_services
+    from app.payments.constants import PaymentStatus
+
+    list_mock = AsyncMock(return_value=[])
+    monkeypatch.setattr(payments_repository, "list_host_payments", list_mock)
+
+    empty = MagicMock()
+    empty.scalars.return_value.all.return_value = []
+    fake_session.execute = AsyncMock(return_value=empty)
+
+    host = _make_user(role=UserRole.HOST)
+    await payment_services.list_host_payments(
+        fake_session, host, status="collected"
+    )
+
+    kwargs = list_mock.await_args.kwargs
+    assert kwargs["statuses"] == [
+        PaymentStatus.VERIFIED,
+        PaymentStatus.REFUND_PENDING,
+        PaymentStatus.REFUNDED,
+    ]
+    assert kwargs["lifecycle"] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("lifecycle", ["funds_held", "payout_ready", "paid_out"])
+async def test_host_lifecycle_filters_pass_through(
+    fake_session: AsyncMock, monkeypatch, lifecycle: str
+) -> None:
+    """Escrow-lifecycle drill-downs reach the repository as lifecycle
+    filters (not status filters) so card totals match their lists."""
+    from app.payments import repository as payments_repository
+    from app.payments import services as payment_services
+
+    list_mock = AsyncMock(return_value=[])
+    monkeypatch.setattr(payments_repository, "list_host_payments", list_mock)
+
+    empty = MagicMock()
+    empty.scalars.return_value.all.return_value = []
+    fake_session.execute = AsyncMock(return_value=empty)
+
+    host = _make_user(role=UserRole.HOST)
+    await payment_services.list_host_payments(
+        fake_session, host, status=lifecycle
+    )
+
+    kwargs = list_mock.await_args.kwargs
+    assert kwargs["lifecycle"] == lifecycle
+    assert kwargs["statuses"] is None

@@ -796,3 +796,33 @@ The target is Airbnb 1:1 behavioral/product-depth equivalence. These are establi
 #### Related Decisions
 
 - DEC-018: Postponed scale features (Instant Book remains V1.5 per `docs/MVP_SLICE.md`).
+
+---
+
+### DEC-020: VAT 14% Inside Platform Share + Instant Book as Default Booking Mode
+
+**Status**: Accepted
+**Date**: 2026-10-02
+**Decision Maker**: Founder
+**Urgency**: PRE-LAUNCH
+**Reversibility**: HIGH
+
+#### Context
+
+The consolidated product-completion pass surfaced two product gaps that required explicit founder direction: (1) VAT was not represented anywhere in the canonical commercial engine or ledger, and (2) the default booking flow routed guests through a "request then wait for host approval" step even for available inventory.
+
+#### Decision
+
+1. **VAT**: The StayOS configured VAT rate is 14%, treated as a platform-service tax component carved out of the VAT-inclusive 12% platform share. The guest-facing all-inclusive total is unchanged; the host net is unchanged (`host_net = guest_total − platform_share`). Ledger postings split the platform share into `platform_revenue` (net) and `vat_payable` (liability) at escrow release and on retained cancellation fees. The VAT component is persisted on the payment row (`payments.vat_egp`) and visible to admin/staff only. No legal/tax claims are made in product copy — the guest disclosure is simply "Includes all fees and VAT".
+2. **Instant Book default**: New listings default to `instant_book = true` — available inventory goes straight from quote to checkout/payment with no host-approval wait. The host toggle remains so a listing can still opt into request-to-book. Existing listings keep their explicit flag (no data rewrite).
+
+#### Rationale
+
+- VAT inside the platform share is the only placement consistent with FD-19 (fixed all-inclusive guest total, `host_net = total − share`). Adding VAT on top would change the guest price; taking it from the host would change host economics.
+- Instant-book-as-default matches the founder's stated booking direction and Airbnb's own new-listing default while preserving the documented host opt-out (benchmark rows BK-02/HOST-08).
+
+#### Consequences
+
+- **Positive**: VAT is a first-class, ledger-consistent financial component; the normal booking path is Search → Listing → dates → quote → checkout → pay → confirmed.
+- **Negative**: None for guests/hosts. Admin earnings now exposes a VAT card and drill-down; historical ledger entries remain as recorded (not rewritten).
+- **Neutral**: Request-to-book continues to exist for listings where the host opts out.

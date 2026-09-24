@@ -48,6 +48,8 @@ export interface BookingFinancials {
   accommodation_egp: number | null;
   cleaning_fee_egp: number | null;
   platform_share_egp: number | null;
+  vat_egp: number | null;
+  platform_net_revenue_egp: number | null;
   host_side_share_egp: number | null;
   guest_side_share_egp: number | null;
   host_net_egp: number | null;

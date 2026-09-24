@@ -42,6 +42,7 @@ class AdminOverviewResponse(BaseModel):
     escrows_held_amount_egp: int = 0
     host_payable_egp: int = 0
     platform_revenue_egp: int = 0
+    vat_egp: int = 0
     kyc_pending_documents: int
     disputes_open: int
     disputes_in_review: int

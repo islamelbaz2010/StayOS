@@ -230,6 +230,7 @@ async def list_ledger_entries(
     session: AsyncSession,
     wallet_id: str | None = None,
     escrow_id: str | None = None,
+    ledger_account: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[LedgerEntry]:
@@ -238,6 +239,8 @@ async def list_ledger_entries(
         stmt = stmt.where(LedgerEntry.wallet_id == wallet_id)
     if escrow_id:
         stmt = stmt.where(LedgerEntry.escrow_id == escrow_id)
+    if ledger_account:
+        stmt = stmt.where(LedgerEntry.ledger_account == ledger_account)
     result = await session.execute(stmt.limit(limit).offset(offset))
     return list(result.scalars().all())
 
@@ -267,7 +270,10 @@ async def list_escrows(
     if host_id:
         stmt = stmt.where(EscrowAccount.host_id == host_id)
     if status:
-        stmt = stmt.where(EscrowAccount.status == status)
+        # Comma-separated values allow lifecycle drill-downs (e.g. the
+        # "funds held" card spans created+held+disputed).
+        statuses = [s.strip() for s in status.split(",") if s.strip()]
+        stmt = stmt.where(EscrowAccount.status.in_(statuses))
     result = await session.execute(stmt.limit(limit).offset(offset))
     return list(result.scalars().all())
 

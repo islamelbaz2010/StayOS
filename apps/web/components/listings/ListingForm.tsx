@@ -163,7 +163,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     base_price_egp: existingListing?.base_price_egp ?? 500,
     cleaning_fee_egp: existingListing?.cleaning_fee_egp ?? 0,
     cancellation_policy: existingListing?.cancellation_policy ?? "FLEXIBLE",
-    instant_book: existingListing?.instant_book ?? false,
+    instant_book: existingListing?.instant_book ?? true,
     weekend_mult: existingListing?.weekend_mult ?? 1.0,
     peak_mult: existingListing?.peak_mult ?? 1.0,
     min_nights: existingListing?.min_nights ?? 1,

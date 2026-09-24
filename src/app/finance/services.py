@@ -271,14 +271,8 @@ async def _post_ledger_for_escrow_release(
         description="Host payout owed",
     )
     if platform_revenue > 0:
-        await finance_repository.create_ledger_entry(
-            session,
-            transaction_id=tx.id,
-            ledger_account=LedgerAccount.PLATFORM_REVENUE,
-            account_type=AccountType.REVENUE,
-            entry_type=LedgerEntryType.CREDIT,
-            amount_egp=platform_revenue,
-            description="Platform fees and guest service fee",
+        await _post_platform_revenue_with_vat(
+            session, tx, platform_revenue, "Platform fees and guest service fee"
         )
 
 
@@ -330,14 +324,42 @@ async def _post_ledger_for_escrow_refund(
                 description="Refund owed to guest",
             )
     if retained > 0:
+        await _post_platform_revenue_with_vat(
+            session, tx, retained, "Retained cancellation fees"
+        )
+
+
+async def _post_platform_revenue_with_vat(
+    session: AsyncSession,
+    tx: FinancialTransaction,
+    gross_revenue: int,
+    description: str,
+) -> None:
+    """Recognise platform revenue split into net revenue + VAT payable.
+
+    The platform share is VAT-inclusive: the VAT component is a liability
+    owed to the tax authority, only the net remainder is StayOS revenue.
+    """
+    vat, net = commercial.split_vat(gross_revenue)
+    if net > 0:
         await finance_repository.create_ledger_entry(
             session,
             transaction_id=tx.id,
             ledger_account=LedgerAccount.PLATFORM_REVENUE,
             account_type=AccountType.REVENUE,
             entry_type=LedgerEntryType.CREDIT,
-            amount_egp=retained,
-            description="Retained cancellation fees",
+            amount_egp=net,
+            description=description,
+        )
+    if vat > 0:
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.VAT_PAYABLE,
+            account_type=AccountType.LIABILITY,
+            entry_type=LedgerEntryType.CREDIT,
+            amount_egp=vat,
+            description="VAT on platform service share",
         )
 
 

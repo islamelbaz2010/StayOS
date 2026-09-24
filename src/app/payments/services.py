@@ -1008,6 +1008,21 @@ async def _attach_host_earnings(
             item.paid_at = payout["paid_at"]
 
 
+# Host payment-activity tabs map to canonical backend statuses. "Pending"
+# covers every payment still awaiting resolution — no proof yet, proof
+# under review, or rejected and awaiting resubmission. "Cancelled" stays
+# strictly distinct from refund states: a cancelled payment means no money
+# was collected (collected-then-cancelled payments sit in refund_pending/
+# refunded instead).
+_HOST_ACTIVITY_FILTERS: dict[str, list[str]] = {
+    "pending": [
+        PaymentStatus.PENDING,
+        PaymentStatus.PROOF_UPLOADED,
+        PaymentStatus.REJECTED,
+    ],
+}
+
+
 async def list_host_payments(
     session: AsyncSession,
     user: User,
@@ -1017,8 +1032,11 @@ async def list_host_payments(
 ) -> list[PaymentListItem]:
     if user.role not in (UserRole.HOST, UserRole.ADMIN):
         raise AuthorizationError("Only hosts can view their payment activity")
+    statuses = _HOST_ACTIVITY_FILTERS.get(status) if status else None
+    if status and statuses is None:
+        statuses = [status]
     payments = await payments_repository.list_host_payments(
-        session, user.id, status=status, limit=limit, offset=offset
+        session, user.id, statuses=statuses, limit=limit, offset=offset
     )
     items = [_to_list_item(p) for p in payments]
     await _attach_host_earnings(session, payments, items)

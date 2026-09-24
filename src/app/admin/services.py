@@ -9,7 +9,7 @@ payout and refund policy remain founder decisions (FD-01/FD-12).
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -20,7 +20,12 @@ from app.bookings.models import Booking
 from app.disputes.constants import DisputeStatus
 from app.disputes.models import Dispute
 from app.finance import services as finance_services
-from app.finance.constants import EscrowStatus, PayoutStatus
+from app.finance.constants import (
+    EscrowStatus,
+    LedgerAccount,
+    LedgerEntryType,
+    PayoutStatus,
+)
 from app.finance.models import (
     EscrowAccount,
     FinancialTransaction,
@@ -145,6 +150,50 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
             Payment.refund_amount_egp.isnot(None)
         ),
     )
+    payments_refund_pending_amount = await _count(
+        session,
+        select(func.coalesce(func.sum(Payment.refund_amount_egp), 0)).where(
+            Payment.status == PaymentStatus.REFUND_PENDING
+        ),
+    )
+    escrows_held_amount = await _count(
+        session,
+        select(func.coalesce(func.sum(EscrowAccount.amount_egp), 0)).where(
+            EscrowAccount.status.in_(
+                [EscrowStatus.CREATED, EscrowStatus.HELD, EscrowStatus.DISPUTED]
+            )
+        ),
+    )
+    # Ledger-derived balances — the canonical source for money owed.
+    # HOST_PAYABLE net = credits (owed on escrow release) minus debits
+    # (payouts disbursed); PLATFORM_REVENUE net = recognised StayOS share.
+    ledger_net = func.coalesce(
+        func.sum(
+            case(
+                (LedgerEntry.entry_type == LedgerEntryType.CREDIT, LedgerEntry.amount_egp),
+                else_=-LedgerEntry.amount_egp,
+            )
+        ),
+        0,
+    )
+    host_payable_amount = await _count(
+        session,
+        select(ledger_net).where(
+            LedgerEntry.ledger_account == LedgerAccount.HOST_PAYABLE
+        ),
+    )
+    platform_revenue_amount = await _count(
+        session,
+        select(ledger_net).where(
+            LedgerEntry.ledger_account == LedgerAccount.PLATFORM_REVENUE
+        ),
+    )
+    payouts_paid_amount = await _count(
+        session,
+        select(func.coalesce(func.sum(PayoutRequest.amount_egp), 0)).where(
+            PayoutRequest.status == PayoutStatus.COMPLETED
+        ),
+    )
 
     payouts_pending = await _count(
         session,
@@ -230,10 +279,15 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
         payments_proof_uploaded=payments_proof,
         payments_verified=payments_verified,
         payments_verified_amount_egp=payments_verified_amount,
+        payments_refund_pending_amount_egp=payments_refund_pending_amount,
         payments_refunded_amount_egp=payments_refunded_amount,
         payouts_pending=payouts_pending,
         payouts_pending_amount_egp=payouts_pending_amount,
+        payouts_paid_amount_egp=payouts_paid_amount,
         escrows_held=escrows_held,
+        escrows_held_amount_egp=escrows_held_amount,
+        host_payable_egp=host_payable_amount,
+        platform_revenue_egp=platform_revenue_amount,
         kyc_pending_documents=kyc_pending,
         disputes_open=disputes_open,
         disputes_in_review=disputes_in_review,

@@ -33,10 +33,15 @@ class AdminOverviewResponse(BaseModel):
     payments_proof_uploaded: int
     payments_verified: int
     payments_verified_amount_egp: int
+    payments_refund_pending_amount_egp: int = 0
     payments_refunded_amount_egp: int
     payouts_pending: int
     payouts_pending_amount_egp: int
+    payouts_paid_amount_egp: int = 0
     escrows_held: int
+    escrows_held_amount_egp: int = 0
+    host_payable_egp: int = 0
+    platform_revenue_egp: int = 0
     kyc_pending_documents: int
     disputes_open: int
     disputes_in_review: int

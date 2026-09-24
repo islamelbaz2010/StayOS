@@ -159,6 +159,17 @@ async def _resolve_host_amount(session: AsyncSession, reservation_id: str) -> in
     return await _booking_host_net(session, payment)
 
 
+async def escrow_host_amount(
+    session: AsyncSession, escrow: EscrowAccount
+) -> int:
+    """Public wrapper: canonical host share behind an escrow account.
+
+    Same resolution the escrow-release path uses — reservation rows carry
+    the figure; booking-path payments derive it from the commercial engine.
+    """
+    return await _resolve_host_amount(session, escrow.reservation_id)
+
+
 async def _ensure_reservation_amounts(
     session: AsyncSession,
     reservation_id: str,

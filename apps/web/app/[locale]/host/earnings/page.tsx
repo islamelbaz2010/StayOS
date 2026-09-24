@@ -15,10 +15,13 @@ const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 const FILTERS: { key: string; status: string | undefined }[] = [
   { key: "all", status: undefined },
-  { key: "proof_uploaded", status: "proof_uploaded" },
+  // The backend maps "pending" to every unverified payment state
+  // (no proof yet, proof under review, rejected awaiting resubmission).
+  { key: "pending", status: "pending" },
   { key: "verified", status: "verified" },
   { key: "refund_pending", status: "refund_pending" },
   { key: "refunded", status: "refunded" },
+  { key: "cancelled", status: "cancelled" },
 ];
 
 interface PerUnitItem {
@@ -59,24 +62,47 @@ export default function HostEarningsPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
-                  label={t("netEarnings")}
-                  value={formatMoney(data.net_earnings_egp, "EGP", moneyLocale)}
+                  label={t("yourEarnings")}
+                  value={formatMoney(data.host_earnings_egp ?? 0, "EGP", moneyLocale)}
+                  hint={t("yourEarningsHint")}
                   highlight
                 />
                 <StatCard
-                  label={t("totalRevenue")}
-                  value={formatMoney(data.total_revenue_egp, "EGP", moneyLocale)}
+                  label={t("fundsHeld")}
+                  value={formatMoney(data.funds_held_egp ?? 0, "EGP", moneyLocale)}
+                  hint={t("fundsHeldHint")}
                 />
                 <StatCard
-                  label={t("pendingVerification")}
-                  value={formatMoney(data.pending_verification_egp, "EGP", moneyLocale)}
+                  label={t("payoutReady")}
+                  value={formatMoney(data.payout_ready_egp ?? 0, "EGP", moneyLocale)}
+                  hint={t("payoutReadyHint")}
+                />
+                <StatCard
+                  label={t("paidOut")}
+                  value={formatMoney(data.paid_out_egp ?? 0, "EGP", moneyLocale)}
+                />
+                <StatCard
+                  label={t("collected")}
+                  value={formatMoney(data.total_revenue_egp, "EGP", moneyLocale)}
+                  hint={t("collectedHint")}
                 />
                 <StatCard
                   label={t("refundPending")}
                   value={formatMoney(data.refund_pending_egp, "EGP", moneyLocale)}
                 />
+                <StatCard
+                  label={t("refunded")}
+                  value={formatMoney(data.refunded_egp ?? 0, "EGP", moneyLocale)}
+                />
+                <StatCard
+                  label={t("pendingVerification")}
+                  value={formatMoney(data.pending_verification_egp, "EGP", moneyLocale)}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                   label={t("totalBookings")}
                   value={String(data.total_bookings)}
@@ -88,6 +114,10 @@ export default function HostEarningsPage() {
                 <StatCard
                   label={t("completedStays")}
                   value={String(data.completed_stays)}
+                />
+                <StatCard
+                  label={t("cancelledBookings")}
+                  value={String(data.cancelled_bookings ?? 0)}
                 />
               </div>
 
@@ -144,10 +174,12 @@ export default function HostEarningsPage() {
 function StatCard({
   label,
   value,
+  hint,
   highlight,
 }: {
   label: string;
   value: string;
+  hint?: string;
   highlight?: boolean;
 }) {
   return (
@@ -160,6 +192,7 @@ function StatCard({
       >
         {value}
       </p>
+      {hint && <p className="mt-1 text-xs text-neutral-400">{hint}</p>}
     </div>
   );
 }

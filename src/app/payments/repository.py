@@ -181,7 +181,7 @@ async def list_guest_payments(
 async def list_host_payments(
     session: AsyncSession,
     host_id: str,
-    status: str | None = None,
+    statuses: list[str] | None = None,
     limit: int = 50,
     offset: int = 0,
 ) -> list[Payment]:
@@ -198,7 +198,7 @@ async def list_host_payments(
         .offset(offset)
         .limit(limit)
     )
-    if status is not None:
-        stmt = stmt.where(Payment.status == status)
+    if statuses:
+        stmt = stmt.where(Payment.status.in_(statuses))
     result = await session.execute(stmt)
     return list(result.scalars().all())

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { NextIntlClientProvider } from "next-intl";
+import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
 
 import en from "@/messages/en.json";
 import ar from "@/messages/ar.json";
@@ -85,7 +85,7 @@ function makeStay(cancelReason: string | null) {
   };
 }
 
-function renderPage(messages: Record<string, unknown>, locale: string) {
+function renderPage(messages: AbstractIntlMessages, locale: string) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });

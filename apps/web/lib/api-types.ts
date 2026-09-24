@@ -1071,14 +1071,39 @@ export interface components {
       payments_verified: number;
       /** Payments Verified Amount Egp */
       payments_verified_amount_egp: number;
+      /**
+       * Payments Refund Pending Amount Egp
+       * @default 0
+       */
+      payments_refund_pending_amount_egp?: number;
       /** Payments Refunded Amount Egp */
       payments_refunded_amount_egp: number;
       /** Payouts Pending */
       payouts_pending: number;
       /** Payouts Pending Amount Egp */
       payouts_pending_amount_egp: number;
+      /**
+       * Payouts Paid Amount Egp
+       * @default 0
+       */
+      payouts_paid_amount_egp?: number;
       /** Escrows Held */
       escrows_held: number;
+      /**
+       * Escrows Held Amount Egp
+       * @default 0
+       */
+      escrows_held_amount_egp?: number;
+      /**
+       * Host Payable Egp
+       * @default 0
+       */
+      host_payable_egp?: number;
+      /**
+       * Platform Revenue Egp
+       * @default 0
+       */
+      platform_revenue_egp?: number;
       /** Kyc Pending Documents */
       kyc_pending_documents: number;
       /** Disputes Open */
@@ -2567,6 +2592,11 @@ export interface components {
     /**
      * HostEarningsSummary
      * @description Host-facing financial visibility — read-only, no payout claims.
+     *
+     * Lifecycle fields are computed from canonical records: payment rows for
+     * collection/refund sums, escrow accounts for funds held, payout
+     * requests for paid-out amounts, and the commercial engine for host
+     * earnings — never independent formulas.
      */
     HostEarningsSummary: {
       /** Total Bookings */
@@ -2575,14 +2605,44 @@ export interface components {
       confirmed_bookings: number;
       /** Completed Stays */
       completed_stays: number;
+      /**
+       * Cancelled Bookings
+       * @default 0
+       */
+      cancelled_bookings?: number;
       /** Total Revenue Egp */
       total_revenue_egp: number;
       /** Pending Verification Egp */
       pending_verification_egp: number;
       /** Refund Pending Egp */
       refund_pending_egp: number;
+      /**
+       * Refunded Egp
+       * @default 0
+       */
+      refunded_egp?: number;
       /** Net Earnings Egp */
       net_earnings_egp: number;
+      /**
+       * Host Earnings Egp
+       * @default 0
+       */
+      host_earnings_egp?: number;
+      /**
+       * Funds Held Egp
+       * @default 0
+       */
+      funds_held_egp?: number;
+      /**
+       * Payout Ready Egp
+       * @default 0
+       */
+      payout_ready_egp?: number;
+      /**
+       * Paid Out Egp
+       * @default 0
+       */
+      paid_out_egp?: number;
       /** Per Unit */
       per_unit?: {
           [key: string]: unknown;

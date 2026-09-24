@@ -1405,10 +1405,11 @@
     "paymentActivity": "نشاط الدفع",
     "filter": {
       "all": "الكل",
-      "proof_uploaded": "معلّق",
+      "pending": "معلّق",
       "verified": "تم التحقق",
       "refund_pending": "استرداد معلّق",
-      "refunded": "تم الاسترداد"
+      "refunded": "تم الاسترداد",
+      "cancelled": "ملغي"
     },
     "refund": "مبلغ الاسترداد",
     "refundedAt": "تاريخ الاسترداد",
@@ -1437,7 +1438,17 @@
       "disputed": "موقوفة (نزاع)"
     },
     "expectedPayout": "السحب المتوقع",
-    "paidOn": "تم الدفع في"
+    "paidOn": "تم الدفع في",
+    "collected": "المبالغ المحصّلة",
+    "collectedHint": "مدفوعات الضيوف المحصّلة (قبل رسوم StayOS)",
+    "yourEarningsHint": "نصيبك بعد رسوم StayOS",
+    "fundsHeld": "مبالغ محتجزة",
+    "fundsHeldHint": "نصيبك المحتجز حالياً في الضمان",
+    "payoutReady": "جاهز للصرف",
+    "payoutReadyHint": "مؤهل الآن — بعد 24 ساعة من تسجيل وصول الضيف",
+    "paidOut": "تم صرفه",
+    "refunded": "تم الاسترداد",
+    "cancelledBookings": "حجوزات ملغية"
   },
   "hostToday": {
     "title": "اليوم",
@@ -1844,7 +1855,12 @@
     "tasksPending": "مهام معلّقة",
     "tasksOverdue": "مهام متأخرة",
     "egp": "ج.م",
-    "loadError": "تعذر تحميل النظرة العامة."
+    "loadError": "تعذر تحميل النظرة العامة.",
+    "platformRevenue": "إيراد StayOS",
+    "hostPayable": "مستحق للمضيفين",
+    "escrowsHeldAmount": "مبالغ محتجزة",
+    "payoutsPaid": "تم صرفه",
+    "refundPendingAmount": "استرداد معلّق"
   },
   "adminEarnings": {
     "title": "الإيرادات والعمليات المالية",

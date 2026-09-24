@@ -361,10 +361,18 @@ async def test_host_earnings_no_units_returns_zeros(fake_session: AsyncMock, mon
             "per_unit": [],
         }),
     )
+    # Escrow/payment lifecycle queries return empty result sets.
+    empty_result = MagicMock()
+    empty_result.scalars.return_value.all.return_value = []
+    empty_result.scalar.return_value = 0
+    fake_session.execute = AsyncMock(return_value=empty_result)
 
     result = await host_services.get_host_earnings(fake_session, host)
     assert result.total_bookings == 0
     assert result.net_earnings_egp == 0
+    assert result.funds_held_egp == 0
+    assert result.payout_ready_egp == 0
+    assert result.host_earnings_egp == 0
 
 
 # ============================================================

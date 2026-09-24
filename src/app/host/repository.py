@@ -205,9 +205,12 @@ async def get_host_earnings(
             "total_bookings": 0,
             "confirmed_bookings": 0,
             "completed_stays": 0,
+            "cancelled_bookings": 0,
             "total_revenue_egp": 0,
             "pending_verification_egp": 0,
             "refund_pending_egp": 0,
+            "refunded_egp": 0,
+            "paid_out_egp": 0,
             "net_earnings_egp": 0,
             "per_unit": [],
         }
@@ -442,13 +445,72 @@ async def get_host_earnings(
             "revenue_egp": totals["revenue"],
         })
 
+    # Completed refunds: provider/admin-confirmed money returned to guests
+    # (booking-path payments plus card-path intents).
+    refunded = await session.scalar(
+        select(func.coalesce(func.sum(Payment.refund_amount_egp), 0)).where(
+            Payment.host_id == host_id,
+            Payment.status == PaymentStatus.REFUNDED,
+        )
+    )
+    refunded = int(refunded or 0)
+
+    card_refunded = await session.scalar(
+        select(func.coalesce(func.sum(Reservation.refund_amount_egp), 0))
+        .select_from(Reservation)
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(
+            Unit.host_id == host_id,
+            Reservation.refund_amount_egp.isnot(None),
+            Reservation.id.in_(
+                select(PaymentIntent.reservation_id).where(
+                    PaymentIntent.status == IntentPaymentStatus.REFUNDED
+                )
+            ),
+        )
+    )
+    refunded += int(card_refunded or 0)
+
+    # Paid out: completed payout requests — actual cash disbursed to host.
+    from app.finance.models import PayoutRequest
+    from app.finance.constants import PayoutStatus
+
+    paid_out = await session.scalar(
+        select(func.coalesce(func.sum(PayoutRequest.amount_egp), 0)).where(
+            PayoutRequest.host_id == host_id,
+            PayoutRequest.status == PayoutStatus.COMPLETED,
+        )
+    )
+    paid_out = int(paid_out or 0)
+
+    # Cancelled bookings (both paths) — never collected, so count only.
+    cancelled = await session.scalar(
+        select(func.count(Booking.id))
+        .join(Unit, Booking.unit_id == Unit.id)
+        .where(Unit.host_id == host_id, Booking.status == BookingStatus.CANCELLED)
+    )
+    cancelled_bookings = int(cancelled or 0)
+    card_cancelled = await session.scalar(
+        select(func.count(Reservation.id))
+        .select_from(Reservation)
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(
+            Unit.host_id == host_id,
+            Reservation.status == ReservationStatus.CANCELLED,
+        )
+    )
+    cancelled_bookings += int(card_cancelled or 0)
+
     return {
         "total_bookings": total_bookings,
         "confirmed_bookings": confirmed_bookings,
         "completed_stays": completed_stays,
+        "cancelled_bookings": cancelled_bookings,
         "total_revenue_egp": revenue,
         "pending_verification_egp": pending_verification,
         "refund_pending_egp": refund_pending,
+        "refunded_egp": refunded,
+        "paid_out_egp": paid_out,
         "net_earnings_egp": net_earnings,
         "per_unit": per_unit,
     }

@@ -71,6 +71,30 @@ export default function AdminEarningsPage() {
               </div>
               <div className="card p-4">
                 <p className="text-2xl font-bold text-brand-900">
+                  {egp(overview.data.platform_revenue_egp)}
+                </p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {to("platformRevenue")}
+                </p>
+              </div>
+              <div className="card p-4">
+                <p className="text-2xl font-bold text-brand-900">
+                  {egp(overview.data.escrows_held_amount_egp)}
+                </p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {to("escrowsHeldAmount")} · {overview.data.escrows_held}
+                </p>
+              </div>
+              <div className="card p-4">
+                <p className="text-2xl font-bold text-brand-900">
+                  {egp(overview.data.host_payable_egp)}
+                </p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {to("hostPayable")}
+                </p>
+              </div>
+              <div className="card p-4">
+                <p className="text-2xl font-bold text-brand-900">
                   {egp(overview.data.payouts_pending_amount_egp)}
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">
@@ -79,18 +103,26 @@ export default function AdminEarningsPage() {
               </div>
               <div className="card p-4">
                 <p className="text-2xl font-bold text-brand-900">
-                  {egp(overview.data.payments_refunded_amount_egp)}
+                  {egp(overview.data.payouts_paid_amount_egp)}
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">
-                  {to("refundedAmount")}
+                  {to("payoutsPaid")}
                 </p>
               </div>
               <div className="card p-4">
                 <p className="text-2xl font-bold text-brand-900">
-                  {overview.data.escrows_held}
+                  {egp(overview.data.payments_refund_pending_amount_egp)}
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">
-                  {to("escrowsHeld")}
+                  {to("refundPendingAmount")}
+                </p>
+              </div>
+              <div className="card p-4">
+                <p className="text-2xl font-bold text-brand-900">
+                  {egp(overview.data.payments_refunded_amount_egp)}
+                </p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {to("refundedAmount")}
                 </p>
               </div>
             </div>

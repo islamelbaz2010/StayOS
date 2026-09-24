@@ -203,9 +203,10 @@ async def test_get_host_earnings_per_unit_includes_cover_image(fake_session: Asy
     # Order of scalars: total_bookings, confirmed_bookings, completed_stays,
     # revenue, pending_verification, refund_pending, net_earnings, then the
     # card-path scalars (card_total, card_confirmed, card_completed,
-    # card_revenue, card_refund_pending)
+    # card_revenue, card_refund_pending), then lifecycle aggregates
+    # (refunded, card_refunded, paid_out, cancelled, card_cancelled)
     fake_session.scalar = AsyncMock(
-        side_effect=[1, 0, 0, 2000, 0, 0, 1800, 0, 0, 0, 0, 0]
+        side_effect=[1, 0, 0, 2000, 0, 0, 1800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     )
 
     result = await get_host_earnings(fake_session, "host-1")
@@ -260,9 +261,10 @@ async def test_get_host_earnings_refund_reconciliation(
     )
     # total_bookings=1, confirmed=0, completed=0, revenue=10000,
     # pending_verification=0, refund_pending=4000, net_earnings=6000,
-    # card-path scalars all zero
+    # card-path scalars all zero, then lifecycle aggregates
+    # (refunded=2500, card_refunded=0, paid_out=1200, cancelled=0, card_cancelled=0)
     fake_session.scalar = AsyncMock(
-        side_effect=[1, 0, 0, 10000, 0, 4000, 6000, 0, 0, 0, 0, 0]
+        side_effect=[1, 0, 0, 10000, 0, 4000, 6000, 0, 0, 0, 0, 0, 2500, 0, 1200, 0, 0]
     )
 
     result = await get_host_earnings(fake_session, "host-1")
@@ -270,6 +272,8 @@ async def test_get_host_earnings_refund_reconciliation(
     assert result["total_revenue_egp"] == 10000
     assert result["refund_pending_egp"] == 4000
     assert result["net_earnings_egp"] == 6000
+    assert result["refunded_egp"] == 2500
+    assert result["paid_out_egp"] == 1200
     assert result["per_unit"][0]["revenue_egp"] == 10000
 
 
@@ -316,9 +320,9 @@ async def test_get_host_earnings_includes_card_reservations(
         ]
     )
     # legacy scalars all zero; card-path: total=1, confirmed=1, completed=0,
-    # revenue=3000, refund_pending=0
+    # revenue=3000, refund_pending=0; lifecycle aggregates all zero
     fake_session.scalar = AsyncMock(
-        side_effect=[0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 3000, 0]
+        side_effect=[0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 3000, 0, 0, 0, 0, 0, 0]
     )
 
     result = await get_host_earnings(fake_session, "host-1")

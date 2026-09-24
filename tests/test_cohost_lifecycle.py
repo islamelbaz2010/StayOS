@@ -672,6 +672,10 @@ async def test_host_earnings_stay_scoped_to_caller(
         }
     )
     monkeypatch.setattr(host_repository, "get_host_earnings", earnings)
+    empty_result = MagicMock()
+    empty_result.scalars.return_value.all.return_value = []
+    empty_result.scalar.return_value = 0
+    fake_session.execute = AsyncMock(return_value=empty_result)
 
     result = await host_services.get_host_earnings(fake_session, cohost)
     assert result.total_revenue_egp == 0

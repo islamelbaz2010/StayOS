@@ -143,15 +143,26 @@ class HostReservationDetail(BaseModel):
 
 
 class HostEarningsSummary(BaseModel):
-    """Host-facing financial visibility — read-only, no payout claims."""
+    """Host-facing financial visibility — read-only, no payout claims.
+
+    Lifecycle fields are computed from canonical records: payment rows for
+    collection/refund sums, escrow accounts for funds held, payout
+    requests for paid-out amounts, and the commercial engine for host
+    earnings — never independent formulas."""
 
     total_bookings: int
     confirmed_bookings: int
     completed_stays: int
+    cancelled_bookings: int = 0
     total_revenue_egp: int  # gross amount of verified, refunded and refund-pending payments
     pending_verification_egp: int  # payments awaiting admin verification
     refund_pending_egp: int  # refunds still owed to guests
+    refunded_egp: int = 0  # completed refunds returned to guests
     net_earnings_egp: int  # total_revenue minus all pending and completed refunds
+    host_earnings_egp: int = 0  # canonical host net over retained (verified) payments
+    funds_held_egp: int = 0  # host share currently held in escrow
+    payout_ready_egp: int = 0  # host share eligible for payout now (hold_until passed)
+    paid_out_egp: int = 0  # completed payout requests
     # Per-listing breakdown
     per_unit: list[dict[str, Any]] = Field(default_factory=list)
 

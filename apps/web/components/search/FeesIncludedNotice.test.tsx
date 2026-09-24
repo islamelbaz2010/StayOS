@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
 
 import en from "@/messages/en.json";
 import ar from "@/messages/ar.json";
 
 import { FeesIncludedPopup } from "./FeesIncludedNotice";
 
-function renderPopup(messages: Record<string, unknown>, locale: string) {
+function renderPopup(messages: AbstractIntlMessages, locale: string) {
   return render(
     <NextIntlClientProvider locale={locale} messages={messages}>
       <FeesIncludedPopup />

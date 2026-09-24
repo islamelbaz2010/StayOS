@@ -542,9 +542,80 @@ async def get_host_reservation_detail(
 async def get_host_earnings(
     session: AsyncSession, user: User
 ) -> host_schemas.HostEarningsSummary:
-    """Host-facing financial visibility — read-only, no payout claims."""
+    """Host-facing financial visibility — read-only, no payout claims.
+
+    Payment/booking aggregates come from the repository; escrow-derived
+    fields reuse the canonical escrow-release host-share resolution so the
+    summary shows exactly the money the finance engine would pay out."""
     _assert_host_or_cohost(user)
     data = await host_repository.get_host_earnings(session, user.id)
+
+    from app.finance import services as finance_services
+    from app.finance.constants import EscrowStatus
+    from app.finance.models import EscrowAccount
+
+    # Escrow lifecycle → funds held / payout-ready (host share, not gross).
+    escrow_rows = await session.execute(
+        select(EscrowAccount).where(EscrowAccount.host_id == user.id)
+    )
+    now = datetime.now(UTC)
+    funds_held = 0
+    payout_ready = 0
+    for escrow in escrow_rows.scalars().all():
+        try:
+            share = await finance_services.escrow_host_amount(session, escrow)
+        except Exception:
+            continue
+        if escrow.status in (
+            EscrowStatus.CREATED,
+            EscrowStatus.HELD,
+            EscrowStatus.DISPUTED,
+        ):
+            funds_held += share
+        if (
+            escrow.status == EscrowStatus.HELD
+            and escrow.hold_until is not None
+            and escrow.hold_until <= now
+        ):
+            payout_ready += share
+
+    # Host earnings: canonical host net over retained (verified) payments —
+    # refunded bookings yield no host payout (retained cancellation amounts
+    # post to platform revenue, never to the host).
+    verified_rows = await session.execute(
+        select(Payment).where(
+            Payment.host_id == user.id,
+            Payment.status == PaymentStatus.VERIFIED,
+        )
+    )
+    host_earnings = 0
+    for payment in verified_rows.scalars().all():
+        economics, _ = await finance_services.booking_economics(session, payment)
+        host_earnings += economics.host_net_egp
+
+    # Card path: reservations with captured intents carry the canonical
+    # host_amount_egp on the row.
+    from app.reservations.models import PaymentIntent, Reservation
+    from app.reservations.constants import PaymentStatus as IntentPaymentStatus
+
+    card_rows = await session.execute(
+        select(func.coalesce(func.sum(Reservation.host_amount_egp), 0))
+        .select_from(Reservation)
+        .join(Unit, Reservation.unit_id == Unit.id)
+        .where(
+            Unit.host_id == user.id,
+            Reservation.id.in_(
+                select(PaymentIntent.reservation_id).where(
+                    PaymentIntent.status == IntentPaymentStatus.CAPTURED
+                )
+            ),
+        )
+    )
+    host_earnings += int(card_rows.scalar() or 0)
+
+    data["funds_held_egp"] = funds_held
+    data["payout_ready_egp"] = payout_ready
+    data["host_earnings_egp"] = host_earnings
     return host_schemas.HostEarningsSummary(**data)
 
 

@@ -1405,10 +1405,11 @@
     "paymentActivity": "Payment activity",
     "filter": {
       "all": "All",
-      "proof_uploaded": "Pending",
+      "pending": "Pending",
       "verified": "Verified",
       "refund_pending": "Refund pending",
-      "refunded": "Refunded"
+      "refunded": "Refunded",
+      "cancelled": "Cancelled"
     },
     "refund": "Refund",
     "refundedAt": "Refunded at",
@@ -1437,7 +1438,17 @@
       "disputed": "On hold (dispute)"
     },
     "expectedPayout": "Expected payout",
-    "paidOn": "Paid on"
+    "paidOn": "Paid on",
+    "collected": "Collected",
+    "collectedHint": "Guest payments collected (before the StayOS fee)",
+    "yourEarningsHint": "Your share after the StayOS fee",
+    "fundsHeld": "Funds held",
+    "fundsHeldHint": "Your share currently held in escrow",
+    "payoutReady": "Ready for payout",
+    "payoutReadyHint": "Eligible now — 24 hours after guest check-in",
+    "paidOut": "Paid out",
+    "refunded": "Refunded",
+    "cancelledBookings": "Cancelled bookings"
   },
   "hostToday": {
     "title": "Today",
@@ -1844,7 +1855,12 @@
     "tasksPending": "Pending tasks",
     "tasksOverdue": "Overdue tasks",
     "egp": "EGP",
-    "loadError": "Could not load the overview."
+    "loadError": "Could not load the overview.",
+    "platformRevenue": "StayOS revenue",
+    "hostPayable": "Host payable",
+    "escrowsHeldAmount": "Funds held",
+    "payoutsPaid": "Paid out",
+    "refundPendingAmount": "Refund pending"
   },
   "adminEarnings": {
     "title": "Earnings & Financial Operations",

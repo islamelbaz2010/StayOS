@@ -255,6 +255,129 @@ async def test_admin_overview_financial_fields(fake_session: AsyncMock) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Payment return-status — unauthenticated Paymob return resolution
+# ---------------------------------------------------------------------------
+
+
+def _make_payment_with_return_token(token: str = "tok-abc") -> MagicMock:
+    payment = MagicMock()
+    payment.id = str(uuid.uuid4())
+    payment.booking_id = str(uuid.uuid4())
+    payment.status = "verified"
+    payment.amount_egp = 3150
+    payment.reference_number = "STY-TEST1234"
+    payment.verified_at = None
+    payment.provider_metadata = {
+        "return_token": token,
+        "return_token_issued_at": datetime.now(UTC).isoformat(),
+    }
+    return payment
+
+
+@pytest.mark.asyncio
+async def test_payment_return_status_valid_token(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.payments import repository as payments_repository
+    from app.payments import services as payment_services
+    from app.bookings import repository as bookings_repository
+
+    payment = _make_payment_with_return_token()
+    booking = MagicMock()
+    booking.status = "confirmed"
+
+    monkeypatch.setattr(
+        payments_repository,
+        "get_payment_by_booking",
+        AsyncMock(return_value=payment),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking",
+        AsyncMock(return_value=booking),
+    )
+
+    result = await payment_services.get_payment_return_status(
+        fake_session, payment.booking_id, "tok-abc"
+    )
+
+    assert result.payment_id == payment.id
+    assert result.payment_status == "verified"
+    assert result.booking_status == "confirmed"
+    assert result.amount_egp == 3150
+    assert result.reference_number == "STY-TEST1234"
+
+
+@pytest.mark.asyncio
+async def test_payment_return_status_rejects_wrong_token(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.payments import repository as payments_repository
+    from app.payments import services as payment_services
+    from app.shared.exceptions import NotFoundError
+
+    payment = _make_payment_with_return_token()
+    monkeypatch.setattr(
+        payments_repository,
+        "get_payment_by_booking",
+        AsyncMock(return_value=payment),
+    )
+
+    with pytest.raises(NotFoundError):
+        await payment_services.get_payment_return_status(
+            fake_session, payment.booking_id, "wrong-token"
+        )
+    with pytest.raises(NotFoundError):
+        await payment_services.get_payment_return_status(
+            fake_session, payment.booking_id, ""
+        )
+
+
+@pytest.mark.asyncio
+async def test_payment_return_status_expired_token(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.payments import repository as payments_repository
+    from app.payments import services as payment_services
+    from app.shared.exceptions import NotFoundError
+
+    payment = _make_payment_with_return_token()
+    payment.provider_metadata["return_token_issued_at"] = (
+        datetime.now(UTC) - timedelta(hours=200)
+    ).isoformat()
+    monkeypatch.setattr(
+        payments_repository,
+        "get_payment_by_booking",
+        AsyncMock(return_value=payment),
+    )
+
+    with pytest.raises(NotFoundError):
+        await payment_services.get_payment_return_status(
+            fake_session, payment.booking_id, "tok-abc"
+        )
+
+
+@pytest.mark.asyncio
+async def test_payment_return_status_unknown_booking(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.payments import repository as payments_repository
+    from app.payments import services as payment_services
+    from app.shared.exceptions import NotFoundError
+
+    monkeypatch.setattr(
+        payments_repository,
+        "get_payment_by_booking",
+        AsyncMock(return_value=None),
+    )
+
+    with pytest.raises(NotFoundError):
+        await payment_services.get_payment_return_status(
+            fake_session, "nonexistent", "tok-abc"
+        )
+
+
+# ---------------------------------------------------------------------------
 # Bulk importer — canonical property-type validation + dedup
 # ---------------------------------------------------------------------------
 

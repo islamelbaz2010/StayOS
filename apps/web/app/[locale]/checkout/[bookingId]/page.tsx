@@ -9,11 +9,13 @@ import { useTranslations } from "next-intl";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
 import { ProofUpload } from "@/components/payments/ProofUpload";
+import { useAuth } from "@/lib/auth/useAuth";
 import { useBooking, useStayInfo } from "@/lib/queries/bookings";
 import {
   useCheckoutSession,
   usePaymentByBooking,
   usePaymentProofDownloadUrl,
+  usePaymentReturnStatus,
 } from "@/lib/queries/payments";
 import { formatDate, getApiErrorMessage } from "@/lib/utils";
 
@@ -421,11 +423,215 @@ function CheckoutContent({
   );
 }
 
+// Unauthenticated return view — shown when a guest comes back from hosted
+// checkout without a session. The unguessable `pr` token authorizes a
+// read-only server status lookup; Paymob redirect params are never trusted
+// as proof and nothing on this view mutates financial state.
+function PaymentReturnView({
+  bookingId,
+  token,
+  locale,
+}: {
+  bookingId: string;
+  token: string;
+  locale: string;
+}) {
+  const t = useTranslations("payment");
+  const tc = useTranslations("common");
+  const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
+  const [confirmWindowOpen, setConfirmWindowOpen] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setConfirmWindowOpen(false), 90_000);
+    return () => clearTimeout(timer);
+  }, []);
+  const { data, error, isLoading } = usePaymentReturnStatus(bookingId, token, {
+    refetchInterval: (status) =>
+      confirmWindowOpen &&
+      (!status ||
+        ["pending", "proof_uploaded", "rejected"].includes(
+          status.payment_status
+        ))
+        ? 3000
+        : false,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="card p-8 text-center text-neutral-500">
+        {tc("loading")}
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="card p-8 text-center">
+        <p className="font-semibold text-brand-900">
+          {t("returnLinkInvalidTitle")}
+        </p>
+        <p className="mt-2 text-sm text-neutral-600">
+          {t("returnLinkInvalidHint")}
+        </p>
+        <Link
+          href={`/${locale}/auth/login`}
+          className="mt-4 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
+        >
+          {t("signInToViewBooking")}
+        </Link>
+      </div>
+    );
+  }
+
+  const status = data.payment_status;
+  const isVerified = status === "verified";
+  const isFailed = ["cancelled", "refunded", "refund_pending"].includes(status);
+  const stillPending = !isVerified && !isFailed;
+
+  return (
+    <div className="space-y-6">
+      {isVerified && (
+        <div
+          className="card border-s-4 border-s-success-500 bg-success-50 p-5"
+          role="status"
+        >
+          <p className="font-semibold text-success-700">
+            {t("paymobReturnConfirmed")}
+          </p>
+          <p className="mt-1 text-sm text-neutral-600">
+            {t("paymobReturnConfirmedHint")}
+          </p>
+        </div>
+      )}
+      {isFailed && (
+        <div
+          className="card border-s-4 border-s-warning-500 bg-warning-50 p-5"
+          role="alert"
+        >
+          <p className="font-semibold text-warning-700">
+            {t("paymobReturnFailed")}
+          </p>
+          <p className="mt-1 text-sm text-neutral-600">
+            {t("paymobReturnFailedHint")}
+          </p>
+        </div>
+      )}
+      {stillPending && confirmWindowOpen && (
+        <div
+          className="card border-s-4 border-s-accent-500 bg-accent-50 p-5"
+          role="status"
+        >
+          <p className="font-semibold text-accent-700">
+            {t("paymobReturnConfirming")}
+          </p>
+          <p className="mt-1 text-sm text-neutral-600">
+            {t("paymobReturnConfirmingHint")}
+          </p>
+        </div>
+      )}
+      {stillPending && !confirmWindowOpen && (
+        <div
+          className="card border-s-4 border-s-warning-500 bg-warning-50 p-5"
+          role="status"
+        >
+          <p className="font-semibold text-warning-700">
+            {t("returnStillProcessing")}
+          </p>
+          <p className="mt-1 text-sm text-neutral-600">
+            {t("returnStillProcessingHint")}
+          </p>
+        </div>
+      )}
+
+      <div className="card p-5 sm:p-6">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
+          {t("bookingSummary")}
+        </h2>
+        <dl className="space-y-3 text-sm">
+          <div className="flex justify-between gap-4">
+            <dt className="text-neutral-600">{t("paymentStatus")}</dt>
+            <dd>
+              <StatusBadge status={status} />
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-neutral-600">{t("bookingStatus")}</dt>
+            <dd className="font-medium text-brand-900">
+              {t(`bookingStatuses.${data.booking_status}`)}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-neutral-600">{t("referenceNumber")}</dt>
+            <dd className="break-all font-mono font-medium text-brand-900">
+              {data.reference_number}
+            </dd>
+          </div>
+          <div className="flex justify-between border-t border-neutral-200 pt-3">
+            <dt className="text-base font-bold text-brand-900">
+              {t("totalAmount")}
+            </dt>
+            <dd className="text-base font-bold text-accent-600">
+              {data.amount_egp.toLocaleString(dateLocale)} {t("egp")}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="card p-5 text-center sm:p-6">
+        <p className="text-sm text-neutral-600">{t("returnSignInHint")}</p>
+        <Link
+          href={`/${locale}/auth/login?redirect=${encodeURIComponent(
+            `/${locale}/bookings/${bookingId}`
+          )}`}
+          className="btn-primary mt-3 inline-block px-6 py-2 text-sm font-semibold"
+        >
+          {t("signInToViewBooking")}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   const t = useTranslations("payment");
+  const tc = useTranslations("common");
   const params = useParams<{ locale: string; bookingId: string }>();
+  const searchParams = useSearchParams();
+  const { isAuthenticated, isLoading } = useAuth();
   const locale = params?.locale ?? "ar";
   const bookingId = params?.bookingId ?? "";
+
+  const returnToken = searchParams.get("pr");
+  const isProviderReturn =
+    searchParams.get("from") === "paymob" ||
+    (searchParams.has("success") && searchParams.has("id"));
+
+  // A guest returning from hosted checkout without a session still gets a
+  // safe payment-status resolution — never a login dead-end. When a session
+  // exists the full authenticated checkout page is preserved as before.
+  if (!isLoading && !isAuthenticated && isProviderReturn && returnToken) {
+    return (
+      <GuestLayout>
+        <section className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-wrap items-center gap-4">
+            <Link
+              href={`/${locale}`}
+              className="text-sm text-neutral-500 hover:text-neutral-700"
+            >
+              {t("backHome")}
+            </Link>
+          </div>
+          <h1 className="mb-6 text-2xl font-bold text-brand-900">
+            {t("paymentResultTitle")}
+          </h1>
+          <PaymentReturnView
+            bookingId={bookingId}
+            token={returnToken}
+            locale={locale}
+          />
+        </section>
+      </GuestLayout>
+    );
+  }
 
   return (
     <ProtectedRoute>

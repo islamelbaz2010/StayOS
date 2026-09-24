@@ -1220,7 +1220,25 @@
     "paymobReturnConfirmingHint": "We're confirming your payment — this page updates automatically.",
     "paymobReturnFailed": "Your payment wasn't completed.",
     "paymobReturnFailedHint": "No charge was confirmed. You can try paying by card again below, or use bank transfer.",
-    "viewFinancialContext": "View financial breakdown"
+    "viewFinancialContext": "View financial breakdown",
+    "paymentResultTitle": "Payment result",
+    "bookingStatus": "Booking status",
+    "bookingStatuses": {
+      "requested": "Requested",
+      "accepted": "Accepted",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "rejected": "Declined",
+      "cancelled": "Cancelled",
+      "no_show": "No-show",
+      "unknown": "Processing"
+    },
+    "signInToViewBooking": "Sign in to view your booking",
+    "returnLinkInvalidTitle": "This payment link is no longer valid",
+    "returnLinkInvalidHint": "Sign in to see the status of your payment and booking.",
+    "returnStillProcessing": "Payment still processing",
+    "returnStillProcessingHint": "We have not received final confirmation yet. Your status updates automatically, or sign in to check your booking.",
+    "returnSignInHint": "Sign in to see your full booking and payment details."
   },
   "kyc": {
     "pageTitle": "Identity Verification",
@@ -1393,7 +1411,7 @@
     "noEarnings": "No earnings yet. Once guests complete stays, your earnings will appear here.",
     "netEarnings": "Net earnings",
     "totalRevenue": "Total revenue",
-    "pendingVerification": "Pending verification",
+    "pendingVerification": "Pending",
     "refundPending": "Refund pending",
     "totalBookings": "Total bookings",
     "confirmedBookings": "Confirmed bookings",
@@ -1417,7 +1435,7 @@
     "disclaimer": "Earnings are released after payment verification and stay completion.",
     "yourEarnings": "Your earnings",
     "stayosFee": "StayOS fee",
-    "stayosFeeWaived": "Waived (alpha offer)",
+    "stayosFeeWaived": "EGP 0 — launch waiver",
     "fundsStatus": "Funds status",
     "fundsStatuses": {
       "created": "Held",

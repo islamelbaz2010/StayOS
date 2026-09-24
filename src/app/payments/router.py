@@ -16,6 +16,7 @@ from .schemas import (
     PaymentProofPresignResponse,
     PaymentProofUpload,
     PaymentResponse,
+    PaymentReturnStatusResponse,
     PaymentVerifyRequest,
 )
 from .services import (
@@ -23,6 +24,7 @@ from .services import (
     get_booking_quote,
     get_payment,
     get_payment_by_booking,
+    get_payment_return_status,
     list_guest_payments,
     list_host_payments,
     list_pending_payments,
@@ -45,6 +47,22 @@ async def get_payment_for_booking(
 ) -> PaymentResponse:
     try:
         return await get_payment_by_booking(session, user, booking_id)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/return-status", response_model=PaymentReturnStatusResponse)
+async def get_payment_return_status_endpoint(
+    booking_id: str,
+    t: str,
+    session: AsyncSession = Depends(get_session),
+) -> PaymentReturnStatusResponse:
+    """Public, read-only payment status for a guest returning from hosted
+    checkout without a session. Authorization is the unguessable per-checkout
+    return token (``t``) minted when the checkout session was created —
+    it only exposes this payment's status and can never mutate state."""
+    try:
+        return await get_payment_return_status(session, booking_id, t)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
 

@@ -101,6 +101,20 @@ class InternalQuote(BaseModel):
     total_egp: int
 
 
+class PaymentReturnStatusResponse(BaseModel):
+    """Minimal status payload for a guest returning from hosted checkout
+    without an authenticated session. Scoped by an unguessable per-checkout
+    return token — exposes only what the returning payer needs to see."""
+
+    booking_id: str
+    payment_id: str
+    payment_status: str
+    booking_status: str
+    amount_egp: int
+    reference_number: str
+    verified_at: datetime | None = None
+
+
 class PaymentListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

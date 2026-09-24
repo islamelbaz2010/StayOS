@@ -1220,7 +1220,25 @@
     "paymobReturnConfirmingHint": "جارٍ تأكيد دفعتك — تتحدث هذه الصفحة تلقائيًا.",
     "paymobReturnFailed": "لم تكتمل عملية الدفع.",
     "paymobReturnFailedHint": "لم يتم تأكيد أي مبلغ. يمكنك إعادة محاولة الدفع بالبطاقة أدناه أو استخدام التحويل البنكي.",
-    "viewFinancialContext": "عرض التفاصيل المالية"
+    "viewFinancialContext": "عرض التفاصيل المالية",
+    "paymentResultTitle": "نتيجة الدفع",
+    "bookingStatus": "حالة الحجز",
+    "bookingStatuses": {
+      "requested": "مطلوب",
+      "accepted": "مقبول",
+      "confirmed": "مؤكد",
+      "completed": "مكتمل",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى",
+      "no_show": "لم يحضر",
+      "unknown": "قيد المعالجة"
+    },
+    "signInToViewBooking": "سجّل الدخول لعرض حجزك",
+    "returnLinkInvalidTitle": "انتهت صلاحية رابط الدفع هذا",
+    "returnLinkInvalidHint": "سجّل الدخول للاطلاع على حالة الدفع والحجز.",
+    "returnStillProcessing": "الدفع قيد المعالجة",
+    "returnStillProcessingHint": "لم يصلنا التأكيد النهائي بعد. يتم تحديث الحالة تلقائياً، أو سجّل الدخول للتحقق من حجزك.",
+    "returnSignInHint": "سجّل الدخول للاطلاع على تفاصيل الحجز والدفع كاملة."
   },
   "kyc": {
     "pageTitle": "التحقق من الهوية",
@@ -1393,7 +1411,7 @@
     "noEarnings": "لا توجد أرباح بعد. بمجرد اكتمال إقامات الضيوف، ستظهر أرباحك هنا.",
     "netEarnings": "صافي الأرباح",
     "totalRevenue": "إجمالي الإيرادات",
-    "pendingVerification": "في انتظار التحقق",
+    "pendingVerification": "معلّق",
     "refundPending": "استرداد معلّق",
     "totalBookings": "إجمالي الحجوزات",
     "confirmedBookings": "حجوزات مؤكدة",
@@ -1417,7 +1435,7 @@
     "disclaimer": "يتم تحرير الأرباح بعد التحقق من الدفع واكتمال الإقامة.",
     "yourEarnings": "أرباحك",
     "stayosFee": "رسوم StayOS",
-    "stayosFeeWaived": "معفاة (عرض الإطلاق)",
+    "stayosFeeWaived": "0 ج.م — إعفاء الإطلاق",
     "fundsStatus": "حالة الأموال",
     "fundsStatuses": {
       "created": "محتجزة",

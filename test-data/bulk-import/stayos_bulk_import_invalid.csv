@@ -1,0 +1,6 @@
+title,description,city,governorate,latitude,longitude,property_type,price,address,district,bedrooms,beds,bathrooms,max_guests,amenities,image_urls,host_name,host_phone,host_email,status
+Invalid Type House,A row whose property type is not in the canonical enum.,Cairo,Cairo,30.04,31.23,HOUSE,1500,1 St,D1,2,2,1,4,wifi,,Bad Host1,201,bad1@example.com,PENDING_VERIFICATION
+,Title missing entirely.,Cairo,Cairo,30.05,31.24,APARTMENT,1500,1 St,D1,2,2,1,4,wifi,,Bad Host2,202,bad2@example.com,PENDING_VERIFICATION
+Zero Coordinates Flat,Coordinates left at zero zero.,Cairo,Cairo,0,0,APARTMENT,1500,1 St,D1,2,2,1,4,wifi,,Bad Host3,203,bad3@example.com,PENDING_VERIFICATION
+Too Cheap Room,Price below the minimum nightly rate.,Alexandria,Alexandria,31.2,29.9,STUDIO,50,1 St,D1,1,1,1,1,wifi,,Bad Host4,204,bad4@example.com,PENDING_VERIFICATION
+Bad Status Villa,Status outside the allowed set.,Giza,Giza,29.97,31.13,VILLA,4000,1 St,D1,3,4,2,6,wifi,,Bad Host5,205,bad5@example.com,PUBLISHED

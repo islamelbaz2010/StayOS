@@ -514,6 +514,16 @@ export interface paths {
     /** Get Payment For Booking */
     get: operations["get_payment_for_booking_api_v1_payments_booking__booking_id__get"];
   };
+  "/api/v1/payments/return-status": {
+    /**
+     * Get Payment Return Status Endpoint
+     * @description Public, read-only payment status for a guest returning from hosted
+     * checkout without a session. Authorization is the unguessable per-checkout
+     * return token (``t``) minted when the checkout session was created —
+     * it only exposes this payment's status and can never mutate state.
+     */
+    get: operations["get_payment_return_status_endpoint_api_v1_payments_return_status_get"];
+  };
   "/api/v1/payments/quote": {
     /**
      * Get Quote
@@ -4603,6 +4613,28 @@ export interface components {
        */
       updated_at: string;
     };
+    /**
+     * PaymentReturnStatusResponse
+     * @description Minimal status payload for a guest returning from hosted checkout
+     * without an authenticated session. Scoped by an unguessable per-checkout
+     * return token — exposes only what the returning payer needs to see.
+     */
+    PaymentReturnStatusResponse: {
+      /** Booking Id */
+      booking_id: string;
+      /** Payment Id */
+      payment_id: string;
+      /** Payment Status */
+      payment_status: string;
+      /** Booking Status */
+      booking_status: string;
+      /** Amount Egp */
+      amount_egp: number;
+      /** Reference Number */
+      reference_number: string;
+      /** Verified At */
+      verified_at?: string | null;
+    };
     /** PaymentVerifyRequest */
     PaymentVerifyRequest: {
       /** Reject Reason */
@@ -8597,6 +8629,35 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["PaymentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Get Payment Return Status Endpoint
+   * @description Public, read-only payment status for a guest returning from hosted
+   * checkout without a session. Authorization is the unguessable per-checkout
+   * return token (``t``) minted when the checkout session was created —
+   * it only exposes this payment's status and can never mutate state.
+   */
+  get_payment_return_status_endpoint_api_v1_payments_return_status_get: {
+    parameters: {
+      query: {
+        booking_id: string;
+        t: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaymentReturnStatusResponse"];
         };
       };
       /** @description Validation Error */

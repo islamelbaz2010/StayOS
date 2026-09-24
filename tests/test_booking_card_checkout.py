@@ -664,10 +664,13 @@ async def test_checkout_session_builds_paymob_return_url(
         "get_payment_or_raise",
         AsyncMock(return_value=payment),
     )
+    async def _update(session, p, **kwargs):
+        for k, v in kwargs.items():
+            setattr(p, k, v)
+        return p
+
     monkeypatch.setattr(
-        payments_repository,
-        "update_payment",
-        AsyncMock(side_effect=lambda s, p, **kw: p),
+        payments_repository, "update_payment", AsyncMock(side_effect=_update)
     )
     create_paymob = AsyncMock(
         return_value={
@@ -689,9 +692,14 @@ async def test_checkout_session_builds_paymob_return_url(
     )
 
     redirect = create_paymob.await_args.kwargs["redirection_url"]
-    assert redirect == (
-        f"https://app.stayos.com/checkout/{booking.id}?from=paymob"
+    assert redirect.startswith(
+        f"https://app.stayos.com/checkout/{booking.id}?from=paymob&pr="
     )
+    # The unguessable return token is minted per checkout attempt and stored
+    # on the payment for server-side validation.
+    meta = payment.provider_metadata
+    assert meta["return_token"] and meta["return_token"] in redirect
+    assert meta["return_token_issued_at"]
 
 
 @pytest.mark.asyncio

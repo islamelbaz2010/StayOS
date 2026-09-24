@@ -19,6 +19,12 @@ class Settings(BaseSettings):
         "build provider redirect-back URLs such as the Paymob post-checkout "
         "redirection_url. Empty disables per-intention redirection overrides.",
     )
+    PAYMENT_RETURN_TOKEN_TTL_HOURS: int = Field(
+        default=48,
+        description="Lifetime of the unguessable payment-return token embedded "
+        "in the Paymob redirection_url. The token only unlocks a read-only "
+        "payment-status view for a guest returning without a session.",
+    )
 
     FIREBASE_PROJECT_ID: str = Field(default="", description="Firebase project ID")
     FIREBASE_CLIENT_EMAIL: str = Field(default="", description="Firebase service account email")

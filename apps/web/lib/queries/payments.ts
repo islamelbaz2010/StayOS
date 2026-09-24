@@ -205,6 +205,51 @@ export async function createCheckoutSession(
   return data;
 }
 
+export interface PaymentReturnStatus {
+  booking_id: string;
+  payment_id: string;
+  payment_status: string;
+  booking_status: string;
+  amount_egp: number;
+  reference_number: string;
+  verified_at: string | null;
+}
+
+export async function getPaymentReturnStatus(
+  bookingId: string,
+  token: string
+): Promise<PaymentReturnStatus> {
+  const { data } = await api.get<PaymentReturnStatus>(
+    `/payments/return-status`,
+    { params: { booking_id: bookingId, t: token } }
+  );
+  return data;
+}
+
+export function usePaymentReturnStatus(
+  bookingId: string,
+  token: string,
+  options: {
+    refetchInterval?:
+      | number
+      | false
+      | ((status: PaymentReturnStatus | undefined) => number | false);
+  } = {}
+) {
+  const interval = options.refetchInterval;
+  return useQuery({
+    queryKey: ["payment-return-status", bookingId, token],
+    queryFn: () => getPaymentReturnStatus(bookingId, token),
+    enabled: Boolean(bookingId) && Boolean(token),
+    retry: false,
+    refetchInterval:
+      typeof interval === "function"
+        ? (query) =>
+            interval(query.state.data as PaymentReturnStatus | undefined)
+        : interval,
+  });
+}
+
 export function usePaymentByBooking(
   bookingId: string,
   options: {

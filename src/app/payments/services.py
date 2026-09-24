@@ -1,4 +1,6 @@
+import hmac
 import logging
+import secrets
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -38,6 +40,7 @@ from .schemas import (
     PaymentProofDownloadResponse,
     PaymentProofPresignResponse,
     PaymentResponse,
+    PaymentReturnStatusResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -436,11 +439,17 @@ async def create_card_checkout_session(
 
     # After hosted checkout the browser returns to the StayOS checkout page;
     # the webhook — not the redirect — remains authoritative for state.
+    # The return token lets a guest who returns WITHOUT an authenticated
+    # session (payment browser ≠ booking browser, expired session) still see
+    # a safe read-only payment status. It is unguessable, scoped to this
+    # checkout attempt, and expires — it is never payment proof.
+    return_token = secrets.token_urlsafe(32)
+    return_token_issued_at = datetime.now(UTC).isoformat()
     redirection_url = None
     if settings.WEB_BASE_URL:
         redirection_url = (
             f"{settings.WEB_BASE_URL.rstrip('/')}"
-            f"/checkout/{payment.booking_id}?from=paymob"
+            f"/checkout/{payment.booking_id}?from=paymob&pr={return_token}"
         )
 
     try:
@@ -468,9 +477,56 @@ async def create_card_checkout_session(
             "checkout_token": result.get("payment_token")
             or result.get("client_secret"),
             "checkout_url": result.get("checkout_url") or result.get("iframe_url"),
+            "return_token": return_token,
+            "return_token_issued_at": return_token_issued_at,
         },
     )
     return _to_response(updated)
+
+
+async def get_payment_return_status(
+    session: AsyncSession, booking_id: str, token: str
+) -> PaymentReturnStatusResponse:
+    """Read-only payment status for a guest returning from hosted checkout
+    without an authenticated session.
+
+    Authorized solely by the unguessable per-checkout return token stored on
+    the payment at checkout-session creation — never by redirect params.
+    Invalid, expired, or mismatched tokens are indistinguishable from a
+    missing payment (no enumeration oracle)."""
+    payment = await payments_repository.get_payment_by_booking(session, booking_id)
+
+    meta = (payment.provider_metadata or {}) if payment else {}
+    stored = meta.get("return_token")
+    issued_at_raw = meta.get("return_token_issued_at")
+
+    valid = bool(stored) and bool(token) and hmac.compare_digest(stored, token)
+    if valid and issued_at_raw:
+        try:
+            issued_at = datetime.fromisoformat(str(issued_at_raw))
+            if issued_at.tzinfo is None:
+                issued_at = issued_at.replace(tzinfo=UTC)
+            if issued_at + timedelta(
+                hours=settings.PAYMENT_RETURN_TOKEN_TTL_HOURS
+            ) < datetime.now(UTC):
+                valid = False
+        except ValueError:
+            valid = False
+
+    if payment is None or not valid:
+        raise NotFoundError("Payment return link not found")
+
+    booking = await bookings_repository.get_booking(session, payment.booking_id)
+
+    return PaymentReturnStatusResponse(
+        booking_id=payment.booking_id,
+        payment_id=payment.id,
+        payment_status=str(payment.status),
+        booking_status=str(booking.status) if booking else "unknown",
+        amount_egp=payment.amount_egp,
+        reference_number=payment.reference_number,
+        verified_at=payment.verified_at,
+    )
 
 
 async def confirm_payment_by_provider(

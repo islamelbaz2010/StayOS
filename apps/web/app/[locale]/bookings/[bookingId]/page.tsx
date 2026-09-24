@@ -283,9 +283,13 @@ function TripContent({
           </p>
           <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">
             {booking.cancel_reason
-              ? t(`cancelReasons.${booking.cancel_reason}`, { default: booking.cancel_reason })
+              ? t.has(`cancelReasons.${booking.cancel_reason}`)
+                ? t(`cancelReasons.${booking.cancel_reason}`)
+                : booking.cancel_reason
               : booking.reject_reason
-                ? t(`rejectReasons.${booking.reject_reason}`, { default: booking.reject_reason })
+                ? t.has(`rejectReasons.${booking.reject_reason}`)
+                  ? t(`rejectReasons.${booking.reject_reason}`)
+                  : booking.reject_reason
                 : terminalReason}
           </p>
         </div>

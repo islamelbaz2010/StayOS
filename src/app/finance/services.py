@@ -64,10 +64,15 @@ async def _payment_or_none(session: AsyncSession, booking_id: str):
     return await payments_repository.get_payment_by_booking(session, booking_id)
 
 
-async def _booking_host_net(session: AsyncSession, payment) -> int:
-    """Canonical host net for the booking/payment flow: the collected
-    all-inclusive total minus the platform share on the accommodation
-    base, honouring the closed-alpha free-bookings incentive."""
+async def booking_economics(
+    session: AsyncSession, payment
+) -> tuple[commercial.BookingEconomics, bool]:
+    """Canonical per-booking economics — the same math the escrow-release
+    path uses, including the closed-alpha free-bookings waiver.
+
+    Returns ``(economics, waived)`` so callers can surface whether the
+    platform share was waived for this booking.
+    """
     from app.bookings import repository as bookings_repository
 
     host_completed = await bookings_repository.count_host_completed_bookings(
@@ -80,11 +85,65 @@ async def _booking_host_net(session: AsyncSession, payment) -> int:
     fee_base -= payment.cleaning_fee_egp or 0
     if fee_base < 0:
         fee_base = payment.amount_egp
-    return commercial.compute_booking_economics(
-        fee_base,
-        payment.cleaning_fee_egp or 0,
-        platform_share_waived=waived,
-    ).host_net_egp
+    return (
+        commercial.compute_booking_economics(
+            fee_base,
+            payment.cleaning_fee_egp or 0,
+            platform_share_waived=waived,
+        ),
+        waived,
+    )
+
+
+async def _booking_host_net(session: AsyncSession, payment) -> int:
+    """Canonical host net for the booking/payment flow: the collected
+    all-inclusive total minus the platform share on the accommodation
+    base, honouring the closed-alpha free-bookings incentive."""
+    economics, _ = await booking_economics(session, payment)
+    return economics.host_net_egp
+
+
+def derive_payout_state(
+    escrow: EscrowAccount | None, now: datetime | None = None
+) -> dict[str, Any] | None:
+    """Per-booking funds/payout state derived from the escrow lifecycle.
+
+    Payout eligibility is the canonical rule — funds become payable
+    ESCROW_RELEASE_HOURS after confirmed guest check-in (``hold_until``).
+    Shared by the admin financial view and the host earnings surface.
+    """
+    if escrow is None:
+        return None
+    now = now or datetime.now(UTC)
+    if escrow.status == EscrowStatus.RELEASED:
+        payout_status = "paid"
+    elif escrow.status == EscrowStatus.REFUNDED:
+        payout_status = "refunded"
+    elif escrow.status == EscrowStatus.DISPUTED:
+        payout_status = "disputed"
+    elif escrow.status == EscrowStatus.HELD:
+        payout_status = (
+            "ready"
+            if escrow.hold_until and escrow.hold_until <= now
+            else "held"
+        )
+    else:  # CREATED — collected, awaiting confirmed guest check-in
+        payout_status = "waiting_checkin"
+    return {
+        "funds_status": str(escrow.status),
+        "funds_held_egp": (
+            escrow.amount_egp
+            if escrow.status in (EscrowStatus.CREATED, EscrowStatus.HELD)
+            else None
+        ),
+        "expected_payout_at": (
+            escrow.hold_until.isoformat() if escrow.hold_until else None
+        ),
+        "payout_status": payout_status,
+        "paid_at": (
+            escrow.released_at.isoformat() if escrow.released_at else None
+        ),
+    }
 
 
 async def _resolve_host_amount(session: AsyncSession, reservation_id: str) -> int:

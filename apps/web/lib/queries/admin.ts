@@ -42,13 +42,39 @@ export interface LinkedDisputeInfo {
   created_at: string | null;
 }
 
+/** Canonical booking economics emitted by the finance commercial engine. */
+export interface BookingFinancials {
+  guest_paid_egp: number | null;
+  accommodation_egp: number | null;
+  cleaning_fee_egp: number | null;
+  platform_share_egp: number | null;
+  host_side_share_egp: number | null;
+  guest_side_share_egp: number | null;
+  host_net_egp: number | null;
+  platform_share_waived: boolean | null;
+  provider: string | null;
+  provider_ref: string | null;
+  transaction_ref: string | null;
+}
+
+/** Funds/payout state derived from the booking's escrow lifecycle. */
+export interface BookingPayoutState {
+  funds_status: string;
+  funds_held_egp: number | null;
+  expected_payout_at: string | null;
+  payout_status: string;
+  paid_at: string | null;
+}
+
 /** BookingFinancialContext with the nested dicts narrowed to their
  *  server-emitted shapes. */
 export type BookingFinancialContext = Omit<
   ApiBookingFinancialContext,
-  "escrow" | "transactions" | "disputes"
+  "escrow" | "transactions" | "disputes" | "financials" | "payout"
 > & {
   escrow: EscrowInfo | null;
+  financials: BookingFinancials | null;
+  payout: BookingPayoutState | null;
   transactions: FinancialTransactionInfo[];
   disputes: LinkedDisputeInfo[];
 };

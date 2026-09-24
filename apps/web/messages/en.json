@@ -16,7 +16,8 @@
     "required": "Required",
     "optional": "Optional",
     "loadingListing": "Loading listing",
-    "loadingListingDetails": "Loading listing details"
+    "loadingListingDetails": "Loading listing details",
+    "serviceUnavailable": "This service is temporarily unavailable. Please try again later."
   },
   "nav": {
     "home": "Home",
@@ -1180,7 +1181,7 @@
     "verifyError": "Could not verify this payment. Please try again.",
     "rejectError": "Could not reject this payment. Please try again.",
     "tab": {
-      "pending": "Pending & receipts",
+      "pending": "Pending",
       "refund_pending": "Refunds to process",
       "refunded": "Refunded"
     },
@@ -1212,7 +1213,14 @@
     "timelineTitle": "Timeline",
     "proofSection": "Payment proof",
     "technicalDetails": "Technical details",
-    "paymentId": "Payment ID"
+    "paymentId": "Payment ID",
+    "paymobReturnConfirmed": "Payment confirmed — your booking is confirmed.",
+    "paymobReturnConfirmedHint": "Your payment was verified successfully. You can view your trip details under Trips.",
+    "paymobReturnConfirming": "Payment received",
+    "paymobReturnConfirmingHint": "We're confirming your payment — this page updates automatically.",
+    "paymobReturnFailed": "Your payment wasn't completed.",
+    "paymobReturnFailedHint": "No charge was confirmed. You can try paying by card again below, or use bank transfer.",
+    "viewFinancialContext": "View financial breakdown"
   },
   "kyc": {
     "pageTitle": "Identity Verification",
@@ -1397,7 +1405,7 @@
     "paymentActivity": "Payment activity",
     "filter": {
       "all": "All",
-      "proof_uploaded": "Pending verification",
+      "proof_uploaded": "Pending",
       "verified": "Verified",
       "refund_pending": "Refund pending",
       "refunded": "Refunded"
@@ -1405,7 +1413,31 @@
     "refund": "Refund",
     "refundedAt": "Refunded at",
     "noPayments": "No payments in this category.",
-    "disclaimer": "Earnings are released after payment verification and stay completion."
+    "disclaimer": "Earnings are released after payment verification and stay completion.",
+    "yourEarnings": "Your earnings",
+    "stayosFee": "StayOS fee",
+    "stayosFeeWaived": "Waived (alpha offer)",
+    "fundsStatus": "Funds status",
+    "fundsStatuses": {
+      "created": "Held",
+      "held": "Held",
+      "released": "Released",
+      "refunded": "Refunded",
+      "disputed": "On hold (dispute)"
+    },
+    "payoutEligibility": "Payout eligibility",
+    "payoutEligibilityRule": "24 hours after confirmed guest check-in",
+    "payoutStatus": "Payout status",
+    "payoutStatuses": {
+      "waiting_checkin": "Waiting for check-in",
+      "held": "Held until eligible",
+      "ready": "Ready for payout",
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "disputed": "On hold (dispute)"
+    },
+    "expectedPayout": "Expected payout",
+    "paidOn": "Paid on"
   },
   "hostToday": {
     "title": "Today",
@@ -1766,8 +1798,8 @@
     }
   },
   "fees": {
-    "popupTitle": "Now you'll see one price for your trip, all fees included",
-    "popupBody": "The price you see covers the nightly rate, cleaning fee and service fee — no surprises at checkout.",
+    "popupTitle": "See your full stay price upfront",
+    "popupBody": "StayOS shows the complete price for your stay from the start, including the nightly rate, cleaning and service fees. What you see is what you'll pay at checkout.",
     "popupCta": "Got it",
     "line": "Prices include all fees"
   },
@@ -1849,6 +1881,23 @@
     "disputes": "Linked disputes",
     "noDisputes": "No disputes on this booking.",
     "notFound": "Booking not found.",
-    "egp": "EGP"
+    "egp": "EGP",
+    "financialBreakdown": "Financial breakdown",
+    "guestPaid": "Guest paid",
+    "stayosFeeAllocation": "StayOS fee allocation",
+    "hostSide": "Host side",
+    "guestSide": "Guest side",
+    "stayosRevenue": "StayOS revenue",
+    "shareWaived": "waived — alpha offer",
+    "hostPayable": "Host payable",
+    "payout": "Payout",
+    "fundsStatus": "Funds status",
+    "fundsHeld": "Funds held",
+    "payoutEligibility": "Payout eligibility",
+    "payoutEligibilityRule": "24 hours after confirmed guest check-in",
+    "expectedPayout": "Expected payout",
+    "payoutStatus": "Payout status",
+    "paidAt": "Paid at",
+    "providerPayout": "Provider payout"
   }
 }

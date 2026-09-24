@@ -86,6 +86,10 @@ class BookingFinancialContextResponse(BaseModel):
     refunded_at: datetime | None
     reject_reason: str | None
     escrow: dict | None = None
+    # Canonical booking economics + funds/payout state — computed by the
+    # finance module's commercial engine, never recomputed in the UI.
+    financials: dict | None = None
+    payout: dict | None = None
     transactions: list[dict] = []
     disputes: list[dict] = []
 

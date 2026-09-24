@@ -123,5 +123,16 @@ class PaymentListItem(BaseModel):
     reject_reason: str | None = None
     unit_title: str | None = None
     unit_cover_image: str | None = None
+    # Host-facing earnings fields — populated only by the host-scoped
+    # endpoint (``GET /payments/host``); None on guest/admin lists so guest
+    # total-only pricing and internal economics stay hidden.
+    host_net_egp: int | None = None
+    platform_fee_egp: int | None = None
+    platform_share_waived: bool | None = None
+    funds_status: str | None = None
+    funds_held_egp: int | None = None
+    expected_payout_at: datetime | None = None
+    payout_status: str | None = None
+    paid_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

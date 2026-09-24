@@ -269,6 +269,65 @@ function PaymentActivity({ locale }: { locale: string }) {
                       {payment.reject_reason}
                     </p>
                   )}
+                  {payment.host_net_egp != null && (
+                    <div className="mt-2 space-y-1 rounded-md bg-neutral-50 p-3 text-xs text-neutral-700">
+                      <p>
+                        <span className="font-medium">{t("yourEarnings")}: </span>
+                        <span className="font-semibold text-brand-900">
+                          {formatMoney(payment.host_net_egp, "EGP", locale)}
+                        </span>
+                      </p>
+                      <p>
+                        <span className="font-medium">{t("stayosFee")}: </span>
+                        {payment.platform_share_waived
+                          ? t("stayosFeeWaived")
+                          : formatMoney(
+                              payment.platform_fee_egp ?? 0,
+                              "EGP",
+                              locale
+                            )}
+                      </p>
+                      {payment.funds_status && (
+                        <p>
+                          <span className="font-medium">
+                            {t("fundsStatus")}:{" "}
+                          </span>
+                          {t(`fundsStatuses.${payment.funds_status}`)}
+                        </p>
+                      )}
+                      {payment.payout_status && (
+                        <>
+                          <p>
+                            <span className="font-medium">
+                              {t("payoutEligibility")}:{" "}
+                            </span>
+                            {t("payoutEligibilityRule")}
+                          </p>
+                          <p>
+                            <span className="font-medium">
+                              {t("payoutStatus")}:{" "}
+                            </span>
+                            {t(`payoutStatuses.${payment.payout_status}`)}
+                            {payment.payout_status === "paid" &&
+                              payment.paid_at &&
+                              ` · ${t("paidOn")} ${new Date(payment.paid_at).toLocaleString(locale)}`}
+                          </p>
+                          {payment.expected_payout_at &&
+                            payment.payout_status !== "paid" &&
+                            payment.payout_status !== "refunded" && (
+                              <p>
+                                <span className="font-medium">
+                                  {t("expectedPayout")}:{" "}
+                                </span>
+                                {new Date(
+                                  payment.expected_payout_at
+                                ).toLocaleString(locale)}
+                              </p>
+                            )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="text-right sm:text-left">

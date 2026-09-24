@@ -28,6 +28,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
   const t = useTranslations("payment");
+  const tc = useTranslations("common");
   const locale = useLocale();
   const { user } = useAuth();
   const isKycVerified = user?.kyc_status === "verified";
@@ -76,12 +77,12 @@ export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
           payload: { s3_key: presignRes.proof_key },
         });
       } catch (err) {
-        setError(getApiErrorMessage(err, t("uploadFailed")));
+        setError(getApiErrorMessage(err, t("uploadFailed"), tc("serviceUnavailable")));
       } finally {
         setIsUploading(false);
       }
     },
-    [paymentId, presignMutation, uploadMutation, t]
+    [paymentId, presignMutation, uploadMutation, t, tc]
   );
 
   const handleDrop = useCallback(

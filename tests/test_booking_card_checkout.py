@@ -154,8 +154,11 @@ async def test_checkout_session_stores_provider_refs(
         fake_session, guest, payment.id
     )
 
-    # Server-authoritative amount — never client input.
-    create_paymob.assert_awaited_once_with(booking.id, 2050)
+    # Server-authoritative amount — never client input. No WEB_BASE_URL in
+    # the test env → no per-intention redirection override.
+    create_paymob.assert_awaited_once_with(
+        booking.id, 2050, redirection_url=None
+    )
     assert updated["provider"] == "paymob"
     assert updated["provider_ref"] == "paymob-order-1"
     assert "paymob.com" in updated["checkout_url"]
@@ -639,3 +642,220 @@ def test_avatar_url_none_without_key() -> None:
     user.avatar_s3_key = "avatars/x/avatar_1.jpg"
     url = auth_services.avatar_url(user)
     assert url is None or url.endswith("avatars/x/avatar_1.jpg")
+
+
+# ---------------------------------------------------------------------------
+# Paymob return-to-checkout (redirection_url)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_checkout_session_builds_paymob_return_url(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """With WEB_BASE_URL configured, the intention carries a redirection_url
+    back to the StayOS checkout page (navigation only — webhook stays
+    authoritative)."""
+    guest = _make_user()
+    booking = _make_booking(guest)
+    payment = _make_payment(booking, guest)
+    monkeypatch.setattr(
+        payments_repository,
+        "get_payment_or_raise",
+        AsyncMock(return_value=payment),
+    )
+    monkeypatch.setattr(
+        payments_repository,
+        "update_payment",
+        AsyncMock(side_effect=lambda s, p, **kw: p),
+    )
+    create_paymob = AsyncMock(
+        return_value={
+            "provider": "paymob",
+            "order_id": "paymob-order-1",
+            "payment_token": "tok-1",
+            "iframe_url": "https://accept.paymob.com/x",
+        }
+    )
+    monkeypatch.setattr(
+        "app.finance.providers.create_paymob_payment", create_paymob
+    )
+    monkeypatch.setattr(
+        payment_services.settings, "WEB_BASE_URL", "https://app.stayos.com/"
+    )
+
+    await payment_services.create_card_checkout_session(
+        fake_session, guest, payment.id
+    )
+
+    redirect = create_paymob.await_args.kwargs["redirection_url"]
+    assert redirect == (
+        f"https://app.stayos.com/checkout/{booking.id}?from=paymob"
+    )
+
+
+@pytest.mark.asyncio
+async def test_paymob_intention_sends_redirection_url(monkeypatch) -> None:
+    """The intention payload includes redirection_url when provided."""
+    from app.finance import providers
+
+    monkeypatch.setattr(providers.settings, "ENVIRONMENT", "staging")
+    monkeypatch.setattr(
+        providers.settings, "PAYMOB_SECRET_KEY", "egy_sk_test_abc"
+    )
+    monkeypatch.setattr(providers.settings, "PAYMOB_INTEGRATION_ID", 123)
+    monkeypatch.setattr(providers.settings, "PAYMOB_PUBLIC_KEY", "")
+    monkeypatch.setattr(providers.settings, "PAYMOB_NOTIFICATION_URL", "")
+
+    posted: dict[str, object] = {}
+
+    async def _post(payload):
+        posted.update(payload)
+        return {"id": "int-1", "client_secret": "sec-1"}
+
+    monkeypatch.setattr(providers, "_paymob_intention_post", _post)
+
+    await providers.paymob_create_intention(
+        "booking-1",
+        2050,
+        redirection_url="https://app.stayos.com/checkout/booking-1?from=paymob",
+    )
+
+    assert posted["redirection_url"] == (
+        "https://app.stayos.com/checkout/booking-1?from=paymob"
+    )
+    assert posted["special_reference"] == "booking-1"
+    assert posted["amount"] == 205000
+
+
+# ---------------------------------------------------------------------------
+# Payout state derivation (escrow lifecycle → payout status)
+# ---------------------------------------------------------------------------
+
+
+def _make_escrow(status: str, hold_until=None, released_at=None):
+    from app.finance.models import EscrowAccount
+
+    return EscrowAccount(
+        id=str(uuid.uuid4()),
+        reservation_id=str(uuid.uuid4()),
+        host_id=str(uuid.uuid4()),
+        amount_egp=2050,
+        status=status,
+        hold_until=hold_until,
+        released_at=released_at,
+    )
+
+
+def test_derive_payout_state_none() -> None:
+    from app.finance import services as finance_services
+
+    assert finance_services.derive_payout_state(None) is None
+
+
+def test_derive_payout_state_lifecycle() -> None:
+    from app.finance import services as finance_services
+    from app.finance.constants import EscrowStatus
+
+    now = datetime.now(UTC)
+
+    created = _make_escrow(EscrowStatus.CREATED)
+    state = finance_services.derive_payout_state(created, now)
+    assert state["payout_status"] == "waiting_checkin"
+    assert state["funds_held_egp"] == 2050
+
+    from datetime import timedelta
+
+    held = _make_escrow(EscrowStatus.HELD, hold_until=now + timedelta(hours=5))
+    assert finance_services.derive_payout_state(held, now)[
+        "payout_status"
+    ] == "held"
+
+    ready = _make_escrow(EscrowStatus.HELD, hold_until=now - timedelta(hours=1))
+    ready_state = finance_services.derive_payout_state(ready, now)
+    assert ready_state["payout_status"] == "ready"
+    assert ready_state["expected_payout_at"] is not None
+
+    released = _make_escrow(EscrowStatus.RELEASED, released_at=now)
+    released_state = finance_services.derive_payout_state(released, now)
+    assert released_state["payout_status"] == "paid"
+    assert released_state["paid_at"] is not None
+    assert released_state["funds_held_egp"] is None
+
+    refunded = _make_escrow(EscrowStatus.REFUNDED)
+    assert finance_services.derive_payout_state(refunded, now)[
+        "payout_status"
+    ] == "refunded"
+
+
+# ---------------------------------------------------------------------------
+# Host earnings fields on the payment activity list
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_host_payments_attach_earnings(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app.finance import services as finance_services
+    from app.finance import commercial
+
+    host = _make_user(role=UserRole.HOST)
+    guest = _make_user()
+    booking = _make_booking(guest)
+    payment = _make_payment(booking, guest)
+    payment.host_id = host.id
+    payment.accommodation_amount_egp = 2000
+    payment.cleaning_fee_egp = 50
+    escrow = _make_escrow("held", hold_until=datetime.now(UTC))
+    escrow.reservation_id = booking.id  # escrow keys off booking.id
+
+    monkeypatch.setattr(
+        payments_repository,
+        "list_host_payments",
+        AsyncMock(return_value=[payment]),
+    )
+
+    escrow_result = MagicMock()
+    escrow_result.scalars.return_value.all.return_value = [escrow]
+    fake_session.execute = AsyncMock(return_value=escrow_result)
+
+    monkeypatch.setattr(
+        finance_services,
+        "booking_economics",
+        AsyncMock(
+            return_value=(
+                commercial.compute_booking_economics(1950, 50),
+                False,
+            )
+        ),
+    )
+
+    items = await payment_services.list_host_payments(fake_session, host)
+
+    item = items[0]
+    assert item.amount_egp == 2050
+    assert item.host_net_egp == 2000 - round(1950 * 0.12)  # 2000 - 234
+    assert item.platform_fee_egp == round(1950 * 0.12)
+    assert item.platform_share_waived is False
+    assert item.funds_status == "held"
+    assert item.funds_held_egp == 2050
+    assert item.payout_status == "ready"
+
+
+# ---------------------------------------------------------------------------
+# Storage errors must not leak infrastructure detail
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_storage_error_message_is_sanitized(monkeypatch) -> None:
+    monkeypatch.setattr(
+        payment_services.settings, "S3_PAYMENT_PROOF_BUCKET", ""
+    )
+    with pytest.raises(ServiceUnavailableError) as exc_info:
+        payment_services._require_storage_config()
+    message = str(exc_info.value)
+    assert "S3_" not in message
+    assert "AWS_" not in message
+    assert "temporarily unavailable" in message

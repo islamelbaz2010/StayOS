@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -19,6 +20,8 @@ from app.shared.exceptions import (
 )
 
 _UPLOAD_TTL_SECONDS = 900
+logger = logging.getLogger(__name__)
+
 _DOWNLOAD_TTL_SECONDS = 900
 
 
@@ -34,9 +37,12 @@ def _require_storage_config() -> None:
         if not getattr(settings, name)
     ]
     if missing:
+        logger.error(
+            "KYC document storage is not configured (missing: %s)",
+            ", ".join(missing),
+        )
         raise ServiceUnavailableError(
-            "KYC document storage is not configured "
-            f"(missing: {', '.join(missing)})"
+            "Document upload is temporarily unavailable. Please try again later."
         )
 
 

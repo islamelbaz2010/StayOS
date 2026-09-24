@@ -2,7 +2,19 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { clearSession, getSession, setSession } from "@/lib/auth/storage";
 
-const PUBLIC_PATHS = ["/auth/refresh", "/auth/firebase", "/auth/otp/send", "/auth/otp/verify", "/auth/dev-token"];
+// Endpoints where a 401 is a normal outcome (bad credentials, expired OTP),
+// not an expired session — the interceptor must not hijack them into a
+// refresh attempt or a redirect that wipes the page's inline error.
+const PUBLIC_PATHS = [
+  "/auth/refresh",
+  "/auth/firebase",
+  "/auth/otp/send",
+  "/auth/otp/verify",
+  "/auth/dev-token",
+  "/auth/login",
+  "/auth/register",
+  "/auth/password",
+];
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -35,8 +35,11 @@ export default function AdminEarningsPage() {
     v ? new Date(v).toLocaleString(intlLocale) : "—";
 
   const overview = useAdminOverview();
-  const [input, setInput] = useState("");
-  const [bookingId, setBookingId] = useState<string | undefined>(undefined);
+  const searchParams = useSearchParams();
+  const [input, setInput] = useState(searchParams.get("booking") ?? "");
+  const [bookingId, setBookingId] = useState<string | undefined>(
+    searchParams.get("booking") ?? undefined
+  );
   const ctx = useBookingFinancialContext(bookingId);
 
   const submit = (e: FormEvent) => {
@@ -228,6 +231,86 @@ export default function AdminEarningsPage() {
                   <p className="text-sm text-neutral-500">—</p>
                 )}
               </div>
+
+              {ctx.data.financials && (
+                <div className="card p-5">
+                  <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent-600">
+                    {t("financialBreakdown")}
+                  </h2>
+                  <dl className="divide-y divide-neutral-100">
+                    <Row
+                      label={t("guestPaid")}
+                      value={egp(ctx.data.financials.guest_paid_egp)}
+                    />
+                    <Row
+                      label={t("accommodation")}
+                      value={egp(ctx.data.financials.accommodation_egp)}
+                    />
+                    <Row
+                      label={t("cleaningFee")}
+                      value={egp(ctx.data.financials.cleaning_fee_egp)}
+                    />
+                    <Row
+                      label={t("stayosFeeAllocation")}
+                      value={`${t("hostSide")}: ${egp(ctx.data.financials.host_side_share_egp)} · ${t("guestSide")}: ${egp(ctx.data.financials.guest_side_share_egp)}`}
+                    />
+                    <Row
+                      label={t("stayosRevenue")}
+                      value={
+                        ctx.data.financials.platform_share_waived
+                          ? `${egp(0)} (${t("shareWaived")})`
+                          : egp(ctx.data.financials.platform_share_egp)
+                      }
+                    />
+                    <Row
+                      label={t("hostPayable")}
+                      value={egp(ctx.data.financials.host_net_egp)}
+                    />
+                  </dl>
+                </div>
+              )}
+
+              {ctx.data.payout && (
+                <div className="card p-5">
+                  <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent-600">
+                    {t("payout")}
+                  </h2>
+                  <dl className="divide-y divide-neutral-100">
+                    <Row
+                      label={t("fundsStatus")}
+                      value={ctx.data.payout.funds_status}
+                    />
+                    <Row
+                      label={t("fundsHeld")}
+                      value={egp(ctx.data.payout.funds_held_egp)}
+                    />
+                    <Row
+                      label={t("payoutEligibility")}
+                      value={t("payoutEligibilityRule")}
+                    />
+                    <Row
+                      label={t("expectedPayout")}
+                      value={fmtDate(ctx.data.payout.expected_payout_at)}
+                    />
+                    <Row
+                      label={t("payoutStatus")}
+                      value={ctx.data.payout.payout_status}
+                    />
+                    {ctx.data.payout.paid_at && (
+                      <Row
+                        label={t("paidAt")}
+                        value={fmtDate(ctx.data.payout.paid_at)}
+                      />
+                    )}
+                    {ctx.data.financials?.provider && (
+                      <Row
+                        label={t("providerPayout")}
+                        value={ctx.data.financials.provider}
+                      />
+                    )}
+                  </dl>
+                </div>
+              )}
 
               <div className="card p-5">
                 <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-accent-600">

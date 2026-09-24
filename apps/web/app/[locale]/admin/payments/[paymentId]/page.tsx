@@ -160,6 +160,12 @@ export default function AdminPaymentDetailPage() {
                         {t("rejectReason")}: {payment.reject_reason}
                       </p>
                     )}
+                    <Link
+                      href={`/${locale}/admin/earnings?booking=${payment.booking_id}`}
+                      className="inline-block pt-1 text-sm font-medium text-accent-600 hover:text-accent-700 hover:underline"
+                    >
+                      {t("viewFinancialContext")}
+                    </Link>
                   </div>
                 </div>
 

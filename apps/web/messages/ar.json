@@ -16,7 +16,8 @@
     "required": "مطلوب",
     "optional": "اختياري",
     "loadingListing": "جارٍ تحميل الإعلان",
-    "loadingListingDetails": "جارٍ تحميل تفاصيل الإعلان"
+    "loadingListingDetails": "جارٍ تحميل تفاصيل الإعلان",
+    "serviceUnavailable": "هذه الخدمة غير متاحة مؤقتًا. يرجى المحاولة لاحقًا."
   },
   "nav": {
     "home": "الرئيسية",
@@ -1180,7 +1181,7 @@
     "verifyError": "تعذّر التحقق من الدفع. حاول مرة أخرى.",
     "rejectError": "تعذّر رفض الدفع. حاول مرة أخرى.",
     "tab": {
-      "pending": "معلق وإيصالات",
+      "pending": "معلّق",
       "refund_pending": "استرداد معلّق",
       "refunded": "تم الاسترداد"
     },
@@ -1212,7 +1213,14 @@
     "timelineTitle": "الخط الزمني",
     "proofSection": "إثبات الدفع",
     "technicalDetails": "تفاصيل تقنية",
-    "paymentId": "معرّف الدفعة"
+    "paymentId": "معرّف الدفعة",
+    "paymobReturnConfirmed": "تم تأكيد الدفع — تم تأكيد حجزك.",
+    "paymobReturnConfirmedHint": "تم التحقق من دفعتك بنجاح. يمكنك الاطلاع على تفاصيل رحلتك من صفحة الرحلات.",
+    "paymobReturnConfirming": "تم استلام الدفع",
+    "paymobReturnConfirmingHint": "جارٍ تأكيد دفعتك — تتحدث هذه الصفحة تلقائيًا.",
+    "paymobReturnFailed": "لم تكتمل عملية الدفع.",
+    "paymobReturnFailedHint": "لم يتم تأكيد أي مبلغ. يمكنك إعادة محاولة الدفع بالبطاقة أدناه أو استخدام التحويل البنكي.",
+    "viewFinancialContext": "عرض التفاصيل المالية"
   },
   "kyc": {
     "pageTitle": "التحقق من الهوية",
@@ -1397,7 +1405,7 @@
     "paymentActivity": "نشاط الدفع",
     "filter": {
       "all": "الكل",
-      "proof_uploaded": "بانتظار التحقق",
+      "proof_uploaded": "معلّق",
       "verified": "تم التحقق",
       "refund_pending": "استرداد معلّق",
       "refunded": "تم الاسترداد"
@@ -1405,7 +1413,31 @@
     "refund": "مبلغ الاسترداد",
     "refundedAt": "تاريخ الاسترداد",
     "noPayments": "لا توجد مدفوعات في هذه الفئة.",
-    "disclaimer": "يتم تحرير الأرباح بعد التحقق من الدفع واكتمال الإقامة."
+    "disclaimer": "يتم تحرير الأرباح بعد التحقق من الدفع واكتمال الإقامة.",
+    "yourEarnings": "أرباحك",
+    "stayosFee": "رسوم StayOS",
+    "stayosFeeWaived": "معفاة (عرض الإطلاق)",
+    "fundsStatus": "حالة الأموال",
+    "fundsStatuses": {
+      "created": "محتجزة",
+      "held": "محتجزة",
+      "released": "مُفرج عنها",
+      "refunded": "مستردة",
+      "disputed": "موقوفة (نزاع)"
+    },
+    "payoutEligibility": "أهلية السحب",
+    "payoutEligibilityRule": "بعد 24 ساعة من تسجيل وصول الضيف",
+    "payoutStatus": "حالة السحب",
+    "payoutStatuses": {
+      "waiting_checkin": "بانتظار تسجيل الوصول",
+      "held": "محتجزة حتى الأهلية",
+      "ready": "جاهزة للسحب",
+      "paid": "مدفوعة",
+      "refunded": "مستردة",
+      "disputed": "موقوفة (نزاع)"
+    },
+    "expectedPayout": "السحب المتوقع",
+    "paidOn": "تم الدفع في"
   },
   "hostToday": {
     "title": "اليوم",
@@ -1766,8 +1798,8 @@
     }
   },
   "fees": {
-    "popupTitle": "سترى الآن سعرًا واحدًا لرحلتك شاملاً جميع الرسوم",
-    "popupBody": "السعر المعروض يشمل سعر الليلة ورسوم التنظيف ورسوم الخدمة — بدون مفاجآت عند الدفع.",
+    "popupTitle": "اعرف التكلفة الكاملة لإقامتك من البداية",
+    "popupBody": "يعرض لك StayOS السعر الكامل لإقامتك من البداية، شامل سعر الليلة ورسوم التنظيف والخدمة. السعر الظاهر لك هو المبلغ الذي ستدفعه عند إتمام الحجز.",
     "popupCta": "فهمت",
     "line": "الأسعار تشمل جميع الرسوم"
   },
@@ -1849,6 +1881,23 @@
     "disputes": "النزاعات المرتبطة",
     "noDisputes": "لا توجد نزاعات على هذا الحجز.",
     "notFound": "الحجز غير موجود.",
-    "egp": "ج.م"
+    "egp": "ج.م",
+    "financialBreakdown": "التفصيل المالي",
+    "guestPaid": "دفع الضيف",
+    "stayosFeeAllocation": "توزيع رسوم StayOS",
+    "hostSide": "حصة المضيف",
+    "guestSide": "حصة الضيف",
+    "stayosRevenue": "إيراد StayOS",
+    "shareWaived": "معفاة — عرض الإطلاق",
+    "hostPayable": "مستحق للمضيف",
+    "payout": "السحب",
+    "fundsStatus": "حالة الأموال",
+    "fundsHeld": "أموال محتجزة",
+    "payoutEligibility": "أهلية السحب",
+    "payoutEligibilityRule": "بعد 24 ساعة من تسجيل وصول الضيف",
+    "expectedPayout": "السحب المتوقع",
+    "payoutStatus": "حالة السحب",
+    "paidAt": "تم الدفع في",
+    "providerPayout": "السحب عبر المزود"
   }
 }

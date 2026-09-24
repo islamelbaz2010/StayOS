@@ -13,6 +13,12 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = Field(default="http://localhost:3000", description="Comma-separated CORS origins")
     CORS_ORIGIN_REGEX: str = Field(default="", description="Regex pattern for allowed CORS origins (e.g. Vercel preview URLs)")
+    WEB_BASE_URL: str = Field(
+        default="",
+        description="Public web app origin (e.g. https://app.stayos.com) used to "
+        "build provider redirect-back URLs such as the Paymob post-checkout "
+        "redirection_url. Empty disables per-intention redirection overrides.",
+    )
 
     FIREBASE_PROJECT_ID: str = Field(default="", description="Firebase project ID")
     FIREBASE_CLIENT_EMAIL: str = Field(default="", description="Firebase service account email")

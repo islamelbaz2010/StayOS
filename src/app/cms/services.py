@@ -1,3 +1,4 @@
+import logging
 import re
 import uuid
 from datetime import UTC, datetime
@@ -34,6 +35,8 @@ from .schemas import (
     PublicPageResponse,
     RevisionResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,119}$")
 _MEDIA_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
@@ -520,9 +523,12 @@ def _require_media_storage() -> None:
         if not getattr(settings, name)
     ]
     if missing:
+        logger.error(
+            "CMS media storage is not configured (missing: %s)",
+            ", ".join(missing),
+        )
         raise ServiceUnavailableError(
-            "Media storage is not configured "
-            f"(missing: {', '.join(missing)})"
+            "Media upload is temporarily unavailable. Please try again later."
         )
 
 

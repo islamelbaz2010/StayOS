@@ -29,7 +29,7 @@ export function Avatar({
     setError(null);
     if (!file) return;
     upload.mutate(file, {
-      onError: (err) => setError(getApiErrorMessage(err, t("avatarUploadError"))),
+      onError: (err) => setError(getApiErrorMessage(err, t("avatarUploadError"), tc("serviceUnavailable"))),
     });
   }
 

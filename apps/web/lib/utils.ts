@@ -58,10 +58,22 @@ export function parseInputDate(value: string | undefined | null): Date | null {
 
 export function getApiErrorMessage(
   error: unknown,
-  fallback: string
+  fallback: string,
+  unavailable?: string
 ): string {
   const axiosError = error as {
-    response?: { data?: { error?: { message?: string } } };
+    response?: {
+      status?: number;
+      data?: { error?: { code?: string; message?: string } };
+    };
   };
+  // 503 responses carry infrastructure diagnostics (missing storage/config
+  // keys) meant for logs and operators — users get a safe localized message.
+  if (
+    axiosError.response?.status === 503 ||
+    axiosError.response?.data?.error?.code === "SERVICE_UNAVAILABLE"
+  ) {
+    return unavailable ?? fallback;
+  }
   return axiosError.response?.data?.error?.message || fallback;
 }

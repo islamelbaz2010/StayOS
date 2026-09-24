@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -55,18 +56,44 @@ function CheckoutContent({
   const t = useTranslations("payment");
   const tc = useTranslations("common");
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
+  const searchParams = useSearchParams();
+  // Returned from Paymob hosted checkout? The redirect is navigation only —
+  // the webhook is authoritative, so poll the server until it confirms.
+  const returnedFromPaymob =
+    searchParams.get("from") === "paymob" ||
+    (searchParams.has("success") && searchParams.has("id"));
+  const providerFailed = searchParams.get("success") === "false";
+  // Give the webhook up to 90s to reconcile before falling back to the
+  // ordinary status display — never trust the redirect params alone.
+  const [confirmWindowOpen, setConfirmWindowOpen] = useState(true);
+  useEffect(() => {
+    if (!returnedFromPaymob) return;
+    const timer = setTimeout(() => setConfirmWindowOpen(false), 90_000);
+    return () => clearTimeout(timer);
+  }, [returnedFromPaymob]);
+  const pollWhilePending = (p: { status: string } | null | undefined) =>
+    returnedFromPaymob &&
+    confirmWindowOpen &&
+    (!p || ["pending", "proof_uploaded", "rejected"].includes(p.status))
+      ? 3000
+      : false;
   const {
     data: booking,
     isLoading: bookingLoading,
     error: bookingQueryError,
     refetch: refetchBooking,
-  } = useBooking(bookingId);
+  } = useBooking(bookingId, {
+    refetchInterval:
+      returnedFromPaymob && confirmWindowOpen && !providerFailed
+        ? 3000
+        : false,
+  });
   const {
     data: payment,
     isLoading: paymentLoading,
     isError: paymentError,
     refetch: refetchPayment,
-  } = usePaymentByBooking(bookingId);
+  } = usePaymentByBooking(bookingId, { refetchInterval: pollWhilePending });
   const proofDownload = usePaymentProofDownloadUrl();
   const checkoutSession = useCheckoutSession();
   const { data: stayInfo } = useStayInfo(bookingId);
@@ -153,6 +180,50 @@ function CheckoutContent({
 
   return (
     <div className="space-y-6">
+      {returnedFromPaymob && payment.status === "verified" && (
+        <div
+          className="card border-s-4 border-s-success-500 bg-success-50 p-5"
+          role="status"
+        >
+          <p className="font-semibold text-success-700">
+            {t("paymobReturnConfirmed")}
+          </p>
+          <p className="mt-1 text-sm text-neutral-600">
+            {t("paymobReturnConfirmedHint")}
+          </p>
+        </div>
+      )}
+      {returnedFromPaymob &&
+        providerFailed &&
+        payment.status !== "verified" && (
+          <div
+            className="card border-s-4 border-s-warning-500 bg-warning-50 p-5"
+            role="alert"
+          >
+            <p className="font-semibold text-warning-700">
+              {t("paymobReturnFailed")}
+            </p>
+            <p className="mt-1 text-sm text-neutral-600">
+              {t("paymobReturnFailedHint")}
+            </p>
+          </div>
+        )}
+      {returnedFromPaymob &&
+        !providerFailed &&
+        payment.status !== "verified" &&
+        confirmWindowOpen && (
+          <div
+            className="card border-s-4 border-s-accent-500 bg-accent-50 p-5"
+            role="status"
+          >
+            <p className="font-semibold text-accent-700">
+              {t("paymobReturnConfirming")}
+            </p>
+            <p className="mt-1 text-sm text-neutral-600">
+              {t("paymobReturnConfirmingHint")}
+            </p>
+          </div>
+        )}
       <div className="card p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg bg-neutral-100">

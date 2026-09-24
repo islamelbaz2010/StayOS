@@ -1376,6 +1376,14 @@ export interface components {
       escrow?: {
         [key: string]: unknown;
       } | null;
+      /** Financials */
+      financials?: {
+        [key: string]: unknown;
+      } | null;
+      /** Payout */
+      payout?: {
+        [key: string]: unknown;
+      } | null;
       /**
        * Transactions
        * @default []
@@ -4392,6 +4400,22 @@ export interface components {
       unit_title?: string | null;
       /** Unit Cover Image */
       unit_cover_image?: string | null;
+      /** Host Net Egp */
+      host_net_egp?: number | null;
+      /** Platform Fee Egp */
+      platform_fee_egp?: number | null;
+      /** Platform Share Waived */
+      platform_share_waived?: boolean | null;
+      /** Funds Status */
+      funds_status?: string | null;
+      /** Funds Held Egp */
+      funds_held_egp?: number | null;
+      /** Expected Payout At */
+      expected_payout_at?: string | null;
+      /** Payout Status */
+      payout_status?: string | null;
+      /** Paid At */
+      paid_at?: string | null;
       /**
        * Created At
        * Format: date-time

@@ -755,9 +755,13 @@ async def presign_avatar_upload(
         if not getattr(settings, name)
     ]
     if missing:
+        logger.error(
+            "Profile photo storage is not configured (missing: %s)",
+            ", ".join(missing),
+        )
         raise ServiceUnavailableError(
-            "Profile photo storage is not configured "
-            f"(missing: {', '.join(missing)})"
+            "Profile photo upload is temporarily unavailable. "
+            "Please try again later."
         )
 
     import boto3

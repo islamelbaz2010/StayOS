@@ -143,11 +143,15 @@ export function useGuestBookings(status: string | null = null) {
   });
 }
 
-export function useBooking(bookingId: string) {
+export function useBooking(
+  bookingId: string,
+  options: { refetchInterval?: number | false } = {}
+) {
   return useQuery({
     queryKey: ["booking", bookingId],
     queryFn: () => getBooking(bookingId),
     enabled: Boolean(bookingId),
+    refetchInterval: options.refetchInterval,
   });
 }
 

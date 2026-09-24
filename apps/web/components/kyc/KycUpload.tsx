@@ -15,6 +15,7 @@ type Step = "select" | "uploading" | "submitted" | "verified" | "rejected";
 
 export function KycUpload() {
   const t = useTranslations("kyc");
+  const tc = useTranslations("common");
   const router = useRouter();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
@@ -123,7 +124,7 @@ export function KycUpload() {
 
       await submitMutation.mutateAsync(initiate.document_id);
     } catch (err) {
-      setError(getApiErrorMessage(err, t("submitFailed")));
+      setError(getApiErrorMessage(err, t("submitFailed"), tc("serviceUnavailable")));
     }
   };
 

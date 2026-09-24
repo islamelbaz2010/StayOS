@@ -19,6 +19,7 @@ from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.disputes.constants import DisputeStatus
 from app.disputes.models import Dispute
+from app.finance import services as finance_services
 from app.finance.constants import EscrowStatus, PayoutStatus
 from app.finance.models import (
     EscrowAccount,
@@ -242,6 +243,33 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
     )
 
 
+async def _booking_financials(
+    session: AsyncSession, payment: Payment | None
+) -> dict[str, Any] | None:
+    """Canonical booking economics for the admin investigation view.
+
+    Computed by the finance module's commercial engine — identical math to
+    the escrow-release path, including the closed-alpha share waiver."""
+    if payment is None:
+        return None
+    economics, waived = await finance_services.booking_economics(
+        session, payment
+    )
+    return {
+        "guest_paid_egp": payment.amount_egp,
+        "accommodation_egp": economics.accommodation_egp,
+        "cleaning_fee_egp": economics.cleaning_fee_egp,
+        "platform_share_egp": economics.platform_share_egp,
+        "host_side_share_egp": economics.host_side_share_egp,
+        "guest_side_share_egp": economics.guest_side_share_egp,
+        "host_net_egp": economics.host_net_egp,
+        "platform_share_waived": waived,
+        "provider": payment.provider,
+        "provider_ref": payment.provider_ref,
+        "transaction_ref": payment.transaction_ref,
+    }
+
+
 async def get_booking_financial_context(
     session: AsyncSession, booking_id: str
 ) -> BookingFinancialContextResponse:
@@ -390,6 +418,10 @@ async def get_booking_financial_context(
             }
             if escrow
             else None
+        ),
+        financials=await _booking_financials(session, payment),
+        payout=(
+            finance_services.derive_payout_state(escrow) if escrow else None
         ),
         transactions=[
             {

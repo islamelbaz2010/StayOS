@@ -262,6 +262,7 @@ async def paymob_create_intention(
     reservation_id: str,
     amount_egp: int,
     billing_data: dict[str, Any] | None = None,
+    redirection_url: str | None = None,
 ) -> dict[str, Any]:
     """Create a Paymob Payment Intention (current Paymob API).
 
@@ -269,6 +270,9 @@ async def paymob_create_intention(
     StayOS, never a client-supplied value. ``special_reference`` carries
     the StayOS reservation id so callbacks can be correlated, and the
     configured TEST integration id is the only payment method offered.
+
+    ``redirection_url`` is where Paymob sends the browser after the hosted
+    checkout completes — navigation only; the webhook stays authoritative.
     """
     integration_id = settings.PAYMOB_INTEGRATION_ID
     if not integration_id:
@@ -301,6 +305,8 @@ async def paymob_create_intention(
     }
     if settings.PAYMOB_NOTIFICATION_URL:
         payload["notification_url"] = settings.PAYMOB_NOTIFICATION_URL
+    if redirection_url:
+        payload["redirection_url"] = redirection_url
     data = await _paymob_intention_post(payload)
 
     intention_id = data.get("id")
@@ -324,7 +330,10 @@ async def paymob_create_intention(
 
 
 async def create_paymob_payment(
-    reservation_id: str, amount_egp: int, billing_data: dict[str, Any] | None = None
+    reservation_id: str,
+    amount_egp: int,
+    billing_data: dict[str, Any] | None = None,
+    redirection_url: str | None = None,
 ) -> dict[str, Any]:
     """Create a Paymob checkout for a reservation.
 
@@ -346,7 +355,7 @@ async def create_paymob_payment(
 
     if settings.PAYMOB_SECRET_KEY:
         return await paymob_create_intention(
-            reservation_id, amount_egp, billing_data
+            reservation_id, amount_egp, billing_data, redirection_url
         )
 
     auth_token = await paymob_auth_token()

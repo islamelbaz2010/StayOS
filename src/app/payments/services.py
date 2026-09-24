@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -39,6 +40,8 @@ from .schemas import (
     PaymentResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 _PROOF_UPLOAD_TTL_SECONDS = 900
 _PROOF_DOWNLOAD_TTL_SECONDS = 300
 
@@ -79,9 +82,14 @@ def _require_storage_config() -> None:
         if not getattr(settings, name)
     ]
     if missing:
+        # Infrastructure detail stays in server logs — the API must not
+        # leak env var names or storage configuration to clients.
+        logger.error(
+            "Payment proof storage is not configured (missing: %s)",
+            ", ".join(missing),
+        )
         raise ServiceUnavailableError(
-            "Payment proof storage is not configured "
-            f"(missing: {', '.join(missing)})"
+            "File upload is temporarily unavailable. Please try again later."
         )
 
 
@@ -426,9 +434,20 @@ async def create_card_checkout_session(
 
     from app.finance import providers as payment_providers
 
+    # After hosted checkout the browser returns to the StayOS checkout page;
+    # the webhook — not the redirect — remains authoritative for state.
+    redirection_url = None
+    if settings.WEB_BASE_URL:
+        redirection_url = (
+            f"{settings.WEB_BASE_URL.rstrip('/')}"
+            f"/checkout/{payment.booking_id}?from=paymob"
+        )
+
     try:
         result = await payment_providers.create_paymob_payment(
-            payment.booking_id, payment.amount_egp
+            payment.booking_id,
+            payment.amount_egp,
+            redirection_url=redirection_url,
         )
     except Exception as exc:
         raise ServiceUnavailableError(
@@ -948,6 +967,47 @@ async def list_guest_payments(
     return [_to_list_item(p) for p in payments]
 
 
+async def _attach_host_earnings(
+    session: AsyncSession,
+    payments: list[Payment],
+    items: list[PaymentListItem],
+) -> None:
+    """Populate the host-facing earnings fields on payment list items.
+
+    Economics come from the canonical commercial engine (identical to the
+    escrow-release path); funds/payout state derives from the booking's
+    escrow lifecycle — 24h after confirmed check-in eligibility."""
+    from app.finance import services as finance_services
+    from app.finance.models import EscrowAccount
+
+    if not payments:
+        return
+    escrow_rows = await session.execute(
+        select(EscrowAccount).where(
+            EscrowAccount.reservation_id.in_([p.booking_id for p in payments])
+        )
+    )
+    escrow_by_booking = {
+        e.reservation_id: e for e in escrow_rows.scalars().all()
+    }
+    for payment, item in zip(payments, items):
+        economics, waived = await finance_services.booking_economics(
+            session, payment
+        )
+        item.host_net_egp = economics.host_net_egp
+        item.platform_fee_egp = economics.platform_share_egp
+        item.platform_share_waived = waived
+        payout = finance_services.derive_payout_state(
+            escrow_by_booking.get(payment.booking_id)
+        )
+        if payout is not None:
+            item.funds_status = payout["funds_status"]
+            item.funds_held_egp = payout["funds_held_egp"]
+            item.expected_payout_at = payout["expected_payout_at"]
+            item.payout_status = payout["payout_status"]
+            item.paid_at = payout["paid_at"]
+
+
 async def list_host_payments(
     session: AsyncSession,
     user: User,
@@ -960,4 +1020,6 @@ async def list_host_payments(
     payments = await payments_repository.list_host_payments(
         session, user.id, status=status, limit=limit, offset=offset
     )
-    return [_to_list_item(p) for p in payments]
+    items = [_to_list_item(p) for p in payments]
+    await _attach_host_earnings(session, payments, items)
+    return items

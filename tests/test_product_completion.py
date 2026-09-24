@@ -382,7 +382,7 @@ async def test_booking_financial_context_not_found():
 
 
 @pytest.mark.asyncio
-async def test_booking_financial_context_joins_payment_context():
+async def test_booking_financial_context_joins_payment_context(monkeypatch):
     session = _session()
     booking = _booking()
     unit = _unit()
@@ -429,6 +429,13 @@ async def test_booking_financial_context_joins_payment_context():
         side_effect=[booking_result, txn_result, dispute_result]
     )
 
+    # The economics helper counts the host's completed bookings — stub it
+    # so the canonical platform-share math runs deterministically.
+    monkeypatch.setattr(
+        "app.bookings.repository.count_host_completed_bookings",
+        AsyncMock(return_value=99),
+    )
+
     ctx = await get_booking_financial_context(session, "booking-1")
 
     assert ctx.booking_id == "booking-1"
@@ -438,6 +445,18 @@ async def test_booking_financial_context_joins_payment_context():
     assert ctx.guest_service_fee_egp == 400
     assert ctx.unit_title == "شقة"
     assert ctx.host_id == "host-1"
+
+    # Canonical economics: fee base = stored accommodation total minus
+    # cleaning; platform share = 12% of that base; host payable is the rest.
+    assert ctx.financials is not None
+    assert ctx.financials["guest_paid_egp"] == 5000
+    assert ctx.financials["accommodation_egp"] == 4400
+    assert ctx.financials["cleaning_fee_egp"] == 100
+    assert ctx.financials["platform_share_egp"] == round(4400 * 0.12)
+    assert ctx.financials["host_net_egp"] == 4500 - round(4400 * 0.12)
+    assert ctx.financials["platform_share_waived"] is False
+    # No escrow row in this fixture → no payout state.
+    assert ctx.payout is None
 
 
 @pytest.mark.asyncio

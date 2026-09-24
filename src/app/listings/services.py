@@ -1,3 +1,4 @@
+import logging
 import math
 import uuid
 from datetime import date, datetime, timedelta
@@ -68,6 +69,8 @@ from .schemas import (
     PhotoResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 _PHOTO_UPLOAD_TTL_SECONDS = 900
 _PHOTO_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
@@ -105,9 +108,12 @@ def _require_storage_config() -> None:
         if not getattr(settings, name)
     ]
     if missing:
+        logger.error(
+            "Listing photo storage is not configured (missing: %s)",
+            ", ".join(missing),
+        )
         raise ServiceUnavailableError(
-            "Listing photo storage is not configured "
-            f"(missing: {', '.join(missing)})"
+            "Photo upload is temporarily unavailable. Please try again later."
         )
 
 

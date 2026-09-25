@@ -44,7 +44,10 @@
     "toggleMenu": "تبديل القائمة",
     "paymentQueue": "قائمة المدفوعات",
     "operations": "العمليات",
-    "discovery": "اكتشاف المعروض"
+    "discovery": "اكتشاف المعروض",
+    "helpCenter": "مركز المساعدة",
+    "hostStandards": "مسؤوليات المضيف",
+    "notifications": "الإشعارات"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -174,7 +177,32 @@
     "notEditable": "هذا الإعلان للقراءة فقط لدورك.",
     "instantBook": "حجز فوري",
     "pendingReview": "تعديلات بانتظار المراجعة",
-    "changesRejected": "تم رفض التعديلات"
+    "changesRejected": "تم رفض التعديلات",
+    "pendingChangesTitle": "تعديلات قيد المراجعة",
+    "pendingSubmittedAt": "أُرسلت {date}",
+    "pendingNextAction": "يراجع فريق StayOS هذه التعديلات. ستصبح سارية فور الموافقة — لا يلزم اتخاذ أي إجراء إضافي ما لم تُرفض.",
+    "pendingFields": {
+      "basePrice": "سعر الليلة",
+      "cleaningFee": "رسوم التنظيف",
+      "listingDiscount": "خصم الإعلان",
+      "weeklyDiscount": "خصم أسبوعي",
+      "monthlyDiscount": "خصم شهري",
+      "weekendMult": "معامل نهاية الأسبوع",
+      "peakMult": "معامل المواسم",
+      "minNights": "أقل عدد ليالٍ",
+      "maxNights": "أقصى عدد ليالٍ",
+      "instantBook": "الحجز الفوري",
+      "titleAr": "العنوان (عربي)",
+      "titleEn": "العنوان (إنجليزي)",
+      "descriptionAr": "الوصف (عربي)",
+      "descriptionEn": "الوصف (إنجليزي)",
+      "cancellationPolicy": "سياسة الإلغاء",
+      "maxGuests": "أقصى عدد ضيوف",
+      "bedrooms": "غرف النوم",
+      "beds": "الأسرة",
+      "bathrooms": "الحمامات",
+      "location": "الموقع"
+    }
   },
   "listingForm": {
     "createTitle": "إضافة عقار جديد",
@@ -1374,7 +1402,9 @@
     "messages": "الرسائل",
     "earnings": "الأرباح",
     "profile": "الملف الشخصي",
-    "calendar": "التقويم"
+    "calendar": "التقويم",
+    "standards": "المسؤوليات",
+    "help": "مركز المساعدة"
   },
   "landing": {
     "trustVerified": "مضيفون موثقون",
@@ -1985,5 +2015,12 @@
       "refund_pending": "استردادات بانتظار تأكيد المزود",
       "refunded": "مدفوعات مستردة"
     }
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "empty": "لا إشعارات بعد.",
+    "loadError": "تعذر تحميل الإشعارات.",
+    "markRead": "تعليم كمقروء",
+    "markAllRead": "تعليم الكل كمقروء"
   }
 }

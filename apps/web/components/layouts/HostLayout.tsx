@@ -25,6 +25,8 @@ export function HostLayout({ children }: { children: ReactNode }) {
     { label: t("messages"), href: `/${locale}/messages`, badge: 0 },
     { label: t("kyc"), href: `/${locale}/host/kyc`, badge: 0 },
     { label: t("profile"), href: `/${locale}/host/profile`, badge: 0 },
+    { label: t("standards"), href: `/${locale}/host-standards`, badge: 0 },
+    { label: t("help"), href: `/${locale}/help`, badge: 0 },
   ];
 
   return (

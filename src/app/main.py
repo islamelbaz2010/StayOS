@@ -29,6 +29,7 @@ from app.importer import router as import_router
 from app.kyc import router as kyc_router
 from app.listings import router as listings_router
 from app.messages import router as messages_router
+from app.notifications import router as notifications_router
 from app.operations import metrics as ops_metrics
 from app.operations import router as operations_router
 from app.payments import router as payments_router
@@ -224,6 +225,7 @@ app.include_router(favorites_router.router, prefix="/api/v1")
 app.include_router(reviews_router.router, prefix="/api/v1")
 app.include_router(host_router.router, prefix="/api/v1")
 app.include_router(disputes_router.router, prefix="/api/v1")
+app.include_router(notifications_router.router, prefix="/api/v1")
 app.include_router(staff_router.router, prefix="/api/v1")
 app.include_router(admin_router.router, prefix="/api/v1")
 app.include_router(cms_router.admin_router, prefix="/api/v1")

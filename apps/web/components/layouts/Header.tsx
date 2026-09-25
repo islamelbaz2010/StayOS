@@ -7,6 +7,7 @@ import { useParams, useRouter, usePathname } from "next/navigation";
 
 import { useAuth } from "@/lib/auth/useAuth";
 import { useUnreadCount } from "@/lib/queries/messages";
+import { useNotifications } from "@/lib/queries/notifications";
 import { useHostBookings } from "@/lib/queries/bookings";
 import { usePendingListings } from "@/lib/queries/hostListings";
 
@@ -105,7 +106,14 @@ export function Header() {
   const adminPendingCount = canModerateListings
     ? (pendingListings?.length ?? 0)
     : 0;
-  const badgeTotal = unreadCount + hostPendingCount + adminPendingCount;
+  const { data: notificationsData } = useNotifications({
+    enabled: isAuthenticated,
+  });
+  const notificationsUnread = isAuthenticated
+    ? (notificationsData?.unread_count ?? 0)
+    : 0;
+  const badgeTotal =
+    unreadCount + hostPendingCount + adminPendingCount + notificationsUnread;
 
   // Close menus on navigation.
   useEffect(() => {
@@ -145,6 +153,11 @@ export function Header() {
       href: `/${locale}/messages`,
       label: t("messages"),
       count: unreadCount,
+    });
+    accountItems.push({
+      href: `/${locale}/notifications`,
+      label: t("notifications"),
+      count: notificationsUnread,
     });
     if (user?.role === "guest") {
       accountItems.push(

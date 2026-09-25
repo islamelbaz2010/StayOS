@@ -47,21 +47,57 @@ async def resolve_recipient(
 def channels_for_event(event_type: str) -> list[str]:
     """Determine default channels per event type."""
     mapping: dict[str, list[str]] = {
-        "reservation.created": [NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
-        "reservation.confirmed": [NotificationChannel.EMAIL, NotificationChannel.SMS],
-        "payment.required": [NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
-        "payment.proof_uploaded": [NotificationChannel.EMAIL],
-        "payment.verified": [NotificationChannel.EMAIL, NotificationChannel.SMS],
-        "payment.rejected": [NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
-        "payment.failed": [NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
-        "payment.captured": [NotificationChannel.SMS],
-        "booking.checked_in": [NotificationChannel.SMS],
-        "booking.checked_out": [NotificationChannel.SMS],
-        "booking.cancelled": [NotificationChannel.EMAIL, NotificationChannel.SMS],
-        "booking.no_show": [NotificationChannel.EMAIL, NotificationChannel.SMS],
-        "message.received": [NotificationChannel.EMAIL],
+        "reservation.created": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
+        "reservation.confirmed": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.SMS],
+        "payment.required": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
+        "payment.proof_uploaded": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "payment.verified": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.SMS],
+        "payment.rejected": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
+        "payment.failed": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.WHATSAPP],
+        "payment.captured": [NotificationChannel.IN_APP, NotificationChannel.SMS],
+        "booking.checked_in": [NotificationChannel.IN_APP, NotificationChannel.SMS],
+        "booking.checked_out": [NotificationChannel.IN_APP, NotificationChannel.SMS],
+        "booking.cancelled": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.SMS],
+        "booking.no_show": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.SMS],
+        "message.received": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "listing.approved": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "listing.rejected": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "listing.edit_approved": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "listing.edit_rejected": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
     }
-    return mapping.get(event_type, [NotificationChannel.EMAIL])
+    return mapping.get(event_type, [NotificationChannel.IN_APP, NotificationChannel.EMAIL])
+
+
+_IN_APP_HOST_EVENTS = {
+    "listing.approved",
+    "listing.rejected",
+    "listing.edit_approved",
+    "listing.edit_rejected",
+}
+
+
+def _in_app_user_id(
+    event_type: str, payload: dict[str, Any], contact: dict[str, Any]
+) -> str | None:
+    """Resolve the in-app recipient user id for an event.
+
+    Contact-level ``user_id`` (multi-recipient payloads) wins; otherwise the
+    payload party matching the event semantics is used.
+    """
+    if contact.get("user_id"):
+        return str(contact["user_id"])
+    if event_type in _IN_APP_HOST_EVENTS:
+        value = payload.get("host_id")
+        return str(value) if value else None
+    if event_type == "booking.cancelled":
+        cancelled_by = payload.get("cancelled_by")
+        if cancelled_by in ("host", "admin", "system"):
+            value = payload.get("guest_id")
+        else:
+            value = payload.get("host_id")
+        return str(value) if value else None
+    value = payload.get("guest_id") or payload.get("host_id")
+    return str(value) if value else None
 
 
 async def create_notifications_for_event(
@@ -108,17 +144,32 @@ async def _create_notifications_for_contact(
     notifications: list[Notification] = []
 
     for channel in channels_for_event(event_type):
-        recipient = contact.get("phone_number") if channel in (
-            NotificationChannel.WHATSAPP,
-            NotificationChannel.SMS,
-        ) else contact.get("email")
+        user_id = _in_app_user_id(event_type, payload, contact)
+        if channel == NotificationChannel.IN_APP:
+            if not user_id:
+                logger.warning("No in-app user for event %s", event_id)
+                continue
+            recipient = user_id
+            template_channel = NotificationChannel.EMAIL
+        else:
+            recipient = contact.get("phone_number") if channel in (
+                NotificationChannel.WHATSAPP,
+                NotificationChannel.SMS,
+            ) else contact.get("email")
+            template_channel = channel
         if not recipient:
             logger.warning("No %s recipient for event %s", channel, event_id)
             continue
 
-        subject, body = templates.render_template(
-            event_type, channel, locale, {**payload, "guest_name": contact.get("name", "Guest")}
-        )
+        try:
+            subject, body = templates.render_template(
+                event_type, template_channel, locale, {**payload, "guest_name": contact.get("name", "Guest")}
+            )
+        except ValueError:
+            if channel == NotificationChannel.IN_APP:
+                logger.warning("No template for in-app event %s", event_id)
+                continue
+            raise
 
         notification = await repository.create_notification(
             session=session,
@@ -126,6 +177,7 @@ async def _create_notifications_for_contact(
             event_type=event_type,
             channel=channel,
             recipient=recipient,
+            user_id=user_id,
             locale=locale,
             subject=subject,
             body=body,
@@ -138,6 +190,11 @@ async def _create_notifications_for_contact(
 async def dispatch_notification(
     session: AsyncSession, notification: Notification
 ) -> None:
+    if notification.channel == NotificationChannel.IN_APP:
+        await repository.update_notification_status(
+            session, notification, NotificationStatus.SENT
+        )
+        return
     dispatcher_name = _CHANNEL_DISPATCHERS.get(notification.channel)
     if dispatcher_name is None:
         await repository.update_notification_status(

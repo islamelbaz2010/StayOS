@@ -40,6 +40,7 @@ export function Footer() {
       ? [
           { href: `/${locale}/host`, label: t("hostDashboard") },
           { href: `/${locale}/host/listings`, label: t("myListings") },
+          { href: `/${locale}/host-standards`, label: t("hostStandards") },
         ]
       : isInternal
         ? []
@@ -138,6 +139,14 @@ export function Footer() {
                   className="text-sm text-neutral-500 hover:text-neutral-900"
                 >
                   {t("support")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={`/${locale}/help`}
+                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                >
+                  {t("helpCenter")}
                 </Link>
               </li>
             </ul>

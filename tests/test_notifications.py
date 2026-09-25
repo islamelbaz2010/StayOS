@@ -470,7 +470,7 @@ async def test_resolve_recipient_enriches_from_unit(monkeypatch) -> None:
 
 
 def test_channels_for_event_unknown_defaults_to_email() -> None:
-    assert services.channels_for_event("unknown.event") == ["email"]
+    assert services.channels_for_event("unknown.event") == ["in_app", "email"]
 
 
 @pytest.mark.asyncio
@@ -560,6 +560,119 @@ async def test_dispatch_notification_retries_then_pending(monkeypatch) -> None:
     await services.dispatch_notification(session, notification)
     assert notification.status == notification_constants.NotificationStatus.PENDING
     assert notification.retry_count == 1
+
+
+@pytest.mark.asyncio
+async def test_in_app_notification_created_for_guest(monkeypatch) -> None:
+    captured = []
+
+    async def _mock_create_notification(**kwargs) -> Notification:
+        captured.append(kwargs)
+        return _make_notification(
+            channel=kwargs["channel"],
+            recipient=kwargs["recipient"],
+            **{k: v for k, v in kwargs.items() if k in ("subject", "body", "event_id", "event_type", "locale")},
+        )
+
+    monkeypatch.setattr(repository, "create_notification", _mock_create_notification)
+    notifications = await services.create_notifications_for_event(
+        AsyncMock(),
+        "evt-1",
+        "reservation.confirmed",
+        {
+            "guest_id": "guest-1",
+            "guest_email": "guest@example.com",
+            "guest_name": "Guest",
+            "locale": "en",
+            "reservation_id": "res-1",
+        },
+    )
+    in_app = [n for n in captured if n["channel"] == "in_app"]
+    assert len(in_app) == 1
+    assert in_app[0]["recipient"] == "guest-1"
+    assert in_app[0]["user_id"] == "guest-1"
+    assert in_app[0]["subject"]
+    assert "in_app" in {n.channel for n in notifications}
+
+
+@pytest.mark.asyncio
+async def test_in_app_listing_decision_targets_host(monkeypatch) -> None:
+    captured = []
+
+    async def _mock_create_notification(**kwargs) -> Notification:
+        captured.append(kwargs)
+        return _make_notification(channel=kwargs["channel"])
+
+    monkeypatch.setattr(repository, "create_notification", _mock_create_notification)
+    await services.create_notifications_for_event(
+        AsyncMock(),
+        "evt-2",
+        "listing.edit_approved",
+        {
+            "host_id": "host-9",
+            "host_name": "Host",
+            "host_email": "h@example.com",
+            "fields": ["base_price_egp"],
+        },
+    )
+    in_app = [n for n in captured if n["channel"] == "in_app"]
+    assert len(in_app) == 1
+    assert in_app[0]["user_id"] == "host-9"
+
+
+@pytest.mark.asyncio
+async def test_in_app_cancel_notifies_non_canceller(monkeypatch) -> None:
+    captured = []
+
+    async def _mock_create_notification(**kwargs) -> Notification:
+        captured.append(kwargs)
+        return _make_notification(channel=kwargs["channel"])
+
+    monkeypatch.setattr(repository, "create_notification", _mock_create_notification)
+
+    await services.create_notifications_for_event(
+        AsyncMock(),
+        "evt-3",
+        "booking.cancelled",
+        {
+            "guest_id": "guest-1",
+            "host_id": "host-1",
+            "cancelled_by": "host",
+            "guest_email": "g@example.com",
+            "locale": "en",
+            "reservation_id": "res-1",
+        },
+    )
+    assert [n["user_id"] for n in captured if n["channel"] == "in_app"] == ["guest-1"]
+
+    captured.clear()
+    await services.create_notifications_for_event(
+        AsyncMock(),
+        "evt-4",
+        "booking.cancelled",
+        {
+            "guest_id": "guest-1",
+            "host_id": "host-1",
+            "cancelled_by": "guest",
+            "host_email": "h@example.com",
+            "locale": "en",
+            "reservation_id": "res-1",
+        },
+    )
+    assert [n["user_id"] for n in captured if n["channel"] == "in_app"] == ["host-1"]
+
+
+@pytest.mark.asyncio
+async def test_dispatch_in_app_notification_delivers_immediately(monkeypatch) -> None:
+    async def _mock_update_status(session, notification, status, error=None):
+        notification.status = status
+        notification.error = error
+        return notification
+
+    monkeypatch.setattr(repository, "update_notification_status", _mock_update_status)
+    notification = _make_notification(channel="in_app", recipient="user-1")
+    await services.dispatch_notification(AsyncMock(), notification)
+    assert notification.status == notification_constants.NotificationStatus.SENT
 
 
 @pytest.mark.asyncio

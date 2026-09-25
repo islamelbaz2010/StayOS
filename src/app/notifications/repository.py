@@ -1,10 +1,10 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .constants import NotificationStatus
+from .constants import NotificationChannel, NotificationStatus
 from .models import Notification, NotificationTemplate
 
 
@@ -17,6 +17,7 @@ async def create_notification(
     locale: str,
     subject: str | None,
     body: str,
+    user_id: str | None = None,
 ) -> Notification:
     notification = Notification(
         id=str(uuid4()),
@@ -24,6 +25,7 @@ async def create_notification(
         event_type=event_type,
         channel=channel,
         recipient=recipient,
+        user_id=user_id,
         locale=locale,
         status=NotificationStatus.PENDING,
         retry_count=0,
@@ -72,6 +74,68 @@ async def increment_retry(
     await session.flush()
     await session.refresh(notification)
     return notification
+
+
+async def list_in_app_notifications(
+    session: AsyncSession, user_id: str, limit: int = 50
+) -> list[Notification]:
+    result = await session.execute(
+        select(Notification)
+        .where(
+            Notification.channel == NotificationChannel.IN_APP,
+            Notification.user_id == user_id,
+        )
+        .order_by(Notification.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def count_unread_in_app(session: AsyncSession, user_id: str) -> int:
+    result = await session.execute(
+        select(func.count())
+        .select_from(Notification)
+        .where(
+            Notification.channel == NotificationChannel.IN_APP,
+            Notification.user_id == user_id,
+            Notification.read_at.is_(None),
+        )
+    )
+    return int(result.scalar_one())
+
+
+async def get_in_app_notification(
+    session: AsyncSession, notification_id: str, user_id: str
+) -> Notification | None:
+    result = await session.execute(
+        select(Notification).where(
+            Notification.id == notification_id,
+            Notification.channel == NotificationChannel.IN_APP,
+            Notification.user_id == user_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def mark_read(session: AsyncSession, notification: Notification) -> Notification:
+    notification.read_at = datetime.now(UTC)
+    session.add(notification)
+    await session.flush()
+    await session.refresh(notification)
+    return notification
+
+
+async def mark_all_read(session: AsyncSession, user_id: str) -> int:
+    result = await session.execute(
+        update(Notification)
+        .where(
+            Notification.channel == NotificationChannel.IN_APP,
+            Notification.user_id == user_id,
+            Notification.read_at.is_(None),
+        )
+        .values(read_at=datetime.now(UTC))
+    )
+    return int(result.rowcount or 0)
 
 
 async def get_template(

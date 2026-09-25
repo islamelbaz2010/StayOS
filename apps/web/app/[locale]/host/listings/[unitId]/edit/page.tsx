@@ -13,6 +13,7 @@ import {
   useHostListing,
   useHostListingDetail,
 } from "@/lib/queries/hostListings";
+import type { HostListing } from "@/lib/queries/hostListings";
 
 const EDIT_SCOPES = new Set(["owner", "admin", "full_access"]);
 
@@ -93,6 +94,9 @@ export default function EditListingPage({
 
             {listing && canEdit && (
               <>
+                {listing.has_pending_changes && listing.pending_changes && (
+                  <PendingChangesCard listing={listing} />
+                )}
                 {missingItems.length > 0 && (
                   <div className="card border-s-4 border-s-warning-500 p-5">
                     <h2 className="text-sm font-semibold text-brand-900">
@@ -115,5 +119,92 @@ export default function EditListingPage({
         </section>
       </HostLayout>
     </ProtectedRoute>
+  );
+}
+
+const PENDING_FIELD_LABELS: Record<string, string> = {
+  base_price_egp: "basePrice",
+  cleaning_fee_egp: "cleaningFee",
+  listing_discount_pct: "listingDiscount",
+  weekly_discount_pct: "weeklyDiscount",
+  monthly_discount_pct: "monthlyDiscount",
+  weekend_mult: "weekendMult",
+  peak_mult: "peakMult",
+  min_nights: "minNights",
+  max_nights: "maxNights",
+  instant_book: "instantBook",
+  title_ar: "titleAr",
+  title_en: "titleEn",
+  description_ar: "descriptionAr",
+  description_en: "descriptionEn",
+  cancellation_policy: "cancellationPolicy",
+  max_guests: "maxGuests",
+  bedrooms: "bedrooms",
+  beds: "beds",
+  bathrooms: "bathrooms",
+};
+
+function PendingChangesCard({ listing }: { listing: HostListing }) {
+  const th = useTranslations("hostListings");
+  const { locale = "ar" } = useParams<{ locale: string }>();
+  const pending = listing.pending_changes ?? {};
+  const changes = {
+    ...(pending.unit ?? {}),
+    ...(pending.listing ?? {}),
+  } as Record<string, unknown>;
+  const current = listing as unknown as Record<string, unknown>;
+  const entries = Object.entries(changes).filter(
+    ([key]) => key !== "submitted_by" && key !== "submitted_at"
+  );
+  const submittedAt = pending.submitted_at
+    ? new Date(pending.submitted_at).toLocaleString(
+        locale === "ar" ? "ar-EG" : "en-EG",
+        { dateStyle: "medium", timeStyle: "short" }
+      )
+    : null;
+
+  return (
+    <div className="card border-s-4 border-s-warning-500 p-5">
+      <h2 className="text-sm font-semibold text-brand-900">
+        {th("pendingChangesTitle")}
+      </h2>
+      {submittedAt && (
+        <p className="mt-1 text-xs text-neutral-500">
+          {th("pendingSubmittedAt", { date: submittedAt })}
+        </p>
+      )}
+      <dl className="mt-3 space-y-1.5">
+        {entries.map(([key, requested]) => {
+          const labelKey = PENDING_FIELD_LABELS[key] ?? key;
+          const label = PENDING_FIELD_LABELS[key]
+            ? th(`pendingFields.${labelKey}`)
+            : key;
+          const currentValue = current[key];
+          return (
+            <div key={key} className="flex flex-wrap items-baseline gap-2 text-sm">
+              <dt className="font-medium text-neutral-700">{label}:</dt>
+              <dd className="text-neutral-500 line-through">
+                {String(currentValue ?? "—")}
+              </dd>
+              <dd className="font-semibold text-warning-700">
+                → {String(requested ?? "—")}
+              </dd>
+            </div>
+          );
+        })}
+        {(pending.lat || pending.lng) && (
+          <div className="flex flex-wrap items-baseline gap-2 text-sm">
+            <dt className="font-medium text-neutral-700">
+              {th("pendingFields.location")}:
+            </dt>
+            <dd className="font-semibold text-warning-700">
+              → {String(pending.lat ?? current.lat ?? "—")},{" "}
+              {String(pending.lng ?? current.lng ?? "—")}
+            </dd>
+          </div>
+        )}
+      </dl>
+      <p className="mt-3 text-xs text-neutral-600">{th("pendingNextAction")}</p>
+    </div>
   );
 }

@@ -146,7 +146,15 @@ def _to_response(payment: Payment, *, include_breakdown: bool = False) -> Paymen
         # Accommodation + cleaning are the guest's own booking components
         # (FD-19 summary lines) — visible to everyone. Only the internal
         # service-fee economics stay gated behind include_breakdown.
-        accommodation_amount_egp=payment.accommodation_amount_egp,
+        # The column stores the taxable subtotal (accommodation +
+        # cleaning) — refund math and the fee base depend on that. The
+        # response must show PURE accommodation so the guest-visible lines
+        # sum exactly: accommodation + cleaning + VAT == total.
+        accommodation_amount_egp=(
+            payment.accommodation_amount_egp - (payment.cleaning_fee_egp or 0)
+            if payment.accommodation_amount_egp is not None
+            else None
+        ),
         guest_service_fee_egp=(
             payment.guest_service_fee_egp if include_breakdown else None
         ),

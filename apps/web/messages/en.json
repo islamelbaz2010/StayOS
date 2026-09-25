@@ -44,7 +44,10 @@
     "toggleMenu": "Toggle menu",
     "paymentQueue": "Payment Queue",
     "operations": "Operations",
-    "discovery": "Supply Discovery"
+    "discovery": "Supply Discovery",
+    "helpCenter": "Help Center",
+    "hostStandards": "Host responsibilities",
+    "notifications": "Notifications"
   },
   "auth": {
     "signIn": "Sign in",
@@ -174,7 +177,32 @@
     "notEditable": "This listing is read-only for your role.",
     "instantBook": "Instant Book",
     "pendingReview": "Changes pending review",
-    "changesRejected": "Changes rejected"
+    "changesRejected": "Changes rejected",
+    "pendingChangesTitle": "Changes pending review",
+    "pendingSubmittedAt": "Submitted {date}",
+    "pendingNextAction": "StayOS is reviewing these changes. They will go live once approved — no further action is needed unless they are rejected.",
+    "pendingFields": {
+      "basePrice": "Nightly price",
+      "cleaningFee": "Cleaning fee",
+      "listingDiscount": "Listing discount",
+      "weeklyDiscount": "Weekly discount",
+      "monthlyDiscount": "Monthly discount",
+      "weekendMult": "Weekend multiplier",
+      "peakMult": "Peak multiplier",
+      "minNights": "Minimum nights",
+      "maxNights": "Maximum nights",
+      "instantBook": "Instant Book",
+      "titleAr": "Title (Arabic)",
+      "titleEn": "Title (English)",
+      "descriptionAr": "Description (Arabic)",
+      "descriptionEn": "Description (English)",
+      "cancellationPolicy": "Cancellation policy",
+      "maxGuests": "Max guests",
+      "bedrooms": "Bedrooms",
+      "beds": "Beds",
+      "bathrooms": "Bathrooms",
+      "location": "Location"
+    }
   },
   "listingForm": {
     "createTitle": "Create New Listing",
@@ -1374,7 +1402,9 @@
     "messages": "Messages",
     "earnings": "Earnings",
     "profile": "Profile",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "standards": "Responsibilities",
+    "help": "Help Center"
   },
   "landing": {
     "trustVerified": "Verified Hosts",
@@ -1985,5 +2015,12 @@
       "refund_pending": "Refunds awaiting provider confirmation",
       "refunded": "Refunded payments"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "loadError": "Could not load notifications.",
+    "markRead": "Mark read",
+    "markAllRead": "Mark all as read"
   }
 }

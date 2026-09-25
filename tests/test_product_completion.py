@@ -254,6 +254,7 @@ async def test_approve_pending_edit_applies_and_logs():
                 **{"scalars.return_value.all.return_value": []}
             )
         )
+        session.scalar = AsyncMock(return_value=_host())
         result = await approve_listing(session, _admin(), "unit-1")
 
     events = _outbox_events(session)
@@ -263,6 +264,11 @@ async def test_approve_pending_edit_applies_and_logs():
     )
     assert approved.payload["decided_by"] == "admin-1"
     assert "title_en" in approved.payload["fields"]
+    # Host notification context — approval must not be silent.
+    assert approved.payload["unit_id"] == "unit-1"
+    assert approved.payload["host_id"] == "host-1"
+    assert approved.payload["host_phone"] == "+1111111111"
+    assert "listing_title" in approved.payload
     # Approved change is now live.
     assert listing.pending_changes is None
     assert listing.title_en == "New title"
@@ -293,6 +299,7 @@ async def test_reject_pending_edit_discards_and_logs():
                 **{"scalars.return_value.all.return_value": []}
             )
         )
+        session.scalar = AsyncMock(return_value=_host())
         result = await reject_listing(
             session, _admin(), "unit-1", reason="Fix the title"
         )
@@ -302,6 +309,8 @@ async def test_reject_pending_edit_discards_and_logs():
         e for e in events if e.event_type == "listing.edit_rejected"
     )
     assert rejected.payload["reason"] == "Fix the title"
+    assert rejected.payload["host_id"] == "host-1"
+    assert rejected.payload["unit_id"] == "unit-1"
     # Published version stays authoritative.
     assert listing.title_en == "Flat"
     assert listing.pending_changes is None

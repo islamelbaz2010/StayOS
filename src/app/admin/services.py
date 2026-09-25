@@ -454,8 +454,13 @@ async def get_booking_financial_context(
         payment_status=payment.status if payment else None,
         payment_method=payment.method if payment else None,
         payment_amount_egp=payment.amount_egp if payment else None,
+        # Column stores the taxable subtotal (accommodation + cleaning);
+        # expose pure accommodation so the labeled line matches the
+        # guest-facing PaymentResponse semantics.
         accommodation_amount_egp=(
-            payment.accommodation_amount_egp if payment else None
+            payment.accommodation_amount_egp - (payment.cleaning_fee_egp or 0)
+            if payment and payment.accommodation_amount_egp is not None
+            else None
         ),
         guest_service_fee_egp=payment.guest_service_fee_egp if payment else None,
         cleaning_fee_egp=payment.cleaning_fee_egp if payment else None,

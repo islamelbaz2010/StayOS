@@ -28,6 +28,10 @@ _RELEVANT_EVENT_TYPES = (
     "booking.cancelled",
     "booking.no_show",
     "message.received",
+    "listing.approved",
+    "listing.rejected",
+    "listing.edit_approved",
+    "listing.edit_rejected",
 )
 
 

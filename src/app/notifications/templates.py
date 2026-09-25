@@ -238,6 +238,62 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
             },
         },
     },
+    "listing.approved": {
+        "ar": {
+            "email": {
+                "subject": "تمت الموافقة على إعلانك",
+                "body": "مرحبًا {{host_name}}، تمت الموافقة على إعلانك «{{listing_title}}» وأصبح منشورًا الآن.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Your listing is approved",
+                "body": "Hi {{host_name}}, your listing \"{{listing_title}}\" has been approved and is now live.",
+            },
+        },
+    },
+    "listing.rejected": {
+        "ar": {
+            "email": {
+                "subject": "إعلانك يحتاج إلى تعديلات",
+                "body": "مرحبًا {{host_name}}، لم تتم الموافقة على إعلانك «{{listing_title}}». السبب: {{reason}}. يمكنك تعديل الإعلان وإعادة إرساله للمراجعة.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Your listing needs changes",
+                "body": "Hi {{host_name}}, your listing \"{{listing_title}}\" was not approved. Reason: {{reason}}. You can edit it and resubmit for review.",
+            },
+        },
+    },
+    "listing.edit_approved": {
+        "ar": {
+            "email": {
+                "subject": "تمت الموافقة على تعديلات إعلانك",
+                "body": "مرحبًا {{host_name}}، تمت الموافقة على التعديلات المطلوبة على إعلانك «{{listing_title}}» وأصبحت سارية الآن.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Your listing changes were approved",
+                "body": "Hi {{host_name}}, the changes you submitted for \"{{listing_title}}\" were approved and are now live.",
+            },
+        },
+    },
+    "listing.edit_rejected": {
+        "ar": {
+            "email": {
+                "subject": "لم تتم الموافقة على تعديلات إعلانك",
+                "body": "مرحبًا {{host_name}}، لم تتم الموافقة على التعديلات المطلوبة على إعلانك «{{listing_title}}». السبب: {{reason}}. النسخة المنشورة الحالية لا تزال سارية.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Your listing changes were not approved",
+                "body": "Hi {{host_name}}, the changes you submitted for \"{{listing_title}}\" were not approved. Reason: {{reason}}. Your current published version stays live.",
+            },
+        },
+    },
     "owner.outreach": {
         "ar": {
             "whatsapp": {

@@ -69,7 +69,11 @@ async def list_wallet_ledger(
     wallet_id: str,
     limit: int = 100,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("admin", "host")),
+    user: User = Depends(
+        auth_dependencies.require_staff_permission(
+            "payments", allow_roles=("host",)
+        )
+    ),
     session: AsyncSession = Depends(get_session),
 ) -> LedgerListResponse:
     try:
@@ -91,7 +95,7 @@ async def list_platform_ledger(
     ledger_account: str,
     limit: int = 100,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("admin")),
+    user: User = Depends(auth_dependencies.require_staff_permission("payments")),
     session: AsyncSession = Depends(get_session),
 ) -> LedgerListResponse:
     # Platform-wide ledger read for admin financial drill-downs (e.g. the
@@ -108,7 +112,11 @@ async def list_escrows(
     status: str | None = None,
     limit: int = 100,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("admin", "host")),
+    user: User = Depends(
+        auth_dependencies.require_staff_permission(
+            "payments", allow_roles=("host",)
+        )
+    ),
     session: AsyncSession = Depends(get_session),
 ) -> EscrowListResponse:
     try:
@@ -125,7 +133,11 @@ async def list_escrows(
 @router.get("/escrow/{escrow_id}")
 async def get_escrow(
     escrow_id: str,
-    user: User = Depends(auth_dependencies.require_role("admin", "host")),
+    user: User = Depends(
+        auth_dependencies.require_staff_permission(
+            "payments", allow_roles=("host",)
+        )
+    ),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     try:
@@ -195,7 +207,11 @@ async def list_payouts(
     status: str | None = None,
     limit: int = 100,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("admin", "host")),
+    user: User = Depends(
+        auth_dependencies.require_staff_permission(
+            "payments", allow_roles=("host",)
+        )
+    ),
     session: AsyncSession = Depends(get_session),
 ) -> PayoutListResponse:
     try:

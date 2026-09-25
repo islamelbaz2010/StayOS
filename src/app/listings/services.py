@@ -96,6 +96,31 @@ async def _emit_listing_event(
     await session.flush()
 
 
+async def _listing_notification_context(
+    session: AsyncSession, unit: Unit, listing: UnitListing
+) -> dict[str, Any]:
+    """Host contact + display context for listing-decision events so the
+    notifications consumer can deliver a visible approval/rejection
+    notice to the owner (no silent moderation)."""
+    from sqlalchemy import select
+
+    from app.auth.models import User
+
+    host = await session.scalar(
+        select(User).where(User.id == unit.host_id)
+    )
+    return {
+        "unit_id": unit.id,
+        "listing_title": listing.title_en or listing.title_ar,
+        "base_price_egp": listing.base_price_egp,
+        "host_id": unit.host_id,
+        "host_name": host.display_name if host else None,
+        "host_phone": host.phone_number if host else None,
+        "host_email": host.email if host else None,
+        "locale": host.locale if host else "ar",
+    }
+
+
 def _require_storage_config() -> None:
     missing = [
         name
@@ -499,6 +524,7 @@ async def approve_listing(
                     | {k for k in ("lat", "lng") if pending_snapshot.get(k)}
                 ),
                 "submitted_by": pending_snapshot.get("submitted_by"),
+                **(await _listing_notification_context(session, unit, listing)),
             },
         )
         if unit.rejection_reason:
@@ -509,7 +535,13 @@ async def approve_listing(
     elif unit.status == UnitStatus.PENDING_VERIFICATION:
         unit = await listings_repository.set_unit_status(session, unit, UnitStatus.LISTED)
         await _emit_listing_event(
-            session, unit.id, "listing.approved", {"decided_by": user.id}
+            session,
+            unit.id,
+            "listing.approved",
+            {
+                "decided_by": user.id,
+                **(await _listing_notification_context(session, unit, listing)),
+            },
         )
     else:
         raise ValidationError("Only pending listings can be approved")
@@ -558,6 +590,7 @@ async def reject_listing(
                     | {k for k in ("lat", "lng") if pending_snapshot.get(k)}
                 ),
                 "submitted_by": pending_snapshot.get("submitted_by"),
+                **(await _listing_notification_context(session, unit, listing)),
             },
         )
     elif unit.status == UnitStatus.PENDING_VERIFICATION:
@@ -567,7 +600,11 @@ async def reject_listing(
             session,
             unit.id,
             "listing.rejected",
-            {"decided_by": user.id, "reason": reason},
+            {
+                "decided_by": user.id,
+                "reason": reason,
+                **(await _listing_notification_context(session, unit, listing)),
+            },
         )
     else:
         raise ValidationError("Only pending listings can be rejected")

@@ -301,8 +301,11 @@ def test_payment_response_shows_booking_components_hides_service_fee() -> None:
     payment.method = "manual"
     payment.provider = None
     payment.checkout_url = None
-    payment.amount_egp = 2050
-    payment.accommodation_amount_egp = 2000
+    # The column stores the taxable subtotal (accommodation 2000 +
+    # cleaning 50 = 2050); the response exposes pure accommodation so
+    # guest lines sum to the total.
+    payment.amount_egp = 2337
+    payment.accommodation_amount_egp = 2050
     payment.guest_service_fee_egp = 0
     payment.cleaning_fee_egp = 50
     payment.refund_amount_egp = None
@@ -334,9 +337,16 @@ def test_payment_response_shows_booking_components_hides_service_fee() -> None:
     assert guest_view.accommodation_amount_egp == 2000
     assert guest_view.cleaning_fee_egp == 50
     assert guest_view.guest_service_fee_egp is None
-    assert guest_view.amount_egp == 2050
+    assert guest_view.amount_egp == 2337
     # VAT is the guest's own tax line — always visible to the payer.
     assert guest_view.vat_egp == 287
+    # Guest-visible lines must sum exactly to the collected total.
+    assert (
+        guest_view.accommodation_amount_egp
+        + guest_view.cleaning_fee_egp
+        + guest_view.vat_egp
+        == guest_view.amount_egp
+    )
 
     admin_view = ps._to_response(payment, include_breakdown=True)
     assert admin_view.accommodation_amount_egp == 2000
@@ -744,7 +754,9 @@ def test_payment_response_exposes_vat_to_payer() -> None:
     # internal economics breakdown stays staff-gated.
     assert ps._to_response(payment).vat_egp == 287
     assert ps._to_response(payment, include_breakdown=True).vat_egp == 287
-    assert ps._to_response(payment).accommodation_amount_egp == 2050
+    # Stored column is the taxable subtotal (2050); response exposes pure
+    # accommodation (2050 − 50 cleaning).
+    assert ps._to_response(payment).accommodation_amount_egp == 2000
     assert ps._to_response(payment).guest_service_fee_egp is None
 
 

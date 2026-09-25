@@ -21,6 +21,7 @@ class Notification(UUIDMixin, TimestampMixin, Base):
     __table_args__ = (
         Index("idx_notifications_status_created_at", "status", "created_at"),
         Index("idx_notifications_event_id", "event_id"),
+        Index("idx_notifications_user_read", "user_id", "read_at"),
         {"schema": "notify"},
     )
 
@@ -28,6 +29,7 @@ class Notification(UUIDMixin, TimestampMixin, Base):
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     channel: Mapped[str] = mapped_column(String(50), nullable=False)
     recipient: Mapped[str] = mapped_column(String(255), nullable=False)
+    user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     locale: Mapped[str] = mapped_column(String(10), default="ar")
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=NotificationStatus.PENDING
@@ -37,6 +39,7 @@ class Notification(UUIDMixin, TimestampMixin, Base):
     body: Mapped[str] = mapped_column(Text, nullable=False)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class NotificationTemplate(UUIDMixin, Base):

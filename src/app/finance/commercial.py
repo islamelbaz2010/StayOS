@@ -1,33 +1,35 @@
 """Canonical StayOS commercial engine — the single source of truth for
 booking economics.
 
-FOUNDER DECISION (final commercial model — all-inclusive guest price):
+FOUNDER DECISION (Model B — final commercial model, supersedes DEC-023):
 
-- StayOS economics total 12% of the accommodation amount, internally
-  allocated 6% host-side + 6% guest-side. This split is a reporting/
-  ledger concept only. It is NEVER shown to the guest.
-- The 12% is ADDITIVE on top of the host's price: the host is payable
-  the full accommodation + cleaning they listed — the allocations are
-  not deducted from the host payable and not deducted twice.
-- Taxable amount = accommodation + cleaning + host-side 6% + guest-side
-  6%. VAT at ``VAT_RATE_PCT`` (14%) applies to that all-inclusive taxable
-  amount and is added on top: ``guest_total = taxable + vat``.
-- Ledger identity: ``guest_total = host_payable + stayos_revenue + vat``
-  where ``host_payable = accommodation + cleaning`` and
-  ``stayos_revenue = host_side + guest_side``.
+- StayOS economics total 12% of the accommodation amount, split into a
+  real HOST-SIDE COMMISSION (6%) and a GUEST-SIDE allocation (6%). The
+  split is a ledger/reporting concept — NEVER shown to the guest.
+- The host-side 6% is settled by DEDUCTING it from the host payable —
+  it is never added to the guest's charge. Host net =
+  ``accommodation + cleaning − host_commission``.
+- The guest-side 6% is charged to the guest inside the taxable amount:
+  ``taxable = accommodation + cleaning + guest_side_6%``.
+- VAT at ``VAT_RATE_PCT`` (14%) applies to that taxable amount and is
+  added on top: ``guest_total = taxable + vat``. VAT is a separate tax
+  liability — never host revenue, never StayOS revenue.
+- Ledger identity: ``guest_total = host_net + stayos_revenue + vat``
+  where ``stayos_revenue = host_commission + guest_side``.
 - The Guest-facing price is strictly all-inclusive and identical from
   search through payment: the guest sees one Accommodation figure equal
   to ``guest_total`` plus "Prices include all fees". No fee, cleaning,
   tax or share line items.
-- Fee base: the 12% applies to the accommodation amount only — never to
-  cleaning, pass-through charges, taxes, or deposits.
+- Fee base: the 6%+6% applies to the accommodation amount only — never
+  to cleaning (per-stay, never multiplied by nights), pass-through
+  charges, taxes, or deposits.
 - The closed-alpha share waiver keeps the guest charge identical but
   moves the platform revenue to the host: the host is payable the full
-  taxable amount (accommodation + cleaning + the collected 12%). It
-  never waives VAT.
+  taxable amount (accommodation + cleaning + the collected guest 6%,
+  no commission deducted). It never waives VAT.
 
-All money is Decimal EGP at 2 decimal places — VAT on the all-inclusive
-base produces fractional piastres (e.g. 3,560 × 14% = 498.40).
+All money is Decimal EGP at 2 decimal places — VAT on the taxable base
+produces fractional piastres (e.g. 1,544 × 14% = 216.16).
 """
 
 from dataclasses import dataclass
@@ -91,17 +93,18 @@ def vat_inclusive_portion(amount_egp) -> Decimal:
 def decompose_all_in_total(total_egp) -> tuple[Decimal, Decimal, Decimal]:
     """Split a final all-inclusive guest price into its canonical parts.
 
-    Returns ``(taxable, vat, host_payable)`` where
-    ``stayos_revenue = taxable - host_payable``. Used for host custom
-    offers (FD-07): the offered total IS the final guest price, so the
-    host payable inside it is ``taxable / 1.12`` — the accommodation
-    equivalent whose own 12% allocations rebuild the taxable amount.
+    Returns ``(taxable, vat, host_gross)``. Used for host custom offers
+    (FD-07): the offered total IS the final guest price, so the host
+    gross inside it is ``taxable / 1.06`` — the accommodation-plus-cleaning
+    equivalent whose own guest-side 6% rebuilds the taxable amount. The
+    host's NET is that gross minus their 6% commission, resolved by
+    ``booking_economics`` downstream.
     """
     total = money(total_egp)
     vat = vat_inclusive_portion(total)
     taxable = total - vat
-    host_payable = money(taxable / (ONE + rate(settings.PLATFORM_TOTAL_SHARE_PCT)))
-    return taxable, vat, host_payable
+    host_gross = money(taxable / (ONE + rate(settings.GUEST_SIDE_SHARE_PCT)))
+    return taxable, vat, host_gross
 
 
 def compute_booking_economics(
@@ -112,12 +115,13 @@ def compute_booking_economics(
 ) -> BookingEconomics:
     """Split a booking into VAT, platform share and host payable.
 
-    ``platform_share_waived`` implements the closed-alpha incentive
-    (first ALPHA_HOST_FREE_BOOKINGS completed bookings carry no platform
-    share) — the guest charge is unchanged, the collected 12% accrues to
-    the host instead of StayOS, so the host is payable the full taxable
-    amount. VAT is a separate tax on the taxable amount and is never
-    waived.
+    Model B: the guest-side 6% is added to the guest's taxable amount;
+    the host-side 6% is a commission deducted from the host payable.
+    ``platform_share_waived`` implements the closed-alpha incentive — the
+    guest charge is unchanged, StayOS revenue is zero, no commission is
+    deducted and the collected guest 6% accrues to the host, who is
+    payable the full taxable amount. VAT is a separate tax on the
+    taxable amount and is never waived.
     """
     accom = money(accommodation_egp)
     cleaning = money(cleaning_fee_egp)
@@ -126,8 +130,7 @@ def compute_booking_economics(
     else:
         host_side = money(accom * rate(settings.HOST_SIDE_SHARE_PCT))
         guest_side = money(accom * rate(settings.GUEST_SIDE_SHARE_PCT))
-    collected = host_side + guest_side
-    taxable = accom + cleaning + collected
+    taxable = accom + cleaning + guest_side
     vat = compute_vat(taxable)
     return BookingEconomics(
         accommodation_egp=accom,
@@ -135,8 +138,12 @@ def compute_booking_economics(
         taxable_amount_egp=taxable,
         vat_egp=vat,
         guest_total_egp=taxable + vat,
-        platform_share_egp=Decimal("0") if platform_share_waived else collected,
-        host_net_egp=taxable if platform_share_waived else accom + cleaning,
+        platform_share_egp=(
+            Decimal("0") if platform_share_waived else host_side + guest_side
+        ),
+        host_net_egp=(
+            taxable if platform_share_waived else accom + cleaning - host_side
+        ),
         host_side_share_egp=host_side,
         guest_side_share_egp=guest_side,
     )
@@ -167,11 +174,11 @@ def all_inclusive_nightly_egp(
 
 
 def guest_all_in_price_for_host_target(host_target_net_egp) -> Decimal:
-    """Gross-up helper for the host earnings simulator: under the
-    additive model the host is payable their full base, so a target host
-    payable corresponds to a guest price of ``target × 1.12 × 1.14``."""
+    """Gross-up helper for the host earnings simulator: under Model B a
+    host net target corresponds to ``accommodation = target / 0.94``
+    (net of the 6% commission), whose guest price is
+    ``accommodation × 1.06 × 1.14``."""
     target = money(host_target_net_egp)
-    taxable = money(
-        target * (ONE + rate(settings.PLATFORM_TOTAL_SHARE_PCT))
-    )
+    accom = money(target / (ONE - rate(settings.HOST_SIDE_SHARE_PCT)))
+    taxable = money(accom * (ONE + rate(settings.GUEST_SIDE_SHARE_PCT)))
     return taxable + compute_vat(taxable)

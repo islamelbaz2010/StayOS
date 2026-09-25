@@ -885,7 +885,8 @@
       "checkedIn": "Checked in",
       "completed": "Completed"
     },
-    "hostSpeaks": "Speaks: {languages}"
+    "hostSpeaks": "Speaks: {languages}",
+    "nights": "{count, plural, =1 {# night} other {# nights}}"
   },
   "booking": {
     "title": "Request to book",
@@ -1278,6 +1279,8 @@
     "returnStillProcessing": "Payment still processing",
     "returnStillProcessingHint": "We have not received final confirmation yet. Your status updates automatically, or sign in to check your booking.",
     "returnSignInHint": "Sign in to see your full booking and payment details.",
+    "viewBooking": "View booking",
+    "goToTrips": "Go to Trips",
     "vatLine": "VAT 14%"
   },
   "kyc": {
@@ -1396,7 +1399,18 @@
     "allPermissions": "All permissions (admin)",
     "profilePhoto": "Profile photo",
     "changePhoto": "Change photo",
-    "avatarUploadError": "Could not upload the photo. Try again."
+    "avatarUploadError": "Could not upload the photo. Try again.",
+    "personalInfo": "Personal information",
+    "displayName": "Display name",
+    "legalName": "Legal name",
+    "legalNameLocked": "Verified by identity review — contact support to change it.",
+    "dateOfBirth": "Date of birth",
+    "address": "Residential address",
+    "addressStreet": "Street / district",
+    "addressCity": "City",
+    "addressGovernorate": "Governorate",
+    "edit": "Edit",
+    "notSet": "Not set"
   },
   "hostNav": {
     "dashboard": "Dashboard",
@@ -1445,7 +1459,21 @@
       "cancelled": "Cancelled",
       "refund_pending": "Refund pending",
       "refunded": "Refunded"
-    }
+    },
+    "emptyFiltered": "No payments match this filter.",
+    "searchPlaceholder": "Search by reference, listing, or amount…",
+    "viewPaymentDetails": "View payment details",
+    "refundAmount": "Refund",
+    "tabs": {
+      "all": "All",
+      "pending": "Pending",
+      "paid": "Paid / Verified",
+      "upcoming": "Upcoming",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "methodsNote": "StayOS does not store card details — secure card checkout is hosted by the payment provider each time you pay."
   },
   "hostEarnings": {
     "title": "Earnings",

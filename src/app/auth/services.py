@@ -719,18 +719,21 @@ _AVATAR_UPLOAD_TTL_SECONDS = 900
 
 
 def avatar_url(user: User) -> str | None:
-    """Public read URL for the user's profile photo.
+    """Read URL for the user's profile photo.
 
-    The listings bucket serves uploaded media by plain HTTPS URL (same
-    convention as stored listing ``photo.url`` values). Returns None when
+    Avatars live in the listings bucket; S3-compatible storage has no
+    guaranteed public-object URL, so reads go through a presigned GET —
+    the same mechanism listing photo retrieval uses. Returns None when
     the user has no photo or storage is not configured.
     """
     if not user.avatar_s3_key or not settings.S3_LISTINGS_BUCKET:
         return None
-    region = settings.AWS_REGION or "us-east-1"
-    return (
-        f"https://{settings.S3_LISTINGS_BUCKET}.s3.{region}.amazonaws.com/"
-        f"{user.avatar_s3_key}"
+    from app.shared.storage import resolve_object_url
+
+    return resolve_object_url(
+        settings.S3_LISTINGS_BUCKET,
+        user.avatar_s3_key,
+        f"s3://{settings.S3_LISTINGS_BUCKET}/{user.avatar_s3_key}",
     )
 
 
@@ -764,8 +767,6 @@ async def presign_avatar_upload(
             "Please try again later."
         )
 
-    import boto3
-
     ext = (
         request.filename.rsplit(".", 1)[-1].lower()
         if "." in request.filename
@@ -774,12 +775,11 @@ async def presign_avatar_upload(
     if ext not in ("jpg", "jpeg", "png", "webp"):
         ext = "jpg"
     s3_key = f"avatars/{user.id}/avatar_{uuid.uuid4().hex}.{ext}"
-    client = boto3.client(
-        "s3",
-        region_name=settings.AWS_REGION,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    )
+    from app.shared.storage import s3_client
+
+    # Shared client carries the S3-compatible endpoint — a bare boto3
+    # client presigns against AWS S3 and the upload PUT fails.
+    client = s3_client(settings.S3_LISTINGS_BUCKET)
     upload_url = client.generate_presigned_url(
         "put_object",
         Params={
@@ -821,6 +821,17 @@ async def update_account(
     update_data = data.model_dump(exclude_unset=True)
     if not update_data:
         return account
+
+    # Identity-sensitive: a KYC-verified legal name was confirmed against
+    # the reviewed document — it is not self-editable afterwards.
+    if (
+        "legal_name" in update_data
+        and account.legal_name
+        and user.kyc_status == KycStatus.VERIFIED
+    ):
+        raise ValidationError(
+            "Legal name is locked after identity verification"
+        )
 
     return await auth_repository.update_account(session, account, **update_data)
 

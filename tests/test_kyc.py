@@ -242,10 +242,11 @@ def test_process_kyc_document_ml_failure_keeps_pending(
 
     import asyncio
 
-    with pytest.raises(Exception, match="Could not connect"):
-        asyncio.run(kyc_services.process_kyc_document(None, document.id))
+    # Provider failure degrades gracefully: no exception, no retry storm —
+    # the document simply stays pending for staff review.
+    result = asyncio.run(kyc_services.process_kyc_document(None, document.id))
 
-    assert document.status == "pending"
+    assert result.status == "pending"
     update_doc.assert_not_awaited()
     update_user.assert_not_awaited()
 

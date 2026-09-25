@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 from app.shared.schemas import Money
@@ -147,6 +147,12 @@ class PaymentListItem(BaseModel):
     reject_reason: str | None = None
     unit_title: str | None = None
     unit_cover_image: str | None = None
+    # Linked-stay context so guests can bucket payments as upcoming/completed
+    # without a second request. Public fields — booking dates are visible to
+    # the guest who made the booking.
+    check_in: date | None = None
+    check_out: date | None = None
+    booking_status: str | None = None
     # Host-facing earnings fields — populated only by the host-scoped
     # endpoint (``GET /payments/host``); None on guest/admin lists so guest
     # total-only pricing and internal economics stay hidden.

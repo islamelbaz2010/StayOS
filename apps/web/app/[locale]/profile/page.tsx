@@ -9,7 +9,13 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Avatar } from "@/components/profile/Avatar";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useKycStatus } from "@/lib/queries/kyc";
+import {
+  useAccount,
+  useUpdateAccount,
+  type AccountUpdate,
+} from "@/lib/queries/account";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/utils";
 
 export default function ProfilePage() {
   const t = useTranslations("profile");
@@ -113,6 +119,8 @@ export default function ProfilePage() {
               </dl>
             </div>
 
+            <PersonalInfoSection kycVerified={kycStatusValue === "verified"} />
+
             <PasswordSection
               hasPassword={Boolean(user?.has_password)}
               onSaved={refreshUser}
@@ -149,6 +157,224 @@ export default function ProfilePage() {
         </div>
       </GuestLayout>
     </ProtectedRoute>
+  );
+}
+
+// Canonical personal-information editor — Profile and Account Settings
+// both read the same user + account records, so edits here are the
+// single source of truth (never a duplicate copy).
+function PersonalInfoSection({ kycVerified }: { kycVerified: boolean }) {
+  const t = useTranslations("profile");
+  const tc = useTranslations("common");
+  const { user, refreshUser } = useAuth();
+  const { data: account } = useAccount();
+  const updateAccount = useUpdateAccount();
+
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [legalName, setLegalName] = useState("");
+  const [dob, setDob] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [governorate, setGovernorate] = useState("");
+
+  const addressStr =
+    account?.address &&
+    Object.values(account.address).filter(Boolean).join(", ");
+
+  function startEdit() {
+    setDisplayName(user?.display_name ?? "");
+    setLegalName(account?.legal_name ?? "");
+    setDob(account?.date_of_birth ?? "");
+    setStreet(String(account?.address?.street ?? ""));
+    setCity(String(account?.address?.city ?? ""));
+    setGovernorate(String(account?.address?.governorate ?? ""));
+    setError(null);
+    setEditing(true);
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      if ((displayName.trim() || null) !== (user?.display_name ?? null)) {
+        await api.patch("/auth/me", {
+          display_name: displayName.trim() || null,
+        });
+        await refreshUser();
+      }
+      const address: Record<string, string> = {};
+      if (street.trim()) address.street = street.trim();
+      if (city.trim()) address.city = city.trim();
+      if (governorate.trim()) address.governorate = governorate.trim();
+      const payload: AccountUpdate = {
+        date_of_birth: dob || null,
+        address: Object.keys(address).length ? address : null,
+      };
+      if (!kycVerified) payload.legal_name = legalName.trim() || null;
+      await updateAccount.mutateAsync(payload);
+      setEditing(false);
+    } catch (err) {
+      setError(getApiErrorMessage(err, tc("error")));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const rows: { label: string; value: string }[] = [
+    { label: t("displayName"), value: user?.display_name || "—" },
+    {
+      label: t("legalName"),
+      value: account?.legal_name || t("notSet"),
+    },
+    {
+      label: t("dateOfBirth"),
+      value: account?.date_of_birth || t("notSet"),
+    },
+    { label: t("address"), value: addressStr || t("notSet") },
+  ];
+
+  return (
+    <div className="rounded-xl bg-white p-6 shadow-card">
+      <div className="flex items-start justify-between gap-4">
+        <h2 className="text-lg font-bold text-neutral-900">
+          {t("personalInfo")}
+        </h2>
+        {!editing && (
+          <button
+            type="button"
+            onClick={startEdit}
+            className="btn-secondary text-sm"
+          >
+            {t("edit")}
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save();
+          }}
+          className="mt-4 space-y-3"
+        >
+          <div>
+            <label className="block text-sm font-medium text-neutral-700">
+              {t("displayName")}
+            </label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={255}
+              className="input mt-1 w-full text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700">
+              {t("legalName")}
+            </label>
+            <input
+              type="text"
+              value={legalName}
+              onChange={(e) => setLegalName(e.target.value)}
+              maxLength={255}
+              disabled={kycVerified}
+              className="input mt-1 w-full text-sm disabled:bg-neutral-100"
+            />
+            {kycVerified && (
+              <p className="mt-1 text-xs text-neutral-500">
+                {t("legalNameLocked")}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700">
+              {t("dateOfBirth")}
+            </label>
+            <input
+              type="date"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              className="input mt-1 w-full text-sm"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700">
+                {t("addressStreet")}
+              </label>
+              <input
+                type="text"
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+                className="input mt-1 w-full text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700">
+                {t("addressCity")}
+              </label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="input mt-1 w-full text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700">
+                {t("addressGovernorate")}
+              </label>
+              <input
+                type="text"
+                value={governorate}
+                onChange={(e) => setGovernorate(e.target.value)}
+                className="input mt-1 w-full text-sm"
+              />
+            </div>
+          </div>
+          {error && (
+            <p className="text-sm text-danger-600" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary text-sm disabled:opacity-50"
+            >
+              {saving ? tc("loading") : tc("save")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="btn-secondary text-sm"
+            >
+              {tc("cancel")}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <dl className="mt-4 space-y-3">
+          {rows.map((row) => (
+            <div key={row.label} className="flex justify-between gap-4">
+              <dt className="text-sm text-neutral-500">{row.label}</dt>
+              <dd className="text-end text-sm font-medium text-neutral-900">
+                {row.value}
+              </dd>
+            </div>
+          ))}
+          {kycVerified && (
+            <p className="text-xs text-neutral-500">{t("legalNameLocked")}</p>
+          )}
+        </dl>
+      )}
+    </div>
   );
 }
 

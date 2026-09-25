@@ -101,11 +101,11 @@ def _to_response(
 
 
 def _calculate_amounts(subtotal_egp, discount_pct: float = 0.0) -> dict:
-    """Canonical all-inclusive economics (Founder commercial model).
+    """Canonical all-inclusive economics (Model B).
 
     The guest pays the all-inclusive total — accommodation plus the
-    additive 12% StayOS economics plus VAT on the taxable amount. The
-    host is payable the full accommodation amount. ``guest_fee`` stays 0
+    guest-side 6% plus VAT on that taxable amount. The host is payable
+    the accommodation minus their 6% commission. ``guest_fee`` stays 0
     for all new reservations (the column survives only for legacy rows
     recorded under the pre-all-inclusive model).
     """

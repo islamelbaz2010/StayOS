@@ -7,6 +7,7 @@
 
 import uuid
 from datetime import UTC, date, datetime
+from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -450,10 +451,11 @@ async def test_booking_financial_context_joins_payment_context(monkeypatch):
         booking_id="booking-1",
         status="verified",
         method="bank_transfer",
-        amount_egp=5000,
+        amount_egp=Decimal("5430.96"),
         accommodation_amount_egp=4500,
         guest_service_fee_egp=400,
         cleaning_fee_egp=100,
+        vat_egp=Decimal("666.96"),
         reference_number="REF-1",
         payment_deadline_at=None,
         proof_uploaded_at=None,
@@ -492,20 +494,21 @@ async def test_booking_financial_context_joins_payment_context(monkeypatch):
     assert ctx.booking_id == "booking-1"
     assert ctx.booking_status == BookingStatus.CONFIRMED
     assert ctx.payment_id == "pay-1"
-    assert ctx.payment_amount_egp == 5000
+    assert ctx.payment_amount_egp == Decimal("5430.96")
     assert ctx.guest_service_fee_egp == 400
     assert ctx.unit_title == "شقة"
     assert ctx.host_id == "host-1"
 
-    # New-model detection: the 500 gap between the amount (5000) and the
-    # stored host payable (4500) is the additive StayOS revenue — the
-    # ledger stays balanced (4500 + 500 + 0 VAT = 5000).
+    # Model B resolution: fee base 4400 → host commission 264 (deducted
+    # from the 4500 gross) + guest-side 264 collected in the taxable
+    # amount (4500 + 264 + VAT 666.96 = 5430.96). Ledger: 4236 + 528 +
+    # 666.96 = 5430.96.
     assert ctx.financials is not None
-    assert ctx.financials["guest_paid_egp"] == 5000
+    assert ctx.financials["guest_paid_egp"] == Decimal("5430.96")
     assert ctx.financials["accommodation_egp"] == 4400
     assert ctx.financials["cleaning_fee_egp"] == 100
-    assert ctx.financials["platform_share_egp"] == 500
-    assert ctx.financials["host_net_egp"] == 4500
+    assert ctx.financials["platform_share_egp"] == Decimal("528")
+    assert ctx.financials["host_net_egp"] == Decimal("4236")
     assert ctx.financials["platform_share_waived"] is False
     # No escrow row in this fixture → no payout state.
     assert ctx.payout is None

@@ -151,7 +151,17 @@ function TripContent({
             )}
             <p className="mt-1 text-sm text-neutral-600">
               {formatDate(booking.check_in, dateLocale)} →{" "}
-              {formatDate(booking.check_out, dateLocale)}
+              {formatDate(booking.check_out, dateLocale)} ·{" "}
+              {t("nights", {
+                count: Math.max(
+                  1,
+                  Math.round(
+                    (new Date(booking.check_out).getTime() -
+                      new Date(booking.check_in).getTime()) /
+                      86_400_000
+                  )
+                ),
+              })}
             </p>
             <p className="mt-1 text-sm text-neutral-500">
               {booking.adults} {t("adults")}
@@ -172,7 +182,7 @@ function TripContent({
       />
 
       {payment && (
-        <div className="card p-5 sm:p-6">
+        <div id="payment" className="card scroll-mt-24 p-5 sm:p-6">
           <h3 className="mb-3 text-lg font-bold text-brand-900">
             {tp("paymentStatus")}
           </h3>

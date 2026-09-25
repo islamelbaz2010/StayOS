@@ -1,8 +1,14 @@
-"""Canonical commercial model tests (Founder decision closure).
+"""Canonical commercial model tests (Founder decision closure — Model B).
 
-Covers the 12% all-inclusive economics, the 6%+6% internal allocation,
-guest-facing total-only serialization, discount precedence, custom
-offers, the escrow hold/release chain, and idempotency.
+Covers the 12% economics split as a real host-side 6% commission plus a
+guest-side 6% allocation, guest-facing total-only serialization,
+discount precedence, custom offers, the escrow hold/release chain, and
+idempotency. Canonical Model B example (§33):
+
+    700/night × 2 nights = 1,400 accommodation + 60 cleaning
+    host gross 1,460 − host commission 84 = host net 1,376
+    guest taxable 1,544 (1,400 + 60 + guest-side 84) → VAT 216.16
+    guest total 1,760.16 = 1,376 host + 168 StayOS revenue + 216.16 VAT
 """
 
 import uuid
@@ -31,12 +37,51 @@ def _s(**kw) -> Settings:
 
 
 def test_platform_share_is_12pct_of_accommodation() -> None:
+    # Model B: total StayOS revenue is still 12% of accommodation — but
+    # the host-side 6% is a commission deducted from host payable, not
+    # added to the guest charge. Guest taxable = accom + guest-side 6%.
     e = commercial.compute_booking_economics(1000)
-    assert e.taxable_amount_egp == 1120
-    assert e.vat_egp == Decimal("156.80")
-    assert e.guest_total_egp == Decimal("1276.80")
+    assert e.taxable_amount_egp == 1060
+    assert e.vat_egp == Decimal("148.40")
+    assert e.guest_total_egp == Decimal("1208.40")
     assert e.platform_share_egp == 120
-    assert e.host_net_egp == 1000
+    assert e.host_net_egp == 940  # 1000 − 60 host commission
+
+
+def test_canonical_model_b_example() -> None:
+    """§33 exact regression: 700/night × 2 + 60 cleaning.
+
+    1,760.16 guest total = 1,376 host net + 168 StayOS revenue
+    + 216.16 VAT payable.
+    """
+    e = commercial.compute_booking_economics(1400, 60)
+    assert e.accommodation_egp == Decimal("1400")
+    assert e.cleaning_fee_egp == Decimal("60")
+    assert e.host_side_share_egp == Decimal("84")
+    assert e.guest_side_share_egp == Decimal("84")
+    assert e.taxable_amount_egp == Decimal("1544")
+    assert e.vat_egp == Decimal("216.16")
+    assert e.guest_total_egp == Decimal("1760.16")
+    assert e.platform_share_egp == Decimal("168")
+    assert e.host_net_egp == Decimal("1376")
+    assert e.host_net_egp + e.platform_share_egp + e.vat_egp == (
+        e.guest_total_egp
+    )
+    # Paymob minor units: 1,760.16 EGP → 176,016.
+    assert commercial.to_minor_units(e.guest_total_egp) == 176016
+
+
+def test_host_commission_deducted_never_guest_charged() -> None:
+    # The host-side 6% reduces host payout — it never appears in the
+    # guest's taxable amount. With identical bases, Model B guest
+    # taxable is 6% lower than the superseded DEC-023 additive model.
+    e = commercial.compute_booking_economics(1000)
+    assert e.taxable_amount_egp == Decimal("1060")
+    assert e.host_net_egp == Decimal("940")
+    # Host gross (accom + cleaning) − commission = net.
+    assert e.accommodation_egp + e.cleaning_fee_egp - e.host_side_share_egp == (
+        e.host_net_egp
+    )
 
 
 def test_internal_6_6_allocation_sums_to_share() -> None:
@@ -48,38 +93,38 @@ def test_internal_6_6_allocation_sums_to_share() -> None:
 
 def test_cleaning_fee_not_in_fee_base() -> None:
     # 12% applies to accommodation only — cleaning passes through to the
-    # host payable untouched. Cleaning IS in the VAT tax base alongside
-    # both 6% allocations (accommodation + cleaning + 6% + 6%).
+    # host gross untouched and is never multiplied by nights. Cleaning IS
+    # in the VAT tax base alongside the guest-side 6%.
     e = commercial.compute_booking_economics(1000, cleaning_fee_egp=100)
-    assert e.taxable_amount_egp == 1220
-    assert e.vat_egp == Decimal("170.80")
-    assert e.guest_total_egp == Decimal("1390.80")
+    assert e.taxable_amount_egp == 1160  # 1000 + 100 + 60
+    assert e.vat_egp == Decimal("162.40")
+    assert e.guest_total_egp == Decimal("1322.40")
     assert e.platform_share_egp == 120
-    assert e.host_net_egp == 1100
+    assert e.host_net_egp == 1040  # 1100 − 60
 
 
 def test_guest_pays_taxable_plus_vat() -> None:
     # The guest pays the taxable booking amount plus VAT on top — VAT is
     # a separate tax added to the payable total, not carved out of it.
     e = commercial.compute_booking_economics(2000, 150)
-    assert e.taxable_amount_egp == 2390
-    assert e.vat_egp == Decimal("334.60")
-    assert e.guest_total_egp == Decimal("2724.60")
+    assert e.taxable_amount_egp == 2270  # 2000 + 150 + 120
+    assert e.vat_egp == Decimal("317.80")
+    assert e.guest_total_egp == Decimal("2587.80")
 
 
 def test_alpha_waiver_gives_host_full_taxable_amount() -> None:
     e = commercial.compute_booking_economics(1000, platform_share_waived=True)
     assert e.platform_share_egp == 0
-    # The waived allocation accrues to the host — payable the full
-    # taxable amount (accommodation + cleaning + the collected 12%).
-    assert e.host_net_egp == 1120
-    # The guest charge is unchanged: the allocations were still paid.
+    # The waiver accrues the collected guest 6% to the host and skips the
+    # host commission — payable the full taxable amount.
+    assert e.host_net_egp == 1060
+    # The guest charge is unchanged: the guest-side allocation was paid.
     assert e.host_side_share_egp == 60
     assert e.guest_side_share_egp == 60
     # The waiver affects ONLY the StayOS commercial share — VAT is a
     # separate tax and is never waived by it.
-    assert e.vat_egp == Decimal("156.80")
-    assert e.guest_total_egp == Decimal("1276.80")
+    assert e.vat_egp == Decimal("148.40")
+    assert e.guest_total_egp == Decimal("1208.40")
 
 
 def test_rounding_stays_2dp_and_balanced() -> None:
@@ -101,16 +146,15 @@ def test_rounding_stays_2dp_and_balanced() -> None:
 
 
 def test_gross_up_helper_for_host_target() -> None:
-    # Host thinking in net terms: under the additive model the host is
-    # payable the full base — EGP 1,000 target → taxable 1,120 → guest
-    # pays 1,276.80 all-in.
+    # Host thinking in net terms: under Model B a net target of EGP 1,000
+    # needs accommodation = 1,000 / 0.94 ≈ 1,063.83; guest pays the
+    # all-inclusive price of that accommodation.
     gross = commercial.guest_all_in_price_for_host_target(1000)
-    assert gross == Decimal("1276.80")
+    assert gross == Decimal("1285.53")
     taxable = gross - commercial.vat_inclusive_portion(gross)
-    # Decomposing the taxable amount still yields host payable ≥ target.
-    assert taxable == Decimal("1120.00")
+    assert taxable == Decimal("1127.66")
     e = commercial.compute_booking_economics(
-        taxable / (1 + commercial.rate(0.12))
+        taxable / (1 + commercial.rate(0.06))
     )
     assert e.host_net_egp >= 1000  # rounding never underpays the host
 
@@ -234,10 +278,10 @@ async def _create_payment(
 @pytest.mark.asyncio
 async def test_payment_is_all_inclusive_no_guest_fee(monkeypatch) -> None:
     kwargs = await _create_payment(monkeypatch, _listing())
-    # 500 × 4 nights = 2000 + 50 cleaning → taxable 2000+50+240 = 2290
-    # → VAT 14% = 320.60 → guest total 2610.60. Host payable = 2050.
-    assert kwargs["amount_egp"] == Decimal("2610.60")
-    assert kwargs["vat_egp"] == Decimal("320.60")
+    # 500 × 4 nights = 2000 + 50 cleaning → taxable 2000+50+120 (guest 6%)
+    # = 2170 → VAT 14% = 303.80 → guest total 2473.80. Host gross = 2050.
+    assert kwargs["amount_egp"] == Decimal("2473.80")
+    assert kwargs["vat_egp"] == Decimal("303.80")
     assert kwargs["accommodation_amount_egp"] == 2050
     assert kwargs["guest_service_fee_egp"] == 0
 
@@ -281,22 +325,22 @@ async def test_weekly_discount_applies(monkeypatch) -> None:
     )
     monkeypatch.setattr("app.payments.services._emit_outbox_event", AsyncMock())
     await ps.create_payment_for_booking(AsyncMock(), booking, guest)
-    # 500 × 8 = 4000 − 10% = 3600 + 50 cleaning + 432 (12% of 3600)
-    # = 4082 taxable + 14% VAT (571.48) = 4653.48.
-    assert captured["amount_egp"] == Decimal("4653.48")
-    assert captured["vat_egp"] == Decimal("571.48")
+    # 500 × 8 = 4000 − 10% = 3600 + 50 cleaning + 216 (guest 6% of 3600)
+    # = 3866 taxable + 14% VAT (541.24) = 4407.24.
+    assert captured["amount_egp"] == Decimal("4407.24")
+    assert captured["vat_egp"] == Decimal("541.24")
 
 
 @pytest.mark.asyncio
 async def test_custom_offer_overrides_listing_price(monkeypatch) -> None:
     # The offered total is the final all-inclusive guest price: the guest
     # pays exactly the offer — VAT is the tax component inside it and the
-    # host payable is the 1/1.12 share of the taxable amount
-    # (1500 = 1315.79 taxable + 184.21 VAT; host payable 1174.81).
+    # host gross is the 1/1.06 share of the taxable amount
+    # (1500 = 1315.79 taxable + 184.21 VAT; host gross 1241.31).
     kwargs = await _create_payment(monkeypatch, _listing(), custom_total=1500)
     assert kwargs["amount_egp"] == Decimal("1500")
     assert kwargs["vat_egp"] == Decimal("184.21")
-    assert kwargs["accommodation_amount_egp"] == Decimal("1174.81")
+    assert kwargs["accommodation_amount_egp"] == Decimal("1241.31")
     assert kwargs["cleaning_fee_egp"] == 0
 
 
@@ -319,10 +363,10 @@ def test_payment_response_shows_booking_components_hides_service_fee() -> None:
     payment.method = "manual"
     payment.provider = None
     payment.checkout_url = None
-    # The column stores the host payable (accommodation 2000 + cleaning
+    # The column stores the host gross (accommodation 2000 + cleaning
     # 50 = 2050); the guest's Accommodation line is the final
     # all-inclusive total — no VAT, cleaning or fee lines for guests.
-    payment.amount_egp = Decimal("2610.60")
+    payment.amount_egp = Decimal("2473.80")
     payment.accommodation_amount_egp = Decimal("2050")
     payment.guest_service_fee_egp = 0
     payment.cleaning_fee_egp = 50
@@ -346,22 +390,22 @@ def test_payment_response_shows_booking_components_hides_service_fee() -> None:
     payment.created_at = now
     payment.updated_at = now
 
-    payment.vat_egp = Decimal("320.60")
+    payment.vat_egp = Decimal("303.80")
 
     guest_view = ps._to_response(payment)  # default: no internal breakdown
     # Guest sees the final all-inclusive price as the single
     # Accommodation figure — no VAT, cleaning or fee components.
-    assert guest_view.accommodation_amount_egp == Decimal("2610.60")
+    assert guest_view.accommodation_amount_egp == Decimal("2473.80")
     assert guest_view.cleaning_fee_egp is None
     assert guest_view.guest_service_fee_egp is None
     assert guest_view.vat_egp is None
-    assert guest_view.amount_egp == Decimal("2610.60")
+    assert guest_view.amount_egp == Decimal("2473.80")
 
     admin_view = ps._to_response(payment, include_breakdown=True)
     assert admin_view.accommodation_amount_egp == 2000
     assert admin_view.cleaning_fee_egp == 50
     assert admin_view.guest_service_fee_egp == 0
-    assert admin_view.vat_egp == Decimal("320.60")
+    assert admin_view.vat_egp == Decimal("303.80")
 
 
 def test_guest_quote_contract_has_no_internal_fields() -> None:
@@ -396,10 +440,10 @@ def test_reservation_response_nulls_economics_for_guest() -> None:
 
 
 async def _run_escrow_create(
-    amount=Decimal("4058.40"),
-    accommodation_amount=Decimal("3200"),
-    cleaning_fee=Decimal("200"),
-    vat_egp=Decimal("498.40"),
+    amount=Decimal("1760.16"),
+    accommodation_amount=Decimal("1460"),
+    cleaning_fee=Decimal("60"),
+    vat_egp=Decimal("216.16"),
     host_completed=10,
 ):
     s = _s()
@@ -407,7 +451,7 @@ async def _run_escrow_create(
     payment.id = "p1"
     payment.booking_id = "b1"
     payment.host_id = "h1"
-    # Real rows store the host payable (accommodation+cleaning) in
+    # Real rows store the host gross (accommodation+cleaning) in
     # accommodation_amount_egp; the engine recovers the fee base.
     payment.amount_egp = amount
     payment.accommodation_amount_egp = accommodation_amount
@@ -457,7 +501,7 @@ async def test_payment_confirmed_creates_held_escrow() -> None:
     ledger_amounts = [
         c.kwargs["amount_egp"] for c in fr.create_ledger_entry.call_args_list
     ]
-    assert ledger_amounts == [Decimal("4058.40"), Decimal("4058.40")]
+    assert ledger_amounts == [Decimal("1760.16"), Decimal("1760.16")]
 
 
 @pytest.mark.asyncio
@@ -509,12 +553,13 @@ async def test_release_splits_via_canonical_engine() -> None:
     payment = MagicMock()
     payment.booking_id = "b1"
     payment.host_id = "h1"
-    # Canonical example: taxable 3560 = host payable 3200 + revenue 360;
-    # VAT 14% of 3560 = 498.40; guest total 4058.40.
-    payment.amount_egp = Decimal("4058.40")
-    payment.accommodation_amount_egp = Decimal("3200")
-    payment.cleaning_fee_egp = Decimal("200")
-    payment.vat_egp = Decimal("498.40")
+    # Canonical Model B example: host gross 1460 (1400 accom + 60
+    # cleaning) → host net 1376 (84 commission deducted); guest 84
+    # inside taxable 1544; VAT 14% = 216.16; guest total 1760.16.
+    payment.amount_egp = Decimal("1760.16")
+    payment.accommodation_amount_egp = Decimal("1460")
+    payment.cleaning_fee_egp = Decimal("60")
+    payment.vat_egp = Decimal("216.16")
 
     escrow = MagicMock()
     escrow.id = str(uuid.uuid4())
@@ -522,7 +567,7 @@ async def test_release_splits_via_canonical_engine() -> None:
     escrow.hold_until = datetime.now(UTC) - timedelta(hours=1)
     escrow.reservation_id = "b1"
     escrow.host_id = "h1"
-    escrow.amount_egp = Decimal("4058.40")
+    escrow.amount_egp = Decimal("1760.16")
 
     with patch.object(fs, "finance_repository") as fr, \
          patch("app.config.settings", s), \
@@ -543,16 +588,16 @@ async def test_release_splits_via_canonical_engine() -> None:
 
     calls = {c.kwargs["ledger_account"]: c.kwargs["amount_egp"]
              for c in fr.create_ledger_entry.call_args_list}
-    assert calls[LedgerAccount.HOST_PAYABLE] == Decimal("3200.00")
-    assert calls[LedgerAccount.PLATFORM_REVENUE] == Decimal("360.00")
-    assert calls[LedgerAccount.VAT_PAYABLE] == Decimal("498.40")
+    assert calls[LedgerAccount.HOST_PAYABLE] == Decimal("1376.00")
+    assert calls[LedgerAccount.PLATFORM_REVENUE] == Decimal("168.00")
+    assert calls[LedgerAccount.VAT_PAYABLE] == Decimal("216.16")
     assert (
         calls[LedgerAccount.HOST_PAYABLE]
         + calls[LedgerAccount.PLATFORM_REVENUE]
         + calls[LedgerAccount.VAT_PAYABLE]
-        == Decimal("4058.40")
+        == Decimal("1760.16")
     )
-    assert calls[LedgerAccount.ESCROW] == Decimal("4058.40")
+    assert calls[LedgerAccount.ESCROW] == Decimal("1760.16")
     assert escrow.status == EscrowStatus.RELEASED
 
 
@@ -564,12 +609,13 @@ async def test_release_alpha_waived_host_gets_full_taxable() -> None:
     payment = MagicMock()
     payment.booking_id = "b1"
     payment.host_id = "h1"
-    # Waived share: guest charge unchanged — the collected 12% accrues
-    # to the host, who is payable the full taxable amount (3560).
-    payment.amount_egp = Decimal("4058.40")
-    payment.accommodation_amount_egp = Decimal("3200")
-    payment.cleaning_fee_egp = Decimal("200")
-    payment.vat_egp = Decimal("498.40")
+    # Waived share: guest charge unchanged — the collected guest 6%
+    # accrues to the host (no commission deducted), who is payable the
+    # full taxable amount (1544).
+    payment.amount_egp = Decimal("1760.16")
+    payment.accommodation_amount_egp = Decimal("1460")
+    payment.cleaning_fee_egp = Decimal("60")
+    payment.vat_egp = Decimal("216.16")
 
     escrow = MagicMock()
     escrow.id = str(uuid.uuid4())
@@ -577,7 +623,7 @@ async def test_release_alpha_waived_host_gets_full_taxable() -> None:
     escrow.hold_until = datetime.now(UTC) - timedelta(hours=1)
     escrow.reservation_id = "b1"
     escrow.host_id = "h1"
-    escrow.amount_egp = Decimal("4058.40")
+    escrow.amount_egp = Decimal("1760.16")
 
     with patch.object(fs, "finance_repository") as fr, \
          patch("app.config.settings", s), \
@@ -598,12 +644,12 @@ async def test_release_alpha_waived_host_gets_full_taxable() -> None:
 
     calls = {c.kwargs["ledger_account"]: c.kwargs["amount_egp"]
              for c in fr.create_ledger_entry.call_args_list}
-    # Waived: host keeps the full taxable amount (3200 + 360).
-    assert calls[LedgerAccount.HOST_PAYABLE] == Decimal("3560.00")
+    # Waived: host keeps the full taxable amount (1460 + 84).
+    assert calls[LedgerAccount.HOST_PAYABLE] == Decimal("1544.00")
     assert LedgerAccount.PLATFORM_REVENUE not in calls  # share waived
     # VAT is a separate tax — the waiver does not waive it.
-    assert calls[LedgerAccount.VAT_PAYABLE] == Decimal("498.40")
-    assert calls[LedgerAccount.ESCROW] == Decimal("4058.40")
+    assert calls[LedgerAccount.VAT_PAYABLE] == Decimal("216.16")
+    assert calls[LedgerAccount.ESCROW] == Decimal("1760.16")
 
 
 # ============================================================
@@ -612,15 +658,15 @@ async def test_release_alpha_waived_host_gets_full_taxable() -> None:
 
 
 def test_vat_is_14pct_of_taxable_amount() -> None:
-    # Taxable = accommodation + 12% allocations = 1120 → VAT = 156.80
-    # added on top. Guest total = 1276.80. The host payable is the pure
-    # base — the 12% is additive revenue, not carved out of host pay.
+    # Taxable = accommodation + guest-side 6% = 1060 → VAT = 148.40
+    # added on top. Guest total = 1208.40. The host net is the gross
+    # minus the host-side 6% commission; StayOS revenue is 6%+6%.
     e = commercial.compute_booking_economics(1000)
-    assert e.taxable_amount_egp == 1120
-    assert e.vat_egp == Decimal("156.80")
-    assert e.guest_total_egp == Decimal("1276.80")
+    assert e.taxable_amount_egp == 1060
+    assert e.vat_egp == Decimal("148.40")
+    assert e.guest_total_egp == Decimal("1208.40")
     assert e.platform_share_egp == 120
-    assert e.host_net_egp == 1000
+    assert e.host_net_egp == 940
     # VAT never inflates share or host payable.
     assert e.host_net_egp + e.platform_share_egp == e.taxable_amount_egp
 
@@ -628,19 +674,19 @@ def test_vat_is_14pct_of_taxable_amount() -> None:
 def test_vat_not_waived_by_alpha_share_waiver() -> None:
     e = commercial.compute_booking_economics(1000, platform_share_waived=True)
     assert e.platform_share_egp == 0
-    assert e.vat_egp == Decimal("156.80")
-    assert e.guest_total_egp == Decimal("1276.80")
-    assert e.host_net_egp == 1120
+    assert e.vat_egp == Decimal("148.40")
+    assert e.guest_total_egp == Decimal("1208.40")
+    assert e.host_net_egp == 1060
 
 
 def test_vat_tax_base_includes_cleaning_and_allocations() -> None:
-    # Tax base = accommodation (post-discount) + cleaning + both 6%
-    # allocations — never VAT itself.
+    # Tax base = accommodation (post-discount) + cleaning + guest-side 6%
+    # — never VAT itself, never the host-side commission.
     e = commercial.compute_booking_economics(900, cleaning_fee_egp=200)
-    assert e.taxable_amount_egp == 1208  # 900 + 200 + 54 + 54
-    assert e.vat_egp == Decimal("169.12")
+    assert e.taxable_amount_egp == 1154  # 900 + 200 + 54
+    assert e.vat_egp == Decimal("161.56")
     assert e.platform_share_egp == 108  # 12% of 900, not of 1100
-    assert e.host_net_egp == 1100
+    assert e.host_net_egp == 1046  # 1100 − 54
 
 
 def test_compute_vat_and_inclusive_portion_round_trip() -> None:
@@ -654,6 +700,36 @@ def test_compute_vat_and_inclusive_portion_round_trip() -> None:
         # Within rounding of a fresh computation.
         assert abs(commercial.compute_vat(taxable) - vat) <= Decimal("0.05")
     assert commercial.vat_inclusive_portion(0) == 0
+
+
+@pytest.mark.asyncio
+async def test_dec023_additive_row_resolves_by_its_own_rule() -> None:
+    """Regression: a payment row priced under DEC-023 (both allocations
+    charged to the guest) is detected by its 12% gap signature and split
+    by the rule that actually charged it — host keeps the full gross.
+    Matches STY-3E9206E8's generation signature."""
+    payment = MagicMock()
+    payment.host_id = "h1"
+    payment.booking_id = "b1"
+    payment.amount_egp = Decimal("4058.40")
+    payment.accommodation_amount_egp = Decimal("3200")
+    payment.cleaning_fee_egp = Decimal("200")
+    payment.vat_egp = Decimal("498.40")
+
+    with patch("app.config.settings", _s()), \
+         patch("app.bookings.repository.count_host_completed_bookings",
+               AsyncMock(return_value=10)):
+        economics, waived = await fs.booking_economics(AsyncMock(), payment)
+
+    assert waived is False
+    # gap = 3560 − 3200 = 360 = 12% of 3000 → DEC-023 signature: host
+    # payable was the full gross; the whole 360 gap is StayOS revenue.
+    assert economics.host_net_egp == Decimal("3200.00")
+    assert economics.platform_share_egp == Decimal("360.00")
+    assert economics.vat_egp == Decimal("498.40")
+    assert economics.host_net_egp + economics.platform_share_egp + (
+        economics.vat_egp
+    ) == Decimal("4058.40")
 
 
 @pytest.mark.asyncio
@@ -715,21 +791,21 @@ async def test_full_refund_posts_no_revenue_or_vat() -> None:
 
 @pytest.mark.asyncio
 async def test_payment_persists_vat_component(monkeypatch) -> None:
-    # 500×4 = 2000 + 50 cleaning + 240 allocations = 2290 taxable →
-    # VAT 320.60 → guest total 2610.60.
+    # 500×4 = 2000 + 50 cleaning + 120 guest-side 6% = 2170 taxable →
+    # VAT 303.80 → guest total 2473.80.
     kwargs = await _create_payment(monkeypatch, _listing())
-    assert kwargs["amount_egp"] == Decimal("2610.60")
-    assert kwargs["vat_egp"] == Decimal("320.60")
+    assert kwargs["amount_egp"] == Decimal("2473.80")
+    assert kwargs["vat_egp"] == Decimal("303.80")
 
 
 @pytest.mark.asyncio
 async def test_payment_vat_applies_under_alpha_waiver(monkeypatch) -> None:
-    # The waiver changes only the internal split (host keeps the collected
-    # share) — the guest charge is identical to a non-waived booking:
-    # taxable 2290 → VAT 320.60 → total 2610.60.
+    # The waiver changes only the internal split — the guest charge is
+    # identical to a non-waived booking: taxable 2170 → VAT 303.80 →
+    # total 2473.80.
     kwargs = await _create_payment(monkeypatch, _listing(), host_completed=0)
-    assert kwargs["vat_egp"] == Decimal("320.60")
-    assert kwargs["amount_egp"] == Decimal("2610.60")
+    assert kwargs["vat_egp"] == Decimal("303.80")
+    assert kwargs["amount_egp"] == Decimal("2473.80")
 
 
 def test_payment_response_exposes_vat_to_payer() -> None:
@@ -746,11 +822,11 @@ def test_payment_response_exposes_vat_to_payer() -> None:
     payment.method = "manual"
     payment.provider = None
     payment.checkout_url = None
-    payment.amount_egp = Decimal("4058.40")
-    payment.accommodation_amount_egp = Decimal("3200")
+    payment.amount_egp = Decimal("1760.16")
+    payment.accommodation_amount_egp = Decimal("1460")
     payment.guest_service_fee_egp = 0
-    payment.cleaning_fee_egp = Decimal("200")
-    payment.vat_egp = Decimal("498.40")
+    payment.cleaning_fee_egp = Decimal("60")
+    payment.vat_egp = Decimal("216.16")
     payment.refund_amount_egp = None
     payment.nights = 4
     payment.reference_number = "REF"
@@ -774,14 +850,14 @@ def test_payment_response_exposes_vat_to_payer() -> None:
     # VAT is an internal liability line — hidden from the guest; the
     # internal economics breakdown stays staff-gated.
     assert ps._to_response(payment).vat_egp is None
-    assert ps._to_response(payment, include_breakdown=True).vat_egp == Decimal("498.40")
+    assert ps._to_response(payment, include_breakdown=True).vat_egp == Decimal("216.16")
     # Guest response presents the final all-inclusive total as the single
     # Accommodation figure; the cleaning component remains staff-only.
-    assert ps._to_response(payment).accommodation_amount_egp == Decimal("4058.40")
+    assert ps._to_response(payment).accommodation_amount_egp == Decimal("1760.16")
     assert ps._to_response(payment).cleaning_fee_egp is None
     assert ps._to_response(payment).guest_service_fee_egp is None
-    assert ps._to_response(payment, include_breakdown=True).accommodation_amount_egp == 3000
-    assert ps._to_response(payment, include_breakdown=True).cleaning_fee_egp == 200
+    assert ps._to_response(payment, include_breakdown=True).accommodation_amount_egp == 1400
+    assert ps._to_response(payment, include_breakdown=True).cleaning_fee_egp == 60
 
 
 # ============================================================
@@ -820,14 +896,14 @@ async def test_escrow_host_amount_resolves_via_split() -> None:
     payment = MagicMock()
     payment.booking_id = "b1"
     payment.host_id = "h1"
-    payment.amount_egp = Decimal("4058.40")
-    payment.accommodation_amount_egp = Decimal("3200")
-    payment.cleaning_fee_egp = Decimal("200")
-    payment.vat_egp = Decimal("498.40")
+    payment.amount_egp = Decimal("1760.16")
+    payment.accommodation_amount_egp = Decimal("1460")
+    payment.cleaning_fee_egp = Decimal("60")
+    payment.vat_egp = Decimal("216.16")
 
     escrow = MagicMock()
     escrow.reservation_id = "b1"
-    escrow.amount_egp = Decimal("4058.40")
+    escrow.amount_egp = Decimal("1760.16")
 
     with patch("app.config.settings", _s()), \
          patch.object(fs, "_reservation_or_none", AsyncMock(return_value=None)), \
@@ -836,9 +912,9 @@ async def test_escrow_host_amount_resolves_via_split() -> None:
                AsyncMock(return_value=10)):
         host_amount = await fs.escrow_host_amount(AsyncMock(), escrow)
 
-    # Host payable = accommodation + cleaning = 3200 — never + VAT and
-    # never minus the host-side allocation (it is additive revenue).
-    assert host_amount == Decimal("3200.00")
+    # Host net = gross 1460 − 84 commission = 1376 — never + VAT, never
+    # the guest-side 6%, never the host commission itself.
+    assert host_amount == Decimal("1376.00")
 
 
 @pytest.mark.asyncio

@@ -201,7 +201,7 @@ async def test_get_listing_detail(fake_session: AsyncMock, monkeypatch) -> None:
     assert result.lng == 31.0
     assert result.title == "شقة"
     assert result.description == "وصف"
-    assert result.price == Decimal("1915.20")  # all-inclusive nightly
+    assert result.price == Decimal("1812.60")  # all-inclusive nightly
     assert result.currency == "EGP"
     assert result.country == "Egypt"
     assert result.cover_image == "https://cdn.example.com/covers/test.jpg"
@@ -242,7 +242,7 @@ async def test_search_listings(fake_session: AsyncMock, monkeypatch) -> None:
     assert len(result.data) == 1
     assert result.pagination.total_count == 1
     assert result.data[0].title == "شقة"
-    assert result.data[0].price == Decimal("1915.20")  # all-inclusive nightly
+    assert result.data[0].price == Decimal("1812.60")  # all-inclusive nightly
     assert result.data[0].currency == "EGP"
     assert result.data[0].cover_image == "https://cdn.example.com/covers/test.jpg"
 
@@ -272,7 +272,7 @@ async def test_search_listings_no_dates_shows_per_night_only(fake_session: Async
     filters = ListingSearchFilters(offset=10, limit=5)
     result = await search_listings(fake_session, filters)
     assert len(result.data) == 1
-    assert result.data[0].price == Decimal("1915.20")  # all-inclusive nightly
+    assert result.data[0].price == Decimal("1812.60")  # all-inclusive nightly
     assert result.data[0].available_for_dates is None
     assert result.data[0].nights is None
     assert result.data[0].total_egp is None
@@ -309,7 +309,7 @@ async def test_search_listings_selected_dates_total_and_nights(fake_session: Asy
     assert result.data[0].available_for_dates is True
     assert result.data[0].nights == 3
     # 4500 accom + 540 (12%) = 5040 taxable + 14% VAT (705.60)
-    assert result.data[0].total_egp == Decimal("5745.60")
+    assert result.data[0].total_egp == Decimal("5437.80")
 
 
 @pytest.mark.asyncio
@@ -349,7 +349,7 @@ async def test_search_listings_calendar_rule_override_respected(fake_session: As
     result = await search_listings(fake_session, filters)
     assert result.data[0].nights == 3
     # 6000 accom + 720 (12%) = 6720 taxable + 14% VAT (940.80)
-    assert result.data[0].total_egp == Decimal("7660.80")
+    assert result.data[0].total_egp == Decimal("7250.40")
 
 
 @pytest.mark.asyncio
@@ -389,7 +389,7 @@ async def test_search_listings_adjacent_blocked_rule_excludes_correctly(fake_ses
     result = await search_listings(fake_session, filters)
     assert result.data[0].nights == 1
     # 1500 accom + 180 (12%) = 1680 taxable + 14% VAT (235.20)
-    assert result.data[0].total_egp == Decimal("1915.20")
+    assert result.data[0].total_egp == Decimal("1812.60")
 
 
 @pytest.mark.asyncio

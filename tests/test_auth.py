@@ -277,6 +277,79 @@ def test_update_account(auth_client: TestClient, monkeypatch) -> None:
     assert data["legal_name"] == "Test Account"
 
 
+def test_update_me_display_name(auth_client: TestClient, monkeypatch) -> None:
+    user = _make_user()
+    updated = _make_user(user_id=user.id)
+    updated.display_name = "New Display"
+    monkeypatch.setattr(
+        "app.auth.repository.get_user_by_id", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(
+        "app.auth.repository.update_user", AsyncMock(return_value=updated)
+    )
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.patch(
+        "/api/v1/auth/me",
+        json={"display_name": "New Display"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["display_name"] == "New Display"
+
+
+def test_update_me_ignores_identity_fields(
+    auth_client: TestClient, monkeypatch
+) -> None:
+    """PATCH /me must not mutate sign-in identities or legal fields — extra
+    keys are dropped by the restricted schema."""
+    user = _make_user()
+    update_user = AsyncMock(return_value=user)
+    monkeypatch.setattr(
+        "app.auth.repository.get_user_by_id", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr("app.auth.repository.update_user", update_user)
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.patch(
+        "/api/v1/auth/me",
+        json={"email": "attacker@example.com", "legal_name": "X"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    update_user.assert_not_awaited()
+
+
+def test_update_account_legal_name_locked_when_kyc_verified(
+    auth_client: TestClient, monkeypatch
+) -> None:
+    user = _make_user(kyc_status=KycStatus.VERIFIED)
+    account = _make_account(user.id)
+    monkeypatch.setattr(
+        "app.auth.repository.get_user_by_id", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(
+        "app.auth.repository.get_account_by_user_id",
+        AsyncMock(return_value=account),
+    )
+    update_account_mock = AsyncMock(return_value=account)
+    monkeypatch.setattr(
+        "app.auth.repository.update_account", update_account_mock
+    )
+    token = auth_services.create_access_token(user)
+
+    response = auth_client.patch(
+        "/api/v1/auth/me/account",
+        json={"legal_name": "New Name"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 422
+    update_account_mock.assert_not_awaited()
+
+
 def test_public_key(auth_client: TestClient) -> None:
     response = auth_client.get("/api/v1/auth/.well-known/jwks.json")
     assert response.status_code == 200

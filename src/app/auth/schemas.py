@@ -79,6 +79,14 @@ class AccountUpdate(BaseModel):
         return v
 
 
+class UserProfileUpdate(BaseModel):
+    """Self-service user profile fields — display name only. Email and
+    phone are sign-in/recovery identities and legal identity fields live
+    on the account record; none of those change through this endpoint."""
+
+    display_name: str | None = Field(default=None, max_length=255)
+
+
 class GuestPreferencesUpdate(BaseModel):
     guest_preferences: list[str] = Field(default_factory=list)
 

@@ -48,12 +48,12 @@ def _require_storage_config() -> None:
 
 def _s3_client() -> Any:
     _require_storage_config()
-    return boto3.client(
-        "s3",
-        region_name=settings.AWS_REGION,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    )
+    from app.shared.storage import s3_client
+
+    # Per-bucket credentials (Railway/Tigris) and the S3-compatible
+    # endpoint live in the shared client — a bare boto3.client would
+    # presign against AWS S3 and every upload PUT would fail.
+    return s3_client(settings.S3_KYC_BUCKET)
 
 
 def _textract_client() -> Any:
@@ -241,10 +241,23 @@ async def process_kyc_document(
     if not document.front_image_key or not document.selfie_image_key:
         raise ValidationError("Missing required image uploads")
 
-    fields = await _analyze_id_document(document.front_image_key)
-    similarity = await _compare_faces(
-        document.selfie_image_key, document.front_image_key
-    )
+    try:
+        fields = await _analyze_id_document(document.front_image_key)
+        similarity = await _compare_faces(
+            document.selfie_image_key, document.front_image_key
+        )
+    except Exception:
+        # AWS-native verification (Textract/Rekognition) requires AWS
+        # credentials the deployment may not have — e.g. S3-compatible
+        # object storage creds. Leave the document pending so the staff
+        # review queue picks it up instead of retry-storming forever.
+        logger.warning(
+            "KYC auto-verification unavailable for document %s; "
+            "leaving pending for staff review",
+            document_id,
+            exc_info=True,
+        )
+        return document
 
     first_name = fields.get("FIRST_NAME", "")
     last_name = fields.get("LAST_NAME", "")

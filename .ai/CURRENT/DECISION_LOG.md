@@ -915,7 +915,7 @@ Live verification found that free-text destination search ("Alexandria", "اسك
 
 ### DEC-023: Additive 12% Commercial Model — All-Inclusive Guest Price Is the Only Price the Guest Sees
 
-**Status**: Accepted
+**Status**: Superseded by DEC-024 (host-side 6% is settled as a host-payable deduction, not added to the guest charge; taxable base, ledger invariant, guest all-inclusive contract, and VAT separation retained)
 **Date**: 2026-09-25
 **Decision Maker**: Founder
 **Urgency**: PRE-LAUNCH
@@ -955,3 +955,50 @@ DEC-021 placed VAT on `accommodation + cleaning` while the 12% StayOS economics 
 - DEC-022 §4: superseded — guest breakdown is now Accommodation = Total only.
 - DEC-020 §2: Instant Book default remains in force.
 - FD-19: guest pricing summary — now a single all-inclusive line.
+
+---
+
+### DEC-024: Commercial Model B — Host 6% Settled as Host-Payable Deduction
+
+**Status**: Accepted
+**Date**: 2026-10-05
+**Decision Maker**: Founder (manual-acceptance batch)
+**Urgency**: PRE-LAUNCH
+**Reversibility**: HIGH
+
+#### Context
+
+DEC-023 added both 6% allocations on top of the host's price, so the host kept the full listed gross and the guest paid the 12% markup. The Founder's final commercial instruction changes the settlement of the host-side allocation: it is a real host-side commission that reduces host payout, not a guest-facing charge. The guest-side 6%, VAT separation, and the all-inclusive guest contract are unchanged in principle.
+
+#### Decision
+
+1. **Host commission**: `host_side = accommodation × 6%` is deducted from host payable. `host_gross = accommodation + cleaning`; `host_net = host_gross − host_side`. The host-side 6% is never added to the guest cash amount.
+2. **Guest-side allocation**: `guest_side = accommodation × 6%` is charged to the guest inside the taxable amount.
+3. **Taxable base** (supersedes DEC-023 §2): `taxable = accommodation + cleaning + guest_side` — the host commission is NOT inside the VAT base. `vat = taxable × 14%`; `guest_total = taxable + vat`.
+4. **StayOS revenue**: `stayos_revenue = host_side + guest_side` — funded by the host deduction plus the guest charge.
+5. **Ledger**: three separate destinations — `HOST_PAYABLE = host_net`, `PLATFORM_REVENUE = host_side + guest_side`, `VAT_PAYABLE = vat`. Invariant: `guest_total = host_net + stayos_revenue + vat_payable`.
+6. **Canonical example**: 700/night × 2 nights + cleaning 60 → accommodation 1,400; host gross 1,460; host commission 84; host net 1,376; guest fee 84; taxable 1,544; VAT 216.16; guest total 1,760.16 = 1,376 + 168 + 216.16. Paymob: 1,760.16 → 176,016 minor units.
+7. **Cleaning**: per-stay amount, added once. Never multiplied by nights; never inside the 6% fee base; inside the VAT base.
+8. **Fee base**: the 6% allocations apply to accommodation only — never cleaning, VAT, deposits, or pass-through charges.
+9. **Guest surfaces**: unchanged — one Accommodation figure equal to the final all-inclusive total plus "Prices include all fees"; no internal fee breakdown shown to guests. Search, listing, quote, checkout, payment, and Paymob all consume the same canonical engine (`finance/commercial.py`).
+10. **Alpha waiver**: the guest charge is unchanged; StayOS revenue becomes zero and the collected commercial share accrues to the host (host payable = full taxable amount). VAT is never waived.
+11. **History**: rows are classified by stored amount signature — Model B rows reconcile under Model B; DEC-023-generation rows (12% additive gap on `accommodation_amount_egp`) are preserved and reconciled under the economics actually charged; pre-split containment rows reconcile under containment economics. Historical financial records are not rewritten.
+
+#### Rationale
+
+- The host-side 6% is a commission the platform earns from the host, settled by deducting it from payout — not a charge pushed onto the guest.
+- VAT applies to the guest-facing taxable amount (accommodation + cleaning + guest fee); no additional tax treatment is invented for the host commission.
+- One canonical pricing engine keeps every surface identical; ledger separation keeps VAT identifiable as a liability owned by neither host nor StayOS.
+
+#### Consequences
+
+- **Positive**: host earnings are honest (net of commission); guest total falls versus DEC-023 for the same listing price (canonical 1,760.16 vs 1,940.74-style additive totals); ledger invariant still closes exactly.
+- **Negative**: none identified — revenue, VAT, and host payable remain three cleanly separated destinations.
+- **Neutral**: guest-facing surfaces, Paymob minor-unit conversion, refund paths, waiver semantics, and the 6%+6% rate structure are unchanged.
+
+#### Related Decisions
+
+- DEC-023: superseded (host-side allocation settlement and taxable base); the all-inclusive guest contract and VAT separation are retained.
+- DEC-021: remains superseded; the principle that VAT is a separate liability on a defined base is retained.
+- DEC-022 §4: remains superseded — guest view is Accommodation = Total only.
+- DEC-020 §2: Instant Book default remains in force.

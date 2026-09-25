@@ -3,15 +3,15 @@
 Proves the canonical commercial model end to end with a deterministic
 booking — not via mocks:
 
-    accommodation 3000 + cleaning 200 = taxable 3200
-    VAT 14% on taxable = 448 → guest total 3648
-    StayOS share 12% of accommodation = 360 (180 host-side + 180 guest-side)
-    host net = 3200 − 360 = 2840
+    accommodation 3000 + cleaning 200 = host gross 3200
+    host-side 6% commission = 180 (deducted from host payout)
+    guest-side 6% = 180 (inside the guest taxable amount)
+    taxable = 3000 + 200 + 180 = 3380 → VAT 14% = 473.20
+    guest total = 3853.20 = host net 3020 + StayOS revenue 360 + VAT 473.20
 
-Guest contract: only the all-inclusive accommodation amount, VAT and
-total are visible — no cleaning line, no 12%, no 6%, no service-fee
-line, no host economics. The guest's accommodation charge already
-contains the StayOS share internally (host_net + platform_share).
+Guest contract: only the all-inclusive accommodation amount and total
+are visible — no cleaning line, no 12%, no 6%, no VAT line, no
+service-fee line, no host economics.
 
 The alpha free-bookings incentive is exercised honestly: the host is
 seeded with 3 prior completed bookings so the 12% share is NOT waived.
@@ -44,10 +44,11 @@ ACCOMMODATION_EGP = NIGHTLY_EGP * NIGHTS  # 3000
 HOST_SIDE_EGP = Decimal(ACCOMMODATION_EGP * 0.06).quantize(Decimal("0.01"))  # 180
 GUEST_SIDE_EGP = HOST_SIDE_EGP  # 180
 PLATFORM_SHARE_EGP = HOST_SIDE_EGP + GUEST_SIDE_EGP  # 360
-HOST_PAYABLE_EGP = Decimal(ACCOMMODATION_EGP + CLEANING_EGP)  # 3200
-TAXABLE_EGP = HOST_PAYABLE_EGP + PLATFORM_SHARE_EGP  # 3560
-VAT_EGP = (TAXABLE_EGP * Decimal("0.14")).quantize(Decimal("0.01"))  # 498.40
-GUEST_TOTAL_EGP = TAXABLE_EGP + VAT_EGP  # 4058.40
+HOST_GROSS_EGP = Decimal(ACCOMMODATION_EGP + CLEANING_EGP)  # 3200
+HOST_NET_EGP = HOST_GROSS_EGP - HOST_SIDE_EGP  # 3020
+TAXABLE_EGP = HOST_GROSS_EGP + GUEST_SIDE_EGP  # 3380
+VAT_EGP = (TAXABLE_EGP * Decimal("0.14")).quantize(Decimal("0.01"))  # 473.20
+GUEST_TOTAL_EGP = TAXABLE_EGP + VAT_EGP  # 3853.20
 
 HOST_ID = "e2e-host-0000-0000-000000000001"
 GUEST_ID = "e2e-guest-0000-0000-00000000001"
@@ -226,14 +227,13 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
 
         # Guest-facing contract: one all-inclusive Accommodation line =
         # the final guest price. The StayOS economics are contained
-        # INSIDE that amount — the taxable 3,560 splits internally into
-        # host payable 3,200 + StayOS revenue 360, and VAT 498.40 is a
-        # liability, never a guest-visible line.
+        # INSIDE that amount — host net 3,020 + StayOS revenue 360 +
+        # VAT 473.20 (a liability, never a guest-visible line).
         guest_view = payment_services._to_response(payment)
         assert guest_view.accommodation_amount_egp == GUEST_TOTAL_EGP
         assert guest_view.amount_egp == GUEST_TOTAL_EGP
         assert (
-            HOST_PAYABLE_EGP + PLATFORM_SHARE_EGP + VAT_EGP
+            HOST_NET_EGP + PLATFORM_SHARE_EGP + VAT_EGP
             == guest_view.amount_egp
         )
         assert guest_view.cleaning_fee_egp is None
@@ -295,11 +295,11 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
             (e.ledger_account, e.entry_type): e.amount_egp
             for e in entries if e.entry_type == LedgerEntryType.CREDIT
         }
-        assert credits[(LedgerAccount.HOST_PAYABLE, "credit")] == HOST_PAYABLE_EGP
+        assert credits[(LedgerAccount.HOST_PAYABLE, "credit")] == HOST_NET_EGP
         assert credits[(LedgerAccount.PLATFORM_REVENUE, "credit")] == PLATFORM_SHARE_EGP
         assert credits[(LedgerAccount.VAT_PAYABLE, "credit")] == VAT_EGP
 
-    # ---- 5. Internal 12% = 6% host-side + 6% guest-side -------------------
+    # ---- 5. Internal 12% = 6% host commission + 6% guest-side ---------
     async with factory() as session:
         payment = (
             await session.execute(
@@ -315,7 +315,7 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
         assert economics.platform_share_egp == PLATFORM_SHARE_EGP
         assert economics.host_side_share_egp == HOST_SIDE_EGP
         assert economics.guest_side_share_egp == GUEST_SIDE_EGP
-        assert economics.host_net_egp == HOST_PAYABLE_EGP
+        assert economics.host_net_egp == HOST_NET_EGP
         assert (
             economics.host_net_egp
             + economics.platform_share_egp

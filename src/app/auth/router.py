@@ -269,6 +269,21 @@ async def delete_my_account(
         raise to_http_exception(exc) from exc
 
 
+@router.patch("/me", response_model=auth_schemas.UserResponse)
+async def update_me(
+    data: auth_schemas.UserProfileUpdate,
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.UserResponse:
+    from app.auth import repository as auth_repository
+
+    update_data = data.model_dump(exclude_unset=True)
+    if update_data:
+        user = await auth_repository.update_user(session, user, **update_data)
+        await session.commit()
+    return auth_schemas.UserResponse.model_validate(user)
+
+
 @router.patch("/me/account", response_model=auth_schemas.AccountResponse)
 async def update_account(
     data: auth_schemas.AccountUpdate,

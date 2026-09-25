@@ -1336,13 +1336,13 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
     await payment_services.create_payment_for_booking(fake_session, booking, guest)
 
     kwargs = create_mock.call_args.kwargs
-    # Host payable: 500*4 + 50 cleaning = 2050 — no guest service fee.
-    # Taxable: 2050 + 240 (12% of 2000) = 2290 → VAT 320.60 → guest
-    # pays 2610.60.
+    # Host gross: 500*4 + 50 cleaning = 2050 — no guest service fee.
+    # Taxable: 2050 + 120 (guest-side 6% of 2000) = 2170 → VAT 303.80 →
+    # guest pays 2473.80.
     assert kwargs["accommodation_amount_egp"] == 2050
     assert kwargs["guest_service_fee_egp"] == 0
-    assert kwargs["vat_egp"] == Decimal("320.60")
-    assert kwargs["amount_egp"] == Decimal("2610.60")
+    assert kwargs["vat_egp"] == Decimal("303.80")
+    assert kwargs["amount_egp"] == Decimal("2473.80")
     deadline = kwargs["payment_deadline_at"]
     assert deadline is not None
     delta = (deadline - before).total_seconds() / 3600
@@ -1516,11 +1516,11 @@ async def test_get_booking_quote_all_inclusive(fake_session: AsyncMock, monkeypa
         fake_session, "unit-1", date(2026, 9, 10), date(2026, 9, 14)
     )
     assert quote.nights == 4
-    # 500 × 4 nights = 2000 + 50 cleaning + 240 (12%) = 2290 taxable
-    # + 14% VAT (320.60) = 2610.60 — the guest sees only the final total.
-    assert quote.accommodation_egp == Decimal("2610.60")
+    # 500 × 4 nights = 2000 + 50 cleaning + 120 (guest 6%) = 2170 taxable
+    # + 14% VAT (303.80) = 2473.80 — the guest sees only the final total.
+    assert quote.accommodation_egp == Decimal("2473.80")
     assert "cleaning_fee_egp" not in type(quote).model_fields
-    assert quote.total_egp == Decimal("2610.60")
+    assert quote.total_egp == Decimal("2473.80")
     assert quote.accommodation_egp == quote.total_egp
     # No internal economics or fee fields exist on the guest-facing contract.
     assert not hasattr(quote, "service_fee_egp")
@@ -1552,10 +1552,10 @@ async def test_get_booking_quote_weekly_discount(
     quote = await payment_services.get_booking_quote(
         fake_session, "unit-1", date(2026, 9, 10), date(2026, 9, 18)
     )
-    # 8 nights: 500 × 8 = 4000 − 10% = 3600 + 50 cleaning + 432 (12%)
-    # = 4082 taxable + 14% VAT (571.48) = 4653.48.
+    # 8 nights: 500 × 8 = 4000 − 10% = 3600 + 50 cleaning + 216 (guest
+    # 6% of 3600) = 3866 taxable + 14% VAT (541.24) = 4407.24.
     assert quote.nights == 8
-    assert quote.total_egp == Decimal("4653.48")
+    assert quote.total_egp == Decimal("4407.24")
     assert quote.accommodation_egp == quote.total_egp
 
 
@@ -1593,8 +1593,8 @@ async def test_get_booking_quote_applies_weekend_multiplier(
     )
     assert quote.nights == 4
     # 2 weekday nights @ 500 + 2 weekend nights @ 750 = 2500 + 50 cleaning
-    # + 300 (12%) = 2850 taxable + 14% VAT (399) = 3249.
-    assert quote.total_egp == Decimal("3249.00")
+    # + 150 (guest 6%) = 2700 taxable + 14% VAT (378) = 3078.
+    assert quote.total_egp == Decimal("3078.00")
     assert quote.accommodation_egp == quote.total_egp
 
 

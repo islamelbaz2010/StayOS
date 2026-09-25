@@ -6,9 +6,11 @@ surface at every step of the guest journey:
 
     Search → Listing Detail → Booking Quote → Payment → Paymob
 
-    3,000 + 200 + 180 (host-side 6%) + 180 (guest-side 6%) = 3,560 taxable
-    3,560 × 14% VAT = 498.40
-    Final guest price = 4,058.40
+    3,000 + 200 + 180 (guest-side 6%) = 3,380 taxable
+    3,380 × 14% VAT = 473.20
+    Final guest price = 3,853.20
+    Host-side 6% (180) is a commission deducted from the host gross —
+    never added to the guest charge (Model B).
 
 No amount may change at checkout, and no guest surface may expose the
 internal components (cleaning, VAT, 6%/12% allocations, service fee).
@@ -36,8 +38,8 @@ CLEANING_EGP = 200
 CHECK_IN = date(2026, 11, 1)
 CHECK_OUT = date(2026, 11, 2)  # 1 night → accommodation 3,000
 
-GUEST_TOTAL = Decimal("4058.40")
-PAYMOB_MINOR_UNITS = 405840  # 4,058.40 EGP in piastres
+GUEST_TOTAL = Decimal("3853.20")
+PAYMOB_MINOR_UNITS = 385320  # 3,853.20 EGP in piastres
 
 
 def _listing() -> UnitListing:
@@ -107,7 +109,7 @@ def _session() -> AsyncMock:
 
 @pytest.mark.asyncio
 async def test_price_consistent_search_to_paymob(monkeypatch) -> None:
-    """Search → Detail → Quote → Payment → Paymob: 4,058.40 everywhere."""
+    """Search → Detail → Quote → Payment → Paymob: 3,853.20 everywhere."""
     from app.listings import services as listing_services
     from app.payments import services as payment_services
 
@@ -225,7 +227,7 @@ async def test_price_consistent_search_to_paymob(monkeypatch) -> None:
     await payment_services.create_payment_for_booking(session, booking, guest)
     # Checkout charge = the exact all-inclusive total already displayed.
     assert captured["amount_egp"] == GUEST_TOTAL
-    assert captured["vat_egp"] == Decimal("498.40")
+    assert captured["vat_egp"] == Decimal("473.20")
     assert captured["accommodation_amount_egp"] == Decimal("3200.00")
 
     # ---- Paymob intention — exact minor units, server-authoritative --------
@@ -236,7 +238,7 @@ async def test_price_consistent_search_to_paymob(monkeypatch) -> None:
         method="manual", provider=None, checkout_url=None,
         amount_egp=GUEST_TOTAL,
         accommodation_amount_egp=Decimal("3200.00"),
-        vat_egp=Decimal("498.40"), nights=1, reference_number="REF",
+        vat_egp=Decimal("473.20"), nights=1, reference_number="REF",
         guest_service_fee_egp=0, cleaning_fee_egp=Decimal("200"),
         proof_s3_key=None, proof_url=None, proof_uploaded_at=None,
         verified_at=None, verified_by=None, rejected_at=None,

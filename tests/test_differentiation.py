@@ -417,12 +417,12 @@ async def test_earnings_simulator_uses_canonical_engine() -> None:
             nightly_price_egp=500, nights=4, cleaning_fee_egp=50
         ),
     )
-    # 2000 accom + 50 cleaning + 240 (12%) = 2290 taxable; VAT 320.60 →
-    # guest 2610.60. Host payable = accom + cleaning = 2050.
-    assert resp.vat_egp == Decimal("320.60")
-    assert resp.guest_total_egp == Decimal("2610.60")
+    # 2000 accom + 50 cleaning + 120 (guest 6%) = 2170 taxable; VAT
+    # 303.80 → guest 2473.80. Host net = 2050 − 120 commission = 1930.
+    assert resp.vat_egp == Decimal("303.80")
+    assert resp.guest_total_egp == Decimal("2473.80")
     assert resp.stayos_share_egp == Decimal("240.00")
-    assert resp.host_net_egp == Decimal("2050.00")
+    assert resp.host_net_egp == Decimal("1930.00")
     assert resp.discount_egp == 0
 
 
@@ -438,14 +438,14 @@ async def test_earnings_simulator_with_discount() -> None:
             discount_pct=10,
         ),
     )
-    # 4000 − 10% = 3600 accom; +432 (12%) → taxable 4032; VAT 564.48 →
-    # guest 4596.48. Host payable = accom + cleaning = 3600.
+    # 4000 − 10% = 3600 accom; +216 (guest 6%) → taxable 3816; VAT
+    # 534.24 → guest 4350.24. Host net = 3600 − 216 commission = 3384.
     assert resp.accommodation_egp == 3600
     assert resp.discount_egp == 400
-    assert resp.vat_egp == Decimal("564.48")
-    assert resp.guest_total_egp == Decimal("4596.48")
+    assert resp.vat_egp == Decimal("534.24")
+    assert resp.guest_total_egp == Decimal("4350.24")
     assert resp.stayos_share_egp == Decimal("432.00")
-    assert resp.host_net_egp == Decimal("3600.00")
+    assert resp.host_net_egp == Decimal("3384.00")
 
 
 @pytest.mark.asyncio

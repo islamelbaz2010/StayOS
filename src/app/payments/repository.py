@@ -169,7 +169,8 @@ async def list_guest_payments(
             selectinload(Payment.unit)
             .selectinload(Unit.listing)
             .selectinload(UnitListing.cover_photo),
-            selectinload(Payment.unit).selectinload(Unit.photos)
+            selectinload(Payment.unit).selectinload(Unit.photos),
+            selectinload(Payment.booking),
         )
         .where(Payment.guest_id == guest_id)
         .order_by(Payment.created_at.desc(), Payment.id.desc())

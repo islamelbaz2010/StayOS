@@ -74,15 +74,20 @@ async def booking_economics(
     Returns ``(economics, waived)`` so callers can surface whether the
     platform share was waived for this booking.
 
-    Under the current Founder model the stored ``accommodation_amount_egp``
-    is the host payable (accommodation + cleaning) and the 12% allocations
-    were charged to the guest on top, inside the taxable amount — so
-    ``stayos_revenue = amount - vat - host_payable``. Rows priced under the
-    superseded model had the share carved OUT of the taxable amount
-    (``amount == accommodation_amount + vat``); those are detected and
-    split by the old rule so their ledgers still balance against what was
-    actually charged. ``payment.vat_egp`` is authoritative: pre-VAT rows
-    carry NULL and are treated as VAT-free.
+    Under Model B the stored ``accommodation_amount_egp`` is the host
+    GROSS payable (accommodation + cleaning) and the guest-side 6% was
+    charged to the guest on top, inside the taxable amount — so
+    ``taxable = accom_cleaning + guest_6%``, the host commission is
+    deducted from the gross, and
+    ``stayos_revenue = host_6% + guest_6%``. Rows priced under the
+    superseded DEC-023 model added BOTH allocations to the guest
+    (``taxable = accom_cleaning + 12%``); rows priced before that had
+    the share carved OUT of the taxable amount
+    (``amount == accommodation_amount + vat``). Each generation is
+    detected by its gap signature and split by the rule that actually
+    charged it so historical ledgers still balance. ``payment.vat_egp``
+    is authoritative: pre-VAT rows carry NULL and are treated as
+    VAT-free.
     """
     from app.bookings import repository as bookings_repository
 
@@ -100,27 +105,29 @@ async def booking_economics(
     if fee_base < 0:
         fee_base = taxable_implied
 
+    host_commission = commercial.money(
+        fee_base * commercial.rate(settings.HOST_SIDE_SHARE_PCT)
+    )
+    guest_fee = commercial.money(
+        fee_base * commercial.rate(settings.GUEST_SIDE_SHARE_PCT)
+    )
     additive_gap = taxable_implied - accom_cleaning
-    if additive_gap > 0:
-        # Current model: the 6%+6% allocations sit inside the taxable
-        # amount on top of the host payable. Revenue is whatever the
-        # taxable amount holds beyond the host payable — exact for both
-        # listing-priced and custom-offer payments.
-        accom = fee_base
-        host_side = commercial.money(
-            accom * commercial.rate(settings.HOST_SIDE_SHARE_PCT)
-        )
-        collected = taxable_implied - accom_cleaning
-        guest_side = collected - host_side
+    if additive_gap > 0 and additive_gap == host_commission + guest_fee:
+        # DEC-023 additive row: both 6% allocations were charged to the
+        # guest on top; host payable was the full accom+cleaning gross.
+        collected = additive_gap
+        guest_side = collected - host_commission
         if guest_side < 0:
             guest_side = Decimal("0")
             host_side = collected
+        else:
+            host_side = host_commission
         # Waived (closed-alpha): StayOS takes nothing — the collected
         # allocation accrues to the host, who is payable the full
         # taxable amount. The guest charge is unchanged.
         revenue = Decimal("0") if waived else collected
         economics = commercial.BookingEconomics(
-            accommodation_egp=commercial.money(accom),
+            accommodation_egp=commercial.money(fee_base),
             cleaning_fee_egp=commercial.money(cleaning),
             taxable_amount_egp=commercial.money(taxable_implied),
             vat_egp=stored_vat,
@@ -134,9 +141,31 @@ async def booking_economics(
             host_side_share_egp=host_side,
             guest_side_share_egp=guest_side,
         )
+    elif additive_gap > 0:
+        # Model B: the guest-side 6% sits inside the taxable amount on
+        # top of the host gross; the host-side 6% commission is deducted
+        # from that gross. Revenue = commission + collected guest fee.
+        revenue = (
+            Decimal("0") if waived else additive_gap + host_commission
+        )
+        economics = commercial.BookingEconomics(
+            accommodation_egp=commercial.money(fee_base),
+            cleaning_fee_egp=commercial.money(cleaning),
+            taxable_amount_egp=commercial.money(taxable_implied),
+            vat_egp=stored_vat,
+            guest_total_egp=payment.amount_egp,
+            platform_share_egp=revenue,
+            host_net_egp=(
+                commercial.money(taxable_implied)
+                if waived
+                else commercial.money(accom_cleaning) - host_commission
+            ),
+            host_side_share_egp=host_commission,
+            guest_side_share_egp=commercial.money(additive_gap),
+        )
     else:
-        # Legacy containment-model row (or a waived booking, which looks
-        # identical: no allocation on top of accommodation + cleaning).
+        # Legacy containment-model row: the share was carved OUT of the
+        # taxable amount; no allocation sits on top of accom+cleaning.
         economics = commercial.compute_booking_economics(
             fee_base, cleaning, platform_share_waived=waived
         )

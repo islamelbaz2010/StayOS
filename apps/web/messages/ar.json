@@ -885,7 +885,8 @@
       "checkedIn": "تم تسجيل الوصول",
       "completed": "مكتمل"
     },
-    "hostSpeaks": "يتحدث: {languages}"
+    "hostSpeaks": "يتحدث: {languages}",
+    "nights": "{count, plural, =1 {# ليلة} =2 {ليلتان} few {# ليالٍ} other {# ليلة}}"
   },
   "booking": {
     "title": "طلب حجز",
@@ -1278,6 +1279,8 @@
     "returnStillProcessing": "الدفع قيد المعالجة",
     "returnStillProcessingHint": "لم يصلنا التأكيد النهائي بعد. يتم تحديث الحالة تلقائياً، أو سجّل الدخول للتحقق من حجزك.",
     "returnSignInHint": "سجّل الدخول للاطلاع على تفاصيل الحجز والدفع كاملة.",
+    "viewBooking": "عرض الحجز",
+    "goToTrips": "الذهاب إلى رحلاتي",
     "vatLine": "ضريبة القيمة المضافة 14%"
   },
   "kyc": {
@@ -1396,7 +1399,18 @@
     "allPermissions": "جميع الصلاحيات (مدير)",
     "profilePhoto": "الصورة الشخصية",
     "changePhoto": "تغيير الصورة",
-    "avatarUploadError": "تعذّر رفع الصورة. حاول مرة أخرى."
+    "avatarUploadError": "تعذّر رفع الصورة. حاول مرة أخرى.",
+    "personalInfo": "المعلومات الشخصية",
+    "displayName": "الاسم المعروض",
+    "legalName": "الاسم القانوني",
+    "legalNameLocked": "موثق عبر التحقق من الهوية — تواصل مع الدعم لتغييره.",
+    "dateOfBirth": "تاريخ الميلاد",
+    "address": "عنوان السكن",
+    "addressStreet": "الشارع / الحي",
+    "addressCity": "المدينة",
+    "addressGovernorate": "المحافظة",
+    "edit": "تعديل",
+    "notSet": "غير مُعد"
   },
   "hostNav": {
     "dashboard": "لوحة التحكم",
@@ -1445,7 +1459,21 @@
       "cancelled": "ملغاة",
       "refund_pending": "استرداد معلّق",
       "refunded": "مُستردة"
-    }
+    },
+    "emptyFiltered": "لا توجد مدفوعات تطابق هذا الفلتر.",
+    "searchPlaceholder": "ابحث بالمرجع أو الإقامة أو المبلغ…",
+    "viewPaymentDetails": "عرض تفاصيل الدفع",
+    "refundAmount": "الاسترداد",
+    "tabs": {
+      "all": "الكل",
+      "pending": "معلّقة",
+      "paid": "مدفوعة / مؤكدة",
+      "upcoming": "قادمة",
+      "completed": "مكتملة",
+      "cancelled": "ملغاة",
+      "refunded": "مُستردة"
+    },
+    "methodsNote": "لا يحتفظ StayOS ببيانات البطاقة — تتم عملية الدفع بالبطاقة بشكل آمن لدى مزود الدفع في كل مرة تدفع فيها."
   },
   "hostEarnings": {
     "title": "الأرباح",

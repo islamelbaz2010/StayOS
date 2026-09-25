@@ -27,8 +27,18 @@ vi.mock("@/lib/queries/kyc", () => ({
   useKycStatus: () => ({ data: null }),
 }));
 
+let mockAccount: Record<string, unknown> | null = null;
+
+vi.mock("@/lib/queries/account", () => ({
+  useAccount: () => ({ data: mockAccount }),
+  useUpdateAccount: () => ({ mutateAsync: vi.fn(async () => ({})) }),
+}));
+
 vi.mock("@/lib/api", () => ({
-  api: { post: vi.fn(async () => ({ data: {} })) },
+  api: {
+    post: vi.fn(async () => ({ data: {} })),
+    patch: vi.fn(async () => ({ data: {} })),
+  },
 }));
 
 vi.mock("@/components/layouts", () => ({
@@ -43,8 +53,9 @@ import ProfilePage from "./page";
 
 const auth = messages.auth as Record<string, string>;
 
-function renderProfile(user: Record<string, unknown>) {
+function renderProfile(user: Record<string, unknown>, account?: Record<string, unknown>) {
   mockUser = user;
+  mockAccount = account ?? null;
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -102,4 +113,32 @@ describe("Profile password section state", () => {
       expect(screen.getByText(roles[role])).toBeInTheDocument();
     }
   );
+});
+
+describe("Profile — canonical personal information", () => {
+  const profile = messages.profile as unknown as Record<string, string>;
+
+  it("renders the account record fields read-only by default", () => {
+    renderProfile(baseUser, {
+      legal_name: "Ahmed Test",
+      date_of_birth: "1990-01-02",
+      address: { street: "12 Nile St", city: "Cairo", governorate: "Cairo" },
+    });
+    expect(screen.getByText(profile.personalInfo)).toBeInTheDocument();
+    expect(screen.getByText("Ahmed Test")).toBeInTheDocument();
+    expect(screen.getByText("1990-01-02")).toBeInTheDocument();
+    expect(
+      screen.getByText("12 Nile St, Cairo, Cairo")
+    ).toBeInTheDocument();
+  });
+
+  it("locks legal name for a KYC-verified user", () => {
+    renderProfile(baseUser, { legal_name: "Ahmed Test" });
+    expect(screen.getByText(profile.legalNameLocked)).toBeInTheDocument();
+  });
+
+  it("shows Not set for empty account fields", () => {
+    renderProfile({ ...baseUser, kyc_status: "unverified" }, {});
+    expect(screen.getAllByText(profile.notSet).length).toBeGreaterThanOrEqual(3);
+  });
 });

@@ -193,6 +193,20 @@ function CheckoutContent({
           <p className="mt-1 text-sm text-neutral-600">
             {t("paymobReturnConfirmedHint")}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <Link
+              href={`/${locale}/bookings/${bookingId}`}
+              className="btn-primary inline-block px-5 py-2 text-sm font-semibold"
+            >
+              {t("viewBooking")}
+            </Link>
+            <Link
+              href={`/${locale}/bookings`}
+              className="text-sm font-semibold text-accent-600 hover:text-accent-700"
+            >
+              {t("goToTrips")}
+            </Link>
+          </div>
         </div>
       )}
       {returnedFromPaymob &&
@@ -442,7 +456,7 @@ function PaymentReturnView({
   locale,
 }: {
   bookingId: string;
-  token: string;
+  token: string | null;
   locale: string;
 }) {
   const t = useTranslations("payment");
@@ -453,26 +467,34 @@ function PaymentReturnView({
     const timer = setTimeout(() => setConfirmWindowOpen(false), 90_000);
     return () => clearTimeout(timer);
   }, []);
-  const { data, error, isLoading } = usePaymentReturnStatus(bookingId, token, {
-    refetchInterval: (status) =>
-      confirmWindowOpen &&
-      (!status ||
-        ["pending", "proof_uploaded", "rejected"].includes(
-          status.payment_status
-        ))
-        ? 3000
-        : false,
-  });
+  const { data, error, isLoading } = usePaymentReturnStatus(
+    bookingId,
+    token ?? "",
+    {
+      refetchInterval: (status) =>
+        confirmWindowOpen &&
+        (!status ||
+          ["pending", "proof_uploaded", "rejected"].includes(
+            status.payment_status
+          ))
+          ? 3000
+          : false,
+    }
+  );
 
-  if (isLoading) {
-    return (
-      <div className="card p-8 text-center text-neutral-500">
-        {tc("loading")}
-      </div>
-    );
-  }
+  // Sign-in always lands the guest back on this booking — never a dead
+  // end, never a legacy flow.
+  const bookingRedirect = encodeURIComponent(`/${locale}/bookings/${bookingId}`);
+  const tripsRedirect = encodeURIComponent(`/${locale}/bookings`);
 
-  if (error || !data) {
+  if (!token || error || !data) {
+    if (isLoading && token) {
+      return (
+        <div className="card p-8 text-center text-neutral-500">
+          {tc("loading")}
+        </div>
+      );
+    }
     return (
       <div className="card p-8 text-center">
         <p className="font-semibold text-brand-900">
@@ -482,7 +504,7 @@ function PaymentReturnView({
           {t("returnLinkInvalidHint")}
         </p>
         <Link
-          href={`/${locale}/auth/login`}
+          href={`/${locale}/auth/login?redirect=${bookingRedirect}`}
           className="mt-4 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
         >
           {t("signInToViewBooking")}
@@ -586,15 +608,32 @@ function PaymentReturnView({
       </div>
 
       <div className="card p-5 text-center sm:p-6">
-        <p className="text-sm text-neutral-600">{t("returnSignInHint")}</p>
-        <Link
-          href={`/${locale}/auth/login?redirect=${encodeURIComponent(
-            `/${locale}/bookings/${bookingId}`
-          )}`}
-          className="btn-primary mt-3 inline-block px-6 py-2 text-sm font-semibold"
-        >
-          {t("signInToViewBooking")}
-        </Link>
+        {isVerified ? (
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href={`/${locale}/auth/login?redirect=${bookingRedirect}`}
+              className="btn-primary inline-block px-6 py-2 text-sm font-semibold"
+            >
+              {t("viewBooking")}
+            </Link>
+            <Link
+              href={`/${locale}/auth/login?redirect=${tripsRedirect}`}
+              className="text-sm font-semibold text-accent-600 hover:text-accent-700"
+            >
+              {t("goToTrips")}
+            </Link>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-neutral-600">{t("returnSignInHint")}</p>
+            <Link
+              href={`/${locale}/auth/login?redirect=${bookingRedirect}`}
+              className="btn-primary mt-3 inline-block px-6 py-2 text-sm font-semibold"
+            >
+              {t("signInToViewBooking")}
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );
@@ -615,9 +654,11 @@ export default function CheckoutPage() {
     (searchParams.has("success") && searchParams.has("id"));
 
   // A guest returning from hosted checkout without a session still gets a
-  // safe payment-status resolution — never a login dead-end. When a session
-  // exists the full authenticated checkout page is preserved as before.
-  if (!isLoading && !isAuthenticated && isProviderReturn && returnToken) {
+  // safe payment-status resolution — never a login dead-end, even when the
+  // return token is missing/expired (the return view falls back to a
+  // sign-in that preserves the booking). When a session exists the full
+  // authenticated checkout page is preserved as before.
+  if (!isLoading && !isAuthenticated && isProviderReturn) {
     return (
       <GuestLayout>
         <section className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">

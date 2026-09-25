@@ -634,14 +634,20 @@ async def test_avatar_confirm_scoped_to_user(
     )
 
 
-def test_avatar_url_none_without_key() -> None:
+def test_avatar_url_none_without_key(monkeypatch) -> None:
     user = _make_user()
     user.avatar_s3_key = None
     assert auth_services.avatar_url(user) is None
 
+    # Avatars read through the shared presigned-GET resolver — stub it so
+    # the test covers the wiring, not botocore's signing internals.
+    monkeypatch.setattr(
+        "app.shared.storage.resolve_object_url",
+        lambda bucket, key, stored: f"https://signed/{key}?sig=x",
+    )
     user.avatar_s3_key = "avatars/x/avatar_1.jpg"
     url = auth_services.avatar_url(user)
-    assert url is None or url.endswith("avatars/x/avatar_1.jpg")
+    assert url is None or "avatars/x/avatar_1.jpg?" in url
 
 
 # ---------------------------------------------------------------------------
@@ -843,9 +849,10 @@ async def test_host_payments_attach_earnings(
 
     item = items[0]
     assert item.amount_egp == 2050
-    # New model: host payable = accommodation + cleaning; the 12% is
-    # additive revenue — never deducted from the host payable.
-    assert item.host_net_egp == 2000
+    # Model B: host net = accommodation + cleaning − the host-side 6%
+    # commission (2000 − 117 = 1883); the guest-side 6% never touches
+    # host payable.
+    assert item.host_net_egp == 1883
     assert item.platform_fee_egp == round(1950 * 0.12)
     assert item.platform_share_waived is False
     assert item.funds_status == "held"

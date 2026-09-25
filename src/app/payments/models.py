@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     JSON,
@@ -17,6 +17,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.shared.models import Base, TimestampMixin, UUIDMixin
 
 from .constants import PaymentMethod, PaymentStatus
+
+if TYPE_CHECKING:
+    from app.bookings.models import Booking
 
 
 class Payment(UUIDMixin, TimestampMixin, Base):
@@ -120,3 +123,4 @@ class Payment(UUIDMixin, TimestampMixin, Base):
     )
     instructions: Mapped[str] = mapped_column(Text, nullable=False, default="")
     unit: Mapped["Unit"] = relationship("Unit", foreign_keys=[unit_id])
+    booking: Mapped["Booking"] = relationship("Booking", foreign_keys=[booking_id])

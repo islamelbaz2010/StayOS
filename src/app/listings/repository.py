@@ -185,15 +185,17 @@ def _all_inclusive_nightly_expr():
     """SQL expression for the guest-facing all-inclusive nightly price.
 
     Matches ``commercial.all_inclusive_nightly_egp``: the final guest
-    total for a minimum-length stay (accommodation + cleaning + both 6%
-    allocations + VAT) divided by min_nights — the same number search
+    total for a minimum-length stay (accommodation + cleaning + the
+    guest-side 6% + VAT) divided by min_nights — the same number search
     cards display, so price filters and sorts act on what guests see.
+    The host-side 6% is a host commission and never enters the guest
+    price (Model B).
     """
     from decimal import Decimal
 
     from app.config import settings
 
-    share = Decimal("1") + Decimal(str(settings.PLATFORM_TOTAL_SHARE_PCT))
+    share = Decimal("1") + Decimal(str(settings.GUEST_SIDE_SHARE_PCT))
     vat = Decimal("1") + Decimal(str(settings.VAT_RATE_PCT))
     min_nights = func.greatest(UnitListing.min_nights, 1)
     return (

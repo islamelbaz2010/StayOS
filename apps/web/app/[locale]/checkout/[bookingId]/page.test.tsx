@@ -115,8 +115,8 @@ describe("Checkout guest pricing", () => {
       status: "verified",
       // Canonical example: the guest's Accommodation line IS the final
       // all-inclusive price — VAT and fees are internal components.
-      amount_egp: 4058.4,
-      accommodation_amount_egp: 4058.4,
+      amount_egp: 1760.16,
+      accommodation_amount_egp: 1760.16,
       cleaning_fee_egp: null,
       vat_egp: null,
       nights: 3,
@@ -137,7 +137,7 @@ describe("Checkout guest pricing", () => {
     expect(screen.queryByText("Cleaning fee")).not.toBeInTheDocument();
     expect(screen.queryByText(/service fee/i)).not.toBeInTheDocument();
     // Accommodation equals the charged total — no surprise at checkout.
-    expect(screen.getAllByText(/4,058\.4/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/1,760\.16/).length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -201,6 +201,21 @@ describe("Checkout — unauthenticated Paymob return", () => {
     expect(
       screen.getByText(String(payment.signInToViewBooking))
     ).toBeInTheDocument();
+  });
+
+  it("shows a booking-scoped sign-in — never the protected checkout — when the return token is missing", () => {
+    // Paymob return params but no `pr` token: the guest must still land
+    // on the payment-result view (with a booking-preserving sign-in
+    // link), not a bare auth bounce.
+    mockSearch = "success=true&id=123";
+    renderPage(en as never);
+    expect(
+      screen.getByText(String(payment.returnLinkInvalidTitle))
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(String(payment.signInToViewBooking))
+    ).toBeInTheDocument();
+    expect(screen.queryByText(String(payment.checkoutTitle))).toBeNull();
   });
 
   it("localizes the public return view under ar", () => {

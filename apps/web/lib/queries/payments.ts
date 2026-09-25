@@ -61,6 +61,9 @@ export interface PaymentListItem {
   proof_rejection_count: number;
   unit_title: string | null;
   unit_cover_image: string | null;
+  check_in: string | null;
+  check_out: string | null;
+  booking_status: string | null;
   // Host-facing earnings fields — only populated on /payments/host.
   host_net_egp?: number | null;
   platform_fee_egp?: number | null;

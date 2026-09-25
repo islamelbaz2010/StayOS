@@ -117,6 +117,13 @@ class Settings(BaseSettings):
         description="Private S3 bucket for payment proof uploads. Payment proofs can contain bank details and must not share the public listing-photo bucket (P0-3).",
     )
     S3_KYC_BUCKET: str = Field(default="", description="S3 bucket for KYC documents")
+    # Per-bucket credentials — S3-compatible providers (Railway/Tigris)
+    # scope credentials to a single bucket, so a dedicated private bucket
+    # needs its own key pair. Falls back to AWS_* when unset.
+    S3_KYC_ACCESS_KEY_ID: str = Field(default="", description="KYC bucket access key (falls back to AWS_ACCESS_KEY_ID)")
+    S3_KYC_SECRET_ACCESS_KEY: str = Field(default="", description="KYC bucket secret (falls back to AWS_SECRET_ACCESS_KEY)")
+    S3_PAYMENT_PROOF_ACCESS_KEY_ID: str = Field(default="", description="Payment-proof bucket access key (falls back to AWS_ACCESS_KEY_ID)")
+    S3_PAYMENT_PROOF_SECRET_ACCESS_KEY: str = Field(default="", description="Payment-proof bucket secret (falls back to AWS_SECRET_ACCESS_KEY)")
     AWS_REGION: str = Field(default="", description="AWS region")
     AWS_ACCESS_KEY_ID: str = Field(default="", description="AWS access key ID")
     AWS_SECRET_ACCESS_KEY: str = Field(default="", description="AWS secret access key")

@@ -6,7 +6,6 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-import boto3
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -100,12 +99,12 @@ def _require_storage_config() -> None:
 
 def _s3_client() -> Any:
     _require_storage_config()
-    return boto3.client(
-        "s3",
-        region_name=settings.AWS_REGION,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    )
+    from app.shared.storage import s3_client
+
+    # Per-bucket credentials (Railway/Tigris) and the S3-compatible
+    # endpoint live in the shared client — a bare boto3.client would
+    # presign against AWS S3 and every upload PUT would fail.
+    return s3_client(settings.S3_PAYMENT_PROOF_BUCKET)
 
 
 def _build_instructions(locale: str = "ar") -> str:
@@ -186,6 +185,9 @@ def _to_response(payment: Payment, *, include_breakdown: bool = False) -> Paymen
 
 def _to_list_item(payment: Payment) -> PaymentListItem:
     unit_title, unit_cover_image = _payment_unit_context(payment)
+    # ``__dict__`` avoids triggering an async lazy-load when the caller did
+    # not eager-load the booking (host/admin lists don't need the fields).
+    booking = payment.__dict__.get("booking")
     return PaymentListItem(
         id=payment.id,
         booking_id=payment.booking_id,
@@ -206,6 +208,9 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
         reject_reason=payment.reject_reason,
         unit_title=unit_title,
         unit_cover_image=unit_cover_image,
+        check_in=booking.check_in if booking else None,
+        check_out=booking.check_out if booking else None,
+        booking_status=booking.status if booking else None,
         created_at=payment.created_at,
         updated_at=payment.updated_at,
     )
@@ -331,10 +336,11 @@ async def compute_booking_quote(
     )
     cleaning_fee_egp = commercial.money(listing.cleaning_fee_egp or 0)
 
-    # All-inclusive guest pricing (Founder commercial model): the taxable
-    # amount is accommodation + cleaning + both internal 6% allocations;
-    # VAT applies to that whole taxable amount and the final guest total
-    # is taxable + VAT — identical from search through payment.
+    # All-inclusive guest pricing (Model B): the taxable amount is
+    # accommodation + cleaning + the guest-side 6%; the host-side 6% is
+    # a commission deducted from the host payable. VAT applies to the
+    # taxable amount and the final guest total is taxable + VAT —
+    # identical from search through payment.
     economics = commercial.compute_booking_economics(
         discounted_accommodation_egp, cleaning_fee_egp
     )
@@ -376,10 +382,11 @@ async def create_payment_for_booking(
     )
     # A host custom offer (FD-07) overrides the listing-priced quote: the
     # offered total IS the final all-inclusive guest price — VAT is the
-    # tax component inside it and the host payable is its 1/1.12 share.
-    # ``accommodation_amount_egp`` stores the host payable (accommodation
-    # + cleaning): under the additive commercial model the 12% StayOS
-    # economics were charged on top of it, inside the taxable amount.
+    # tax component inside it and the host gross is its 1/1.06 share.
+    # ``accommodation_amount_egp`` stores the host gross (accommodation
+    # + cleaning): the guest-side 6% was charged on top inside the
+    # taxable amount and the host-side 6% commission is deducted from
+    # the gross at settlement (Model B).
     if booking.custom_total_egp is not None:
         amount = commercial.money(booking.custom_total_egp)
         _, vat_egp, host_payable = commercial.decompose_all_in_total(amount)
@@ -391,10 +398,10 @@ async def create_payment_for_booking(
         vat_egp = quote.vat_egp
         amount = quote.total_egp
 
-    # VAT is a separate tax on the all-inclusive taxable amount
-    # (accommodation + cleaning + both 6% allocations) — computed by the
-    # canonical engine and added on top. It is NOT part of the 12%
-    # StayOS share and is never waived by the alpha incentive.
+    # VAT is a separate tax on the taxable amount (accommodation +
+    # cleaning + guest-side 6%) — computed by the canonical engine and
+    # added on top. It is NOT part of the 12% StayOS share and is never
+    # waived by the alpha incentive.
 
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()

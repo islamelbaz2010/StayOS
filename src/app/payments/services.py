@@ -143,15 +143,14 @@ def _to_response(payment: Payment, *, include_breakdown: bool = False) -> Paymen
         provider=payment.provider,
         checkout_url=payment.checkout_url,
         amount_egp=payment.amount_egp,
-        accommodation_amount_egp=(
-            payment.accommodation_amount_egp if include_breakdown else None
-        ),
+        # Accommodation + cleaning are the guest's own booking components
+        # (FD-19 summary lines) — visible to everyone. Only the internal
+        # service-fee economics stay gated behind include_breakdown.
+        accommodation_amount_egp=payment.accommodation_amount_egp,
         guest_service_fee_egp=(
             payment.guest_service_fee_egp if include_breakdown else None
         ),
-        cleaning_fee_egp=(
-            payment.cleaning_fee_egp if include_breakdown else None
-        ),
+        cleaning_fee_egp=payment.cleaning_fee_egp,
         # VAT is the guest's own tax line — visible to everyone; the
         # internal economics breakdown stays gated by include_breakdown.
         vat_egp=payment.vat_egp,

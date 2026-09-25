@@ -12,6 +12,8 @@ import { useAuth } from "@/lib/auth/useAuth";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getApiErrorMessage } from "@/lib/utils";
 import { useHostEarnings } from "@/lib/queries/hostEarnings";
+import { useAccount, useUpdateAccount } from "@/lib/queries/account";
+import type { AccountUpdate } from "@/lib/queries/account";
 import {
   useHostProfile,
   useUpdateHostProfile,
@@ -314,6 +316,8 @@ export default function HostProfilePage() {
               )}
             </div>
 
+            <PayoutSection />
+
             <div className="card p-5 sm:p-6">
               <h3 className="mb-4 text-base font-semibold text-brand-900">
                 {t("listingStats")}
@@ -347,6 +351,236 @@ export default function HostProfilePage() {
         </section>
       </HostLayout>
     </ProtectedRoute>
+  );
+}
+
+// FD-26: payout preference collection — the host's declared destination.
+// Account numbers come back masked ("••••1234") and are only sent when
+// the host types a new value.
+function PayoutSection() {
+  const t = useTranslations("hostProfile");
+  const tc = useTranslations("common");
+  const { data: account } = useAccount();
+  const updateAccount = useUpdateAccount();
+
+  const [editing, setEditing] = useState(false);
+  const [method, setMethod] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [walletMsisdn, setWalletMsisdn] = useState("");
+  const [holderName, setHolderName] = useState("");
+
+  const usesBank = method === "bank" || method === "iban";
+  const usesWallet = method === "wallet" || method === "paymob";
+
+  const startEdit = () => {
+    setMethod(account?.payout_method ?? "");
+    setBankName(account?.payout_bank_name ?? "");
+    // Never prefill masked secrets — blank means "keep existing".
+    setAccountNumber("");
+    setWalletMsisdn("");
+    setHolderName(account?.payout_holder_name ?? "");
+    setEditing(true);
+  };
+
+  const save = async () => {
+    const payload: AccountUpdate = {};
+    if (method) payload.payout_method = method;
+    if (bankName.trim()) payload.payout_bank_name = bankName.trim();
+    if (accountNumber.trim()) {
+      payload.payout_account_number = accountNumber.trim();
+    }
+    if (walletMsisdn.trim()) payload.payout_wallet_msisdn = walletMsisdn.trim();
+    if (holderName.trim()) payload.payout_holder_name = holderName.trim();
+    await updateAccount.mutateAsync(payload);
+    setEditing(false);
+  };
+
+  return (
+    <div className="card p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-base font-semibold text-brand-900">
+            {t("payoutTitle")}
+          </h3>
+          <p className="mt-1 text-sm text-neutral-500">{t("payoutHint")}</p>
+        </div>
+        {!editing && (
+          <button
+            type="button"
+            onClick={startEdit}
+            className="btn-secondary shrink-0 text-sm"
+          >
+            {account?.payout_method ? t("editPayout") : t("setPayout")}
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            save();
+          }}
+          className="mt-4 space-y-4"
+        >
+          <div>
+            <label
+              htmlFor="payout-method"
+              className="block text-sm font-medium text-neutral-700"
+            >
+              {t("payoutMethod")}
+            </label>
+            <select
+              id="payout-method"
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              className="input mt-1 text-sm"
+            >
+              <option value="">{t("payoutMethodPlaceholder")}</option>
+              <option value="bank">{t("payoutMethods.bank")}</option>
+              <option value="iban">{t("payoutMethods.iban")}</option>
+              <option value="wallet">{t("payoutMethods.wallet")}</option>
+              <option value="paymob">{t("payoutMethods.paymob")}</option>
+            </select>
+          </div>
+          {usesBank && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="payout-bank"
+                  className="block text-sm font-medium text-neutral-700"
+                >
+                  {t("payoutBankName")}
+                </label>
+                <input
+                  id="payout-bank"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  className="input mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="payout-account"
+                  className="block text-sm font-medium text-neutral-700"
+                >
+                  {t("payoutAccountNumber")}
+                </label>
+                <input
+                  id="payout-account"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  placeholder={account?.payout_account_number ?? ""}
+                  className="input mt-1 text-sm"
+                />
+              </div>
+            </div>
+          )}
+          {usesWallet && (
+            <div>
+              <label
+                htmlFor="payout-wallet"
+                className="block text-sm font-medium text-neutral-700"
+              >
+                {t("payoutWalletNumber")}
+              </label>
+              <input
+                id="payout-wallet"
+                value={walletMsisdn}
+                onChange={(e) => setWalletMsisdn(e.target.value)}
+                placeholder={account?.payout_wallet_msisdn ?? ""}
+                className="input mt-1 text-sm"
+              />
+            </div>
+          )}
+          <div>
+            <label
+              htmlFor="payout-holder"
+              className="block text-sm font-medium text-neutral-700"
+            >
+              {t("payoutHolderName")}
+            </label>
+            <input
+              id="payout-holder"
+              value={holderName}
+              onChange={(e) => setHolderName(e.target.value)}
+              className="input mt-1 text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={updateAccount.isPending}
+              className="btn-primary text-sm"
+            >
+              {updateAccount.isPending ? tc("loading") : tc("save")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="btn-secondary text-sm"
+            >
+              {tc("cancel")}
+            </button>
+          </div>
+          {updateAccount.isError && (
+            <p className="text-sm text-danger-600" role="alert">
+              {getApiErrorMessage(updateAccount.error, t("saveError"))}
+            </p>
+          )}
+        </form>
+      ) : (
+        <dl className="mt-4 space-y-2">
+          <div className="flex justify-between">
+            <dt className="text-sm text-neutral-500">{t("payoutMethod")}</dt>
+            <dd className="text-sm font-medium text-neutral-900">
+              {account?.payout_method
+                ? t(`payoutMethods.${account.payout_method}`)
+                : t("payoutNotSet")}
+            </dd>
+          </div>
+          {account?.payout_bank_name && (
+            <div className="flex justify-between">
+              <dt className="text-sm text-neutral-500">{t("payoutBankName")}</dt>
+              <dd className="text-sm font-medium text-neutral-900">
+                {account.payout_bank_name}
+              </dd>
+            </div>
+          )}
+          {account?.payout_account_number && (
+            <div className="flex justify-between">
+              <dt className="text-sm text-neutral-500">
+                {t("payoutAccountNumber")}
+              </dt>
+              <dd className="text-sm font-medium text-neutral-900">
+                {account.payout_account_number}
+              </dd>
+            </div>
+          )}
+          {account?.payout_wallet_msisdn && (
+            <div className="flex justify-between">
+              <dt className="text-sm text-neutral-500">
+                {t("payoutWalletNumber")}
+              </dt>
+              <dd className="text-sm font-medium text-neutral-900">
+                {account.payout_wallet_msisdn}
+              </dd>
+            </div>
+          )}
+          {account?.payout_holder_name && (
+            <div className="flex justify-between">
+              <dt className="text-sm text-neutral-500">
+                {t("payoutHolderName")}
+              </dt>
+              <dd className="text-sm font-medium text-neutral-900">
+                {account.payout_holder_name}
+              </dd>
+            </div>
+          )}
+        </dl>
+      )}
+    </div>
   );
 }
 

@@ -319,7 +319,13 @@
       "submitFailed": "Failed to submit. Please try again."
     },
     "instantBook": "Instant Book",
-    "instantBookHint": "Guests are auto-accepted without waiting for approval"
+    "instantBookHint": "Guests are auto-accepted without waiting for approval",
+    "discountsTitle": "Discounts",
+    "listingDiscount": "Listing discount",
+    "weeklyDiscount": "Weekly discount",
+    "weeklyDiscountHint": "Applied to stays of 7+ nights",
+    "monthlyDiscount": "Monthly discount",
+    "monthlyDiscountHint": "Applied to stays of 28+ nights"
   },
   "adminListings": {
     "pendingTitle": "Pending Listings Review",
@@ -1532,7 +1538,24 @@
     "completedStays": "Completed stays",
     "viewEarnings": "View earnings",
     "addLanguage": "Type to add a language…",
-    "removeLanguage": "Remove language"
+    "removeLanguage": "Remove language",
+    "payoutTitle": "Payout preferences",
+    "payoutHint": "Where you'd like to receive your earnings once payouts are processed.",
+    "payoutMethod": "Payout method",
+    "payoutMethodPlaceholder": "Choose a method",
+    "payoutMethods": {
+      "bank": "Bank account",
+      "iban": "IBAN",
+      "wallet": "Mobile wallet",
+      "paymob": "Paymob payout"
+    },
+    "payoutBankName": "Bank name",
+    "payoutAccountNumber": "Account number / IBAN",
+    "payoutWalletNumber": "Wallet mobile number",
+    "payoutHolderName": "Account holder name",
+    "payoutNotSet": "Not set",
+    "setPayout": "Set payout",
+    "editPayout": "Edit payout"
   },
   "coHosts": {
     "loadError": "Failed to load co-hosts.",

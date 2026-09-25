@@ -319,7 +319,13 @@
       "submitFailed": "فشل الإرسال. يرجى المحاولة مرة أخرى."
     },
     "instantBook": "حجز فوري",
-    "instantBookHint": "يتم قبول الضيوف تلقائيًا دون انتظار الموافقة"
+    "instantBookHint": "يتم قبول الضيوف تلقائيًا دون انتظار الموافقة",
+    "discountsTitle": "الخصومات",
+    "listingDiscount": "خصم العقار",
+    "weeklyDiscount": "خصم أسبوعي",
+    "weeklyDiscountHint": "يُطبَّق على الإقامات من ٧ ليالٍ فأكثر",
+    "monthlyDiscount": "خصم شهري",
+    "monthlyDiscountHint": "يُطبَّق على الإقامات من ٢٨ ليلة فأكثر"
   },
   "adminListings": {
     "pendingTitle": "مراجعة العقارات المعلقة",
@@ -1532,7 +1538,24 @@
     "completedStays": "الإقامات المكتملة",
     "viewEarnings": "عرض الأرباح",
     "addLanguage": "اكتب لإضافة لغة…",
-    "removeLanguage": "إزالة اللغة"
+    "removeLanguage": "إزالة اللغة",
+    "payoutTitle": "تفضيلات الدفع",
+    "payoutHint": "أين تريد استلام أرباحك عند معالجة المدفوعات.",
+    "payoutMethod": "طريقة الدفع",
+    "payoutMethodPlaceholder": "اختر طريقة",
+    "payoutMethods": {
+      "bank": "حساب بنكي",
+      "iban": "آيبان (IBAN)",
+      "wallet": "محفظة إلكترونية",
+      "paymob": "دفع Paymob"
+    },
+    "payoutBankName": "اسم البنك",
+    "payoutAccountNumber": "رقم الحساب / الآيبان",
+    "payoutWalletNumber": "رقم موبايل المحفظة",
+    "payoutHolderName": "اسم صاحب الحساب",
+    "payoutNotSet": "غير محددة",
+    "setPayout": "تحديد طريقة الدفع",
+    "editPayout": "تعديل طريقة الدفع"
   },
   "coHosts": {
     "loadError": "تعذّر تحميل الشركاء.",

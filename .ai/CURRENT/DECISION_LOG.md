@@ -868,3 +868,44 @@ DEC-020 §1 modeled VAT as a component carved out of the VAT-inclusive 12% platf
 
 - DEC-020: superseded in §1 (VAT placement); §2 (Instant Book default) remains in force.
 - FD-19 / DEC-018-era commercial model: the 12% share, internal 6%+6% allocation, and discount rules are unchanged.
+
+---
+
+### DEC-022: Destination Search Resolution, Instant Book Backfill, and Guest Checkout Breakdown
+
+**Status**: Accepted
+**Date**: 2026-10-03
+**Decision Maker**: Founder (product-completion batch)
+**Urgency**: PRE-LAUNCH
+**Reversibility**: HIGH
+
+#### Context
+
+Live verification found that free-text destination search ("Alexandria", "اسكندرية", "Alex") returned zero results: `location_aliases` only seeded neighbourhood-level entries (Cairo areas in 022, Alexandria/Red Sea/Sinai areas in 039) with no city-level rows, and the `q` parameter only ran full-text search on `search_vector` (titles/descriptions) — never the unit's structured `city`/`governorate`.
+
+#### Decision
+
+1. **Location-aware free-text search**: When `q` is present, search matches listings whose `search_vector` matches OR whose unit `city`/`governorate` equals the query OR which resolve through `pms.location_aliases`. City/governorate-level aliases (canonical name equals the city or governorate) match by location equality; neighbourhood-level aliases match by a 5 km coordinate radius so a district query does not widen to the whole city. Arabic normalization (alef/ya/ta-marbuta unification) applies on lookup, matching the autocomplete semantics.
+2. **Alias data**: City- and governorate-level canonical aliases are seeded for the Egyptian destinations already represented in the taxonomy (Alexandria, Cairo, Giza, Hurghada, Sharm El Sheikh, North Coast, Luxor, Aswan, Port Said, Suez, Marsa Alam, Fayoum, Nuweiba, Taba, Ras Sedr, Damietta, El Alamein, Red Sea, South Sinai, Matrouh) plus missing Alexandria areas (Agami, Sidi Bishr, Borg El Arab) and Ain Sokhna — migration `047`.
+3. **Instant Book for live inventory**: Every unit with status `LISTED` is backfilled to `instant_book = true` (migration `047`). DEC-020 §2 made Instant Book the default for new listings only; this extends it to all live inventory. Non-live units keep their flag. The host toggle continues to exist for non-live states; request-to-book is removed for live listings.
+4. **Guest payment breakdown**: The guest-facing payment/checkout view exposes the guest's own booking components — accommodation, cleaning, VAT, total — while `guest_service_fee_egp` and other internal economics stay staff-gated (`include_breakdown`). This formalizes the FD-19 summary lines on the checkout page.
+5. **Header**: The global header collapses to a compact marketplace header (logo, Search, Support, language, account menu). All role-scoped destinations (trips, favorites, payments, host dashboard, listings, earnings, admin) live in the account menu with unread/pending badges aggregated onto the avatar.
+6. **Host surfaces**: Payout preference editing (FD-26 collection fields) is exposed on host profile via `PATCH /auth/me/account`; listing/weekly/monthly discount percentages (FD-08/FD-20) are editable in the listing form pricing section.
+
+#### Rationale
+
+- Destination names are the primary way guests search; structured location fields must back the free-text query — title text is not a location index.
+- Instant Book for all live listings removes the request-and-wait step from the only bookable inventory (FD booking direction, DEC-020 §2).
+- The guest must see what they pay for (accommodation, cleaning, VAT) without seeing StayOS economics.
+
+#### Consequences
+
+- **Positive**: "Alexandria"/"اسكندرية" and transliterations resolve to real inventory; checkout matches the quote breakdown; header is role-clean.
+- **Negative**: Legacy payment rows created before the amount-split columns existed show no accommodation/cleaning lines (fields are NULL and hidden rather than back-computed).
+- **Neutral**: `guest_service_fee_egp` remains an internal field; no pricing formulas changed.
+
+#### Related Decisions
+
+- DEC-020 §2 / DEC-021: Instant Book default extended to live rows; VAT visibility unchanged.
+- FD-19: guest pricing summary components.
+- FD-26: host payout preference collection.

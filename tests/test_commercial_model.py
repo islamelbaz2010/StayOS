@@ -287,7 +287,7 @@ async def test_custom_offer_overrides_listing_price(monkeypatch) -> None:
 # ============================================================
 
 
-def test_payment_response_hides_breakdown_for_guests() -> None:
+def test_payment_response_shows_booking_components_hides_service_fee() -> None:
     from app.payments import services as ps
 
     now = datetime.now(UTC)
@@ -328,15 +328,19 @@ def test_payment_response_hides_breakdown_for_guests() -> None:
     payment.vat_egp = 287
 
     guest_view = ps._to_response(payment)  # default: no internal breakdown
-    assert guest_view.accommodation_amount_egp is None
+    # FD-19 guest summary shows the guest's own booking components —
+    # accommodation, cleaning, VAT — but never internal service-fee
+    # economics.
+    assert guest_view.accommodation_amount_egp == 2000
+    assert guest_view.cleaning_fee_egp == 50
     assert guest_view.guest_service_fee_egp is None
-    assert guest_view.cleaning_fee_egp is None
     assert guest_view.amount_egp == 2050
     # VAT is the guest's own tax line — always visible to the payer.
     assert guest_view.vat_egp == 287
 
     admin_view = ps._to_response(payment, include_breakdown=True)
     assert admin_view.accommodation_amount_egp == 2000
+    assert admin_view.guest_service_fee_egp == 0
 
 
 def test_guest_quote_contract_has_no_internal_fields() -> None:
@@ -740,7 +744,8 @@ def test_payment_response_exposes_vat_to_payer() -> None:
     # internal economics breakdown stays staff-gated.
     assert ps._to_response(payment).vat_egp == 287
     assert ps._to_response(payment, include_breakdown=True).vat_egp == 287
-    assert ps._to_response(payment).accommodation_amount_egp is None
+    assert ps._to_response(payment).accommodation_amount_egp == 2050
+    assert ps._to_response(payment).guest_service_fee_egp is None
 
 
 # ============================================================

@@ -314,6 +314,23 @@ function CheckoutContent({
             <dt className="text-neutral-600">{t("nights")}</dt>
             <dd className="font-medium text-brand-900">{payment.nights}</dd>
           </div>
+          {payment.accommodation_amount_egp != null && (
+            <div className="flex justify-between">
+              <dt className="text-neutral-600">{t("accommodation")}</dt>
+              <dd className="font-medium text-brand-900">
+                {payment.accommodation_amount_egp.toLocaleString(dateLocale)}{" "}
+                {t("egp")}
+              </dd>
+            </div>
+          )}
+          {payment.cleaning_fee_egp ? (
+            <div className="flex justify-between">
+              <dt className="text-neutral-600">{t("cleaningFee")}</dt>
+              <dd className="font-medium text-brand-900">
+                {payment.cleaning_fee_egp.toLocaleString(dateLocale)} {t("egp")}
+              </dd>
+            </div>
+          ) : null}
           {payment.vat_egp ? (
             <div className="flex justify-between">
               <dt className="text-neutral-600">{t("vatLine")}</dt>

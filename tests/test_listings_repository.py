@@ -211,6 +211,81 @@ async def test_search_listings_sort_default_uses_created_at(fake_session: AsyncM
 
 
 @pytest.mark.asyncio
+async def test_resolve_location_terms_city_level(fake_session: AsyncMock) -> None:
+    """'alex' resolves to the Alexandria city-level alias — regression
+    for destination search returning zero results when the query is a
+    city name that never appears in title/description text."""
+    from app.favorites.models import LocationAlias
+    from app.listings.repository import _resolve_location_terms
+
+    alias_row = LocationAlias(
+        id="a1",
+        canonical_name_en="Alexandria",
+        canonical_name_ar="الإسكندرية",
+        alias="alex",
+        alias_type="variant",
+        city="Alexandria",
+        governorate="Alexandria",
+        lat=31.2001,
+        lng=29.9187,
+    )
+    scalars_mock = MagicMock()
+    scalars_mock.all = MagicMock(return_value=[alias_row])
+    result_mock = MagicMock()
+    result_mock.scalars = MagicMock(return_value=scalars_mock)
+    fake_session.execute = AsyncMock(return_value=result_mock)
+
+    cities, govs, points = await _resolve_location_terms(fake_session, "Alex")
+    assert cities == {"Alexandria"}
+    assert govs == set()
+    assert points == []
+
+
+@pytest.mark.asyncio
+async def test_resolve_location_terms_area_level(fake_session: AsyncMock) -> None:
+    """Neighbourhood aliases resolve to coordinates, not the whole city."""
+    from app.favorites.models import LocationAlias
+    from app.listings.repository import _resolve_location_terms
+
+    alias_row = LocationAlias(
+        id="a2",
+        canonical_name_en="Smouha",
+        canonical_name_ar="سموحة",
+        alias="smouha",
+        alias_type="exact",
+        city="Alexandria",
+        governorate="Alexandria",
+        lat=31.2106,
+        lng=29.9453,
+    )
+    scalars_mock = MagicMock()
+    scalars_mock.all = MagicMock(return_value=[alias_row])
+    result_mock = MagicMock()
+    result_mock.scalars = MagicMock(return_value=scalars_mock)
+    fake_session.execute = AsyncMock(return_value=result_mock)
+
+    cities, govs, points = await _resolve_location_terms(fake_session, "smouha")
+    assert cities == set()
+    assert govs == set()
+    assert points == [(31.2106, 29.9453)]
+
+
+@pytest.mark.asyncio
+async def test_search_q_includes_location_match() -> None:
+    """q is OR'd with a city/governorate match so 'Alexandria' finds
+    listings whose title/description never name the city."""
+    from app.listings.repository import _build_search_statement
+
+    filters = ListingSearchFilters(q="Alexandria")
+    stmt = _build_search_statement(
+        filters, ({"Alexandria"}, set(), [])
+    )
+    compiled = str(stmt)
+    assert "lower(pms.units.city)" in compiled
+    assert "search_vector" in compiled
+
+
+@pytest.mark.asyncio
 async def test_get_host_unit_ids(fake_session: AsyncMock) -> None:
     result_mock = MagicMock()
     result_mock.all = MagicMock(return_value=[("unit-1",), ("unit-2",)])

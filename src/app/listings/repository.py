@@ -3,7 +3,7 @@ from typing import Any
 from uuid import uuid4
 
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import Select, delete, exists, func, select, update
+from sqlalchemy import Select, delete, exists, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -181,7 +181,10 @@ async def update_unit_listing(
     return listing
 
 
-def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
+def _build_search_statement(
+    filters: ListingSearchFilters,
+    location_terms: tuple[set[str], set[str], list[tuple[float, float]]] | None = None,
+) -> Select[Any]:
     lat_col = func.ST_Y(Unit.coordinates).label("lat")
     lng_col = func.ST_X(Unit.coordinates).label("lng")
 
@@ -317,7 +320,39 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
 
     if filters.q:
         tsquery = func.plainto_tsquery("simple", filters.q)
-        stmt = stmt.where(UnitListing.search_vector.bool_op("@@")(tsquery))
+        q_conditions: list[Any] = [
+            UnitListing.search_vector.bool_op("@@")(tsquery)
+        ]
+        # Destination names are not always in title/description (the
+        # vector only indexes those), so free-text search also resolves
+        # through pms.location_aliases: city/governorate-level aliases
+        # match the unit's structured location, area-level aliases match
+        # by coordinates so a neighbourhood query stays local.
+        q_lower = filters.q.strip().lower()
+        q_conditions.append(func.lower(Unit.city) == q_lower)
+        q_conditions.append(func.lower(Unit.governorate) == q_lower)
+        if location_terms:
+            cities, governorates, points = location_terms
+            if cities:
+                q_conditions.append(
+                    func.lower(Unit.city).in_([c.lower() for c in cities])
+                )
+            if governorates:
+                q_conditions.append(
+                    func.lower(Unit.governorate).in_(
+                        [g.lower() for g in governorates]
+                    )
+                )
+            for lat, lng in points:
+                center_wkt = f"SRID=4326;POINT({lng} {lat})"
+                center_geog = func.ST_GeogFromText(center_wkt)
+                unit_geog = func.ST_GeogFromText(func.ST_AsEWKT(Unit.coordinates))
+                q_conditions.append(
+                    func.ST_DWithin(
+                        unit_geog, center_geog, _AREA_ALIAS_RADIUS_KM * 1000
+                    )
+                )
+        stmt = stmt.where(or_(*q_conditions))
 
     sort = (filters.sort or "").lower()
     if sort == "price_asc":
@@ -347,10 +382,73 @@ def _build_search_statement(filters: ListingSearchFilters) -> Select[Any]:
     return stmt
 
 
+_AREA_ALIAS_RADIUS_KM = 5
+
+
+async def _resolve_location_terms(
+    session: AsyncSession, query: str
+) -> tuple[set[str], set[str], list[tuple[float, float]]]:
+    """Resolve a free-text destination through pms.location_aliases.
+
+    Returns (cities, governorates, points). An alias whose canonical
+    name equals its city or governorate is a city/governorate-level
+    match; other aliases are neighbourhood-level and match by
+    coordinates so searching "Smouha" doesn't widen to all of
+    Alexandria.
+    """
+    from app.favorites.models import LocationAlias
+    from app.favorites.services import _normalize_arabic
+
+    q_raw = query.strip().lower()
+    if not q_raw:
+        return set(), set(), []
+    q_norm = _normalize_arabic(q_raw)
+
+    result = await session.execute(
+        select(LocationAlias).where(
+            func.lower(LocationAlias.alias).like(f"{q_raw}%")
+            | func.lower(LocationAlias.alias).like(f"%{q_raw}%")
+        )
+    )
+    matches = [
+        row
+        for row in result.scalars().all()
+        if q_norm in _normalize_arabic(row.alias.lower())
+    ]
+    if not matches:
+        # Aliases stored un-normalized (e.g. "الإسكندرية") are missed by
+        # the raw LIKE when the user types the normalized form
+        # ("اسكندرية") — rescan the small curated table normalized.
+        result = await session.execute(select(LocationAlias))
+        matches = [
+            row
+            for row in result.scalars().all()
+            if q_norm in _normalize_arabic(row.alias.lower())
+        ]
+
+    cities: set[str] = set()
+    governorates: set[str] = set()
+    points: list[tuple[float, float]] = []
+    for row in matches:
+        canonical = row.canonical_name_en.lower()
+        if canonical == row.city.lower():
+            cities.add(row.city)
+        elif canonical == row.governorate.lower():
+            governorates.add(row.governorate)
+        elif row.lat is not None and row.lng is not None:
+            points.append((row.lat, row.lng))
+        else:
+            cities.add(row.city)
+    return cities, governorates, points
+
+
 async def search_listings(
     session: AsyncSession, filters: ListingSearchFilters, offset: int, limit: int
 ) -> tuple[list[tuple[Unit, UnitListing, float, float]], int]:
-    stmt = _build_search_statement(filters)
+    location_terms = (
+        await _resolve_location_terms(session, filters.q) if filters.q else None
+    )
+    stmt = _build_search_statement(filters, location_terms)
 
     count_stmt = stmt.with_only_columns(func.count(Unit.id)).order_by(None)
     total = await session.scalar(count_stmt)
@@ -376,8 +474,13 @@ async def search_price_values(
     priceless = copy.copy(filters)
     priceless.min_price = None
     priceless.max_price = None
+    location_terms = (
+        await _resolve_location_terms(session, priceless.q)
+        if priceless.q
+        else None
+    )
     stmt = (
-        _build_search_statement(priceless)
+        _build_search_statement(priceless, location_terms)
         .with_only_columns(UnitListing.base_price_egp)
         .order_by(None)
     )

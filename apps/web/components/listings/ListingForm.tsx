@@ -164,6 +164,9 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     cleaning_fee_egp: existingListing?.cleaning_fee_egp ?? 0,
     cancellation_policy: existingListing?.cancellation_policy ?? "FLEXIBLE",
     instant_book: existingListing?.instant_book ?? true,
+    listing_discount_pct: existingListing?.listing_discount_pct ?? 0,
+    weekly_discount_pct: existingListing?.weekly_discount_pct ?? 0,
+    monthly_discount_pct: existingListing?.monthly_discount_pct ?? 0,
     weekend_mult: existingListing?.weekend_mult ?? 1.0,
     peak_mult: existingListing?.peak_mult ?? 1.0,
     min_nights: existingListing?.min_nights ?? 1,
@@ -283,6 +286,9 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     cleaning_fee_egp: form.cleaning_fee_egp,
     cancellation_policy: form.cancellation_policy,
     instant_book: form.instant_book,
+    listing_discount_pct: form.listing_discount_pct,
+    weekly_discount_pct: form.weekly_discount_pct,
+    monthly_discount_pct: form.monthly_discount_pct,
     category: form.category,
     weekend_mult: form.weekend_mult,
     peak_mult: form.peak_mult,
@@ -998,6 +1004,86 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Host promotions (FD-08/FD-20): percentage discounts on the
+            nightly accommodation price — the highest applicable one wins
+            (listing > monthly > weekly). */}
+        <div className="mt-4 border-t border-neutral-100 pt-4">
+          <p className="mb-3 text-sm font-medium text-neutral-700">
+            {t("discountsTitle")}
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelClass}>{t("listingDiscount")}</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={form.listing_discount_pct ?? 0}
+                  onChange={(e) =>
+                    update(
+                      "listing_discount_pct",
+                      Math.max(0, Math.min(90, parseInt(e.target.value) || 0))
+                    )
+                  }
+                  className={inputClass}
+                />
+                <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500">
+                  %
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>{t("weeklyDiscount")}</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={form.weekly_discount_pct ?? 0}
+                  onChange={(e) =>
+                    update(
+                      "weekly_discount_pct",
+                      Math.max(0, Math.min(90, parseInt(e.target.value) || 0))
+                    )
+                  }
+                  className={inputClass}
+                />
+                <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500">
+                  %
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-neutral-500">
+                {t("weeklyDiscountHint")}
+              </p>
+            </div>
+            <div>
+              <label className={labelClass}>{t("monthlyDiscount")}</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={form.monthly_discount_pct ?? 0}
+                  onChange={(e) =>
+                    update(
+                      "monthly_discount_pct",
+                      Math.max(0, Math.min(90, parseInt(e.target.value) || 0))
+                    )
+                  }
+                  className={inputClass}
+                />
+                <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500">
+                  %
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-neutral-500">
+                {t("monthlyDiscountHint")}
+              </p>
+            </div>
           </div>
         </div>
 

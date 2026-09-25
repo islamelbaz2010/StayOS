@@ -1,5 +1,7 @@
+import json
 import sys
 from collections.abc import AsyncGenerator
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
@@ -18,8 +20,17 @@ if _db_url.startswith("postgresql://"):
 # keeps the pooled engine for request throughput.
 _is_celery_worker = "celery" in sys.argv[0] and "worker" in sys.argv
 
+def _json_default(value):
+    # Money is Decimal internally — JSON columns (outbox payloads,
+    # provider metadata) carry it as a plain number.
+    if isinstance(value, Decimal):
+        return float(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
 _engine_kwargs: dict = {
     "echo": settings.ENVIRONMENT == "development",
+    "json_serializer": lambda v: json.dumps(v, default=_json_default),
 }
 if _is_celery_worker:
     _engine_kwargs["poolclass"] = NullPool

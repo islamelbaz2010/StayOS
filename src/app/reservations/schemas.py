@@ -4,6 +4,7 @@ from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from app.shared.schemas import Money
 
 from .constants import CancellationReason, PaymentMethod, PaymentProvider, ReservationStatus
 
@@ -46,7 +47,7 @@ class PaymentIntentResponse(BaseModel):
     reservation_id: str
     provider: str
     provider_ref: str
-    amount_egp: int
+    amount_egp: Money
     status: str
     provider_metadata: dict[str, Any] | None = None
     captured_at: datetime | None
@@ -59,7 +60,7 @@ class PromoApplicationResponse(BaseModel):
     reservation_id: str
     promo_code_id: str
     discount_pct: float
-    discount_amount_egp: int
+    discount_amount_egp: Money
 
 
 class ReservationResponse(BaseModel):
@@ -74,18 +75,18 @@ class ReservationResponse(BaseModel):
     adults: int
     children: int
     infants: int
-    total_amount_egp: int
+    total_amount_egp: Money
     # Internal economics — populated for host/staff/admin viewers only;
     # always null on guest-facing responses (FD-19 all-inclusive pricing).
-    host_amount_egp: int | None = None
-    platform_fee_egp: int | None = None
-    guest_fee_egp: int | None = None
+    host_amount_egp: Money | None = None
+    platform_fee_egp: Money | None = None
+    guest_fee_egp: Money | None = None
     payment_method: str
     checked_in_at: datetime | None
     checked_out_at: datetime | None
     cancelled_at: datetime | None
     cancel_reason: str | None
-    refund_amount_egp: int | None
+    refund_amount_egp: Money | None
     payment_intents: list[PaymentIntentResponse] = []
     promo_applications: list[PromoApplicationResponse] = []
     paymob_iframe_url: str | None = None

@@ -561,15 +561,6 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
                 </span>
               </div>
 
-              {quote?.vat_egp ? (
-                <div className="flex justify-between">
-                  <span className="text-neutral-600">{t("vatLine")}</span>
-                  <span className="font-medium text-brand-900">
-                    {formatMoney(quote.vat_egp, listing.currency, moneyLocale)}
-                  </span>
-                </div>
-              ) : null}
-
               <div className="flex justify-between">
                 <span className="text-neutral-600">{t("guests")}</span>
                 <span className="font-medium text-brand-900">{totalGuests}</span>

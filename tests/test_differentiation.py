@@ -2,6 +2,7 @@
 staff role groups (FD-18), earnings simulator (FD-21)."""
 
 import uuid
+from decimal import Decimal
 from datetime import UTC, date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
@@ -416,12 +417,12 @@ async def test_earnings_simulator_uses_canonical_engine() -> None:
             nightly_price_egp=500, nights=4, cleaning_fee_egp=50
         ),
     )
-    # 500 × 4 = 2000 + 50 cleaning = 2050 taxable; VAT 287 → guest 2337
-    assert resp.vat_egp == 287
-    assert resp.guest_total_egp == 2337
-    # 12% of accommodation (2000) = 240; host net = 1810
-    assert resp.stayos_share_egp == 240
-    assert resp.host_net_egp == 1810
+    # 2000 accom + 50 cleaning + 240 (12%) = 2290 taxable; VAT 320.60 →
+    # guest 2610.60. Host payable = accom + cleaning = 2050.
+    assert resp.vat_egp == Decimal("320.60")
+    assert resp.guest_total_egp == Decimal("2610.60")
+    assert resp.stayos_share_egp == Decimal("240.00")
+    assert resp.host_net_egp == Decimal("2050.00")
     assert resp.discount_egp == 0
 
 
@@ -437,13 +438,14 @@ async def test_earnings_simulator_with_discount() -> None:
             discount_pct=10,
         ),
     )
-    # 4000 − 10% = 3600; VAT 504 → guest 4104; share 432; host net 3168
+    # 4000 − 10% = 3600 accom; +432 (12%) → taxable 4032; VAT 564.48 →
+    # guest 4596.48. Host payable = accom + cleaning = 3600.
     assert resp.accommodation_egp == 3600
     assert resp.discount_egp == 400
-    assert resp.vat_egp == 504
-    assert resp.guest_total_egp == 4104
-    assert resp.stayos_share_egp == 432
-    assert resp.host_net_egp == 3168
+    assert resp.vat_egp == Decimal("564.48")
+    assert resp.guest_total_egp == Decimal("4596.48")
+    assert resp.stayos_share_egp == Decimal("432.00")
+    assert resp.host_net_egp == Decimal("3600.00")
 
 
 @pytest.mark.asyncio

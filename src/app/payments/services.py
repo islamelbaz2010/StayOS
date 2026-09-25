@@ -3,6 +3,7 @@ import logging
 import secrets
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import boto3
@@ -29,6 +30,7 @@ from app.shared.exceptions import (
     ValidationError,
 )
 from app.shared.models import OutboxEvent
+from app.shared.outbox import to_json_safe
 
 from . import repository as payments_repository
 from .constants import PaymentStatus
@@ -143,21 +145,22 @@ def _to_response(payment: Payment, *, include_breakdown: bool = False) -> Paymen
         provider=payment.provider,
         checkout_url=payment.checkout_url,
         amount_egp=payment.amount_egp,
-        # The stored column is the taxable stay subtotal: accommodation +
-        # cleaning. Guests see that single all-inclusive Accommodation line;
-        # staff breakdowns retain the pure accommodation value.
+        # Guest-facing Accommodation = the final all-inclusive price
+        # (nightly + cleaning + StayOS economics + VAT). The stored column
+        # is the host payable (accommodation + cleaning) — surfaced to
+        # staff only, as the pure accommodation component.
         accommodation_amount_egp=(
             payment.accommodation_amount_egp - (payment.cleaning_fee_egp or 0)
             if include_breakdown and payment.accommodation_amount_egp is not None
-            else payment.accommodation_amount_egp
+            else payment.amount_egp
         ),
         guest_service_fee_egp=(
             payment.guest_service_fee_egp if include_breakdown else None
         ),
         cleaning_fee_egp=payment.cleaning_fee_egp if include_breakdown else None,
-        # VAT is the guest's own tax line — visible to everyone; the
-        # internal economics breakdown stays gated by include_breakdown.
-        vat_egp=payment.vat_egp,
+        # VAT is inside the guest-facing price — never a separate guest
+        # line. It stays visible in staff/admin breakdowns only.
+        vat_egp=payment.vat_egp if include_breakdown else None,
         refund_amount_egp=payment.refund_amount_egp,
         nights=payment.nights,
         reference_number=payment.reference_number,
@@ -251,7 +254,7 @@ async def _emit_outbox_event(
         aggregate_type="payment",
         aggregate_id=aggregate_id,
         event_type=event_type,
-        payload=payload,
+        payload=to_json_safe(payload),
     )
     session.add(event)
     await session.flush()
@@ -274,18 +277,16 @@ async def get_booking_quote(
     internal = await compute_booking_quote(
         session, unit_id, check_in.isoformat(), check_out.isoformat(), listing, nights
     )
-    # Guest-facing contract collapses cleaning into the all-inclusive
-    # Accommodation line. Internal economics never leave this function.
+    # Guest-facing contract (Founder all-inclusive model): the guest sees
+    # exactly one Accommodation figure — the final price including
+    # cleaning, StayOS economics and VAT. Internal economics never leave
+    # this function.
     return BookingQuote(
         unit_id=internal.unit_id,
         check_in=internal.check_in,
         check_out=internal.check_out,
         nights=internal.nights,
-        nightly_rate_egp=internal.nightly_rate_egp,
-        accommodation_egp=(
-            internal.accommodation_egp + internal.cleaning_fee_egp
-        ),
-        vat_egp=internal.vat_egp,
+        accommodation_egp=internal.total_egp,
         total_egp=internal.total_egp,
     )
 
@@ -298,9 +299,11 @@ async def compute_booking_quote(
     listing: UnitListing,
     nights: int,
 ) -> "InternalQuote":
-    """Single source of truth for guest pricing: nightly base + cleaning
-    fee + VAT on the taxable amount. Shared by the quote endpoint and
-    payment creation so clients never have to guess the total.
+    """Single source of truth for guest pricing: nightly base (after the
+    applicable discount) + cleaning + the additive 6%+6% StayOS
+    allocations + VAT on that all-inclusive taxable amount. Shared by the
+    quote endpoint and payment creation so clients never have to guess
+    the total.
 
     Uses the same pricing engine as search results — weekend multipliers
     and calendar-rule price overrides are applied per night — so the
@@ -315,20 +318,23 @@ async def compute_booking_quote(
         listing, rules, check_in_date, check_out_date
     )
     discount_pct = pricing.applicable_discount_pct(listing, nights)
-    discount_egp = int(round(accommodation_egp * discount_pct / 100))
-    discounted_accommodation_egp = accommodation_egp - discount_egp
-    nightly_rate_egp = (
-        discounted_accommodation_egp // nights
-        if nights > 0
-        else listing.base_price_egp
+    discount_egp = commercial.money(
+        commercial.money(accommodation_egp) * discount_pct / 100
     )
-    cleaning_fee_egp = listing.cleaning_fee_egp or 0
+    discounted_accommodation_egp = (
+        commercial.money(accommodation_egp) - discount_egp
+    )
+    nightly_rate_egp = (
+        commercial.money(discounted_accommodation_egp / nights)
+        if nights > 0
+        else commercial.money(listing.base_price_egp)
+    )
+    cleaning_fee_egp = commercial.money(listing.cleaning_fee_egp or 0)
 
-    # All-inclusive guest pricing (Founder commercial decision): the guest
-    # total is the discounted accommodation amount plus host-set charges
-    # like cleaning, plus VAT on that taxable amount. StayOS's 12%
-    # economics come OUT of the taxable amount via the canonical engine —
-    # never on top, never a guest-facing line item.
+    # All-inclusive guest pricing (Founder commercial model): the taxable
+    # amount is accommodation + cleaning + both internal 6% allocations;
+    # VAT applies to that whole taxable amount and the final guest total
+    # is taxable + VAT — identical from search through payment.
     economics = commercial.compute_booking_economics(
         discounted_accommodation_egp, cleaning_fee_egp
     )
@@ -341,6 +347,7 @@ async def compute_booking_quote(
         nightly_rate_egp=nightly_rate_egp,
         accommodation_egp=discounted_accommodation_egp,
         cleaning_fee_egp=cleaning_fee_egp,
+        taxable_amount_egp=economics.taxable_amount_egp,
         vat_egp=economics.vat_egp,
         total_egp=economics.guest_total_egp,
     )
@@ -368,24 +375,26 @@ async def create_payment_for_booking(
         nights,
     )
     # A host custom offer (FD-07) overrides the listing-priced quote: the
-    # offered total IS the all-inclusive guest price — the guest pays
-    # exactly what the host offered, so VAT is the tax component inside
-    # that VAT-inclusive total.
+    # offered total IS the final all-inclusive guest price — VAT is the
+    # tax component inside it and the host payable is its 1/1.12 share.
+    # ``accommodation_amount_egp`` stores the host payable (accommodation
+    # + cleaning): under the additive commercial model the 12% StayOS
+    # economics were charged on top of it, inside the taxable amount.
     if booking.custom_total_egp is not None:
-        amount = booking.custom_total_egp
-        vat_egp = commercial.vat_inclusive_portion(amount)
-        subtotal = amount - vat_egp
-        cleaning_fee = 0
+        amount = commercial.money(booking.custom_total_egp)
+        _, vat_egp, host_payable = commercial.decompose_all_in_total(amount)
+        subtotal = host_payable
+        cleaning_fee = Decimal("0")
     else:
         subtotal = quote.accommodation_egp + quote.cleaning_fee_egp
         cleaning_fee = quote.cleaning_fee_egp
-        vat_egp = commercial.compute_vat(subtotal)
+        vat_egp = quote.vat_egp
         amount = quote.total_egp
 
-    # VAT is a separate tax on the taxable booking amount (accommodation
-    # + cleaning) — computed by the canonical engine and added on top of
-    # the taxable total. It is NOT part of the 12% StayOS share and is
-    # never waived by the alpha free-bookings incentive.
+    # VAT is a separate tax on the all-inclusive taxable amount
+    # (accommodation + cleaning + both 6% allocations) — computed by the
+    # canonical engine and added on top. It is NOT part of the 12%
+    # StayOS share and is never waived by the alpha incentive.
 
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()
@@ -570,7 +579,9 @@ async def confirm_payment_by_provider(
         return True
     if payment.status not in (PaymentStatus.PENDING, PaymentStatus.REJECTED):
         return False
-    if amount_egp is not None and int(amount_egp) != payment.amount_egp:
+    if amount_egp is not None and commercial.money(amount_egp) != commercial.money(
+        payment.amount_egp
+    ):
         raise ValidationError("Callback amount does not match the payment")
 
     now = datetime.now(UTC)

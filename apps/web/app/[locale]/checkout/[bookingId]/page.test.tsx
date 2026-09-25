@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
@@ -91,10 +91,18 @@ function renderPage(messages: AbstractIntlMessages, locale = "en") {
 
 const payment = (en.payment ?? ar.payment) as Record<string, unknown>;
 
+beforeEach(() => {
+  mockSearch = "";
+  mockAuth = { isAuthenticated: false, isLoading: false };
+  mockReturnStatus = { data: null, error: null, isLoading: false };
+  mockReturnStatusCalled = false;
+  mockBooking = null;
+  mockPayment = null;
+});
+
 describe("Checkout guest pricing", () => {
-  it("shows exactly Accommodation, VAT 14%, Total and the all-fees notice", () => {
+  it("shows exactly Accommodation, Total and the all-fees notice", () => {
     mockAuth = { isAuthenticated: true, isLoading: false };
-    mockSearch = "";
     mockBooking = {
       id: "booking-1",
       check_in: "2030-01-10",
@@ -105,10 +113,12 @@ describe("Checkout guest pricing", () => {
     mockPayment = {
       id: "payment-1",
       status: "verified",
-      amount_egp: 3648,
-      accommodation_amount_egp: 3200,
+      // Canonical example: the guest's Accommodation line IS the final
+      // all-inclusive price — VAT and fees are internal components.
+      amount_egp: 4058.4,
+      accommodation_amount_egp: 4058.4,
       cleaning_fee_egp: null,
-      vat_egp: 448,
+      vat_egp: null,
       nights: 3,
       reference_number: "STY-PRICE",
       proof_rejection_count: 0,
@@ -120,14 +130,14 @@ describe("Checkout guest pricing", () => {
     renderPage(en as never);
 
     expect(screen.getByText("Accommodation")).toBeInTheDocument();
-    expect(screen.getByText("VAT 14%")).toBeInTheDocument();
     expect(screen.getByText("Total amount")).toBeInTheDocument();
-    expect(screen.getByText("Includes all fees and VAT")).toBeInTheDocument();
+    expect(screen.getByText("Prices include all fees")).toBeInTheDocument();
+    // No VAT, cleaning, service-fee or percentage lines for guests.
+    expect(screen.queryByText(/VAT/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Cleaning fee")).not.toBeInTheDocument();
     expect(screen.queryByText(/service fee/i)).not.toBeInTheDocument();
-    mockBooking = null;
-    mockPayment = null;
-    mockAuth = { isAuthenticated: false, isLoading: false };
+    // Accommodation equals the charged total — no surprise at checkout.
+    expect(screen.getAllByText(/4,058\.4/).length).toBeGreaterThanOrEqual(2);
   });
 });
 

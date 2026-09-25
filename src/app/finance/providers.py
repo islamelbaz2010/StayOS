@@ -6,8 +6,10 @@ from typing import Any, cast
 from uuid import uuid4
 
 import httpx
+from decimal import Decimal, ROUND_HALF_UP
 
 from app.config import settings
+from app.finance import commercial
 from app.shared.exceptions import PaymentError
 
 # Paymob's documented transaction-callback HMAC field order. The signed
@@ -163,7 +165,7 @@ async def paymob_create_order(
     payload = {
         "auth_token": auth_token,
         "delivery_needed": "false",
-        "amount_cents": amount_egp * 100,
+        "amount_cents": commercial.to_minor_units(amount_egp),
         "currency": "EGP",
         "merchant_order_id": reservation_id,
         "items": [],
@@ -185,7 +187,7 @@ async def paymob_create_payment_key(
 
     payload = {
         "auth_token": auth_token,
-        "amount_cents": amount_egp * 100,
+        "amount_cents": commercial.to_minor_units(amount_egp),
         "expiration": 3600,
         "order_id": order_id,
         "billing_data": billing_data,
@@ -295,7 +297,7 @@ async def paymob_create_intention(
         )
 
     payload = {
-        "amount": amount_egp * 100,  # Paymob uses minor units (piastres)
+        "amount": commercial.to_minor_units(amount_egp),
         "currency": "EGP",
         "payment_methods": [integration_id],
         "billing_data": billing_data or _default_billing_data(),
@@ -423,7 +425,7 @@ async def create_stripe_payment_intent(
         raise PaymentError("Stripe secret key not configured")
 
     payload = {
-        "amount": str(amount_egp * 100),
+        "amount": str(commercial.to_minor_units(amount_egp)),
         "currency": "egp",
         "automatic_payment_methods[enabled]": "true",
         "metadata[reservation_id]": reservation_id,
@@ -452,7 +454,7 @@ async def capture_stripe_payment_intent(payment_intent_id: str) -> dict[str, Any
 
 
 async def refund_stripe_payment(
-    payment_intent_id: str, amount_egp: int | None = None
+    payment_intent_id: str, amount_egp: Decimal | int | None = None
 ) -> dict[str, Any]:
     """Refund (or partially refund) a Stripe PaymentIntent."""
     if settings.ENVIRONMENT == "test":
@@ -462,7 +464,7 @@ async def refund_stripe_payment(
 
     payload: dict[str, Any] = {"payment_intent": payment_intent_id}
     if amount_egp is not None:
-        payload["amount"] = str(amount_egp * 100)
+        payload["amount"] = str(commercial.to_minor_units(amount_egp))
     async with httpx.AsyncClient() as client:
         return await _stripe_post(client, "/refunds", payload)
 
@@ -702,11 +704,13 @@ def extract_stripe_reservation_id(payload: dict[str, Any]) -> str | None:
     return None
 
 
-def extract_paymob_amount(payload: dict[str, Any]) -> int | None:
+def extract_paymob_amount(payload: dict[str, Any]) -> Decimal | None:
     obj = payload.get("obj", payload)
     amount = obj.get("amount_cents")
     if amount is not None:
-        return int(str(amount)) // 100
+        return (Decimal(str(amount)) / 100).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
     return None
 
 
@@ -720,14 +724,14 @@ def extract_paymob_amount_cents(payload: dict[str, Any]) -> int | None:
     return None
 
 
-def extract_stripe_amount(payload: dict[str, Any]) -> int | None:
+def extract_stripe_amount(payload: dict[str, Any]) -> Decimal | None:
     obj = payload.get("data", {}).get("object", {})
     amount = obj.get("amount")
     if amount is None:
         amount = obj.get("amount_received")
     if amount is not None:
         # Stripe amounts are in the smallest currency unit (piastres for EGP).
-        return int(str(amount)) // 100
+        return Decimal(str(amount)) / 100
     return None
 
 

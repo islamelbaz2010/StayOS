@@ -497,14 +497,15 @@ async def test_booking_financial_context_joins_payment_context(monkeypatch):
     assert ctx.unit_title == "شقة"
     assert ctx.host_id == "host-1"
 
-    # Canonical economics: fee base = stored accommodation total minus
-    # cleaning; platform share = 12% of that base; host payable is the rest.
+    # New-model detection: the 500 gap between the amount (5000) and the
+    # stored host payable (4500) is the additive StayOS revenue — the
+    # ledger stays balanced (4500 + 500 + 0 VAT = 5000).
     assert ctx.financials is not None
     assert ctx.financials["guest_paid_egp"] == 5000
     assert ctx.financials["accommodation_egp"] == 4400
     assert ctx.financials["cleaning_fee_egp"] == 100
-    assert ctx.financials["platform_share_egp"] == round(4400 * 0.12)
-    assert ctx.financials["host_net_egp"] == 4500 - round(4400 * 0.12)
+    assert ctx.financials["platform_share_egp"] == 500
+    assert ctx.financials["host_net_egp"] == 4500
     assert ctx.financials["platform_share_waived"] is False
     # No escrow row in this fixture → no payout state.
     assert ctx.payout is None

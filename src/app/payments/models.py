@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
@@ -7,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     String,
     Text,
 )
@@ -44,25 +46,25 @@ class Payment(UUIDMixin, TimestampMixin, Base):
     method: Mapped[str] = mapped_column(
         String(50), nullable=False, default=PaymentMethod.MANUAL
     )
-    amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     # Amount breakdown captured at creation so refund computation never has
     # to reverse-engineer the fee from the total. Nullable for rows created
     # before this split existed — treated as "no fee recorded" by refund code.
-    accommodation_amount_egp: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
+    accommodation_amount_egp: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True
     )
-    guest_service_fee_egp: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
+    guest_service_fee_egp: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True
     )
-    cleaning_fee_egp: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
+    cleaning_fee_egp: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True
     )
     # Separate VAT on the taxable booking amount (accommodation +
     # cleaning after discounts, configured VAT_RATE_PCT) — added on top
     # of the taxable amount in amount_egp. Captured at creation via the
     # canonical commercial engine; NULL on rows created before VAT
     # tracking. Never part of platform revenue or host earnings.
-    vat_egp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    vat_egp: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     nights: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     reference_number: Mapped[str] = mapped_column(String(36), nullable=False)
     # V1 Cancellation & Refund Policy §1.2 — guest must submit proof within
@@ -99,7 +101,7 @@ class Payment(UUIDMixin, TimestampMixin, Base):
     cancelled_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    refund_amount_egp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    refund_amount_egp: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     refunded_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

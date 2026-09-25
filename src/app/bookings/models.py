@@ -3,6 +3,7 @@
 # third-party) and CI Ruff (0.16.1: ``app`` is first-party). No single
 # ordering satisfies both, so I001 is suppressed for this file only.
 from datetime import date, datetime
+from decimal import Decimal
 
 from app.listings.models import Unit
 from app.shared.models import Base, TimestampMixin, UUIDMixin
@@ -13,6 +14,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     SmallInteger,
     String,
     Text,
@@ -77,8 +79,8 @@ class Booking(UUIDMixin, TimestampMixin, Base):
     cancel_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Host custom offer (FD-07): when set, this all-inclusive total
     # overrides listing pricing for the booking's payment.
-    custom_total_egp: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
+    custom_total_egp: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True
     )
     offer_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
@@ -125,7 +127,7 @@ class BookingOffer(UUIDMixin, TimestampMixin, Base):
     check_out: Mapped[date] = mapped_column(Date, nullable=False)
     # All-inclusive guest price for the whole stay (EGP). Economics are
     # derived by the canonical engine — never supplied by the client.
-    total_price_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_price_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default="pending"
     )  # pending | accepted | declined | expired | superseded

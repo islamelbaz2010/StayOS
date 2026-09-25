@@ -824,6 +824,18 @@ export interface paths {
     /** Patch Dispute Admin */
     patch: operations["patch_dispute_admin_api_v1_disputes_admin__dispute_id__patch"];
   };
+  "/api/v1/notifications": {
+    /** List Notifications */
+    get: operations["list_notifications_api_v1_notifications_get"];
+  };
+  "/api/v1/notifications/{notification_id}/read": {
+    /** Mark Notification Read */
+    post: operations["mark_notification_read_api_v1_notifications__notification_id__read_post"];
+  };
+  "/api/v1/notifications/read-all": {
+    /** Mark All Notifications Read */
+    post: operations["mark_all_notifications_read_api_v1_notifications_read_all_post"];
+  };
   "/api/v1/admin/staff": {
     /** List Staff Endpoint */
     get: operations["list_staff_endpoint_api_v1_admin_staff_get"];
@@ -849,6 +861,14 @@ export interface paths {
   "/api/v1/admin/overview": {
     /** Get Overview */
     get: operations["get_overview_api_v1_admin_overview_get"];
+  };
+  "/api/v1/admin/users": {
+    /** Get Users */
+    get: operations["get_users_api_v1_admin_users_get"];
+  };
+  "/api/v1/admin/listings": {
+    /** Get Listings */
+    get: operations["get_listings_api_v1_admin_listings_get"];
   };
   "/api/v1/admin/bookings/{booking_id}/financial": {
     /** Get Booking Financial */
@@ -1030,6 +1050,28 @@ export interface components {
       /** Content */
       content: string;
     };
+    /** AdminListingListItem */
+    AdminListingListItem: {
+      /** Id */
+      id: string;
+      /** Title */
+      title: string;
+      /** Host Id */
+      host_id: string;
+      /** Status */
+      status: string;
+      /** Governorate */
+      governorate: string;
+      /** City */
+      city: string;
+      /** Has Pending Changes */
+      has_pending_changes: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
     /**
      * AdminOverviewResponse
      * @description Marketplace operations snapshot for the admin console.
@@ -1135,6 +1177,28 @@ export interface components {
       tasks_pending: number;
       /** Tasks Overdue */
       tasks_overdue: number;
+    };
+    /** AdminUserListItem */
+    AdminUserListItem: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string | null;
+      /** Email */
+      email: string | null;
+      /** Phone Number */
+      phone_number: string | null;
+      /** Role */
+      role: string;
+      /** Kyc Status */
+      kyc_status: string;
+      /** Is Active */
+      is_active: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
     };
     /** AutomatedMessageSend */
     AutomatedMessageSend: {
@@ -1507,10 +1571,12 @@ export interface components {
      * @description Guest-facing price quote for a unit + date range.
      *
      * Computed by the same routine that prices the actual payment so the
-     * total a guest sees before booking always matches the amount charged.
-     * All-inclusive model (FD-19): the response carries ONLY the final
-     * price — no accommodation subtotal, no fee lines, no internal
-     * economics. "Includes all fees".
+     * amount a guest sees before booking always matches the amount charged.
+     * All-inclusive model (final Founder commercial decision): the response
+     * carries only Accommodation — the final price containing nightly rate,
+     * cleaning, StayOS economics and VAT — and Total, which is the same
+     * amount. No VAT line, no cleaning line, no fee lines, no internal
+     * economics. "Prices include all fees".
      */
     BookingQuote: {
       /** Unit Id */
@@ -1521,14 +1587,8 @@ export interface components {
       check_out: string;
       /** Nights */
       nights: number;
-      /** Nightly Rate Egp */
-      nightly_rate_egp: number;
       /** Accommodation Egp */
       accommodation_egp: number;
-      /** Cleaning Fee Egp */
-      cleaning_fee_egp: number;
-      /** Vat Egp */
-      vat_egp: number;
       /** Total Egp */
       total_egp: number;
     };
@@ -3246,6 +3306,33 @@ export interface components {
       /** Results */
       results: components["schemas"]["ImportResultRow"][];
     };
+    /** InAppNotificationItem */
+    InAppNotificationItem: {
+      /** Id */
+      id: string;
+      /** Event Type */
+      event_type: string;
+      /** Subject */
+      subject: string | null;
+      /** Body */
+      body: string;
+      /** Locale */
+      locale: string;
+      /** Read At */
+      read_at: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** InAppNotificationList */
+    InAppNotificationList: {
+      /** Items */
+      items: components["schemas"]["InAppNotificationItem"][];
+      /** Unread Count */
+      unread_count: number;
+    };
     /** InquiryCreate */
     InquiryCreate: {
       /** Unit Id */
@@ -4092,6 +4179,11 @@ export interface components {
       status?: components["schemas"]["MaintenanceRequestStatus"] | null;
       /** Related Task Id */
       related_task_id?: string | null;
+    };
+    /** MarkAllReadResponse */
+    MarkAllReadResponse: {
+      /** Marked */
+      marked: number;
     };
     /** MarkReadRequest */
     MarkReadRequest: Record<string, never>;
@@ -10284,6 +10376,61 @@ export interface operations {
       };
     };
   };
+  /** List Notifications */
+  list_notifications_api_v1_notifications_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["InAppNotificationList"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Mark Notification Read */
+  mark_notification_read_api_v1_notifications__notification_id__read_post: {
+    parameters: {
+      path: {
+        notification_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["InAppNotificationItem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Mark All Notifications Read */
+  mark_all_notifications_read_api_v1_notifications_read_all_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["MarkAllReadResponse"];
+        };
+      };
+    };
+  };
   /** List Staff Endpoint */
   list_staff_endpoint_api_v1_admin_staff_get: {
     responses: {
@@ -10393,6 +10540,52 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["AdminOverviewResponse"];
+        };
+      };
+    };
+  };
+  /** Get Users */
+  get_users_api_v1_admin_users_get: {
+    parameters: {
+      query?: {
+        role?: string | null;
+        kyc_status?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AdminUserListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Listings */
+  get_listings_api_v1_admin_listings_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        governorate?: string | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AdminListingListItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

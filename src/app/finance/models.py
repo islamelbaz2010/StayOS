@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
@@ -6,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     UniqueConstraint,
     func,
@@ -29,9 +31,9 @@ class Wallet(UUIDMixin, TimestampMixin, Base):
     owner_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     wallet_type: Mapped[str] = mapped_column(String(50), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
-    balance_egp: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    available_balance_egp: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
+    balance_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    available_balance_egp: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=0
     )
 
     ledger_entries: Mapped[list["LedgerEntry"]] = relationship(
@@ -50,7 +52,7 @@ class EscrowAccount(UUIDMixin, TimestampMixin, Base):
 
     reservation_id: Mapped[str] = mapped_column(String(36), nullable=False)
     host_id: Mapped[str] = mapped_column(String(36), nullable=False)
-    amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=EscrowStatus.CREATED
@@ -78,7 +80,7 @@ class FinancialTransaction(UUIDMixin, TimestampMixin, Base):
 
     reservation_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     transaction_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=TransactionStatus.PENDING
@@ -123,9 +125,9 @@ class LedgerEntry(UUIDMixin, Base):
     ledger_account: Mapped[str] = mapped_column(String(100), nullable=False)
     account_type: Mapped[str] = mapped_column(String(50), nullable=False)
     entry_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
-    balance_after: Mapped[int] = mapped_column(Integer, nullable=False)
+    balance_after: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -160,7 +162,7 @@ class PayoutRequest(UUIDMixin, TimestampMixin, Base):
         nullable=False,
     )
     host_id: Mapped[str] = mapped_column(String(36), nullable=False)
-    amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=PayoutStatus.PENDING

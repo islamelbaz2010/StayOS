@@ -55,6 +55,13 @@ async def _count(session: AsyncSession, stmt: Any) -> int:
     return int(await session.scalar(stmt) or 0)
 
 
+async def _sum(session: AsyncSession, stmt: Any):
+    """Money aggregation — Decimal, never truncated to int."""
+    from app.finance.commercial import money
+
+    return money(await session.scalar(stmt) or 0)
+
+
 async def list_admin_users(
     session: AsyncSession,
     role: str | None = None,
@@ -184,25 +191,25 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
             Payment.status == PaymentStatus.VERIFIED
         ),
     )
-    payments_verified_amount = await _count(
+    payments_verified_amount = await _sum(
         session,
         select(func.coalesce(func.sum(Payment.amount_egp), 0)).where(
             Payment.status == PaymentStatus.VERIFIED
         ),
     )
-    payments_refunded_amount = await _count(
+    payments_refunded_amount = await _sum(
         session,
         select(func.coalesce(func.sum(Payment.refund_amount_egp), 0)).where(
             Payment.refund_amount_egp.isnot(None)
         ),
     )
-    payments_refund_pending_amount = await _count(
+    payments_refund_pending_amount = await _sum(
         session,
         select(func.coalesce(func.sum(Payment.refund_amount_egp), 0)).where(
             Payment.status == PaymentStatus.REFUND_PENDING
         ),
     )
-    escrows_held_amount = await _count(
+    escrows_held_amount = await _sum(
         session,
         select(func.coalesce(func.sum(EscrowAccount.amount_egp), 0)).where(
             EscrowAccount.status.in_(
@@ -222,25 +229,25 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
         ),
         0,
     )
-    host_payable_amount = await _count(
+    host_payable_amount = await _sum(
         session,
         select(ledger_net).where(
             LedgerEntry.ledger_account == LedgerAccount.HOST_PAYABLE
         ),
     )
-    platform_revenue_amount = await _count(
+    platform_revenue_amount = await _sum(
         session,
         select(ledger_net).where(
             LedgerEntry.ledger_account == LedgerAccount.PLATFORM_REVENUE
         ),
     )
-    vat_amount = await _count(
+    vat_amount = await _sum(
         session,
         select(ledger_net).where(
             LedgerEntry.ledger_account == LedgerAccount.VAT_PAYABLE
         ),
     )
-    payouts_paid_amount = await _count(
+    payouts_paid_amount = await _sum(
         session,
         select(func.coalesce(func.sum(PayoutRequest.amount_egp), 0)).where(
             PayoutRequest.status == PayoutStatus.COMPLETED
@@ -253,7 +260,7 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
             PayoutRequest.status == PayoutStatus.PENDING
         ),
     )
-    payouts_pending_amount = await _count(
+    payouts_pending_amount = await _sum(
         session,
         select(func.coalesce(func.sum(PayoutRequest.amount_egp), 0)).where(
             PayoutRequest.status == PayoutStatus.PENDING

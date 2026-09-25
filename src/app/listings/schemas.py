@@ -3,6 +3,7 @@ import json
 from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+from app.shared.schemas import Money
 
 from .constants import AccessibilityFeature, BedType, SelfCheckInMethod
 
@@ -356,7 +357,7 @@ class ListingResponse(BaseModel):
     monthly_discount_pct: int = 0
     cancellation_policy: str
     instant_book: bool = False
-    price: int
+    price: Money
     currency: str
     weekend_mult: float
     peak_mult: float
@@ -400,7 +401,7 @@ class ListingSearchResult(BaseModel):
     governorate: str
     country: str
     base_price_egp: int
-    price: int
+    price: Money
     currency: str
     lat: float
     lng: float
@@ -419,12 +420,12 @@ class ListingSearchResult(BaseModel):
     available_for_dates: bool | None = None
     # Computed selected-stay totals; only set when the search includes dates.
     nights: int | None = None
-    total_egp: int | None = None
+    total_egp: Money | None = None
     # Effective nightly rate over the requested dates (host price overrides
     # and weekend multipliers applied). ``discounted`` is true when it is
     # lower than the listing's base price — i.e. the host set a temporary
     # promotional price covering part of the stay.
-    effective_nightly_egp: int | None = None
+    effective_nightly_egp: Money | None = None
     discounted: bool = False
 
 
@@ -433,8 +434,8 @@ class ListingRejectRequest(BaseModel):
 
 
 class PriceBucket(BaseModel):
-    from_egp: int
-    to_egp: int
+    from_egp: Money
+    to_egp: Money
     count: int
 
 
@@ -442,8 +443,8 @@ class PriceDistributionResponse(BaseModel):
     """Nightly-price distribution over the listings matching the current
     (non-price) filters — powers the price-range histogram."""
 
-    min_price_egp: int | None
-    max_price_egp: int | None
+    min_price_egp: Money | None
+    max_price_egp: Money | None
     total: int
     buckets: list[PriceBucket]
 
@@ -494,7 +495,7 @@ class CalendarDay(BaseModel):
     date: date
     status: str
     block_type: str | None = None
-    price_egp: int
+    price_egp: Money
 
 
 class ListingFitCheck(BaseModel):
@@ -663,7 +664,7 @@ class HostDashboardStats(BaseModel):
     listed_listings: int
     total_reservations: int
     upcoming_reservations: int
-    total_revenue_egp: int
+    total_revenue_egp: Money
     occupancy_rate_pct: float
 
 
@@ -674,7 +675,7 @@ class HostReservationCalendarItem(BaseModel):
     status: str
     check_in: date
     check_out: date
-    total_amount_egp: int
+    total_amount_egp: Money
 
 
 class HostReservationCalendarResponse(BaseModel):

@@ -3,7 +3,7 @@ from typing import Any
 
 from app.auth.constants import SpokenLanguage
 from app.bookings.schemas import BookingResponse
-from app.shared.schemas import PaginatedResponse
+from app.shared.schemas import PaginatedResponse, Money
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -57,13 +57,13 @@ class EarningsSimulateRequest(BaseModel):
 class EarningsSimulateResponse(BaseModel):
     nightly_price_egp: int
     nights: int
-    accommodation_egp: int  # after discount
-    discount_egp: int
+    accommodation_egp: Money  # after discount
+    discount_egp: Money
     cleaning_fee_egp: int
-    vat_egp: int  # separate 14% tax on the taxable amount — not host earnings
-    guest_total_egp: int  # all-inclusive price the guest would pay
-    stayos_share_egp: int  # platform economics — host-facing only
-    host_net_egp: int  # estimated host payout
+    vat_egp: Money  # separate 14% tax on the taxable amount — not host earnings
+    guest_total_egp: Money  # all-inclusive price the guest would pay
+    stayos_share_egp: Money  # platform economics — host-facing only
+    host_net_egp: Money  # estimated host payout
 
 
 class HostPerformanceResponse(BaseModel):
@@ -78,7 +78,7 @@ class HostPerformanceResponse(BaseModel):
     booked_nights: int
     occupancy_pct: int  # booked nights / listed nights in window
     gross_revenue_egp: int  # verified/settled guest payments
-    avg_nightly_egp: int
+    avg_nightly_egp: Money
     inquiries: int  # inquiry conversations opened in window
     per_unit: list[dict[str, Any]] = Field(default_factory=list)
 
@@ -158,12 +158,12 @@ class HostEarningsSummary(BaseModel):
     total_revenue_egp: int  # gross amount of verified, refunded and refund-pending payments
     pending_verification_egp: int  # payments awaiting admin verification
     refund_pending_egp: int  # refunds still owed to guests
-    refunded_egp: int = 0  # completed refunds returned to guests
+    refunded_egp: Money = 0  # completed refunds returned to guests
     net_earnings_egp: int  # total_revenue minus all pending and completed refunds
-    host_earnings_egp: int = 0  # canonical host net over retained (verified) payments
-    funds_held_egp: int = 0  # host share currently held in escrow
-    payout_ready_egp: int = 0  # host share eligible for payout now (hold_until passed)
-    paid_out_egp: int = 0  # completed payout requests
+    host_earnings_egp: Money = 0  # canonical host net over retained (verified) payments
+    funds_held_egp: Money = 0  # host share currently held in escrow
+    payout_ready_egp: Money = 0  # host share eligible for payout now (hold_until passed)
+    paid_out_egp: Money = 0  # completed payout requests
     # Per-listing breakdown
     per_unit: list[dict[str, Any]] = Field(default_factory=list)
 
@@ -174,7 +174,7 @@ class HostCalendarDay(BaseModel):
     date: date
     status: str  # AVAILABLE | BLOCKED | BOOKED | HOLD
     block_type: str | None = None
-    price_egp: int
+    price_egp: Money
     reservation_id: str | None = None
     reservation_status: str | None = None
     guest_name: str | None = None

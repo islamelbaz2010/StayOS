@@ -759,7 +759,7 @@
     "submitResponse": "Submit response",
     "submitting": "Submitting...",
     "responseError": "Failed to submit response",
-    "includesAllFees": "Includes all fees and VAT",
+    "includesAllFees": "Prices include all fees",
     "offer": "Offer"
   },
   "trust": {
@@ -902,7 +902,7 @@
     "cleaningFee": "Cleaning fee",
     "serviceFee": "Service fee",
     "total": "Total",
-    "includesAllFees": "Includes all fees and VAT",
+    "includesAllFees": "Prices include all fees",
     "selectDates": "Select dates to see the summary.",
     "requestBooking": "Request booking",
     "submitting": "Submitting...",
@@ -1167,7 +1167,7 @@
     "serviceFee": "Service fee",
     "serviceFeeWaived": "Free",
     "totalAmount": "Total amount",
-    "includesAllFees": "Includes all fees and VAT",
+    "includesAllFees": "Prices include all fees",
     "egp": "EGP",
     "selectProof": "Select receipt file",
     "formatsHint": "JPG, PNG, WebP, or PDF - max 10MB",
@@ -1898,7 +1898,7 @@
   },
   "fees": {
     "popupTitle": "See your full stay price upfront",
-    "popupBody": "StayOS shows the complete price for your stay from the start, including the nightly rate, cleaning and service fees. What you see is what you'll pay at checkout.",
+    "popupBody": "StayOS shows the complete price for your stay from the start. What you see is what you'll pay at checkout.",
     "popupCta": "Got it",
     "line": "Prices include all fees"
   },

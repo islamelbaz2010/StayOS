@@ -181,6 +181,27 @@ async def update_unit_listing(
     return listing
 
 
+def _all_inclusive_nightly_expr():
+    """SQL expression for the guest-facing all-inclusive nightly price.
+
+    Matches ``commercial.all_inclusive_nightly_egp``: the final guest
+    total for a minimum-length stay (accommodation + cleaning + both 6%
+    allocations + VAT) divided by min_nights — the same number search
+    cards display, so price filters and sorts act on what guests see.
+    """
+    from decimal import Decimal
+
+    from app.config import settings
+
+    share = Decimal("1") + Decimal(str(settings.PLATFORM_TOTAL_SHARE_PCT))
+    vat = Decimal("1") + Decimal(str(settings.VAT_RATE_PCT))
+    min_nights = func.greatest(UnitListing.min_nights, 1)
+    return (
+        UnitListing.base_price_egp * share * min_nights
+        + func.coalesce(UnitListing.cleaning_fee_egp, 0)
+    ) * vat / min_nights
+
+
 def _build_search_statement(
     filters: ListingSearchFilters,
     location_terms: tuple[set[str], set[str], list[tuple[float, float]]] | None = None,
@@ -237,10 +258,12 @@ def _build_search_statement(
         )
         stmt = stmt.where(~booking_exists)
 
-    if filters.min_price is not None:
-        stmt = stmt.where(UnitListing.base_price_egp >= filters.min_price)
-    if filters.max_price is not None:
-        stmt = stmt.where(UnitListing.base_price_egp <= filters.max_price)
+    if filters.min_price is not None or filters.max_price is not None:
+        price_expr = _all_inclusive_nightly_expr()
+        if filters.min_price is not None:
+            stmt = stmt.where(price_expr >= filters.min_price)
+        if filters.max_price is not None:
+            stmt = stmt.where(price_expr <= filters.max_price)
 
     if filters.bedrooms is not None:
         stmt = stmt.where(Unit.bedrooms >= filters.bedrooms)
@@ -356,9 +379,9 @@ def _build_search_statement(
 
     sort = (filters.sort or "").lower()
     if sort == "price_asc":
-        stmt = stmt.order_by(UnitListing.base_price_egp.asc(), Unit.id.desc())
+        stmt = stmt.order_by(_all_inclusive_nightly_expr().asc(), Unit.id.desc())
     elif sort == "price_desc":
-        stmt = stmt.order_by(UnitListing.base_price_egp.desc(), Unit.id.desc())
+        stmt = stmt.order_by(_all_inclusive_nightly_expr().desc(), Unit.id.desc())
     elif sort == "rating_desc":
         from app.reviews.models import Review
 
@@ -481,7 +504,7 @@ async def search_price_values(
     )
     stmt = (
         _build_search_statement(priceless, location_terms)
-        .with_only_columns(UnitListing.base_price_egp)
+        .with_only_columns(_all_inclusive_nightly_expr())
         .order_by(None)
     )
     result = await session.execute(stmt)

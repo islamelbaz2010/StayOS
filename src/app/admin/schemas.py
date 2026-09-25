@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from pydantic import BaseModel
+from app.shared.schemas import Money
 
 
 class AdminOverviewResponse(BaseModel):
@@ -32,17 +33,17 @@ class AdminOverviewResponse(BaseModel):
     payments_pending: int
     payments_proof_uploaded: int
     payments_verified: int
-    payments_verified_amount_egp: int
-    payments_refund_pending_amount_egp: int = 0
-    payments_refunded_amount_egp: int
+    payments_verified_amount_egp: Money
+    payments_refund_pending_amount_egp: Money = 0
+    payments_refunded_amount_egp: Money
     payouts_pending: int
-    payouts_pending_amount_egp: int
-    payouts_paid_amount_egp: int = 0
+    payouts_pending_amount_egp: Money
+    payouts_paid_amount_egp: Money = 0
     escrows_held: int
-    escrows_held_amount_egp: int = 0
-    host_payable_egp: int = 0
-    platform_revenue_egp: int = 0
-    vat_egp: int = 0
+    escrows_held_amount_egp: Money = 0
+    host_payable_egp: Money = 0
+    platform_revenue_egp: Money = 0
+    vat_egp: Money = 0
     kyc_pending_documents: int
     disputes_open: int
     disputes_in_review: int
@@ -102,15 +103,15 @@ class BookingFinancialContextResponse(BaseModel):
     payment_id: str | None
     payment_status: str | None
     payment_method: str | None
-    payment_amount_egp: int | None
-    accommodation_amount_egp: int | None
-    guest_service_fee_egp: int | None
-    cleaning_fee_egp: int | None
+    payment_amount_egp: Money | None
+    accommodation_amount_egp: Money | None
+    guest_service_fee_egp: Money | None
+    cleaning_fee_egp: Money | None
     reference_number: str | None
     payment_deadline_at: datetime | None
     proof_uploaded_at: datetime | None
     verified_at: datetime | None
-    refund_amount_egp: int | None
+    refund_amount_egp: Money | None
     refunded_at: datetime | None
     reject_reason: str | None
     escrow: dict | None = None

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.config import settings
+from app.finance import commercial
 from app.finance import providers as payment_providers
 from app.listings import pricing
 from app.listings import repository as listings_repository
@@ -99,19 +100,21 @@ def _to_response(
 
 
 
-def _calculate_amounts(subtotal_egp: int, discount_pct: float = 0.0) -> dict[str, int]:
-    """Canonical all-inclusive economics (FD-19).
+def _calculate_amounts(subtotal_egp, discount_pct: float = 0.0) -> dict:
+    """Canonical all-inclusive economics (Founder commercial model).
 
-    The guest pays the discounted accommodation total — nothing is added
-    on top. The platform's 12% share is allocated internally from that
-    total; the host receives the remainder. ``guest_fee`` stays 0 for all
-    new reservations (the column survives only for legacy rows recorded
-    under the pre-all-inclusive model).
+    The guest pays the all-inclusive total — accommodation plus the
+    additive 12% StayOS economics plus VAT on the taxable amount. The
+    host is payable the full accommodation amount. ``guest_fee`` stays 0
+    for all new reservations (the column survives only for legacy rows
+    recorded under the pre-all-inclusive model).
     """
-    from app.finance.commercial import compute_booking_economics
+    from decimal import Decimal
 
-    discount_amount = int(round(subtotal_egp * discount_pct))
-    discounted = subtotal_egp - discount_amount
+    from app.finance.commercial import compute_booking_economics, money
+
+    discount_amount = money(money(subtotal_egp) * Decimal(str(discount_pct)))
+    discounted = money(subtotal_egp) - discount_amount
     economics = compute_booking_economics(discounted)
     return {
         "subtotal": discounted,
@@ -703,7 +706,7 @@ async def _issue_refund(intent: Any, refund_amount: int, total_amount: int) -> P
     if transaction_ref:
         try:
             await payment_providers.paymob_refund(
-                str(transaction_ref), refund_amount * 100
+                str(transaction_ref), commercial.to_minor_units(refund_amount)
             )
         except PaymentError as exc:
             # Fail closed: the refund is owed but the provider did not
@@ -767,7 +770,7 @@ async def reconcile_provider_refund(
     )
 
     refund_result = await payment_providers.paymob_refund(
-        str(txn_ref), refund_amount * 100
+        str(txn_ref), commercial.to_minor_units(refund_amount)
     )
 
     intent.status = PaymentStatus.REFUNDED
@@ -832,7 +835,7 @@ def _compute_refund(reservation: Reservation) -> int:
     if days_before_checkin > settings.CANCELLATION_FULL_REFUND_DAYS:
         return reservation.total_amount_egp
     if days_before_checkin > settings.CANCELLATION_PARTIAL_REFUND_DAYS:
-        return int(
+        return commercial.money(
             reservation.total_amount_egp
             * settings.CANCELLATION_PARTIAL_REFUND_PCT
         )

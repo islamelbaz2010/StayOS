@@ -2,6 +2,7 @@ from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from app.shared.schemas import Money
 
 from .constants import BookingStatus
 
@@ -33,7 +34,7 @@ class BookingOfferCreate(BaseModel):
     check_out: date
     # All-inclusive guest total for the whole stay — the host quotes ONE
     # number; economics are derived server-side by the canonical engine.
-    total_price_egp: int = Field(..., gt=0)
+    total_price_egp: Money = Field(..., gt=0)
     message: str | None = Field(default=None, max_length=1000)
 
     @field_validator("check_out")
@@ -55,7 +56,7 @@ class BookingOfferResponse(BaseModel):
     guest_id: str
     check_in: date
     check_out: date
-    total_price_egp: int
+    total_price_egp: Money
     status: str
     booking_id: str | None = None
     expires_at: datetime
@@ -86,11 +87,11 @@ class BookingCancellationPreview(BaseModel):
     # Listing's cancellation tier (FLEXIBLE/MODERATE/STRICT) — null if the
     # unit has no listing yet.
     cancellation_policy: str | None = None
-    total_paid_egp: int
-    refund_amount_egp: int
+    total_paid_egp: Money
+    refund_amount_egp: Money
     # Non-refundable guest service fee kept by StayOS on a guest-initiated
     # cancellation (V1 policy §3). Always 0 for host/admin cancellations.
-    service_fee_retained_egp: int = 0
+    service_fee_retained_egp: Money = 0
     refund_policy_applied: str
 
 

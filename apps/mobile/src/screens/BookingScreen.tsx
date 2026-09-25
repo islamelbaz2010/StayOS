@@ -219,9 +219,8 @@ export function BookingScreen() {
         ) : quote ? (
           <>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryText}>
-                {price} {currency} × {quote.nights} {t("nightsCount")}
-              </Text>
+              <Text style={styles.summaryText}>{t("accommodation")}</Text>
+              <Text style={styles.summaryValue}>{quote.total_egp} {currency}</Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryTotal}>{t("total")}</Text>
@@ -229,14 +228,7 @@ export function BookingScreen() {
             </View>
             <Text style={styles.summaryText}>{t("includesAllFees")}</Text>
           </>
-        ) : (
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryText}>
-              {price} {currency} × {Math.max(0, nights)} {t("nightsCount")}
-            </Text>
-            <Text style={styles.summaryValue}>{price * Math.max(0, nights)} {currency}</Text>
-          </View>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.trustBox}>

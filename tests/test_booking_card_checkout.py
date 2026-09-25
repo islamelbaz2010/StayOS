@@ -843,7 +843,9 @@ async def test_host_payments_attach_earnings(
 
     item = items[0]
     assert item.amount_egp == 2050
-    assert item.host_net_egp == 2000 - round(1950 * 0.12)  # 2000 - 234
+    # New model: host payable = accommodation + cleaning; the 12% is
+    # additive revenue — never deducted from the host payable.
+    assert item.host_net_egp == 2000
     assert item.platform_fee_egp == round(1950 * 0.12)
     assert item.platform_share_waived is False
     assert item.funds_status == "held"

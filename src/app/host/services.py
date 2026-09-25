@@ -4,6 +4,7 @@ Orchestrates existing bookings, payments, listings, messages, and
 reviews services through a host lens. Does NOT duplicate business logic.
 """
 
+from decimal import Decimal
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -19,6 +20,7 @@ from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.bookings.schemas import BookingResponse
 from app.bookings.services import _compute_stay_phase, _to_response
+from app.finance.commercial import money
 from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
 from app.payments import repository as payments_repository
@@ -588,7 +590,7 @@ async def get_host_earnings(
             Payment.status == PaymentStatus.VERIFIED,
         )
     )
-    host_earnings = 0
+    host_earnings = Decimal("0")
     for payment in verified_rows.scalars().all():
         economics, _ = await finance_services.booking_economics(session, payment)
         host_earnings += economics.host_net_egp
@@ -611,7 +613,7 @@ async def get_host_earnings(
             ),
         )
     )
-    host_earnings += int(card_rows.scalar() or 0)
+    host_earnings += money(card_rows.scalar() or 0)
 
     data["funds_held_egp"] = funds_held
     data["payout_ready_egp"] = payout_ready
@@ -665,7 +667,6 @@ async def get_host_calendar(
 
     # Get calendar rules in range
     from app.listings import pricing as pricing_module
-    from app.listings import repository as listings_repository
     from app.listings.constants import CalendarStatus
     from app.listings.models import CalendarRule
 
@@ -1330,17 +1331,19 @@ async def get_host_performance(
     settled = {
         PaymentStatus.VERIFIED, PaymentStatus.REFUND_PENDING, PaymentStatus.REFUNDED
     }
-    revenue = int(await session.scalar(
+    revenue = money(await session.scalar(
         select(func.coalesce(func.sum(Payment.amount_egp), 0)).where(
             Payment.host_id == host_id, Payment.status.in_(settled)
         )
     ) or 0)
-    accom_sum = int(await session.scalar(
+    accom_sum = money(await session.scalar(
         select(func.coalesce(func.sum(Payment.accommodation_amount_egp), 0)).where(
             Payment.host_id == host_id, Payment.status.in_(settled)
         )
     ) or 0)
-    avg_nightly = round(accom_sum / booked_nights) if booked_nights else 0
+    avg_nightly = (
+        money(accom_sum / booked_nights) if booked_nights else Decimal("0")
+    )
 
     # Inquiries = inquiry conversations opened about this host's units.
     from app.messages.constants import ConversationType

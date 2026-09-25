@@ -35,17 +35,19 @@ E2E_DATABASE_URL = os.environ.get(
     "postgresql+asyncpg://ahmed@localhost:5432/stayos_e2e",
 )
 
+from decimal import Decimal
+
 NIGHTLY_EGP = 1000
 CLEANING_EGP = 200
 NIGHTS = 3
 ACCOMMODATION_EGP = NIGHTLY_EGP * NIGHTS  # 3000
-TAXABLE_EGP = ACCOMMODATION_EGP + CLEANING_EGP  # 3200
-VAT_EGP = round(TAXABLE_EGP * 0.14)  # 448
-GUEST_TOTAL_EGP = TAXABLE_EGP + VAT_EGP  # 3648
-PLATFORM_SHARE_EGP = round(ACCOMMODATION_EGP * 0.12)  # 360
-HOST_SIDE_EGP = round(ACCOMMODATION_EGP * 0.06)  # 180
-GUEST_SIDE_EGP = PLATFORM_SHARE_EGP - HOST_SIDE_EGP  # 180
-HOST_NET_EGP = TAXABLE_EGP - PLATFORM_SHARE_EGP  # 2840
+HOST_SIDE_EGP = Decimal(ACCOMMODATION_EGP * 0.06).quantize(Decimal("0.01"))  # 180
+GUEST_SIDE_EGP = HOST_SIDE_EGP  # 180
+PLATFORM_SHARE_EGP = HOST_SIDE_EGP + GUEST_SIDE_EGP  # 360
+HOST_PAYABLE_EGP = Decimal(ACCOMMODATION_EGP + CLEANING_EGP)  # 3200
+TAXABLE_EGP = HOST_PAYABLE_EGP + PLATFORM_SHARE_EGP  # 3560
+VAT_EGP = (TAXABLE_EGP * Decimal("0.14")).quantize(Decimal("0.01"))  # 498.40
+GUEST_TOTAL_EGP = TAXABLE_EGP + VAT_EGP  # 4058.40
 
 HOST_ID = "e2e-host-0000-0000-000000000001"
 GUEST_ID = "e2e-guest-0000-0000-00000000001"
@@ -222,26 +224,20 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
         assert payment.cleaning_fee_egp == CLEANING_EGP
         assert payment.nights == NIGHTS
 
-        # Guest-facing contract: one all-inclusive Accommodation line.
-        # The StayOS economics are contained INSIDE that amount — the
-        # guest's 3,200 accommodation charge allocates internally to
-        # host net 2,840 + platform share 360 (DEC-021 §4:
-        # guest_total = host_payable + vat_payable + platform_revenue).
-        # The 12% is allocated from the stay amount, never added on top.
+        # Guest-facing contract: one all-inclusive Accommodation line =
+        # the final guest price. The StayOS economics are contained
+        # INSIDE that amount — the taxable 3,560 splits internally into
+        # host payable 3,200 + StayOS revenue 360, and VAT 498.40 is a
+        # liability, never a guest-visible line.
         guest_view = payment_services._to_response(payment)
-        assert guest_view.accommodation_amount_egp == TAXABLE_EGP
-        assert (
-            guest_view.accommodation_amount_egp
-            == HOST_NET_EGP + PLATFORM_SHARE_EGP
-        )
-        assert guest_view.cleaning_fee_egp is None
-        assert guest_view.vat_egp == VAT_EGP
+        assert guest_view.accommodation_amount_egp == GUEST_TOTAL_EGP
         assert guest_view.amount_egp == GUEST_TOTAL_EGP
         assert (
-            guest_view.accommodation_amount_egp
-            + guest_view.vat_egp
+            HOST_PAYABLE_EGP + PLATFORM_SHARE_EGP + VAT_EGP
             == guest_view.amount_egp
         )
+        assert guest_view.cleaning_fee_egp is None
+        assert guest_view.vat_egp is None
         assert guest_view.guest_service_fee_egp is None
 
     # ---- 2. Payment confirmed → escrow created (full amount held) --------
@@ -299,7 +295,7 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
             (e.ledger_account, e.entry_type): e.amount_egp
             for e in entries if e.entry_type == LedgerEntryType.CREDIT
         }
-        assert credits[(LedgerAccount.HOST_PAYABLE, "credit")] == HOST_NET_EGP
+        assert credits[(LedgerAccount.HOST_PAYABLE, "credit")] == HOST_PAYABLE_EGP
         assert credits[(LedgerAccount.PLATFORM_REVENUE, "credit")] == PLATFORM_SHARE_EGP
         assert credits[(LedgerAccount.VAT_PAYABLE, "credit")] == VAT_EGP
 
@@ -319,7 +315,7 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
         assert economics.platform_share_egp == PLATFORM_SHARE_EGP
         assert economics.host_side_share_egp == HOST_SIDE_EGP
         assert economics.guest_side_share_egp == GUEST_SIDE_EGP
-        assert economics.host_net_egp == HOST_NET_EGP
+        assert economics.host_net_egp == HOST_PAYABLE_EGP
         assert (
             economics.host_net_egp
             + economics.platform_share_egp

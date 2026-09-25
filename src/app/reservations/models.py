@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
@@ -42,10 +43,10 @@ class Reservation(UUIDMixin, TimestampMixin, Base):
     adults: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
     children: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     infants: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
-    total_amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
-    host_amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
-    platform_fee_egp: Mapped[int] = mapped_column(Integer, nullable=False)
-    guest_fee_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    host_amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    platform_fee_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    guest_fee_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
     payment_method: Mapped[str] = mapped_column(String(50), nullable=False)
     checked_in_at: Mapped[datetime | None] = mapped_column(
@@ -58,7 +59,7 @@ class Reservation(UUIDMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=True
     )
     cancel_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    refund_amount_egp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    refund_amount_egp: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
 
     payment_intents: Mapped[list["PaymentIntent"]] = relationship(
         "PaymentIntent", back_populates="reservation"
@@ -79,7 +80,7 @@ class PaymentIntent(UUIDMixin, TimestampMixin, Base):
     )
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
     provider_ref: Mapped[str] = mapped_column(String(255), nullable=False)
-    amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=PaymentStatus.PENDING
@@ -126,7 +127,7 @@ class PromoApplication(UUIDMixin, TimestampMixin, Base):
         String(36), ForeignKey("reservation.promo_codes.id"), nullable=False
     )
     discount_pct: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
-    discount_amount_egp: Mapped[int] = mapped_column(Integer, nullable=False)
+    discount_amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EGP")
 
     promo_code: Mapped["PromoCode"] = relationship("PromoCode")

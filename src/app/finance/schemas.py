@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.shared.schemas import BaseResponse
+from app.shared.schemas import BaseResponse, Money
 
 
 class WalletResponse(BaseModel):
@@ -13,8 +13,8 @@ class WalletResponse(BaseModel):
     owner_id: str | None
     wallet_type: str
     currency: str
-    balance_egp: int
-    available_balance_egp: int
+    balance_egp: Money
+    available_balance_egp: Money
 
 
 class EscrowResponse(BaseModel):
@@ -23,7 +23,7 @@ class EscrowResponse(BaseModel):
     id: str
     reservation_id: str
     host_id: str
-    amount_egp: int
+    amount_egp: Money
     status: str
     hold_until: datetime | None
     released_at: datetime | None
@@ -42,8 +42,8 @@ class LedgerEntryResponse(BaseModel):
     ledger_account: str
     account_type: str
     entry_type: str
-    amount_egp: int
-    balance_after: int
+    amount_egp: Money
+    balance_after: Money
     description: str | None
     created_at: datetime
 
@@ -54,7 +54,7 @@ class FinancialTransactionResponse(BaseModel):
     id: str
     reservation_id: str | None
     transaction_type: str
-    amount_egp: int
+    amount_egp: Money
     status: str
     provider: str | None
     provider_ref: str | None
@@ -65,7 +65,7 @@ class FinancialTransactionResponse(BaseModel):
 
 
 class PayoutRequestCreate(BaseModel):
-    amount_egp: int = Field(..., gt=0)
+    amount_egp: Money = Field(..., gt=0)
     bank_account_info: dict[str, Any]
 
 
@@ -75,7 +75,7 @@ class PayoutRequestResponse(BaseModel):
     id: str
     wallet_id: str
     host_id: str
-    amount_egp: int
+    amount_egp: Money
     status: str
     provider: str | None
     provider_ref: str | None

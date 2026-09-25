@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
+from app.shared.schemas import Money
 
 
 class DiscoveryConfigCreate(BaseModel):
@@ -81,7 +82,7 @@ class DiscoveryCandidateResponse(BaseModel):
     bedrooms: int | None = None
     bathrooms: int | None = None
     guest_capacity: int | None = None
-    nightly_price: int | None = None
+    nightly_price: Money | None = None
     currency: str | None = None
     image_urls: list[str] = Field(default_factory=list)
     amenities: list[str] = Field(default_factory=list)

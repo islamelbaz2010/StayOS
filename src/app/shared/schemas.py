@@ -1,8 +1,22 @@
-from typing import Any, Generic, TypeVar
+from decimal import Decimal
+from typing import Annotated, Any, Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PlainSerializer, WithJsonSchema
 
 T = TypeVar("T")
+
+# Money on the API boundary: Decimal internally (exact 2dp EGP), JSON
+# number on the wire so clients see ``4058.4`` — never a string, never a
+# float computed client-side.
+Money = Annotated[
+    Decimal,
+    WithJsonSchema({"type": "number"}),
+    PlainSerializer(
+        lambda d: float(d) if d is not None else None,
+        return_type=float,
+        when_used="json",
+    ),
+]
 
 
 class BaseResponse(BaseModel):

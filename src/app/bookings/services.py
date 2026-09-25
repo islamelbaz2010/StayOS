@@ -4,6 +4,7 @@
 # treats ``app`` as first-party). No single ordering satisfies both, so
 # I001 is suppressed for this file only.
 from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -11,6 +12,7 @@ from app.auth import dependencies as auth_dependencies
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.config import settings
+from app.finance.commercial import money as commercial_money
 from app.host import permissions as host_permissions
 from app.host.constants import CoHostPermissionScope
 from app.listings import repository as listings_repository
@@ -347,8 +349,8 @@ def _compute_guest_accommodation_refund(
     *,
     booking: Booking,
     listing: Any | None,
-    accommodation_amount_egp: int,
-) -> int:
+    accommodation_amount_egp,
+) -> Decimal:
     """Accommodation refund owed when the GUEST cancels, per the decided V1
     cancellation tiers (STAYOS_CANCELLATION_REFUND_POLICY_V1 §3).
 
@@ -380,7 +382,7 @@ def _compute_guest_accommodation_refund(
         return accommodation_amount_egp if hours_before_checkin >= 5 * 24 else 0
     if policy == CancellationPolicy.STRICT:
         return (
-            int(round(accommodation_amount_egp * 0.5))
+            commercial_money(accommodation_amount_egp * 0.5)
             if hours_before_checkin >= 7 * 24
             else 0
         )
@@ -403,7 +405,7 @@ def _evaluate_cancellation_refund(
     payment: Payment | None,
     booking: Booking,
     listing: Any | None,
-) -> tuple[int, int, int]:
+) -> tuple:
     """Returns (refund_amount_egp, total_paid_egp, service_fee_retained_egp).
 
     Only a VERIFIED payment represents money actually collected from the
@@ -424,21 +426,21 @@ def _evaluate_cancellation_refund(
     # whole amount as refundable accommodation rather than guessing.
     service_fee = payment.guest_service_fee_egp or 0 if payment is not None else 0
     vat_egp = payment.vat_egp or 0 if payment is not None else 0
+    # The guest-facing price is fully all-inclusive, so the tier
+    # percentage applies to the whole taxable amount the guest paid
+    # (accommodation + cleaning + StayOS economics) — for legacy rows
+    # where accommodation_amount_egp already held the taxable subtotal
+    # this is the same value.
     taxable = total_paid - vat_egp - service_fee
-    accommodation = (
-        payment.accommodation_amount_egp
-        if payment is not None and payment.accommodation_amount_egp is not None
-        else taxable
-    )
     accommodation_refund = _compute_guest_accommodation_refund(
-        booking=booking, listing=listing, accommodation_amount_egp=accommodation
+        booking=booking, listing=listing, accommodation_amount_egp=taxable
     )
     # VAT is a separate tax on the taxable booking amount: the refunded
     # taxable portion carries its VAT share back to the guest. A full
     # taxable refund returns the full VAT; a partial one is proportional.
     vat_refund = (
-        int(round(vat_egp * accommodation_refund / accommodation))
-        if accommodation > 0
+        commercial_money(vat_egp * accommodation_refund / taxable)
+        if taxable > 0
         else 0
     )
     refund_amount = accommodation_refund + vat_refund
@@ -486,11 +488,12 @@ async def _settle_payment_on_cancel(
         # reconciles it by hand; we never mark REFUNDED without provider
         # confirmation.
         if payment.provider == "paymob" and payment.transaction_ref:
+            from app.finance import commercial
             from app.finance import providers as payment_providers
 
             try:
                 await payment_providers.paymob_refund(
-                    payment.transaction_ref, refund_amount * 100
+                    payment.transaction_ref, commercial.to_minor_units(refund_amount)
                 )
             except Exception:
                 await payments_repository.update_payment(

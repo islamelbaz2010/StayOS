@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -73,37 +74,84 @@ async def booking_economics(
     Returns ``(economics, waived)`` so callers can surface whether the
     platform share was waived for this booking.
 
-    VAT is a separate tax on the taxable amount (accommodation +
-    cleaning) — never part of the share and never waived by the alpha
-    incentive. The stored ``payment.vat_egp`` is authoritative: rows
-    created before VAT existed carry NULL and are treated as VAT-free so
-    their escrow splits still balance against what was actually charged.
+    Under the current Founder model the stored ``accommodation_amount_egp``
+    is the host payable (accommodation + cleaning) and the 12% allocations
+    were charged to the guest on top, inside the taxable amount — so
+    ``stayos_revenue = amount - vat - host_payable``. Rows priced under the
+    superseded model had the share carved OUT of the taxable amount
+    (``amount == accommodation_amount + vat``); those are detected and
+    split by the old rule so their ledgers still balance against what was
+    actually charged. ``payment.vat_egp`` is authoritative: pre-VAT rows
+    carry NULL and are treated as VAT-free.
     """
-    from dataclasses import replace
-
     from app.bookings import repository as bookings_repository
 
     host_completed = await bookings_repository.count_host_completed_bookings(
         session, payment.host_id, exclude_booking_id=payment.booking_id
     )
     waived = host_completed < settings.ALPHA_HOST_FREE_BOOKINGS
-    fee_base = payment.accommodation_amount_egp
-    if fee_base is None:
-        fee_base = payment.amount_egp - (payment.vat_egp or 0)
-    fee_base -= payment.cleaning_fee_egp or 0
+    stored_vat = commercial.money(payment.vat_egp or 0)
+    taxable_implied = payment.amount_egp - stored_vat
+    accom_cleaning = payment.accommodation_amount_egp
+    if accom_cleaning is None:
+        accom_cleaning = taxable_implied
+    cleaning = payment.cleaning_fee_egp or 0
+    fee_base = accom_cleaning - cleaning
     if fee_base < 0:
-        fee_base = payment.amount_egp - (payment.vat_egp or 0)
-    economics = commercial.compute_booking_economics(
-        fee_base,
-        payment.cleaning_fee_egp or 0,
-        platform_share_waived=waived,
-    )
-    stored_vat = payment.vat_egp or 0
-    if stored_vat != economics.vat_egp:
-        economics = replace(
-            economics,
+        fee_base = taxable_implied
+
+    additive_gap = taxable_implied - accom_cleaning
+    if additive_gap > 0:
+        # Current model: the 6%+6% allocations sit inside the taxable
+        # amount on top of the host payable. Revenue is whatever the
+        # taxable amount holds beyond the host payable — exact for both
+        # listing-priced and custom-offer payments.
+        accom = fee_base
+        host_side = commercial.money(
+            accom * commercial.rate(settings.HOST_SIDE_SHARE_PCT)
+        )
+        collected = taxable_implied - accom_cleaning
+        guest_side = collected - host_side
+        if guest_side < 0:
+            guest_side = Decimal("0")
+            host_side = collected
+        # Waived (closed-alpha): StayOS takes nothing — the collected
+        # allocation accrues to the host, who is payable the full
+        # taxable amount. The guest charge is unchanged.
+        revenue = Decimal("0") if waived else collected
+        economics = commercial.BookingEconomics(
+            accommodation_egp=commercial.money(accom),
+            cleaning_fee_egp=commercial.money(cleaning),
+            taxable_amount_egp=commercial.money(taxable_implied),
             vat_egp=stored_vat,
-            guest_total_egp=economics.taxable_amount_egp + stored_vat,
+            guest_total_egp=payment.amount_egp,
+            platform_share_egp=revenue,
+            host_net_egp=(
+                commercial.money(taxable_implied)
+                if waived
+                else commercial.money(accom_cleaning)
+            ),
+            host_side_share_egp=host_side,
+            guest_side_share_egp=guest_side,
+        )
+    else:
+        # Legacy containment-model row (or a waived booking, which looks
+        # identical: no allocation on top of accommodation + cleaning).
+        economics = commercial.compute_booking_economics(
+            fee_base, cleaning, platform_share_waived=waived
+        )
+        share = Decimal("0") if waived else economics.platform_share_egp
+        host_net = taxable_implied - share
+        economics = commercial.BookingEconomics(
+            accommodation_egp=commercial.money(fee_base),
+            cleaning_fee_egp=commercial.money(cleaning),
+            taxable_amount_egp=commercial.money(taxable_implied),
+            vat_egp=stored_vat,
+            guest_total_egp=payment.amount_egp,
+            platform_share_egp=share,
+            host_net_egp=host_net,
+            host_side_share_egp=economics.host_side_share_egp,
+            guest_side_share_egp=economics.guest_side_share_egp,
         )
     return economics, waived
 
@@ -388,7 +436,11 @@ async def _post_ledger_for_escrow_refund(
         # VAT portion of what the guest was charged stays a tax liability,
         # only the taxable remainder is platform revenue.
         total = refund_amount + retained
-        refund_vat = int(round(vat_total_egp * refund_amount / total)) if total else 0
+        refund_vat = (
+            commercial.money(vat_total_egp * refund_amount / total)
+            if total
+            else Decimal("0")
+        )
         retained_vat = vat_total_egp - refund_vat
         retained_taxable = retained - retained_vat
         if retained_taxable > 0:

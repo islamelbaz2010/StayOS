@@ -2,6 +2,7 @@ import logging
 import math
 import uuid
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 from statistics import median
 from typing import Any
 
@@ -17,6 +18,7 @@ from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.config import settings
+from app.finance import commercial
 from app.host.permissions import (
     assert_can_edit_listing,
     assert_can_manage_calendar,
@@ -231,7 +233,17 @@ def _to_listing_response(
         monthly_discount_pct=int(listing.monthly_discount_pct or 0),
         cancellation_policy=listing.cancellation_policy,
         instant_book=bool(listing.instant_book),
-        price=listing.base_price_egp,
+        # All-inclusive model: ``price`` is the per-night equivalent of
+        # the final guest total at the minimum stay — cleaning, StayOS
+        # economics and VAT already inside. ``base_price_egp`` remains
+        # the raw host input for host/admin surfaces.
+        price=float(
+            commercial.all_inclusive_nightly_egp(
+                listing.base_price_egp,
+                listing.cleaning_fee_egp or 0,
+                listing.min_nights or 1,
+            )
+        ),
         currency=listing.currency,
         weekend_mult=listing.weekend_mult,
         peak_mult=listing.peak_mult,
@@ -294,7 +306,17 @@ def _to_search_result(
         "governorate": unit.governorate,
         "country": listing.country,
         "base_price_egp": listing.base_price_egp,
-        "price": listing.base_price_egp,
+        # All-inclusive model: the public ``price`` is the per-night
+        # equivalent of the final guest total at the listing's minimum
+        # stay — it already contains cleaning amortization, StayOS
+        # economics and VAT, so no later surface shows a higher amount.
+        "price": float(
+            commercial.all_inclusive_nightly_egp(
+                listing.base_price_egp,
+                listing.cleaning_fee_egp or 0,
+                listing.min_nights or 1,
+            )
+        ),
         "currency": listing.currency,
         "lat": lat,
         "lng": lng,
@@ -778,20 +800,25 @@ async def search_listings(
             )
             # All-inclusive pricing (Founder commercial decision): the
             # search-card total is the final guest price — the applicable
-            # host discount applied, cleaning included, VAT added, no
-            # other fee.
+            # host discount applied to accommodation, then cleaning and
+            # both 6% allocations inside the taxable amount, then VAT.
+            # Identical to the quote/checkout/Paymob amount.
             discount_pct = pricing.applicable_discount_pct(listing, nights)
-            accommodation -= int(round(accommodation * discount_pct / 100))
-            cleaning = listing.cleaning_fee_egp or 0
-            taxable = accommodation + cleaning
-            guest_total = taxable + int(round(taxable * settings.VAT_RATE_PCT))
-            item["total_egp"] = guest_total
-            effective_nightly = int(round(guest_total / nights)) if nights else None
-            item["effective_nightly_egp"] = effective_nightly
-            item["discounted"] = bool(
-                effective_nightly is not None
-                and effective_nightly < listing.base_price_egp
+            accommodation -= commercial.money(
+                commercial.money(accommodation) * discount_pct / 100
             )
+            economics = commercial.compute_booking_economics(
+                accommodation, listing.cleaning_fee_egp or 0
+            )
+            guest_total = economics.guest_total_egp
+            item["total_egp"] = float(guest_total)
+            effective_nightly = (
+                commercial.money(guest_total / nights) if nights else None
+            )
+            item["effective_nightly_egp"] = (
+                float(effective_nightly) if effective_nightly is not None else None
+            )
+            item["discounted"] = bool(discount_pct)
     has_more = offset + len(data) < total
     next_cursor = (
         ListingSearchFilters.encode_cursor(offset + filters.limit)
@@ -838,10 +865,10 @@ async def get_price_distribution(
         )
 
     bucket_count = min(_PRICE_HISTOGRAM_BUCKETS, len(prices))
-    width = max(1, math.ceil((hi - lo + 1) / bucket_count))
+    width = max(Decimal("1"), (hi - lo + 1) / bucket_count)
     buckets = [0] * bucket_count
     for price in prices:
-        idx = min((price - lo) // width, bucket_count - 1)
+        idx = int(min((price - lo) // width, bucket_count - 1))
         buckets[idx] += 1
 
     return PriceDistributionResponse(

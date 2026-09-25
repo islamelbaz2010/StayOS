@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
+from app.shared.schemas import Money
 
 
 class PaymentProofPresignRequest(BaseModel):
@@ -41,17 +42,17 @@ class PaymentResponse(BaseModel):
     method: str
     provider: str | None = None
     checkout_url: str | None = None
-    amount_egp: int
+    amount_egp: Money
     # Guests receive the all-inclusive stay amount (accommodation +
     # cleaning, which internally contains the StayOS share) as the single
     # Accommodation line. ``include_breakdown`` (staff/admin) restores the
     # pure accommodation component and the internal economics fields.
-    accommodation_amount_egp: int | None = None
-    guest_service_fee_egp: int | None = None
-    cleaning_fee_egp: int | None = None
+    accommodation_amount_egp: Money | None = None
+    guest_service_fee_egp: Money | None = None
+    cleaning_fee_egp: Money | None = None
     # VAT on the taxable booking amount — the payer's own tax line,
     # visible to the guest. Internal economics stay breakdown-gated.
-    vat_egp: int | None = None
+    vat_egp: Money | None = None
     nights: int
     reference_number: str
     payment_deadline_at: datetime | None = None
@@ -65,7 +66,7 @@ class PaymentResponse(BaseModel):
     rejected_by: str | None
     reject_reason: str | None
     cancelled_at: datetime | None
-    refund_amount_egp: int | None = None
+    refund_amount_egp: Money | None = None
     refunded_at: datetime | None = None
     instructions: str
     unit_title: str | None = None
@@ -78,24 +79,20 @@ class BookingQuote(BaseModel):
     """Guest-facing price quote for a unit + date range.
 
     Computed by the same routine that prices the actual payment so the
-    total a guest sees before booking always matches the amount charged.
-    All-inclusive model (FD-19 / DEC-021): the response carries only
-    Accommodation (the all-inclusive stay amount — nightly + cleaning,
-    internally containing the StayOS share), VAT and total. No cleaning
-    line, no fee lines, no internal economics. "Includes all fees"."""
+    amount a guest sees before booking always matches the amount charged.
+    All-inclusive model (final Founder commercial decision): the response
+    carries only Accommodation — the final price containing nightly rate,
+    cleaning, StayOS economics and VAT — and Total, which is the same
+    amount. No VAT line, no cleaning line, no fee lines, no internal
+    economics. "Prices include all fees"."""
 
     unit_id: str
     check_in: str
     check_out: str
     nights: int
-    nightly_rate_egp: int
-    # Guest-facing all-inclusive stay amount (nightly accommodation plus
-    # cleaning). Cleaning is not exposed as a separate guest line.
-    accommodation_egp: int
-    # VAT is a separate tax on the taxable booking amount, shown to the
-    # guest as its own line ("VAT 14%") — never part of StayOS economics.
-    vat_egp: int
-    total_egp: int
+    # Final all-inclusive guest price — identical to total_egp.
+    accommodation_egp: Money
+    total_egp: Money
 
 
 class InternalQuote(BaseModel):
@@ -106,11 +103,12 @@ class InternalQuote(BaseModel):
     check_in: str
     check_out: str
     nights: int
-    nightly_rate_egp: int
-    accommodation_egp: int
-    cleaning_fee_egp: int
-    vat_egp: int
-    total_egp: int
+    nightly_rate_egp: Money
+    accommodation_egp: Money
+    cleaning_fee_egp: Money
+    taxable_amount_egp: Money
+    vat_egp: Money
+    total_egp: Money
 
 
 class PaymentReturnStatusResponse(BaseModel):
@@ -122,7 +120,7 @@ class PaymentReturnStatusResponse(BaseModel):
     payment_id: str
     payment_status: str
     booking_status: str
-    amount_egp: int
+    amount_egp: Money
     reference_number: str
     verified_at: datetime | None = None
 
@@ -137,8 +135,8 @@ class PaymentListItem(BaseModel):
     unit_id: str
     status: str
     method: str
-    amount_egp: int
-    refund_amount_egp: int | None = None
+    amount_egp: Money
+    refund_amount_egp: Money | None = None
     reference_number: str
     payment_deadline_at: datetime | None = None
     refunded_at: datetime | None = None
@@ -152,11 +150,11 @@ class PaymentListItem(BaseModel):
     # Host-facing earnings fields — populated only by the host-scoped
     # endpoint (``GET /payments/host``); None on guest/admin lists so guest
     # total-only pricing and internal economics stay hidden.
-    host_net_egp: int | None = None
-    platform_fee_egp: int | None = None
+    host_net_egp: Money | None = None
+    platform_fee_egp: Money | None = None
     platform_share_waived: bool | None = None
     funds_status: str | None = None
-    funds_held_egp: int | None = None
+    funds_held_egp: Money | None = None
     expected_payout_at: datetime | None = None
     payout_status: str | None = None
     paid_at: datetime | None = None

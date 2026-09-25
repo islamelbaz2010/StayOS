@@ -26,11 +26,11 @@ const createBookingMock = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 
 vi.mock("@/lib/queries/bookings", () => ({
   useBookingQuote: () => ({
+    // New guest contract: one all-inclusive Accommodation figure equal
+    // to the final total — no nightly rate, VAT or fee components.
     data: {
-      nightly_rate_egp: 1000,
-      accommodation_egp: 4300,
-      vat_egp: 602,
-      total_egp: 4902,
+      accommodation_egp: 4058.4,
+      total_egp: 4058.4,
     },
     isLoading: false,
   }),
@@ -216,17 +216,18 @@ describe("BookingPanel guest-facing summary", () => {
     expect(screen.queryByText(/service fee/i)).not.toBeInTheDocument();
 
     expect(screen.getByText("Accommodation")).toBeInTheDocument();
-    expect(screen.getByText("VAT 14%")).toBeInTheDocument();
     expect(screen.getByText("Total")).toBeInTheDocument();
-    expect(screen.getByText("Includes all fees and VAT")).toBeInTheDocument();
+    expect(screen.getByText("Prices include all fees")).toBeInTheDocument();
+    // No VAT line — the price the guest sees is the price they pay.
+    expect(screen.queryByText(/VAT/i)).not.toBeInTheDocument();
   });
 
-  it("shows accommodation inclusive of cleaning plus VAT and total", () => {
+  it("shows the all-inclusive accommodation figure equal to the total", () => {
     renderPanel();
 
-    expect(screen.getByText(/4,300/)).toBeInTheDocument();
-    expect(screen.getByText(/602/)).toBeInTheDocument();
-    expect(screen.getByText(/4,902/)).toBeInTheDocument();
+    // Accommodation = Total = 4,058.40 — cleaning, StayOS economics and
+    // VAT are inside the figure, never separate lines.
+    expect(screen.getAllByText(/4,058\.40/).length).toBeGreaterThanOrEqual(2);
   });
 });
 

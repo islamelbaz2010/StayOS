@@ -4,6 +4,26 @@ import { api } from "@/lib/api";
 import type { components } from "@/lib/api-types";
 
 export type AdminOverview = components["schemas"]["AdminOverviewResponse"];
+export interface AdminUserListItem {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  role: string;
+  kyc_status: string;
+  is_active: boolean;
+  created_at: string;
+}
+export interface AdminListingListItem {
+  id: string;
+  title: string;
+  host_id: string;
+  status: string;
+  governorate: string;
+  city: string;
+  has_pending_changes: boolean;
+  created_at: string;
+}
 type ApiBookingFinancialContext =
   components["schemas"]["BookingFinancialContextResponse"];
 
@@ -113,6 +133,30 @@ export function useAdminOverview() {
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
+  });
+}
+
+export function useAdminUsers(role?: string, kycStatus?: string) {
+  return useQuery<AdminUserListItem[]>({
+    queryKey: ["admin-users", role, kycStatus],
+    queryFn: async () => {
+      const { data } = await api.get<AdminUserListItem[]>("/admin/users", {
+        params: { role: role || undefined, kyc_status: kycStatus || undefined },
+      });
+      return data;
+    },
+  });
+}
+
+export function useAdminListings(status?: string, governorate?: string) {
+  return useQuery<AdminListingListItem[]>({
+    queryKey: ["admin-listings", status, governorate],
+    queryFn: async () => {
+      const { data } = await api.get<AdminListingListItem[]>("/admin/listings", {
+        params: { status: status || undefined, governorate: governorate || undefined },
+      });
+      return data;
+    },
   });
 }
 

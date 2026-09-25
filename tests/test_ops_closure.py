@@ -368,6 +368,7 @@ async def test_approve_requires_admin(fake_session: AsyncMock) -> None:
 async def test_create_photo_on_listed_unit_is_pending(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
+    monkeypatch.setattr(listings_services, "verify_image_upload", MagicMock())
     unit = _make_unit(status=UnitStatus.LISTED)
     monkeypatch.setattr(
         listings_repository,
@@ -394,7 +395,10 @@ async def test_create_photo_on_listed_unit_is_pending(
         fake_session,
         host,
         "unit-1",
-        PhotoCreate(s3_key="k", url="https://cdn.example.com/x.jpg"),
+        PhotoCreate(
+            s3_key="listings/unit-1/photo.jpg",
+            url="https://cdn.example.com/x.jpg",
+        ),
     )
     assert result.moderation_state == "pending_add"
 

@@ -149,22 +149,29 @@ export function Header() {
   // menu — the top-level header stays compact for every role.
   const accountItems: MenuItemDef[] = [];
   if (isAuthenticated) {
-    accountItems.push({
-      href: `/${locale}/messages`,
-      label: t("messages"),
-      count: unreadCount,
-    });
-    accountItems.push({
-      href: `/${locale}/notifications`,
-      label: t("notifications"),
-      count: notificationsUnread,
-    });
+    accountItems.push({ href: `/${locale}/profile`, label: t("profile") });
     if (user?.role === "guest") {
       accountItems.push(
-        { href: `/${locale}/bookings`, label: t("trips") },
         { href: `/${locale}/favorites`, label: t("favorites") },
-        { href: `/${locale}/payments`, label: t("payments") }
+        { href: `/${locale}/bookings`, label: t("trips") }
       );
+    }
+    accountItems.push(
+      {
+        href: `/${locale}/messages`,
+        label: t("messages"),
+        count: unreadCount,
+      },
+      {
+        href: `/${locale}/notifications`,
+        label: t("notifications"),
+        count: notificationsUnread,
+      },
+      { href: `/${locale}/account-settings`, label: t("accountSettings") },
+      { href: `/${locale}/account-settings#language`, label: t("language") }
+    );
+    if (user?.role === "guest") {
+      accountItems.push({ href: `/${locale}/payments`, label: t("payments") });
     }
     if (user?.role === "host") {
       accountItems.push(
@@ -186,7 +193,7 @@ export function Header() {
       });
     }
     accountItems.push(
-      { href: `/${locale}/profile`, label: t("account") },
+      { href: `/${locale}/help`, label: t("helpCenter") },
       { href: `/${locale}/support`, label: t("support") }
     );
   }

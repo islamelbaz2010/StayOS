@@ -5,7 +5,6 @@ from datetime import date, datetime, timedelta
 from statistics import median
 from typing import Any
 
-import boto3
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +29,12 @@ from app.listings.models import Unit, UnitListing
 from app.messages.constants import ConversationType, ParticipantRole
 from app.messages.models import Conversation, ConversationParticipant, Message
 from app.reviews import repository as reviews_repository
+from app.shared.storage import (
+    private_object_reference,
+    resolve_object_url,
+    s3_client,
+    verify_image_upload,
+)
 from app.shared.exceptions import (
     AuthorizationError,
     NotFoundError,
@@ -72,6 +77,7 @@ from .schemas import (
 logger = logging.getLogger(__name__)
 
 _PHOTO_UPLOAD_TTL_SECONDS = 900
+_PHOTO_MAX_SIZE_BYTES = 10 * 1024 * 1024
 _PHOTO_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
@@ -144,12 +150,7 @@ def _require_storage_config() -> None:
 
 def _s3_client() -> Any:
     _require_storage_config()
-    return boto3.client(
-        "s3",
-        region_name=settings.AWS_REGION,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    )
+    return s3_client()
 
 
 def _resolve_title(listing: UnitListing) -> str:
@@ -1476,7 +1477,9 @@ def _to_photo_response(photo: Any) -> PhotoResponse:
         id=photo.id,
         unit_id=photo.unit_id,
         s3_key=photo.s3_key,
-        url=photo.url,
+        url=resolve_object_url(
+            settings.S3_LISTINGS_BUCKET, photo.s3_key, photo.url
+        ),
         display_order=photo.display_order,
         is_cover=photo.is_cover,
         caption=photo.caption_ar,
@@ -1496,6 +1499,16 @@ async def create_photo(
         raise NotFoundError("Listing not found")
     await assert_can_edit_listing(session, user, unit)
 
+    expected_prefix = f"listings/{unit_id}/"
+    if not request.s3_key.startswith(expected_prefix):
+        raise ValidationError("Photo key does not belong to this listing")
+    verify_image_upload(
+        settings.S3_LISTINGS_BUCKET,
+        request.s3_key,
+        _PHOTO_CONTENT_TYPES,
+        _PHOTO_MAX_SIZE_BYTES,
+    )
+
     # Photos on a LISTED unit are moderated: the new photo stays hidden
     # from guests until an admin approves the pending change-set.
     is_listed_edit = (
@@ -1509,7 +1522,7 @@ async def create_photo(
         session,
         unit_id=unit_id,
         s3_key=request.s3_key,
-        url=request.url,
+        url=private_object_reference(settings.S3_LISTINGS_BUCKET, request.s3_key),
         caption_ar=request.caption,
         is_cover=request.is_cover if not is_listed_edit else False,
         display_order=request.display_order,

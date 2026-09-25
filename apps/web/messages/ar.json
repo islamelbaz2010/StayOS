@@ -47,7 +47,9 @@
     "discovery": "اكتشاف المعروض",
     "helpCenter": "مركز المساعدة",
     "hostStandards": "مسؤوليات المضيف",
-    "notifications": "الإشعارات"
+    "notifications": "الإشعارات",
+    "accountSettings": "إعدادات الحساب",
+    "language": "اللغات والعملة"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -895,6 +897,7 @@
     "children": "أطفال",
     "infants": "رضع",
     "summary": "ملخص الحجز",
+    "accommodation": "الإقامة",
     "nights": "ليالي",
     "cleaningFee": "رسوم التنظيف",
     "serviceFee": "رسوم الخدمة",
@@ -1217,6 +1220,7 @@
     "rejectError": "تعذّر رفض الدفع. حاول مرة أخرى.",
     "tab": {
       "pending": "معلّق",
+      "proof_uploaded": "تم رفع الإثبات",
       "refund_pending": "استرداد معلّق",
       "refunded": "تم الاسترداد"
     },

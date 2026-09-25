@@ -87,9 +87,9 @@ class BookingQuote(BaseModel):
     check_out: str
     nights: int
     nightly_rate_egp: int
-    # Guest-facing booking components — what the guest is paying for.
+    # Guest-facing all-inclusive stay amount (nightly accommodation plus
+    # cleaning). Cleaning is not exposed as a separate guest line.
     accommodation_egp: int
-    cleaning_fee_egp: int
     # VAT is a separate tax on the taxable booking amount, shown to the
     # guest as its own line ("VAT 14%") — never part of StayOS economics.
     vat_egp: int

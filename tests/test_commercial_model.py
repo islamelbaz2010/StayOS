@@ -302,8 +302,8 @@ def test_payment_response_shows_booking_components_hides_service_fee() -> None:
     payment.provider = None
     payment.checkout_url = None
     # The column stores the taxable subtotal (accommodation 2000 +
-    # cleaning 50 = 2050); the response exposes pure accommodation so
-    # guest lines sum to the total.
+    # cleaning 50 = 2050); the guest response uses that as its single
+    # all-inclusive Accommodation line.
     payment.amount_egp = 2337
     payment.accommodation_amount_egp = 2050
     payment.guest_service_fee_egp = 0
@@ -331,36 +331,26 @@ def test_payment_response_shows_booking_components_hides_service_fee() -> None:
     payment.vat_egp = 287
 
     guest_view = ps._to_response(payment)  # default: no internal breakdown
-    # FD-19 guest summary shows the guest's own booking components —
-    # accommodation, cleaning, VAT — but never internal service-fee
-    # economics.
-    assert guest_view.accommodation_amount_egp == 2000
-    assert guest_view.cleaning_fee_egp == 50
+    assert guest_view.accommodation_amount_egp == 2050
+    assert guest_view.cleaning_fee_egp is None
     assert guest_view.guest_service_fee_egp is None
     assert guest_view.amount_egp == 2337
-    # VAT is the guest's own tax line — always visible to the payer.
     assert guest_view.vat_egp == 287
-    # Guest-visible lines must sum exactly to the collected total.
-    assert (
-        guest_view.accommodation_amount_egp
-        + guest_view.cleaning_fee_egp
-        + guest_view.vat_egp
-        == guest_view.amount_egp
-    )
+    assert guest_view.accommodation_amount_egp + guest_view.vat_egp == guest_view.amount_egp
 
     admin_view = ps._to_response(payment, include_breakdown=True)
     assert admin_view.accommodation_amount_egp == 2000
+    assert admin_view.cleaning_fee_egp == 50
     assert admin_view.guest_service_fee_egp == 0
 
 
 def test_guest_quote_contract_has_no_internal_fields() -> None:
-    """The guest quote shows booking components (accommodation, cleaning,
-    VAT) but never internal StayOS/host economics."""
+    """The guest quote exposes one accommodation line plus VAT and total."""
     from app.payments.schemas import BookingQuote
 
-    # Guest-visible booking components.
-    for f in ("accommodation_egp", "cleaning_fee_egp", "vat_egp"):
+    for f in ("accommodation_egp", "vat_egp", "total_egp"):
         assert f in BookingQuote.model_fields
+    assert "cleaning_fee_egp" not in BookingQuote.model_fields
     # Internal economics must never appear.
     for f in (
         "service_fee_egp", "guest_fee_egp", "platform_fee_egp",
@@ -754,10 +744,13 @@ def test_payment_response_exposes_vat_to_payer() -> None:
     # internal economics breakdown stays staff-gated.
     assert ps._to_response(payment).vat_egp == 287
     assert ps._to_response(payment, include_breakdown=True).vat_egp == 287
-    # Stored column is the taxable subtotal (2050); response exposes pure
-    # accommodation (2050 − 50 cleaning).
-    assert ps._to_response(payment).accommodation_amount_egp == 2000
+    # Guest response presents the taxable stay subtotal as Accommodation;
+    # the cleaning component remains staff-only.
+    assert ps._to_response(payment).accommodation_amount_egp == 2050
+    assert ps._to_response(payment).cleaning_fee_egp is None
     assert ps._to_response(payment).guest_service_fee_egp is None
+    assert ps._to_response(payment, include_breakdown=True).accommodation_amount_egp == 2000
+    assert ps._to_response(payment, include_breakdown=True).cleaning_fee_egp == 50
 
 
 # ============================================================

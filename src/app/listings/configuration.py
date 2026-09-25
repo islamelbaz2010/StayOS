@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.listings.models import Unit, UnitListing, UnitPhoto
 from app.shared.exceptions import NotFoundError, ValidationError
+from app.shared.storage import resolve_object_url
 
 from .schemas import ListingCreate, ListingUpdate
 
@@ -49,18 +50,24 @@ def resolve_cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
         if getattr(p, "moderation_state", "live") != "pending_add"
     ]
 
+    def resolved(photo: UnitPhoto) -> str:
+        return resolve_object_url(settings.S3_LISTINGS_BUCKET, photo.s3_key, photo.url)
+
     if listing.cover_photo_id:
         for photo in photos:
-            if photo.id == listing.cover_photo_id and validate_image_url(photo.url):
-                return photo.url
+            url = resolved(photo)
+            if photo.id == listing.cover_photo_id and validate_image_url(url):
+                return url
 
     for photo in photos:
-        if getattr(photo, "is_cover", False) and validate_image_url(photo.url):
-            return photo.url
+        url = resolved(photo)
+        if getattr(photo, "is_cover", False) and validate_image_url(url):
+            return url
 
     for photo in photos:
-        if validate_image_url(photo.url):
-            return photo.url
+        url = resolved(photo)
+        if validate_image_url(url):
+            return url
 
     return None
 

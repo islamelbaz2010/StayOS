@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy import select
@@ -15,7 +15,9 @@ from app.shared.exceptions import (
 )
 
 from .schemas import (
+    AdminListingListItem,
     AdminOverviewResponse,
+    AdminUserListItem,
     BookingFinancialContextResponse,
     DisputeContextResponse,
 )
@@ -23,6 +25,8 @@ from .services import (
     get_admin_overview,
     get_booking_financial_context,
     get_dispute_context,
+    list_admin_listings,
+    list_admin_users,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -58,6 +62,33 @@ async def get_overview(
         return await get_admin_overview(session)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
+
+
+@router.get("/users", response_model=list[AdminUserListItem])
+async def get_users(
+    role: str | None = Query(default=None),
+    kyc_status: str | None = Query(default=None),
+    user: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> list[AdminUserListItem]:
+    return await list_admin_users(session, role=role, kyc_status=kyc_status)
+
+
+@router.get("/listings", response_model=list[AdminListingListItem])
+async def get_listings(
+    status: str | None = Query(default=None),
+    governorate: str | None = Query(default=None),
+    user: User = Depends(
+        auth_dependencies.require_staff_permission(
+            StaffPermission.LISTINGS.value,
+            allow_roles=(),
+        )
+    ),
+    session: AsyncSession = Depends(get_session),
+) -> list[AdminListingListItem]:
+    return await list_admin_listings(
+        session, status=status, governorate=governorate
+    )
 
 
 @router.get(

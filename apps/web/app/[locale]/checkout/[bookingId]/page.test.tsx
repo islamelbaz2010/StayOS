@@ -14,6 +14,8 @@ let mockReturnStatus: {
   isLoading: boolean;
 } = { data: null, error: null, isLoading: false };
 let mockReturnStatusCalled = false;
+let mockBooking: Record<string, unknown> | null = null;
+let mockPayment: Record<string, unknown> | null = null;
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ locale: "en", bookingId: "booking-1" }),
@@ -28,7 +30,7 @@ vi.mock("@/lib/auth/useAuth", () => ({
 
 vi.mock("@/lib/queries/bookings", () => ({
   useBooking: () => ({
-    data: null,
+    data: mockBooking,
     isLoading: false,
     error: null,
     refetch: vi.fn(),
@@ -38,7 +40,7 @@ vi.mock("@/lib/queries/bookings", () => ({
 
 vi.mock("@/lib/queries/payments", () => ({
   usePaymentByBooking: () => ({
-    data: null,
+    data: mockPayment,
     isLoading: false,
     isError: false,
     refetch: vi.fn(),
@@ -88,6 +90,46 @@ function renderPage(messages: AbstractIntlMessages, locale = "en") {
 }
 
 const payment = (en.payment ?? ar.payment) as Record<string, unknown>;
+
+describe("Checkout guest pricing", () => {
+  it("shows exactly Accommodation, VAT 14%, Total and the all-fees notice", () => {
+    mockAuth = { isAuthenticated: true, isLoading: false };
+    mockSearch = "";
+    mockBooking = {
+      id: "booking-1",
+      check_in: "2030-01-10",
+      check_out: "2030-01-13",
+      unit_title: "Alexandria flat",
+      unit_cover_image: null,
+    };
+    mockPayment = {
+      id: "payment-1",
+      status: "verified",
+      amount_egp: 3648,
+      accommodation_amount_egp: 3200,
+      cleaning_fee_egp: null,
+      vat_egp: 448,
+      nights: 3,
+      reference_number: "STY-PRICE",
+      proof_rejection_count: 0,
+      payment_deadline_at: null,
+      checkout_url: null,
+      reject_reason: null,
+    };
+
+    renderPage(en as never);
+
+    expect(screen.getByText("Accommodation")).toBeInTheDocument();
+    expect(screen.getByText("VAT 14%")).toBeInTheDocument();
+    expect(screen.getByText("Total amount")).toBeInTheDocument();
+    expect(screen.getByText("Includes all fees and VAT")).toBeInTheDocument();
+    expect(screen.queryByText("Cleaning fee")).not.toBeInTheDocument();
+    expect(screen.queryByText(/service fee/i)).not.toBeInTheDocument();
+    mockBooking = null;
+    mockPayment = null;
+    mockAuth = { isAuthenticated: false, isLoading: false };
+  });
+});
 
 describe("Checkout — unauthenticated Paymob return", () => {
   it("shows the confirming state while the payment is still pending", () => {

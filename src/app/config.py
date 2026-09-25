@@ -120,6 +120,11 @@ class Settings(BaseSettings):
     AWS_REGION: str = Field(default="", description="AWS region")
     AWS_ACCESS_KEY_ID: str = Field(default="", description="AWS access key ID")
     AWS_SECRET_ACCESS_KEY: str = Field(default="", description="AWS secret access key")
+    S3_ENDPOINT_URL: str = Field(
+        default="",
+        description="Optional S3-compatible API endpoint; empty uses AWS S3",
+    )
+    S3_PRESIGNED_GET_TTL_SECONDS: int = Field(default=86400, ge=300, le=7776000)
 
     SENTRY_DSN: str = Field(default="", description="Sentry DSN")
 

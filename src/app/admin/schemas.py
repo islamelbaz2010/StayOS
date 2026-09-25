@@ -51,6 +51,28 @@ class AdminOverviewResponse(BaseModel):
     tasks_overdue: int
 
 
+class AdminUserListItem(BaseModel):
+    id: str
+    display_name: str | None
+    email: str | None
+    phone_number: str | None
+    role: str
+    kyc_status: str
+    is_active: bool
+    created_at: datetime
+
+
+class AdminListingListItem(BaseModel):
+    id: str
+    title: str
+    host_id: str
+    status: str
+    governorate: str
+    city: str
+    has_pending_changes: bool
+    created_at: datetime
+
+
 class BookingFinancialContextResponse(BaseModel):
     """Investigation view for a single booking: booking + payment +
     escrow/transactions/ledger context joined across modules."""

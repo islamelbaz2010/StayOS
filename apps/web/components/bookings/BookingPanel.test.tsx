@@ -28,7 +28,9 @@ vi.mock("@/lib/queries/bookings", () => ({
   useBookingQuote: () => ({
     data: {
       nightly_rate_egp: 1000,
-      total_egp: 4300,
+      accommodation_egp: 4300,
+      vat_egp: 602,
+      total_egp: 4902,
     },
     isLoading: false,
   }),
@@ -213,18 +215,18 @@ describe("BookingPanel guest-facing summary", () => {
     expect(screen.queryByText(/cleaning fee/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/service fee/i)).not.toBeInTheDocument();
 
-    // Total and the all-inclusive note remain (VAT disclosure included).
+    expect(screen.getByText("Accommodation")).toBeInTheDocument();
+    expect(screen.getByText("VAT 14%")).toBeInTheDocument();
     expect(screen.getByText("Total")).toBeInTheDocument();
-    expect(
-      screen.getByText("Includes all fees and VAT")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Includes all fees and VAT")).toBeInTheDocument();
   });
 
-  it("keeps the total mathematically correct (accommodation + fees)", () => {
+  it("shows accommodation inclusive of cleaning plus VAT and total", () => {
     renderPanel();
 
-    // 4,000 accommodation + 300 cleaning + 0 service = EGP 4,300.
     expect(screen.getByText(/4,300/)).toBeInTheDocument();
+    expect(screen.getByText(/602/)).toBeInTheDocument();
+    expect(screen.getByText(/4,902/)).toBeInTheDocument();
   });
 });
 

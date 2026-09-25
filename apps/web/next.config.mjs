@@ -2,7 +2,11 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./i18n.ts");
 
-const defaultImageHosts = ["**.amazonaws.com", "images.unsplash.com"];
+const defaultImageHosts = [
+  "**.amazonaws.com",
+  "**.storageapi.dev",
+  "images.unsplash.com",
+];
 const imageHosts = process.env.NEXT_PUBLIC_IMAGE_HOSTS
   ? [
       ...new Set([

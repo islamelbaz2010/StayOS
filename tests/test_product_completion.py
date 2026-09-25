@@ -14,6 +14,8 @@ import pytest
 from app.admin.services import (
     get_booking_financial_context,
     get_dispute_context,
+    list_admin_listings,
+    list_admin_users,
 )
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
@@ -32,6 +34,46 @@ from app.listings.services import (
 )
 from app.shared.exceptions import NotFoundError
 from app.shared.models import OutboxEvent
+
+
+@pytest.mark.asyncio
+async def test_admin_user_filter_returns_underlying_users() -> None:
+    session = _session()
+    user = _host()
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = [user]
+    session.execute = AsyncMock(return_value=result)
+
+    rows = await list_admin_users(session, role="host", kyc_status="verified")
+
+    assert [row.id for row in rows] == ["host-1"]
+    statement = str(session.execute.await_args.args[0])
+    assert "auth.users.role" in statement
+    assert "auth.users.kyc_status" in statement
+
+
+@pytest.mark.asyncio
+async def test_admin_governorate_filter_returns_matching_listings() -> None:
+    session = _session()
+    unit = _unit()
+    unit.created_at = datetime.now(UTC)
+    listing = _listing()
+    listing.title_en = "Cairo stay"
+    unit.listing = listing
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = [unit]
+    session.execute = AsyncMock(return_value=result)
+
+    rows = await list_admin_listings(
+        session, status="LISTED", governorate="Cairo"
+    )
+
+    assert len(rows) == 1
+    assert rows[0].governorate == "Cairo"
+    assert rows[0].status == "LISTED"
+    statement = str(session.execute.await_args.args[0])
+    assert "lower(pms.units.governorate)" in statement
+    assert "pms.units.status" in statement
 
 
 def _session() -> AsyncMock:

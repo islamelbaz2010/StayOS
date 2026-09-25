@@ -143,22 +143,18 @@ def _to_response(payment: Payment, *, include_breakdown: bool = False) -> Paymen
         provider=payment.provider,
         checkout_url=payment.checkout_url,
         amount_egp=payment.amount_egp,
-        # Accommodation + cleaning are the guest's own booking components
-        # (FD-19 summary lines) — visible to everyone. Only the internal
-        # service-fee economics stay gated behind include_breakdown.
-        # The column stores the taxable subtotal (accommodation +
-        # cleaning) — refund math and the fee base depend on that. The
-        # response must show PURE accommodation so the guest-visible lines
-        # sum exactly: accommodation + cleaning + VAT == total.
+        # The stored column is the taxable stay subtotal: accommodation +
+        # cleaning. Guests see that single all-inclusive Accommodation line;
+        # staff breakdowns retain the pure accommodation value.
         accommodation_amount_egp=(
             payment.accommodation_amount_egp - (payment.cleaning_fee_egp or 0)
-            if payment.accommodation_amount_egp is not None
-            else None
+            if include_breakdown and payment.accommodation_amount_egp is not None
+            else payment.accommodation_amount_egp
         ),
         guest_service_fee_egp=(
             payment.guest_service_fee_egp if include_breakdown else None
         ),
-        cleaning_fee_egp=payment.cleaning_fee_egp,
+        cleaning_fee_egp=payment.cleaning_fee_egp if include_breakdown else None,
         # VAT is the guest's own tax line — visible to everyone; the
         # internal economics breakdown stays gated by include_breakdown.
         vat_egp=payment.vat_egp,
@@ -278,17 +274,17 @@ async def get_booking_quote(
     internal = await compute_booking_quote(
         session, unit_id, check_in.isoformat(), check_out.isoformat(), listing, nights
     )
-    # Guest-facing contract: the booking components the guest is paying
-    # for (accommodation, cleaning, VAT) plus the total. Internal
-    # economics — platform share, host net — never leave this function.
+    # Guest-facing contract collapses cleaning into the all-inclusive
+    # Accommodation line. Internal economics never leave this function.
     return BookingQuote(
         unit_id=internal.unit_id,
         check_in=internal.check_in,
         check_out=internal.check_out,
         nights=internal.nights,
         nightly_rate_egp=internal.nightly_rate_egp,
-        accommodation_egp=internal.accommodation_egp,
-        cleaning_fee_egp=internal.cleaning_fee_egp,
+        accommodation_egp=(
+            internal.accommodation_egp + internal.cleaning_fee_egp
+        ),
         vat_egp=internal.vat_egp,
         total_egp=internal.total_egp,
     )

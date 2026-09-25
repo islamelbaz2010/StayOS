@@ -323,14 +323,6 @@ function CheckoutContent({
               </dd>
             </div>
           )}
-          {payment.cleaning_fee_egp ? (
-            <div className="flex justify-between">
-              <dt className="text-neutral-600">{t("cleaningFee")}</dt>
-              <dd className="font-medium text-brand-900">
-                {payment.cleaning_fee_egp.toLocaleString(dateLocale)} {t("egp")}
-              </dd>
-            </div>
-          ) : null}
           {payment.vat_egp ? (
             <div className="flex justify-between">
               <dt className="text-neutral-600">{t("vatLine")}</dt>

@@ -47,7 +47,9 @@
     "discovery": "Supply Discovery",
     "helpCenter": "Help Center",
     "hostStandards": "Host responsibilities",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "accountSettings": "Account settings",
+    "language": "Languages & currency"
   },
   "auth": {
     "signIn": "Sign in",
@@ -895,6 +897,7 @@
     "children": "Children",
     "infants": "Infants",
     "summary": "Booking summary",
+    "accommodation": "Accommodation",
     "nights": "nights",
     "cleaningFee": "Cleaning fee",
     "serviceFee": "Service fee",
@@ -1217,6 +1220,7 @@
     "rejectError": "Could not reject this payment. Please try again.",
     "tab": {
       "pending": "Pending",
+      "proof_uploaded": "Proof uploaded",
       "refund_pending": "Refunds to process",
       "refunded": "Refunded"
     },

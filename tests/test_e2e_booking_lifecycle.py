@@ -220,16 +220,15 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
         assert payment.cleaning_fee_egp == CLEANING_EGP
         assert payment.nights == NIGHTS
 
-        # Guest-facing contract: accommodation + cleaning + VAT == total;
-        # internal economics stay hidden.
+        # Guest-facing contract: cleaning is folded into Accommodation;
+        # internal economics and a separate cleaning line stay hidden.
         guest_view = payment_services._to_response(payment)
-        assert guest_view.accommodation_amount_egp == ACCOMMODATION_EGP
-        assert guest_view.cleaning_fee_egp == CLEANING_EGP
+        assert guest_view.accommodation_amount_egp == TAXABLE_EGP
+        assert guest_view.cleaning_fee_egp is None
         assert guest_view.vat_egp == VAT_EGP
         assert guest_view.amount_egp == GUEST_TOTAL_EGP
         assert (
             guest_view.accommodation_amount_egp
-            + guest_view.cleaning_fee_egp
             + guest_view.vat_egp
             == guest_view.amount_egp
         )

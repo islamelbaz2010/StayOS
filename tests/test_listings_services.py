@@ -638,6 +638,7 @@ def _make_photo(
 async def test_create_photo_success(fake_session: AsyncMock, monkeypatch) -> None:
     from app import listings
 
+    monkeypatch.setattr("app.listings.services.verify_image_upload", MagicMock())
     unit = _make_unit()
     monkeypatch.setattr(
         listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)
@@ -660,12 +661,61 @@ async def test_create_photo_success(fake_session: AsyncMock, monkeypatch) -> Non
     assert result.id == "photo-1"
     assert result.s3_key == "listings/unit-1/photo_abc.jpg"
     assert result.is_cover is False
+    assert listings.repository.create_photo.await_args.kwargs["url"] == "s3://test-listings/listings/unit-1/photo_abc.jpg"
+
+
+@pytest.mark.asyncio
+async def test_create_photo_rejects_foreign_storage_key(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app import listings
+    from app.shared.exceptions import ValidationError
+    from app.listings.services import create_photo
+
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=_make_unit())
+    )
+    with pytest.raises(ValidationError, match="does not belong"):
+        await create_photo(
+            fake_session,
+            _make_user(),
+            "unit-1",
+            PhotoCreate(s3_key="listings/other-unit/photo.jpg", url="https://x"),
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_photo_fails_closed_when_object_missing(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    from app import listings
+    from app.shared.exceptions import ValidationError
+    from app.listings.services import create_photo
+
+    monkeypatch.setattr(
+        listings.repository, "get_unit_with_listing", AsyncMock(return_value=_make_unit())
+    )
+    monkeypatch.setattr(
+        "app.listings.services.verify_image_upload",
+        MagicMock(side_effect=ValidationError("Uploaded image could not be verified")),
+    )
+    with pytest.raises(ValidationError, match="could not be verified"):
+        await create_photo(
+            fake_session,
+            _make_user(),
+            "unit-1",
+            PhotoCreate(
+                s3_key="listings/unit-1/missing.jpg",
+                url="https://x",
+            ),
+        )
 
 
 @pytest.mark.asyncio
 async def test_create_photo_with_cover(fake_session: AsyncMock, monkeypatch) -> None:
     from app import listings
 
+    monkeypatch.setattr("app.listings.services.verify_image_upload", MagicMock())
     unit = _make_unit()
     monkeypatch.setattr(
         listings.repository, "get_unit_with_listing", AsyncMock(return_value=unit)

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminLayout } from "@/components/layouts";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { useAuth } from "@/lib/auth/useAuth";
 import { useAdminOverview } from "@/lib/queries/admin";
 import { formatMoney } from "@/lib/utils";
 
@@ -34,6 +35,11 @@ export default function AdminOverviewPage() {
   const { locale = "ar" } = useParams<{ locale: string }>();
   const intlLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { data, isPending, isError, refetch } = useAdminOverview();
+  const { user } = useAuth();
+  // Per-user records are admin-only; staff see the aggregate counts but
+  // not drill-down links into a dataset they cannot open.
+  const usersHref = (suffix: string) =>
+    user?.role === "admin" ? `/${locale}/admin/users${suffix}` : undefined;
 
   const egp = (v: number) =>
     formatMoney(v, "EGP", intlLocale);
@@ -62,12 +68,13 @@ export default function AdminOverviewPage() {
                   {t("users")}
                 </h2>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <Stat label={t("usersTotal")} value={data.users_total} />
-                  <Stat label={t("guests")} value={data.users_guests} />
-                  <Stat label={t("hosts")} value={data.users_hosts} />
+                  <Stat label={t("usersTotal")} value={data.users_total} href={usersHref("")} />
+                  <Stat label={t("guests")} value={data.users_guests} href={usersHref("?role=guest")} />
+                  <Stat label={t("hosts")} value={data.users_hosts} href={usersHref("?role=host")} />
                   <Stat
                     label={t("hostsVerified")}
                     value={data.hosts_kyc_verified}
+                    href={usersHref("?role=host&kyc_status=verified")}
                   />
                 </div>
               </div>
@@ -80,8 +87,9 @@ export default function AdminOverviewPage() {
                   <Stat
                     label={t("listingsTotal")}
                     value={data.listings_total}
+                    href={`/${locale}/admin/listings`}
                   />
-                  <Stat label={t("listed")} value={data.listings_listed} />
+                  <Stat label={t("listed")} value={data.listings_listed} href={`/${locale}/admin/listings?status=LISTED`} />
                   <Stat
                     label={t("pendingVerification")}
                     value={data.listings_pending_verification}
@@ -92,7 +100,7 @@ export default function AdminOverviewPage() {
                     value={data.listings_pending_changes}
                     href={`/${locale}/admin/pending`}
                   />
-                  <Stat label={t("rejected")} value={data.listings_rejected} />
+                  <Stat label={t("rejected")} value={data.listings_rejected} href={`/${locale}/admin/listings?status=REJECTED`} />
                 </div>
                 {Object.keys(data.listings_by_governorate).length > 0 && (
                   <div className="card mt-3 p-4">
@@ -102,12 +110,13 @@ export default function AdminOverviewPage() {
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(data.listings_by_governorate).map(
                         ([gov, count]) => (
-                          <span
+                          <Link
                             key={gov}
-                            className="rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-700"
+                            href={`/${locale}/admin/listings?governorate=${encodeURIComponent(gov)}`}
+                            className="rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-700 hover:bg-accent-100 hover:text-accent-700"
                           >
                             {gov}: {count}
-                          </span>
+                          </Link>
                         )
                       )}
                     </div>
@@ -120,23 +129,14 @@ export default function AdminOverviewPage() {
                   {t("bookings")}
                 </h2>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-                  <Stat
-                    label={t("bookingsTotal")}
-                    value={data.bookings_total}
-                  />
-                  <Stat label={t("requested")} value={data.bookings_requested} />
-                  <Stat label={t("accepted")} value={data.bookings_accepted} />
-                  <Stat label={t("confirmed")} value={data.bookings_confirmed} />
-                  <Stat label={t("completed")} value={data.bookings_completed} />
-                  <Stat
-                    label={t("cancelled")}
-                    value={data.bookings_cancelled}
-                  />
-                  <Stat label={t("rejectedB")} value={data.bookings_rejected} />
-                  <Stat
-                    label={t("upcomingCheckins")}
-                    value={data.upcoming_checkins_7d}
-                  />
+                  <Stat label={t("bookingsTotal")} value={data.bookings_total} href={`/${locale}/admin/bookings?view=all`} />
+                  <Stat label={t("requested")} value={data.bookings_requested} href={`/${locale}/admin/bookings?status=requested`} />
+                  <Stat label={t("accepted")} value={data.bookings_accepted} href={`/${locale}/admin/bookings?status=accepted`} />
+                  <Stat label={t("confirmed")} value={data.bookings_confirmed} href={`/${locale}/admin/bookings?status=confirmed`} />
+                  <Stat label={t("completed")} value={data.bookings_completed} href={`/${locale}/admin/bookings?status=completed`} />
+                  <Stat label={t("cancelled")} value={data.bookings_cancelled} href={`/${locale}/admin/bookings?status=cancelled`} />
+                  <Stat label={t("rejectedB")} value={data.bookings_rejected} href={`/${locale}/admin/bookings?status=rejected`} />
+                  <Stat label={t("upcomingCheckins")} value={data.upcoming_checkins_7d} href={`/${locale}/admin/bookings?view=upcoming-checkins`} />
                 </div>
               </div>
 
@@ -148,34 +148,19 @@ export default function AdminOverviewPage() {
                   <Stat
                     label={t("paymentsPending")}
                     value={data.payments_pending}
-                    href={`/${locale}/admin/payments`}
+                    href={`/${locale}/admin/payments?status=pending`}
                   />
                   <Stat
                     label={t("proofUploaded")}
                     value={data.payments_proof_uploaded}
-                    href={`/${locale}/admin/payments`}
+                    href={`/${locale}/admin/payments?status=proof_uploaded`}
                   />
-                  <Stat
-                    label={t("collectedAmount")}
-                    value={egp(data.payments_verified_amount_egp)}
-                  />
-                  <Stat
-                    label={t("refundedAmount")}
-                    value={egp(data.payments_refunded_amount_egp)}
-                  />
-                  <Stat
-                    label={t("payoutsPending")}
-                    value={data.payouts_pending}
-                  />
-                  <Stat
-                    label={t("payoutsAmount")}
-                    value={egp(data.payouts_pending_amount_egp)}
-                  />
-                  <Stat label={t("escrowsHeld")} value={data.escrows_held} />
-                  <Stat
-                    label={t("verifiedPayments")}
-                    value={data.payments_verified}
-                  />
+                  <Stat label={t("collectedAmount")} value={egp(data.payments_verified_amount_egp)} href={`/${locale}/admin/earnings?view=collected`} />
+                  <Stat label={t("refundedAmount")} value={egp(data.payments_refunded_amount_egp)} href={`/${locale}/admin/earnings?view=refunded`} />
+                  <Stat label={t("payoutsPending")} value={data.payouts_pending} href={`/${locale}/admin/earnings?view=payouts_pending`} />
+                  <Stat label={t("payoutsAmount")} value={egp(data.payouts_pending_amount_egp)} href={`/${locale}/admin/earnings?view=payouts_pending`} />
+                  <Stat label={t("escrowsHeld")} value={data.escrows_held} href={`/${locale}/admin/earnings?view=funds_held`} />
+                  <Stat label={t("verifiedPayments")} value={data.payments_verified} href={`/${locale}/admin/earnings?view=collected`} />
                 </div>
               </div>
 

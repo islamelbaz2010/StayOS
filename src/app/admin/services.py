@@ -43,7 +43,9 @@ from app.payments.models import Payment
 from app.shared.exceptions import NotFoundError
 
 from .schemas import (
+    AdminListingListItem,
     AdminOverviewResponse,
+    AdminUserListItem,
     BookingFinancialContextResponse,
     DisputeContextResponse,
 )
@@ -51,6 +53,50 @@ from .schemas import (
 
 async def _count(session: AsyncSession, stmt: Any) -> int:
     return int(await session.scalar(stmt) or 0)
+
+
+async def list_admin_users(
+    session: AsyncSession,
+    role: str | None = None,
+    kyc_status: str | None = None,
+) -> list[AdminUserListItem]:
+    stmt = select(User).order_by(User.created_at.desc())
+    if role:
+        stmt = stmt.where(User.role == role)
+    if kyc_status:
+        stmt = stmt.where(User.kyc_status == kyc_status)
+    users = list((await session.execute(stmt)).scalars().all())
+    return [AdminUserListItem.model_validate(user, from_attributes=True) for user in users]
+
+
+async def list_admin_listings(
+    session: AsyncSession,
+    status: str | None = None,
+    governorate: str | None = None,
+) -> list[AdminListingListItem]:
+    stmt = (
+        select(Unit)
+        .options(selectinload(Unit.listing))
+        .order_by(Unit.created_at.desc())
+    )
+    if status:
+        stmt = stmt.where(Unit.status == status.upper())
+    if governorate:
+        stmt = stmt.where(func.lower(Unit.governorate) == governorate.lower())
+    units = list((await session.execute(stmt)).scalars().all())
+    return [
+        AdminListingListItem(
+            id=unit.id,
+            title=(unit.listing.title_en or unit.listing.title_ar or "") if unit.listing else "",
+            host_id=unit.host_id,
+            status=str(unit.status),
+            governorate=unit.governorate,
+            city=unit.city,
+            has_pending_changes=bool(unit.listing and unit.listing.pending_changes),
+            created_at=unit.created_at,
+        )
+        for unit in units
+    ]
 
 
 async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:

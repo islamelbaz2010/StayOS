@@ -1144,6 +1144,7 @@ async def test_co_host_calendar_messaging_can_manage_calendar(
 async def test_co_host_full_access_can_upload_photo(fake_session: AsyncMock, monkeypatch) -> None:
     """A full_access co-host can upload photos (edit-level access)."""
     from app.listings import services as listings_services
+    monkeypatch.setattr(listings_services, "verify_image_upload", MagicMock())
     from app.listings.schemas import PhotoCreate
 
     co_host = _make_user(user_id="cohost-1")
@@ -1162,7 +1163,7 @@ async def test_co_host_full_access_can_upload_photo(fake_session: AsyncMock, mon
     photo = MagicMock()
     photo.id = "photo-1"
     photo.unit_id = unit.id
-    photo.s3_key = "test/key"
+    photo.s3_key = f"listings/{unit.id}/test-key.jpg"
     photo.url = "https://example.com/photo.jpg"
     photo.display_order = 0
     photo.is_cover = True
@@ -1179,7 +1180,10 @@ async def test_co_host_full_access_can_upload_photo(fake_session: AsyncMock, mon
         fake_session,
         co_host,
         unit.id,
-        PhotoCreate(s3_key="test/key", url="https://example.com/photo.jpg"),
+        PhotoCreate(
+            s3_key=f"listings/{unit.id}/test-key.jpg",
+            url="https://example.com/photo.jpg",
+        ),
     )
     assert result.id == "photo-1"
 
@@ -1211,7 +1215,10 @@ async def test_co_host_calendar_only_cannot_upload_photo(
             fake_session,
             co_host,
             unit.id,
-            PhotoCreate(s3_key="test/key", url="https://example.com/photo.jpg"),
+            PhotoCreate(
+                s3_key=f"listings/{unit.id}/photo.jpg",
+                url="https://example.com/photo.jpg",
+            ),
         )
 
 

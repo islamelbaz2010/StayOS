@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { HostBookingDetail } from "@/components/bookings/HostBookingDetail";
@@ -149,6 +150,9 @@ function AdminBookingOps({ booking }: { booking: BookingResponse }) {
 
 export default function AdminBookingsPage() {
   const t = useTranslations("adminBookings");
+  const searchParams = useSearchParams();
+  const statusFilter = searchParams.get("status");
+  const viewFilter = searchParams.get("view");
   const [activeQueue, setActiveQueue] = useState<QueueKey>("decision");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -175,8 +179,19 @@ export default function AdminBookingsPage() {
   const bookings = useMemo(() => allBookings ?? [], [allBookings]);
 
   const queueBookings = useMemo(() => {
+    if (statusFilter) return bookings.filter((b) => b.status === statusFilter);
+    if (viewFilter === "all") return bookings;
+    if (viewFilter === "upcoming-checkins") {
+      const now = new Date();
+      const week = new Date(now);
+      week.setDate(week.getDate() + 7);
+      return bookings.filter((b) => {
+        const checkIn = new Date(`${b.check_in}T00:00:00`);
+        return b.status === "confirmed" && checkIn >= now && checkIn <= week;
+      });
+    }
     return bookings.filter((b) => belongsToQueue(activeQueue, b));
-  }, [bookings, activeQueue]);
+  }, [bookings, activeQueue, statusFilter, viewFilter]);
 
   const selected = useMemo(
     () =>
@@ -206,6 +221,11 @@ export default function AdminBookingsPage() {
             </div>
           ) : (
             <div className="space-y-6">
+              {(statusFilter || viewFilter) && (
+                <p className="rounded-lg bg-accent-50 px-4 py-3 text-sm font-medium text-accent-700">
+                  Filter: {statusFilter || viewFilter} · {queueBookings.length} bookings
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
                 {queues.map((q) => {
                   const count = bookings.filter((b) =>

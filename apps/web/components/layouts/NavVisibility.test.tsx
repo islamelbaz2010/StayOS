@@ -84,6 +84,9 @@ describe("Header role visibility", () => {
     expect(screen.getAllByText(t.trips).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.favorites).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.account).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: t.profile })).toHaveAttribute("href", "/en/profile");
+    expect(screen.getByRole("link", { name: t.accountSettings })).toHaveAttribute("href", "/en/account-settings");
+    expect(screen.getByRole("link", { name: t.notifications })).toHaveAttribute("href", "/en/notifications");
     expect(screen.queryByText(t.admin)).toBeNull();
   });
 

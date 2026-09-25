@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -283,18 +283,20 @@ function PaymentCard({
   );
 }
 
-type QueueStatus = "pending" | "refund_pending" | "refunded";
+type QueueStatus = "pending" | "proof_uploaded" | "refund_pending" | "refunded";
 
 export default function AdminPaymentQueuePage() {
   const t = useTranslations("payment");
   const tc = useTranslations("common");
-  const [status, setStatus] = useState<QueueStatus | undefined>(undefined);
+  const searchParams = useSearchParams();
+  const requestedStatus = searchParams.get("status") as QueueStatus | null;
+  const [status, setStatus] = useState<QueueStatus>(requestedStatus ?? "pending");
   const {
     data: payments,
     isLoading,
     error,
     refetch,
-  } = usePaymentQueue(status === "pending" ? undefined : status);
+  } = usePaymentQueue(status);
   const verifyMutation = useVerifyPayment();
   const rejectMutation = useRejectPayment();
   const refundMutation = useRefundPayment();
@@ -308,14 +310,14 @@ export default function AdminPaymentQueuePage() {
           </h1>
 
           <div className="mb-6 flex flex-wrap gap-2">
-            {(["pending", "refund_pending", "refunded"] as QueueStatus[]).map(
+            {(["pending", "proof_uploaded", "refund_pending", "refunded"] as QueueStatus[]).map(
               (tab) => (
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => setStatus(tab === "pending" ? undefined : tab)}
+                  onClick={() => setStatus(tab)}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    (tab === "pending" && status === undefined) || status === tab
+                    status === tab
                       ? "bg-brand-900 text-white"
                       : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
                   }`}

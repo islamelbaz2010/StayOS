@@ -1,6 +1,6 @@
 """City/governorate location aliases + Instant Book for live listings.
 
-Revision ID: 047_location_aliases_instant_book
+Revision ID: 047_alias_instant_book
 Revises: 046_payment_vat
 Create Date: 2026-10-03
 
@@ -30,7 +30,7 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "047_location_aliases_instant_book"
+revision: str = "047_alias_instant_book"
 down_revision: str | None = "046_payment_vat"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

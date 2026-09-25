@@ -831,7 +831,7 @@ The consolidated product-completion pass surfaced two product gaps that required
 
 ### DEC-021: VAT 14% Is a Separate Tax on the Taxable Booking Amount — Supersedes DEC-020 §1
 
-**Status**: Accepted
+**Status**: Superseded by DEC-023 (taxable base redefined to include both 6% allocations; the VAT-as-separate-liability principle is retained)
 **Date**: 2026-10-24
 **Decision Maker**: Founder
 **Urgency**: PRE-LAUNCH
@@ -909,3 +909,49 @@ Live verification found that free-text destination search ("Alexandria", "اسك
 - DEC-020 §2 / DEC-021: Instant Book default extended to live rows; VAT visibility unchanged.
 - FD-19: guest pricing summary components.
 - FD-26: host payout preference collection.
+- DEC-023: supersedes §4 guest checkout breakdown — the guest view is now a single all-inclusive Accommodation = Total line; cleaning/VAT stay internal.
+
+---
+
+### DEC-023: Additive 12% Commercial Model — All-Inclusive Guest Price Is the Only Price the Guest Sees
+
+**Status**: Accepted
+**Date**: 2026-09-25
+**Decision Maker**: Founder
+**Urgency**: PRE-LAUNCH
+**Reversibility**: HIGH
+
+#### Context
+
+DEC-021 placed VAT on `accommodation + cleaning` while the 12% StayOS economics were carved out of the same taxable amount. The Founder has issued a final commercial model that changes both the placement of the platform economics and the VAT taxable base, and hardens the guest-facing "the price you see is the price you pay" rule.
+
+#### Decision
+
+1. **Additive economics**: StayOS economics total 12% of the accommodation amount, allocated 6% host-side + 6% guest-side. The allocations are added ON TOP of the host's price — the host is payable the full `accommodation + cleaning` they listed; the 12% is never deducted from the host payable and never deducted twice.
+2. **Taxable base** (supersedes DEC-021 §1): `taxable = accommodation + cleaning + host_side_6% + guest_side_6%` — after applicable booking/listing discounts. Both allocations are inside the VAT base.
+3. **VAT**: `vat = taxable × 14%`, added on top: `guest_total = taxable + vat`. VAT remains a separate tax liability — it is not host revenue, not StayOS revenue, and is never waived by the alpha waiver.
+4. **Ledger**: three separate economic destinations — `HOST_PAYABLE = accommodation + cleaning`, `PLATFORM_REVENUE = host_6% + guest_6%`, `VAT_PAYABLE = vat`. Invariant: `guest_total = host_payable + stayos_revenue + vat_payable`.
+5. **Canonical example**: accommodation 3,000 + cleaning 200 + 180 + 180 = taxable 3,560; VAT 498.40; guest total 4,058.40 = host 3,200 + StayOS 360 + VAT 498.40.
+6. **Guest surfaces**: exactly one Accommodation figure equal to the final all-inclusive total plus "Prices include all fees" — identical from search through Paymob. No cleaning, VAT, service-fee, 6% or 12% line items are shown to guests (supersedes DEC-022 §4).
+7. **Money representation**: all commercial amounts are `Numeric(12,2)` Decimal at 2dp (migration `049`); Paymob converts the exact final amount to minor units (4,058.40 → 405,840) with no integer truncation.
+8. **Alpha waiver**: the guest charge is unchanged; StayOS revenue becomes zero and the collected 12% allocation accrues to the host (host payable = full taxable amount). VAT is never waived.
+9. **History**: rows priced under the containment model are not rewritten; the ledger resolver detects them by the missing additive gap and reconciles them under the economics actually charged.
+
+#### Rationale
+
+- The host must keep their full listed price; the platform economics are a markup the guest pays, not a carve-out of host earnings.
+- VAT applies to the full taxable amount including the commercial allocations, matching the final approved tax treatment.
+- A single all-inclusive price across discovery → checkout → payment eliminates checkout price surprises entirely.
+
+#### Consequences
+
+- **Positive**: host economics are transparent (payable = accom + cleaning); VAT, revenue, and host payable are three cleanly separated ledger destinations; the guest price is constant across every surface.
+- **Negative**: guest totals rise versus the containment model (the 12% is added on top rather than absorbed). This is the intended correction.
+- **Neutral**: Paymob amounts change by the now-included additive share; payout/escrow timing, cancellation rules, discount rules, and the 12%/6%+6% rates are unchanged.
+
+#### Related Decisions
+
+- DEC-021: superseded (taxable base and economics placement); its principle that VAT is a separate liability on a defined base is retained.
+- DEC-022 §4: superseded — guest breakdown is now Accommodation = Total only.
+- DEC-020 §2: Instant Book default remains in force.
+- FD-19: guest pricing summary — now a single all-inclusive line.

@@ -42,9 +42,10 @@ class PaymentResponse(BaseModel):
     provider: str | None = None
     checkout_url: str | None = None
     amount_egp: int
-    # Amount breakdown is internal commercial data: serialized only for
-    # admin/staff viewers (``include_breakdown``). Guests and hosts always
-    # receive ``None`` — the guest experience is total-only.
+    # Guests receive the all-inclusive stay amount (accommodation +
+    # cleaning, which internally contains the StayOS share) as the single
+    # Accommodation line. ``include_breakdown`` (staff/admin) restores the
+    # pure accommodation component and the internal economics fields.
     accommodation_amount_egp: int | None = None
     guest_service_fee_egp: int | None = None
     cleaning_fee_egp: int | None = None
@@ -78,9 +79,10 @@ class BookingQuote(BaseModel):
 
     Computed by the same routine that prices the actual payment so the
     total a guest sees before booking always matches the amount charged.
-    All-inclusive model (FD-19): the response carries ONLY the final
-    price — no accommodation subtotal, no fee lines, no internal
-    economics. "Includes all fees"."""
+    All-inclusive model (FD-19 / DEC-021): the response carries only
+    Accommodation (the all-inclusive stay amount — nightly + cleaning,
+    internally containing the StayOS share), VAT and total. No cleaning
+    line, no fee lines, no internal economics. "Includes all fees"."""
 
     unit_id: str
     check_in: str

@@ -8,8 +8,10 @@ booking — not via mocks:
     StayOS share 12% of accommodation = 360 (180 host-side + 180 guest-side)
     host net = 3200 − 360 = 2840
 
-Guest contract: only accommodation / cleaning / VAT / total are visible —
-no 12%, no 6%, no service-fee line, no host economics.
+Guest contract: only the all-inclusive accommodation amount, VAT and
+total are visible — no cleaning line, no 12%, no 6%, no service-fee
+line, no host economics. The guest's accommodation charge already
+contains the StayOS share internally (host_net + platform_share).
 
 The alpha free-bookings incentive is exercised honestly: the host is
 seeded with 3 prior completed bookings so the 12% share is NOT waived.
@@ -220,10 +222,18 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
         assert payment.cleaning_fee_egp == CLEANING_EGP
         assert payment.nights == NIGHTS
 
-        # Guest-facing contract: cleaning is folded into Accommodation;
-        # internal economics and a separate cleaning line stay hidden.
+        # Guest-facing contract: one all-inclusive Accommodation line.
+        # The StayOS economics are contained INSIDE that amount — the
+        # guest's 3,200 accommodation charge allocates internally to
+        # host net 2,840 + platform share 360 (DEC-021 §4:
+        # guest_total = host_payable + vat_payable + platform_revenue).
+        # The 12% is allocated from the stay amount, never added on top.
         guest_view = payment_services._to_response(payment)
         assert guest_view.accommodation_amount_egp == TAXABLE_EGP
+        assert (
+            guest_view.accommodation_amount_egp
+            == HOST_NET_EGP + PLATFORM_SHARE_EGP
+        )
         assert guest_view.cleaning_fee_egp is None
         assert guest_view.vat_egp == VAT_EGP
         assert guest_view.amount_egp == GUEST_TOTAL_EGP

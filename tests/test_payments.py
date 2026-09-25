@@ -1518,7 +1518,7 @@ async def test_get_booking_quote_all_inclusive(fake_session: AsyncMock, monkeypa
     assert quote.nightly_rate_egp == 500
     # 500 × 4 nights + 50 cleaning = 2050 taxable + 14% VAT (287) = 2337.
     assert quote.accommodation_egp == 2050
-    assert "cleaning_fee_egp" not in quote.model_fields
+    assert "cleaning_fee_egp" not in type(quote).model_fields
     assert quote.vat_egp == 287
     assert quote.total_egp == 2337
     # No internal economics or fee fields exist on the guest-facing contract.

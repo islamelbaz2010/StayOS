@@ -25,6 +25,23 @@ async def _acquire_idempotency(event_id: str) -> bool:
     return bool(result)
 
 
+async def _release_idempotency(event_id: str) -> None:
+    """Undo the pre-processing idempotency claim when the handler fails.
+
+    The key is acquired BEFORE the handler runs so a crashing handler would
+    otherwise leave the event permanently skipped-but-unprocessed until the
+    24h TTL lapses — releasing it lets the next poll retry the event."""
+    client = redis_state.redis_client
+    if client is None:
+        return
+    try:
+        await client.delete(f"event:{CONSUMER_NAME}:{event_id}")
+    except Exception:
+        logger.exception(
+            "Failed to release idempotency key for outbox event %s", event_id
+        )
+
+
 async def process_outbox_event(session: AsyncSession, event: OutboxEvent) -> None:
     if not await _acquire_idempotency(str(event.id)):
         return
@@ -80,6 +97,7 @@ async def poll_and_process_outbox(batch_size: int = 100) -> int:
                         event.event_type,
                         CONSUMER_NAME,
                     )
+                    await _release_idempotency(str(event.id))
             return processed
 
 
@@ -92,5 +110,9 @@ async def consume_single_event(event_id: str) -> bool:
             event = result.scalar_one_or_none()
             if event is None:
                 return False
-            await process_outbox_event(session, event)
+            try:
+                await process_outbox_event(session, event)
+            except Exception:
+                await _release_idempotency(str(event.id))
+                raise
             return True

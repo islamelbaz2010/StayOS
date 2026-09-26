@@ -321,8 +321,17 @@ async def _ensure_reservation_amounts(
 
     if host_id is None:
         raise ValidationError("Host id is required for finance processing")
+    if total is None or host_amount is None:
+        raise ValidationError("Reservation amounts could not be resolved")
 
-    return total, host_amount, vat_egp, host_id
+    # Outbox payloads are JSON — persisted Decimals come back as floats and
+    # Numeric wallet/ledger columns then raise ``Decimal + float`` TypeError.
+    return (
+        commercial.money(total),
+        commercial.money(host_amount),
+        commercial.money(vat_egp),
+        host_id,
+    )
 
 
 async def _post_ledger_for_escrow_create(
@@ -723,7 +732,7 @@ async def handle_cancel_event(
     if not reservation_id:
         return None
 
-    refund_amount = payload.get("refund_amount_egp", 0)
+    refund_amount = commercial.money(payload.get("refund_amount_egp") or 0)
     escrow = await finance_repository.get_escrow_by_reservation(session, reservation_id)
     if escrow is None:
         return None

@@ -222,22 +222,24 @@ async def test_admin_overview_financial_fields(fake_session: AsyncMock) -> None:
     # 13 payments_verified, 14 payments_verified_amount,
     # 15 payments_refunded_amount, 16 payments_refund_pending_amount,
     # 17 escrows_held_amount, 18 host_payable, 19 platform_revenue,
-    # 20 vat_payable, 21 payouts_paid_amount, 22 payouts_pending,
-    # 23 payouts_pending_amount, 24 escrows_held, 25 kyc_pending,
-    # 26 disputes_open, 27 disputes_in_review,
-    # 28 maintenance_open, 29 tasks_pending, 30 tasks_overdue,
-    # 31-36 bookings by status (requested, accepted, confirmed, completed,
+    # 20 vat_payable (ledger net), 21 vat_held_in_escrows,
+    # 22 payouts_paid_amount, 23 payouts_pending,
+    # 24 payouts_pending_amount, 25 escrows_held, 26 kyc_pending,
+    # 27 disputes_open, 28 disputes_in_review,
+    # 29 maintenance_open, 30 tasks_pending, 31 tasks_overdue,
+    # 32-37 bookings by status (requested, accepted, confirmed, completed,
     # cancelled, rejected)
-    scalars = [0] * 37
+    scalars = [0] * 38
     scalars[15] = 3150   # refunded
     scalars[16] = 6000   # refund pending
     scalars[17] = 9000   # escrow held amount
     scalars[18] = 442800 # host payable net
     scalars[19] = 67200  # platform revenue net
-    scalars[20] = 9680   # vat payable net
-    scalars[21] = 50000  # payouts paid
-    scalars[23] = 100000 # payouts pending amount
-    scalars[24] = 3      # escrows held count
+    scalars[20] = 9680   # vat payable net (ledger, released escrows)
+    scalars[21] = 12180  # vat still held inside unreleased escrows
+    scalars[22] = 50000  # payouts paid
+    scalars[24] = 100000 # payouts pending amount
+    scalars[25] = 3      # escrows held count
     fake_session.scalar = AsyncMock(side_effect=scalars)
 
     gov_result = MagicMock()
@@ -252,7 +254,8 @@ async def test_admin_overview_financial_fields(fake_session: AsyncMock) -> None:
     assert overview.escrows_held == 3
     assert overview.host_payable_egp == 442800
     assert overview.platform_revenue_egp == 67200
-    assert overview.vat_egp == 9680
+    # VAT = ledger VAT_PAYABLE (released) + VAT held in unreleased escrows.
+    assert overview.vat_egp == 21860
     assert overview.payouts_paid_amount_egp == 50000
     assert overview.payouts_pending_amount_egp == 100000
 

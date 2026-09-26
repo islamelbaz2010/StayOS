@@ -277,6 +277,65 @@ async def test_handle_payment_confirmed_is_idempotent(
 
 
 @pytest.mark.asyncio
+async def test_handle_payment_confirmed_normalizes_json_float_amounts(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: outbox payloads serialize Decimal as float, so ledger
+    entry amounts arrived as floats and crashed Numeric column arithmetic
+    (Decimal + float TypeError) — leaving every payment_confirmed event
+    unprocessed. Amounts must be re-normalized at the consumer boundary."""
+    from decimal import Decimal
+
+    from app.finance import repository as finance_repository
+
+    wallet = _make_wallet()
+    escrow = _make_escrow()
+    tx = _make_transaction()
+
+    monkeypatch.setattr(
+        finance_repository, "get_or_create_wallet", AsyncMock(return_value=wallet)
+    )
+    monkeypatch.setattr(
+        finance_repository, "get_escrow_by_reservation", AsyncMock(return_value=None)
+    )
+    create_escrow = AsyncMock(return_value=escrow)
+    monkeypatch.setattr(finance_repository, "create_escrow_account", create_escrow)
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "create_financial_transaction",
+        AsyncMock(return_value=tx),
+    )
+    entry_amounts: list[object] = []
+
+    async def _entry(session, **kwargs):
+        entry_amounts.append(kwargs["amount_egp"])
+        return MagicMock()
+
+    monkeypatch.setattr(finance_repository, "create_ledger_entry", _entry)
+    monkeypatch.setattr("app.finance.services.write_event", AsyncMock())
+
+    payload = {
+        "reservation_id": str(uuid.uuid4()),
+        "host_id": str(uuid.uuid4()),
+        "amount_egp": 991.8,
+        "host_amount_egp": 780.0,
+        "vat_egp": 121.8,
+        "provider": "paymob",
+    }
+
+    await finance_services.handle_payment_confirmed(fake_session, payload)
+
+    assert entry_amounts == [Decimal("991.80"), Decimal("991.80")]
+    assert all(isinstance(amount, Decimal) for amount in entry_amounts)
+    assert create_escrow.await_args.args[3] == Decimal("991.80")
+
+
+@pytest.mark.asyncio
 async def test_handle_checkin_event_schedules_release(
     fake_session: AsyncMock, monkeypatch
 ) -> None:

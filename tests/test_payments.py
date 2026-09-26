@@ -566,12 +566,16 @@ def test_payment_method_values() -> None:
 # SERVICES COVERAGE
 # ============================================================
 
-def test_s3_client_initializes_boto3_client(monkeypatch) -> None:
+def test_s3_client_uses_shared_endpoint_aware_client(monkeypatch) -> None:
+    # Proof uploads go through the shared storage client so S3_ENDPOINT_URL
+    # (Tigris) and per-bucket credentials apply — a bare boto3 client would
+    # silently hit AWS.
     mock_client = MagicMock()
-    monkeypatch.setattr("app.payments.services.boto3.client", mock_client)
+    s3_client = MagicMock(return_value=mock_client)
+    monkeypatch.setattr("app.shared.storage.s3_client", s3_client)
     result = payment_services._s3_client()
-    assert result is mock_client.return_value
-    mock_client.assert_called_once()
+    assert result is mock_client
+    s3_client.assert_called_once()
 
 
 def test_to_list_item() -> None:

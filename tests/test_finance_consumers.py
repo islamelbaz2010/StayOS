@@ -231,3 +231,71 @@ async def test_poll_isolates_poison_event(monkeypatch) -> None:
 
     assert count == 1
     assert calls == [str(good.id)]
+
+
+@pytest.mark.asyncio
+async def test_poll_releases_idempotency_key_on_failure(monkeypatch) -> None:
+    """Regression: the Redis idempotency key is claimed BEFORE the handler
+    runs — a crashing handler previously left the event skipped-but-
+    unprocessed until the 24h TTL lapsed. The key must be released so the
+    next poll retries the event."""
+    from app.finance import consumers
+
+    client = AsyncMock()
+    client.set = AsyncMock(return_value=True)
+    monkeypatch.setattr(
+        "app.finance.consumers.redis_state.redis_client", client
+    )
+
+    bad = _make_event("booking.payment_confirmed", {"reservation_id": "res-bad"})
+
+    async def _process(session, event):
+        raise RuntimeError("boom")
+
+    with patch("app.finance.consumers.AsyncSessionLocal") as session_local:
+        session = AsyncMock()
+        session.begin = MagicMock(return_value=AsyncMock())
+        session.begin_nested = MagicMock(return_value=AsyncMock())
+        result = MagicMock()
+        result.scalars.return_value.all.return_value = [bad]
+        session.execute = AsyncMock(return_value=result)
+        session_local.return_value.__aenter__ = AsyncMock(return_value=session)
+        session_local.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with patch.object(consumers, "process_outbox_event", new=_process):
+            count = await consumers.poll_and_process_outbox(10)
+
+    assert count == 0
+    client.delete.assert_awaited_once_with(f"event:finance:{bad.id}")
+
+
+@pytest.mark.asyncio
+async def test_consume_single_event_releases_key_on_failure(monkeypatch) -> None:
+    from app.finance import consumers
+
+    client = AsyncMock()
+    monkeypatch.setattr(
+        "app.finance.consumers.redis_state.redis_client", client
+    )
+
+    event = _make_event("booking.payment_confirmed")
+
+    async def _process(session, event):
+        raise RuntimeError("boom")
+
+    with patch("app.finance.consumers.AsyncSessionLocal") as session_local:
+        session = AsyncMock()
+        session.begin = MagicMock(return_value=AsyncMock())
+        result = MagicMock()
+        result.scalar_one_or_none.return_value = event
+        session.execute = AsyncMock(return_value=result)
+        session_local.return_value.__aenter__ = AsyncMock(return_value=session)
+        session_local.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch.object(consumers, "process_outbox_event", new=_process),
+            pytest.raises(RuntimeError),
+        ):
+            await consumers.consume_single_event("evt-1")
+
+    client.delete.assert_awaited_once_with("event:finance:evt-1")

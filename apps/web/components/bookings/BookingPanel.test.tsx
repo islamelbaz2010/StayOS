@@ -216,6 +216,9 @@ describe("BookingPanel guest-facing summary", () => {
     expect(screen.queryByText(/service fee/i)).not.toBeInTheDocument();
 
     expect(screen.getByText("Accommodation")).toBeInTheDocument();
+    // Jan 10 → Jan 14 = 4 nights, visible alongside the total.
+    const nightsLabel = screen.getByText("Nights");
+    expect(nightsLabel.nextElementSibling).toHaveTextContent("4");
     expect(screen.getByText("Total")).toBeInTheDocument();
     expect(screen.getByText("Prices include all fees")).toBeInTheDocument();
     // No VAT line — the price the guest sees is the price they pay.

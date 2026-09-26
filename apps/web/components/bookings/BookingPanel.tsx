@@ -562,6 +562,11 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
               </div>
 
               <div className="flex justify-between">
+                <span className="text-neutral-600">{t("nights")}</span>
+                <span className="font-medium text-brand-900">{nights}</span>
+              </div>
+
+              <div className="flex justify-between">
                 <span className="text-neutral-600">{t("guests")}</span>
                 <span className="font-medium text-brand-900">{totalGuests}</span>
               </div>

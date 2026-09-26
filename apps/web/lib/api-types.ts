@@ -79,6 +79,8 @@ export interface paths {
     get: operations["get_me_api_v1_auth_me_get"];
     /** Delete My Account */
     delete: operations["delete_my_account_api_v1_auth_me_delete"];
+    /** Update Me */
+    patch: operations["update_me_api_v1_auth_me_patch"];
   };
   "/api/v1/auth/me/avatar/presign": {
     /**
@@ -874,6 +876,24 @@ export interface paths {
     /** Get Booking Financial */
     get: operations["get_booking_financial_api_v1_admin_bookings__booking_id__financial_get"];
   };
+  "/api/v1/admin/adjustments": {
+    /** List Adjustments Endpoint */
+    get: operations["list_adjustments_endpoint_api_v1_admin_adjustments_get"];
+    /** Create Adjustment Endpoint */
+    post: operations["create_adjustment_endpoint_api_v1_admin_adjustments_post"];
+  };
+  "/api/v1/admin/adjustments/{adjustment_id}/decide": {
+    /** Decide Adjustment Endpoint */
+    post: operations["decide_adjustment_endpoint_api_v1_admin_adjustments__adjustment_id__decide_post"];
+  };
+  "/api/v1/admin/adjustments/{adjustment_id}/apply": {
+    /** Apply Adjustment Endpoint */
+    post: operations["apply_adjustment_endpoint_api_v1_admin_adjustments__adjustment_id__apply_post"];
+  };
+  "/api/v1/admin/adjustments/{adjustment_id}/cancel": {
+    /** Cancel Adjustment Endpoint */
+    post: operations["cancel_adjustment_endpoint_api_v1_admin_adjustments__adjustment_id__cancel_post"];
+  };
   "/api/v1/admin/disputes/{dispute_id}/context": {
     /** Get Dispute Context Endpoint */
     get: operations["get_dispute_context_endpoint_api_v1_admin_disputes__dispute_id__context_get"];
@@ -1037,6 +1057,93 @@ export interface components {
       payout_wallet_msisdn?: string | null;
       /** Payout Holder Name */
       payout_holder_name?: string | null;
+    };
+    /**
+     * AdjustmentCreateRequest
+     * @description Create a commercial adjustment. ``requested_by_id`` set → the
+     * record is a host/guest request entering at ``pending`` and requires
+     * an explicit approve/reject decision; unset → the admin's own action,
+     * created already ``approved`` (the admin IS the decision).
+     */
+    AdjustmentCreateRequest: {
+      /**
+       * Adjustment Type
+       * @description host_credit | host_debit | guest_credit | guest_debit
+       */
+      adjustment_type: string;
+      /**
+       * Category
+       * @description adjustment | compensation | promotion | fee_waiver
+       */
+      category: string;
+      /** Amount Egp */
+      amount_egp: number;
+      /** Reason */
+      reason: string;
+      /** Booking Id */
+      booking_id?: string | null;
+      /** User Id */
+      user_id?: string | null;
+      /** Listing Id */
+      listing_id?: string | null;
+      /** Requested By Id */
+      requested_by_id?: string | null;
+      /** Internal Note */
+      internal_note?: string | null;
+      /** Customer Note */
+      customer_note?: string | null;
+    };
+    /** AdjustmentDecisionRequest */
+    AdjustmentDecisionRequest: {
+      /** Approve */
+      approve: boolean;
+    };
+    /** AdjustmentResponse */
+    AdjustmentResponse: {
+      /** Id */
+      id: string;
+      /** Booking Id */
+      booking_id: string | null;
+      /** User Id */
+      user_id: string | null;
+      /** Listing Id */
+      listing_id: string | null;
+      /** Adjustment Type */
+      adjustment_type: string;
+      /** Category */
+      category: string;
+      /** Amount Egp */
+      amount_egp: number;
+      /** Reason */
+      reason: string;
+      /** Internal Note */
+      internal_note: string | null;
+      /** Customer Note */
+      customer_note: string | null;
+      /** Status */
+      status: string;
+      /** Requested By Id */
+      requested_by_id: string | null;
+      /** Created By Id */
+      created_by_id: string;
+      /** Decided By Id */
+      decided_by_id: string | null;
+      /** Decided At */
+      decided_at: string | null;
+      /** Applied At */
+      applied_at: string | null;
+      /** Financial Transaction Id */
+      financial_transaction_id: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
     };
     /**
      * AdminContactCreate
@@ -4579,12 +4686,16 @@ export interface components {
       unit_title?: string | null;
       /** Unit Cover Image */
       unit_cover_image?: string | null;
+      /** Check In */
+      check_in?: string | null;
+      /** Check Out */
+      check_out?: string | null;
+      /** Booking Status */
+      booking_status?: string | null;
       /** Host Net Egp */
       host_net_egp?: number | null;
       /** Platform Fee Egp */
       platform_fee_egp?: number | null;
-      /** Platform Share Waived */
-      platform_share_waived?: boolean | null;
       /** Funds Status */
       funds_status?: string | null;
       /** Funds Held Egp */
@@ -5686,6 +5797,16 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    /**
+     * UserProfileUpdate
+     * @description Self-service user profile fields — display name only. Email and
+     * phone are sign-in/recovery identities and legal identity fields live
+     * on the account record; none of those change through this endpoint.
+     */
+    UserProfileUpdate: {
+      /** Display Name */
+      display_name?: string | null;
+    };
     /** UserResponse */
     UserResponse: {
       /** Id */
@@ -6210,6 +6331,28 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["UserDeleteResponse"];
+        };
+      };
+    };
+  };
+  /** Update Me */
+  update_me_api_v1_auth_me_patch: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UserProfileUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["UserResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -10602,6 +10745,126 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["BookingFinancialContextResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Adjustments Endpoint */
+  list_adjustments_endpoint_api_v1_admin_adjustments_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        adjustment_type?: string | null;
+        booking_id?: string | null;
+        user_id?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AdjustmentResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Create Adjustment Endpoint */
+  create_adjustment_endpoint_api_v1_admin_adjustments_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdjustmentCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        content: {
+          "application/json": components["schemas"]["AdjustmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Decide Adjustment Endpoint */
+  decide_adjustment_endpoint_api_v1_admin_adjustments__adjustment_id__decide_post: {
+    parameters: {
+      path: {
+        adjustment_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdjustmentDecisionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AdjustmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Apply Adjustment Endpoint */
+  apply_adjustment_endpoint_api_v1_admin_adjustments__adjustment_id__apply_post: {
+    parameters: {
+      path: {
+        adjustment_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AdjustmentResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Cancel Adjustment Endpoint */
+  cancel_adjustment_endpoint_api_v1_admin_adjustments__adjustment_id__cancel_post: {
+    parameters: {
+      path: {
+        adjustment_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["AdjustmentResponse"];
         };
       };
       /** @description Validation Error */

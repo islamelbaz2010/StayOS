@@ -400,8 +400,7 @@ async def create_payment_for_booking(
 
     # VAT is a separate tax on the taxable amount (accommodation +
     # cleaning + guest-side 6%) — computed by the canonical engine and
-    # added on top. It is NOT part of the 12% StayOS share and is never
-    # waived by the alpha incentive.
+    # added on top. It is NOT part of the 12% StayOS share.
 
     instructions = _build_instructions(guest.locale or "ar")
     reference = _generate_reference()
@@ -1090,12 +1089,9 @@ async def _attach_host_earnings(
         e.reservation_id: e for e in escrow_rows.scalars().all()
     }
     for payment, item in zip(payments, items):
-        economics, waived = await finance_services.booking_economics(
-            session, payment
-        )
+        economics = await finance_services.booking_economics(session, payment)
         item.host_net_egp = economics.host_net_egp
         item.platform_fee_egp = economics.platform_share_egp
-        item.platform_share_waived = waived
         payout = finance_services.derive_payout_state(
             escrow_by_booking.get(payment.booking_id)
         )

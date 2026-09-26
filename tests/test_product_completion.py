@@ -482,13 +482,6 @@ async def test_booking_financial_context_joins_payment_context(monkeypatch):
         side_effect=[booking_result, txn_result, dispute_result]
     )
 
-    # The economics helper counts the host's completed bookings — stub it
-    # so the canonical platform-share math runs deterministically.
-    monkeypatch.setattr(
-        "app.bookings.repository.count_host_completed_bookings",
-        AsyncMock(return_value=99),
-    )
-
     ctx = await get_booking_financial_context(session, "booking-1")
 
     assert ctx.booking_id == "booking-1"
@@ -509,7 +502,7 @@ async def test_booking_financial_context_joins_payment_context(monkeypatch):
     assert ctx.financials["cleaning_fee_egp"] == 100
     assert ctx.financials["platform_share_egp"] == Decimal("528")
     assert ctx.financials["host_net_egp"] == Decimal("4236")
-    assert ctx.financials["platform_share_waived"] is False
+    assert "platform_share_waived" not in ctx.financials
     # No escrow row in this fixture → no payout state.
     assert ctx.payout is None
 

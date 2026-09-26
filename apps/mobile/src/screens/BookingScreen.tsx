@@ -402,10 +402,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: "600",
   },
-  waivedText: {
-    fontSize: fontSize.sm,
-    color: colors.success,
-  },
   summaryTotal: {
     fontSize: fontSize.lg,
     fontWeight: "700",

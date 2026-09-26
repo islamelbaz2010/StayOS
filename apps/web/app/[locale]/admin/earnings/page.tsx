@@ -9,7 +9,13 @@ import { AdminLayout } from "@/components/layouts";
 import { ErrorState } from "@/components/ui/ErrorState";
 import {
   useAdminOverview,
+  useApplyAdjustment,
   useBookingFinancialContext,
+  useCancelAdjustment,
+  useCreateAdjustment,
+  useDecideAdjustment,
+  useAdjustments,
+  type Adjustment,
 } from "@/lib/queries/admin";
 import {
   useEscrows,
@@ -215,6 +221,12 @@ export default function AdminEarningsPage() {
             </button>
           </form>
 
+          <AdjustmentsSection
+            bookingId={bookingId}
+            egp={egp}
+            fmtDate={fmtDate}
+          />
+
           {bookingId && ctx.isPending && (
             <div className="card p-8 text-center text-neutral-600">
               {tc("loading")}
@@ -353,11 +365,7 @@ export default function AdminEarningsPage() {
                     />
                     <Row
                       label={t("stayosRevenue")}
-                      value={
-                        ctx.data.financials.platform_share_waived
-                          ? `${egp(0)} (${t("shareWaived")})`
-                          : egp(ctx.data.financials.platform_share_egp)
-                      }
+                      value={egp(ctx.data.financials.platform_share_egp)}
                     />
                     <Row
                       label={t("taxableAmount")}
@@ -536,6 +544,217 @@ export default function AdminEarningsPage() {
         </section>
       </AdminLayout>
     </ProtectedRoute>
+  );
+}
+
+const ADJUSTMENT_TYPES = [
+  "host_credit",
+  "host_debit",
+  "guest_credit",
+  "guest_debit",
+] as const;
+const ADJUSTMENT_CATEGORIES = [
+  "adjustment",
+  "compensation",
+  "promotion",
+  "fee_waiver",
+] as const;
+
+function AdjustmentsSection({
+  bookingId,
+  egp,
+  fmtDate,
+}: {
+  bookingId?: string;
+  egp: (v: number | null | undefined) => string;
+  fmtDate: (v: string | null | undefined) => string;
+}) {
+  const t = useTranslations("adminEarnings.adjustments");
+  const list = useAdjustments(
+    bookingId ? { booking_id: bookingId } : undefined
+  );
+  const create = useCreateAdjustment();
+  const decide = useDecideAdjustment();
+  const apply = useApplyAdjustment();
+  const cancel = useCancelAdjustment();
+
+  const [type, setType] = useState<string>("host_credit");
+  const [category, setCategory] = useState<string>("adjustment");
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [userId, setUserId] = useState("");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const submitAdjustment = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      await create.mutateAsync({
+        adjustment_type: type,
+        category,
+        amount_egp: Number(amount),
+        reason,
+        booking_id: bookingId ?? null,
+        user_id: userId.trim() || null,
+        internal_note: note.trim() || null,
+      });
+      setAmount("");
+      setReason("");
+      setUserId("");
+      setNote("");
+    } catch {
+      setError(t("createFailed"));
+    }
+  };
+
+  const action = (
+    label: string,
+    onClick: () => void,
+    danger = false
+  ) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+        danger
+          ? "bg-danger-50 text-danger-700 hover:bg-danger-100"
+          : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="card mb-6 p-5">
+      <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-accent-600">
+        {t("title")}
+      </h2>
+      <p className="mb-4 text-xs text-neutral-500">{t("subtitle")}</p>
+
+      {list.isPending ? (
+        <p className="text-sm text-neutral-500">…</p>
+      ) : (list.data ?? []).length === 0 ? (
+        <p className="text-sm text-neutral-500">{t("empty")}</p>
+      ) : (
+        <ul className="mb-4 divide-y divide-neutral-100">
+          {(list.data ?? []).map((a: Adjustment) => (
+            <li key={a.id} className="py-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-neutral-800">
+                  {t(`types.${a.adjustment_type}`)} · {egp(a.amount_egp)}
+                </span>
+                <span className="text-xs text-neutral-500">
+                  {t(`statuses.${a.status}`)} · {fmtDate(a.created_at)}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-neutral-600">
+                {t(`categories.${a.category}`)} — {a.reason}
+              </p>
+              <p className="mt-0.5 text-xs text-neutral-400">
+                {t("actor")}: {a.created_by_id}
+                {a.booking_id ? ` · ${t("booking")}: ${a.booking_id}` : ""}
+                {a.user_id ? ` · ${t("user")}: ${a.user_id}` : ""}
+                {a.requested_by_id
+                  ? ` · ${t("requestedBy")}: ${a.requested_by_id}`
+                  : ""}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {a.status === "pending" &&
+                  action(t("approve"), () =>
+                    decide.mutate({ id: a.id, approve: true })
+                  )}
+                {a.status === "pending" &&
+                  action(
+                    t("reject"),
+                    () => decide.mutate({ id: a.id, approve: false }),
+                    true
+                  )}
+                {a.status === "approved" &&
+                  action(t("apply"), () => apply.mutate(a.id))}
+                {(a.status === "pending" || a.status === "approved") &&
+                  action(t("cancel"), () => cancel.mutate(a.id), true)}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form onSubmit={submitAdjustment} className="border-t border-neutral-100 pt-4">
+        <p className="mb-3 text-xs font-semibold text-neutral-700">
+          {t("newAdjustment")}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="input text-sm"
+          >
+            {ADJUSTMENT_TYPES.map((v) => (
+              <option key={v} value={v}>
+                {t(`types.${v}`)}
+              </option>
+            ))}
+          </select>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="input text-sm"
+          >
+            {ADJUSTMENT_CATEGORIES.map((v) => (
+              <option key={v} value={v}>
+                {t(`categories.${v}`)}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            required
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={t("amountPlaceholder")}
+            className="input text-sm"
+            dir="ltr"
+          />
+          <input
+            type="text"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            placeholder={t("userIdPlaceholder")}
+            className="input text-sm"
+            dir="ltr"
+          />
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <input
+            type="text"
+            required
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={t("reasonPlaceholder")}
+            className="input text-sm"
+          />
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t("notePlaceholder")}
+            className="input text-sm"
+          />
+        </div>
+        {error && <p className="mt-2 text-xs text-danger-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={create.isPending}
+          className="btn-primary mt-3 px-5 py-2 text-sm"
+        >
+          {t("create")}
+        </button>
+      </form>
+    </div>
   );
 }
 

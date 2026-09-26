@@ -25,10 +25,7 @@ from app.finance.constants import EscrowStatus, LedgerAccount, LedgerEntryType
 
 
 def _s(**kw) -> Settings:
-    return Settings(
-        JWT_PRIVATE_KEY="x", JWT_PUBLIC_KEY="x",
-        ALPHA_HOST_FREE_BOOKINGS=3, ALPHA_GUEST_FREE_BOOKINGS=10, **kw,
-    )
+    return Settings(JWT_PRIVATE_KEY="x", JWT_PUBLIC_KEY="x", **kw)
 
 
 # ============================================================
@@ -112,19 +109,28 @@ def test_guest_pays_taxable_plus_vat() -> None:
     assert e.guest_total_egp == Decimal("2587.80")
 
 
-def test_alpha_waiver_gives_host_full_taxable_amount() -> None:
-    e = commercial.compute_booking_economics(1000, platform_share_waived=True)
-    assert e.platform_share_egp == 0
-    # The waiver accrues the collected guest 6% to the host and skips the
-    # host commission — payable the full taxable amount.
-    assert e.host_net_egp == 1060
-    # The guest charge is unchanged: the guest-side allocation was paid.
-    assert e.host_side_share_egp == 60
-    assert e.guest_side_share_egp == 60
-    # The waiver affects ONLY the StayOS commercial share — VAT is a
-    # separate tax and is never waived by it.
-    assert e.vat_egp == Decimal("148.40")
-    assert e.guest_total_egp == Decimal("1208.40")
+def test_no_launch_waiver_platform_share_always_applies() -> None:
+    """The launch waiver is removed: no pricing path may zero the StayOS
+    share. The 750/75 founder golden example — host commission 45,
+    guest fee 45, taxable 870, VAT 121.80, guest total 991.80, host net
+    780, StayOS revenue 90."""
+    e = commercial.compute_booking_economics(750, 75)
+    assert e.host_side_share_egp == Decimal("45")
+    assert e.guest_side_share_egp == Decimal("45")
+    assert e.taxable_amount_egp == Decimal("870")
+    assert e.vat_egp == Decimal("121.80")
+    assert e.guest_total_egp == Decimal("991.80")
+    assert e.platform_share_egp == Decimal("90")
+    assert e.host_net_egp == Decimal("780")
+    assert e.host_net_egp + e.platform_share_egp + e.vat_egp == (
+        e.guest_total_egp
+    )
+    # The waiver keyword no longer exists on the canonical engine.
+    import inspect
+
+    assert "platform_share_waived" not in inspect.signature(
+        commercial.compute_booking_economics
+    ).parameters
 
 
 def test_rounding_stays_2dp_and_balanced() -> None:
@@ -199,12 +205,6 @@ def _quote_mocks(monkeypatch, listing):
         "app.payments.services.listings_repository.get_calendar_rules_in_range",
         AsyncMock(return_value=[]),
     )
-    # Default: the host has completed bookings beyond the alpha waiver —
-    # VAT and platform share apply unless a test overrides the count.
-    monkeypatch.setattr(
-        "app.payments.services.bookings_repository.count_host_completed_bookings",
-        AsyncMock(return_value=10),
-    )
 
 
 def _listing(**over) -> MagicMock:
@@ -221,17 +221,10 @@ def _listing(**over) -> MagicMock:
     return listing
 
 
-async def _create_payment(
-    monkeypatch, listing, custom_total=None, host_completed: int | None = None
-):
+async def _create_payment(monkeypatch, listing, custom_total=None):
     from app.payments import services as ps
 
     _quote_mocks(monkeypatch, listing)
-    if host_completed is not None:
-        monkeypatch.setattr(
-            "app.payments.services.bookings_repository.count_host_completed_bookings",
-            AsyncMock(return_value=host_completed),
-        )
     booking = MagicMock()
     booking.id = str(uuid.uuid4())
     booking.unit_id = "u1"
@@ -444,7 +437,6 @@ async def _run_escrow_create(
     accommodation_amount=Decimal("1460"),
     cleaning_fee=Decimal("60"),
     vat_egp=Decimal("216.16"),
-    host_completed=10,
 ):
     s = _s()
     payment = MagicMock()
@@ -470,8 +462,6 @@ async def _run_escrow_create(
          patch("app.config.settings", s), \
          patch.object(fs, "_reservation_or_none", AsyncMock(return_value=None)), \
          patch.object(fs, "_payment_or_none", AsyncMock(return_value=payment)), \
-         patch("app.bookings.repository.count_host_completed_bookings",
-               AsyncMock(return_value=host_completed)), \
          patch.object(fs, "_get_or_create_wallets",
                       AsyncMock(return_value=(MagicMock(), MagicMock()))), \
          patch.object(fs, "write_event", AsyncMock()):
@@ -514,8 +504,6 @@ async def test_payment_confirmed_idempotent() -> None:
              amount_egp=100, accommodation_amount_egp=100,
              cleaning_fee_egp=0, vat_egp=None, host_id="h", booking_id="b",
          ))), \
-         patch("app.bookings.repository.count_host_completed_bookings",
-               AsyncMock(return_value=0)), \
          patch.object(fs, "write_event", AsyncMock()):
         fr.get_transaction_by_idempotency_key = AsyncMock(
             return_value=MagicMock()  # already processed
@@ -573,8 +561,6 @@ async def test_release_splits_via_canonical_engine() -> None:
          patch("app.config.settings", s), \
          patch.object(fs, "_reservation_or_none", AsyncMock(return_value=None)), \
          patch.object(fs, "_payment_or_none", AsyncMock(return_value=payment)), \
-         patch("app.bookings.repository.count_host_completed_bookings",
-               AsyncMock(return_value=10)), \
          patch.object(fs, "_get_or_create_wallets",
                       AsyncMock(return_value=(MagicMock(), MagicMock()))), \
          patch.object(fs, "write_event", AsyncMock()):
@@ -602,16 +588,13 @@ async def test_release_splits_via_canonical_engine() -> None:
 
 
 @pytest.mark.asyncio
-async def test_release_alpha_waived_host_gets_full_taxable() -> None:
-    """A waived platform share gives the host the full taxable amount —
-    but VAT is a separate tax and still posts to VAT_PAYABLE."""
+async def test_release_never_waives_platform_share() -> None:
+    """Launch waiver removed: a host with zero completed bookings gets
+    the identical Model B split — commission deducted, revenue posted."""
     s = _s()
     payment = MagicMock()
     payment.booking_id = "b1"
     payment.host_id = "h1"
-    # Waived share: guest charge unchanged — the collected guest 6%
-    # accrues to the host (no commission deducted), who is payable the
-    # full taxable amount (1544).
     payment.amount_egp = Decimal("1760.16")
     payment.accommodation_amount_egp = Decimal("1460")
     payment.cleaning_fee_egp = Decimal("60")
@@ -629,8 +612,6 @@ async def test_release_alpha_waived_host_gets_full_taxable() -> None:
          patch("app.config.settings", s), \
          patch.object(fs, "_reservation_or_none", AsyncMock(return_value=None)), \
          patch.object(fs, "_payment_or_none", AsyncMock(return_value=payment)), \
-         patch("app.bookings.repository.count_host_completed_bookings",
-               AsyncMock(return_value=0)), \
          patch.object(fs, "_get_or_create_wallets",
                       AsyncMock(return_value=(MagicMock(), MagicMock()))), \
          patch.object(fs, "write_event", AsyncMock()):
@@ -644,10 +625,8 @@ async def test_release_alpha_waived_host_gets_full_taxable() -> None:
 
     calls = {c.kwargs["ledger_account"]: c.kwargs["amount_egp"]
              for c in fr.create_ledger_entry.call_args_list}
-    # Waived: host keeps the full taxable amount (1460 + 84).
-    assert calls[LedgerAccount.HOST_PAYABLE] == Decimal("1544.00")
-    assert LedgerAccount.PLATFORM_REVENUE not in calls  # share waived
-    # VAT is a separate tax — the waiver does not waive it.
+    assert calls[LedgerAccount.HOST_PAYABLE] == Decimal("1376.00")
+    assert calls[LedgerAccount.PLATFORM_REVENUE] == Decimal("168.00")
     assert calls[LedgerAccount.VAT_PAYABLE] == Decimal("216.16")
     assert calls[LedgerAccount.ESCROW] == Decimal("1760.16")
 
@@ -669,14 +648,6 @@ def test_vat_is_14pct_of_taxable_amount() -> None:
     assert e.host_net_egp == 940
     # VAT never inflates share or host payable.
     assert e.host_net_egp + e.platform_share_egp == e.taxable_amount_egp
-
-
-def test_vat_not_waived_by_alpha_share_waiver() -> None:
-    e = commercial.compute_booking_economics(1000, platform_share_waived=True)
-    assert e.platform_share_egp == 0
-    assert e.vat_egp == Decimal("148.40")
-    assert e.guest_total_egp == Decimal("1208.40")
-    assert e.host_net_egp == 1060
 
 
 def test_vat_tax_base_includes_cleaning_and_allocations() -> None:
@@ -716,12 +687,9 @@ async def test_dec023_additive_row_resolves_by_its_own_rule() -> None:
     payment.cleaning_fee_egp = Decimal("200")
     payment.vat_egp = Decimal("498.40")
 
-    with patch("app.config.settings", _s()), \
-         patch("app.bookings.repository.count_host_completed_bookings",
-               AsyncMock(return_value=10)):
-        economics, waived = await fs.booking_economics(AsyncMock(), payment)
+    with patch("app.config.settings", _s()):
+        economics = await fs.booking_economics(AsyncMock(), payment)
 
-    assert waived is False
     # gap = 3560 − 3200 = 360 = 12% of 3000 → DEC-023 signature: host
     # payable was the full gross; the whole 360 gap is StayOS revenue.
     assert economics.host_net_egp == Decimal("3200.00")
@@ -798,14 +766,7 @@ async def test_payment_persists_vat_component(monkeypatch) -> None:
     assert kwargs["vat_egp"] == Decimal("303.80")
 
 
-@pytest.mark.asyncio
-async def test_payment_vat_applies_under_alpha_waiver(monkeypatch) -> None:
-    # The waiver changes only the internal split — the guest charge is
-    # identical to a non-waived booking: taxable 2170 → VAT 303.80 →
-    # total 2473.80.
-    kwargs = await _create_payment(monkeypatch, _listing(), host_completed=0)
-    assert kwargs["vat_egp"] == Decimal("303.80")
-    assert kwargs["amount_egp"] == Decimal("2473.80")
+
 
 
 def test_payment_response_exposes_vat_to_payer() -> None:
@@ -877,12 +838,9 @@ async def test_booking_economics_falls_back_when_breakdown_missing() -> None:
     payment.cleaning_fee_egp = None
     payment.vat_egp = 140
 
-    with patch("app.config.settings", _s()), \
-         patch("app.bookings.repository.count_host_completed_bookings",
-               AsyncMock(return_value=10)):
-        economics, waived = await fs.booking_economics(AsyncMock(), payment)
+    with patch("app.config.settings", _s()):
+        economics = await fs.booking_economics(AsyncMock(), payment)
 
-    assert waived is False
     # fee_base = 1140 − 140 = 1000 taxable; VAT comes from the stored row.
     # Rows with no allocation gap resolve via the legacy split.
     assert economics.taxable_amount_egp == 1000
@@ -907,9 +865,7 @@ async def test_escrow_host_amount_resolves_via_split() -> None:
 
     with patch("app.config.settings", _s()), \
          patch.object(fs, "_reservation_or_none", AsyncMock(return_value=None)), \
-         patch.object(fs, "_payment_or_none", AsyncMock(return_value=payment)), \
-         patch("app.bookings.repository.count_host_completed_bookings",
-               AsyncMock(return_value=10)):
+         patch.object(fs, "_payment_or_none", AsyncMock(return_value=payment)):
         host_amount = await fs.escrow_host_amount(AsyncMock(), escrow)
 
     # Host net = gross 1460 − 84 commission = 1376 — never + VAT, never

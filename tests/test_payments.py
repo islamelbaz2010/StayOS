@@ -199,18 +199,10 @@ async def test_create_payment_for_booking_success(fake_session: AsyncMock, monke
         "app.payments.services.payments_repository.create_payment",
         AsyncMock(return_value=payment),
     )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_global_completed_bookings",
-        AsyncMock(return_value=0),
-    )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_host_completed_bookings",
-        AsyncMock(return_value=10),
-    )
 
     result = await payment_services.create_payment_for_booking(fake_session, booking, guest)
     assert result.status == PaymentStatus.PENDING
-    assert result.amount_egp == 2050  # 500*4 + 50, no guest fee (Alpha)
+    assert result.amount_egp == 2050  # 500*4 + 50, all-inclusive guest price
     assert result.reference_number.startswith("STY-")
 
 
@@ -1327,14 +1319,6 @@ async def test_create_payment_sets_deadline_and_amount_breakdown(
     monkeypatch.setattr(
         "app.payments.services.payments_repository.create_payment", create_mock
     )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_global_completed_bookings",
-        AsyncMock(return_value=50),
-    )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_host_completed_bookings",
-        AsyncMock(return_value=10),
-    )
 
     before = datetime.now(UTC)
     await payment_services.create_payment_for_booking(fake_session, booking, guest)
@@ -1585,10 +1569,6 @@ async def test_get_booking_quote_applies_weekend_multiplier(
         "app.payments.services.listings_repository.get_calendar_rules_in_range",
         AsyncMock(return_value=[]),
     )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_global_completed_bookings",
-        AsyncMock(return_value=0),
-    )
 
     # 2026-09-11 is a Friday, 2026-09-12 is a Saturday (MENA weekend).
     # 4 nights: Thu(10), Fri(11), Sat(12), Sun(13) → 2 weekend nights.
@@ -1649,14 +1629,6 @@ async def test_get_booking_quote_matches_payment_creation(fake_session: AsyncMoc
     monkeypatch.setattr(
         "app.payments.services.listings_repository.get_calendar_rules_in_range",
         AsyncMock(return_value=[]),
-    )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_global_completed_bookings",
-        AsyncMock(return_value=10),
-    )
-    monkeypatch.setattr(
-        "app.bookings.repository.count_host_completed_bookings",
-        AsyncMock(return_value=10),
     )
 
     quote = await payment_services.get_booking_quote(

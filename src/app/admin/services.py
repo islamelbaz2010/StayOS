@@ -404,12 +404,10 @@ async def _booking_financials(
     """Canonical booking economics for the admin investigation view.
 
     Computed by the finance module's commercial engine — identical math to
-    the escrow-release path, including the closed-alpha share waiver."""
+    the escrow-release path."""
     if payment is None:
         return None
-    economics, waived = await finance_services.booking_economics(
-        session, payment
-    )
+    economics = await finance_services.booking_economics(session, payment)
     return {
         "guest_paid_egp": payment.amount_egp,
         "accommodation_egp": economics.accommodation_egp,
@@ -422,7 +420,6 @@ async def _booking_financials(
         "host_side_share_egp": economics.host_side_share_egp,
         "guest_side_share_egp": economics.guest_side_share_egp,
         "host_net_egp": economics.host_net_egp,
-        "platform_share_waived": waived,
         "provider": payment.provider,
         "provider_ref": payment.provider_ref,
         "transaction_ref": payment.transaction_ref,

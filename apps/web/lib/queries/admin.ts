@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 import type { components } from "@/lib/api-types";
@@ -73,7 +73,6 @@ export interface BookingFinancials {
   host_side_share_egp: number | null;
   guest_side_share_egp: number | null;
   host_net_egp: number | null;
-  platform_share_waived: boolean | null;
   provider: string | null;
   provider_ref: string | null;
   transaction_ref: string | null;
@@ -186,5 +185,97 @@ export function useDisputeContext(disputeId: string | undefined) {
       return data;
     },
     enabled: Boolean(disputeId),
+  });
+}
+
+export type Adjustment = components["schemas"]["AdjustmentResponse"];
+
+export interface AdjustmentCreateInput {
+  adjustment_type: string;
+  category: string;
+  amount_egp: number;
+  reason: string;
+  booking_id?: string | null;
+  user_id?: string | null;
+  listing_id?: string | null;
+  requested_by_id?: string | null;
+  internal_note?: string | null;
+  customer_note?: string | null;
+}
+
+/** Explicit admin commercial adjustments (payments permission). */
+export function useAdjustments(filters?: {
+  status?: string;
+  booking_id?: string;
+}) {
+  return useQuery<Adjustment[]>({
+    queryKey: ["admin-adjustments", filters?.status, filters?.booking_id],
+    queryFn: async () => {
+      const { data } = await api.get<Adjustment[]>("/admin/adjustments", {
+        params: {
+          status: filters?.status || undefined,
+          booking_id: filters?.booking_id || undefined,
+        },
+      });
+      return data;
+    },
+  });
+}
+
+export function useCreateAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: AdjustmentCreateInput) => {
+      const { data } = await api.post<Adjustment>(
+        "/admin/adjustments",
+        input
+      );
+      return data;
+    },
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["admin-adjustments"] }),
+  });
+}
+
+export function useDecideAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { id: string; approve: boolean }) => {
+      const { data } = await api.post<Adjustment>(
+        `/admin/adjustments/${vars.id}/decide`,
+        { approve: vars.approve }
+      );
+      return data;
+    },
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["admin-adjustments"] }),
+  });
+}
+
+export function useApplyAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<Adjustment>(
+        `/admin/adjustments/${id}/apply`
+      );
+      return data;
+    },
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["admin-adjustments"] }),
+  });
+}
+
+export function useCancelAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<Adjustment>(
+        `/admin/adjustments/${id}/cancel`
+      );
+      return data;
+    },
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["admin-adjustments"] }),
   });
 }

@@ -234,10 +234,6 @@ class Settings(BaseSettings):
         description="Hours before check-in date that arrival/access instructions become visible to the guest",
     )
 
-    # Closed Alpha commercial incentives
-    ALPHA_HOST_FREE_BOOKINGS: int = Field(default=3, ge=0, description="Number of completed bookings with 0% host commission before standard rate applies")
-    ALPHA_GUEST_FREE_BOOKINGS: int = Field(default=10, ge=0, description="Number of completed bookings globally with 0% guest service fee before standard rate applies")
-
     @property
     def payment_proof_bucket(self) -> str:
         if not self.S3_PAYMENT_PROOF_BUCKET:

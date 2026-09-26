@@ -23,6 +23,7 @@ class TransactionType(StrEnum):
     PAYOUT_FEE = "payout_fee"
     REFUND = "refund"
     DISPUTE_HOLD = "dispute_hold"
+    ADJUSTMENT = "adjustment"
 
 
 class TransactionStatus(StrEnum):
@@ -48,6 +49,34 @@ class AccountType(StrEnum):
     LIABILITY = "liability"
     REVENUE = "revenue"
     EXPENSE = "expense"
+
+
+class AdjustmentType(StrEnum):
+    """Which side an adjustment moves money toward.
+
+    ``*_credit`` pays the party (platform funds it, reducing recognized
+    revenue); ``*_debit`` reclaims from the party back to the platform.
+    """
+
+    HOST_CREDIT = "host_credit"
+    HOST_DEBIT = "host_debit"
+    GUEST_CREDIT = "guest_credit"
+    GUEST_DEBIT = "guest_debit"
+
+
+class AdjustmentCategory(StrEnum):
+    ADJUSTMENT = "adjustment"
+    COMPENSATION = "compensation"
+    PROMOTION = "promotion"
+    FEE_WAIVER = "fee_waiver"
+
+
+class AdjustmentStatus(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    APPLIED = "applied"
+    CANCELLED = "cancelled"
 
 
 class PaymentProvider(StrEnum):

@@ -67,12 +67,11 @@ async def _payment_or_none(session: AsyncSession, booking_id: str):
 
 async def booking_economics(
     session: AsyncSession, payment
-) -> tuple[commercial.BookingEconomics, bool]:
+) -> commercial.BookingEconomics:
     """Canonical per-booking economics — the same math the escrow-release
-    path uses, including the closed-alpha free-bookings waiver.
-
-    Returns ``(economics, waived)`` so callers can surface whether the
-    platform share was waived for this booking.
+    path uses. The launch waiver is removed: every booking follows normal
+    Model B. Exceptional treatment is applied only through explicit,
+    audited CommercialAdjustment records.
 
     Under Model B the stored ``accommodation_amount_egp`` is the host
     GROSS payable (accommodation + cleaning) and the guest-side 6% was
@@ -89,12 +88,6 @@ async def booking_economics(
     is authoritative: pre-VAT rows carry NULL and are treated as
     VAT-free.
     """
-    from app.bookings import repository as bookings_repository
-
-    host_completed = await bookings_repository.count_host_completed_bookings(
-        session, payment.host_id, exclude_booking_id=payment.booking_id
-    )
-    waived = host_completed < settings.ALPHA_HOST_FREE_BOOKINGS
     stored_vat = commercial.money(payment.vat_egp or 0)
     taxable_implied = payment.amount_egp - stored_vat
     accom_cleaning = payment.accommodation_amount_egp
@@ -122,10 +115,7 @@ async def booking_economics(
             host_side = collected
         else:
             host_side = host_commission
-        # Waived (closed-alpha): StayOS takes nothing — the collected
-        # allocation accrues to the host, who is payable the full
-        # taxable amount. The guest charge is unchanged.
-        revenue = Decimal("0") if waived else collected
+        revenue = collected
         economics = commercial.BookingEconomics(
             accommodation_egp=commercial.money(fee_base),
             cleaning_fee_egp=commercial.money(cleaning),
@@ -133,11 +123,7 @@ async def booking_economics(
             vat_egp=stored_vat,
             guest_total_egp=payment.amount_egp,
             platform_share_egp=revenue,
-            host_net_egp=(
-                commercial.money(taxable_implied)
-                if waived
-                else commercial.money(accom_cleaning)
-            ),
+            host_net_egp=commercial.money(accom_cleaning),
             host_side_share_egp=host_side,
             guest_side_share_egp=guest_side,
         )
@@ -145,9 +131,7 @@ async def booking_economics(
         # Model B: the guest-side 6% sits inside the taxable amount on
         # top of the host gross; the host-side 6% commission is deducted
         # from that gross. Revenue = commission + collected guest fee.
-        revenue = (
-            Decimal("0") if waived else additive_gap + host_commission
-        )
+        revenue = additive_gap + host_commission
         economics = commercial.BookingEconomics(
             accommodation_egp=commercial.money(fee_base),
             cleaning_fee_egp=commercial.money(cleaning),
@@ -155,41 +139,34 @@ async def booking_economics(
             vat_egp=stored_vat,
             guest_total_egp=payment.amount_egp,
             platform_share_egp=revenue,
-            host_net_egp=(
-                commercial.money(taxable_implied)
-                if waived
-                else commercial.money(accom_cleaning) - host_commission
-            ),
+            host_net_egp=commercial.money(accom_cleaning) - host_commission,
             host_side_share_egp=host_commission,
             guest_side_share_egp=commercial.money(additive_gap),
         )
     else:
         # Legacy containment-model row: the share was carved OUT of the
         # taxable amount; no allocation sits on top of accom+cleaning.
-        economics = commercial.compute_booking_economics(
-            fee_base, cleaning, platform_share_waived=waived
-        )
-        share = Decimal("0") if waived else economics.platform_share_egp
-        host_net = taxable_implied - share
+        share_economics = commercial.compute_booking_economics(fee_base, cleaning)
+        host_net = taxable_implied - share_economics.platform_share_egp
         economics = commercial.BookingEconomics(
             accommodation_egp=commercial.money(fee_base),
             cleaning_fee_egp=commercial.money(cleaning),
             taxable_amount_egp=commercial.money(taxable_implied),
             vat_egp=stored_vat,
             guest_total_egp=payment.amount_egp,
-            platform_share_egp=share,
+            platform_share_egp=share_economics.platform_share_egp,
             host_net_egp=host_net,
-            host_side_share_egp=economics.host_side_share_egp,
-            guest_side_share_egp=economics.guest_side_share_egp,
+            host_side_share_egp=share_economics.host_side_share_egp,
+            guest_side_share_egp=share_economics.guest_side_share_egp,
         )
-    return economics, waived
+    return economics
 
 
 async def _booking_host_net(session: AsyncSession, payment) -> int:
     """Canonical host net for the booking/payment flow: the collected
     all-inclusive total minus the platform share on the accommodation
-    base, honouring the closed-alpha free-bookings incentive."""
-    economics, _ = await booking_economics(session, payment)
+    base."""
+    economics = await booking_economics(session, payment)
     return economics.host_net_egp
 
 
@@ -253,7 +230,7 @@ async def _resolve_escrow_split(
     payment = await _payment_or_none(session, reservation_id)
     if payment is None:
         raise NotFoundError("Payment not found for escrow release")
-    economics, _ = await booking_economics(session, payment)
+    economics = await booking_economics(session, payment)
     return economics.host_net_egp, economics.vat_egp
 
 

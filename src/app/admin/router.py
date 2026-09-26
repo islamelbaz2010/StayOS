@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
 from app.auth.constants import StaffPermission, UserRole
 from app.auth.models import StaffPermission as StaffPermissionGrant
 from app.auth.models import User
 from app.database import get_session
+from app.finance import adjustments as finance_adjustments
 from app.shared.exceptions import (
     AuthorizationError,
     StayOSError,
@@ -15,6 +15,9 @@ from app.shared.exceptions import (
 )
 
 from .schemas import (
+    AdjustmentCreateRequest,
+    AdjustmentDecisionRequest,
+    AdjustmentResponse,
     AdminListingListItem,
     AdminOverviewResponse,
     AdminUserListItem,
@@ -109,6 +112,137 @@ async def get_booking_financial(
         return await get_booking_financial_context(session, booking_id)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
+
+
+_PAYMENTS_PERMISSION = auth_dependencies.require_staff_permission(
+    StaffPermission.PAYMENTS.value,
+    allow_roles=(),
+)
+
+
+def _to_adjustment_response(adjustment) -> AdjustmentResponse:
+    return AdjustmentResponse(
+        id=adjustment.id,
+        booking_id=adjustment.booking_id,
+        user_id=adjustment.user_id,
+        listing_id=adjustment.listing_id,
+        adjustment_type=adjustment.adjustment_type,
+        category=adjustment.category,
+        amount_egp=adjustment.amount_egp,
+        reason=adjustment.reason,
+        internal_note=adjustment.internal_note,
+        customer_note=adjustment.customer_note,
+        status=adjustment.status,
+        requested_by_id=adjustment.requested_by_id,
+        created_by_id=adjustment.created_by_id,
+        decided_by_id=adjustment.decided_by_id,
+        decided_at=adjustment.decided_at,
+        applied_at=adjustment.applied_at,
+        financial_transaction_id=adjustment.financial_transaction_id,
+        created_at=adjustment.created_at,
+        updated_at=adjustment.updated_at,
+    )
+
+
+@router.get("/adjustments", response_model=list[AdjustmentResponse])
+async def list_adjustments_endpoint(
+    status: str | None = Query(default=None),
+    adjustment_type: str | None = Query(default=None),
+    booking_id: str | None = Query(default=None),
+    user_id: str | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(_PAYMENTS_PERMISSION),
+    session: AsyncSession = Depends(get_session),
+) -> list[AdjustmentResponse]:
+    rows = await finance_adjustments.list_adjustments(
+        session,
+        status=status,
+        adjustment_type=adjustment_type,
+        booking_id=booking_id,
+        user_id=user_id,
+        limit=limit,
+        offset=offset,
+    )
+    return [_to_adjustment_response(r) for r in rows]
+
+
+@router.post("/adjustments", response_model=AdjustmentResponse, status_code=201)
+async def create_adjustment_endpoint(
+    body: AdjustmentCreateRequest,
+    user: User = Depends(_PAYMENTS_PERMISSION),
+    session: AsyncSession = Depends(get_session),
+) -> AdjustmentResponse:
+    try:
+        adjustment = await finance_adjustments.create_adjustment(
+            session,
+            actor_id=user.id,
+            adjustment_type=body.adjustment_type,
+            category=body.category,
+            amount_egp=body.amount_egp,
+            reason=body.reason,
+            booking_id=body.booking_id,
+            user_id=body.user_id,
+            listing_id=body.listing_id,
+            requested_by_id=body.requested_by_id,
+            internal_note=body.internal_note,
+            customer_note=body.customer_note,
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    return _to_adjustment_response(adjustment)
+
+
+@router.post(
+    "/adjustments/{adjustment_id}/decide", response_model=AdjustmentResponse
+)
+async def decide_adjustment_endpoint(
+    adjustment_id: str,
+    body: AdjustmentDecisionRequest,
+    user: User = Depends(_PAYMENTS_PERMISSION),
+    session: AsyncSession = Depends(get_session),
+) -> AdjustmentResponse:
+    try:
+        adjustment = await finance_adjustments.decide_adjustment(
+            session, adjustment_id, actor_id=user.id, approve=body.approve
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    return _to_adjustment_response(adjustment)
+
+
+@router.post(
+    "/adjustments/{adjustment_id}/apply", response_model=AdjustmentResponse
+)
+async def apply_adjustment_endpoint(
+    adjustment_id: str,
+    user: User = Depends(_PAYMENTS_PERMISSION),
+    session: AsyncSession = Depends(get_session),
+) -> AdjustmentResponse:
+    try:
+        adjustment = await finance_adjustments.apply_adjustment(
+            session, adjustment_id
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    return _to_adjustment_response(adjustment)
+
+
+@router.post(
+    "/adjustments/{adjustment_id}/cancel", response_model=AdjustmentResponse
+)
+async def cancel_adjustment_endpoint(
+    adjustment_id: str,
+    user: User = Depends(_PAYMENTS_PERMISSION),
+    session: AsyncSession = Depends(get_session),
+) -> AdjustmentResponse:
+    try:
+        adjustment = await finance_adjustments.cancel_adjustment(
+            session, adjustment_id
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    return _to_adjustment_response(adjustment)
 
 
 @router.get(

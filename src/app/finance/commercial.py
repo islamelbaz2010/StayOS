@@ -23,17 +23,16 @@ FOUNDER DECISION (Model B — final commercial model, supersedes DEC-023):
 - Fee base: the 6%+6% applies to the accommodation amount only — never
   to cleaning (per-stay, never multiplied by nights), pass-through
   charges, taxes, or deposits.
-- The closed-alpha share waiver keeps the guest charge identical but
-  moves the platform revenue to the host: the host is payable the full
-  taxable amount (accommodation + cleaning + the collected guest 6%,
-  no commission deducted). It never waives VAT.
+- Exceptional commercial treatment (compensation, approved adjustments)
+  is applied only through explicit admin CommercialAdjustment records —
+  never by automatic pricing rules.
 
 All money is Decimal EGP at 2 decimal places — VAT on the taxable base
 produces fractional piastres (e.g. 1,544 × 14% = 216.16).
 """
 
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from app.config import settings
 
@@ -71,8 +70,8 @@ class BookingEconomics:
 def compute_vat(taxable_amount_egp) -> Decimal:
     """VAT on a taxable booking amount at the configured rate.
 
-    VAT is a separate tax — it never depends on the platform share or the
-    alpha waiver. Returns 0 for non-positive bases.
+    VAT is a separate tax — it never depends on the platform share.
+    Returns 0 for non-positive bases.
     """
     taxable = money(taxable_amount_egp)
     if taxable <= 0:
@@ -110,18 +109,12 @@ def decompose_all_in_total(total_egp) -> tuple[Decimal, Decimal, Decimal]:
 def compute_booking_economics(
     accommodation_egp,
     cleaning_fee_egp=0,
-    *,
-    platform_share_waived: bool = False,
 ) -> BookingEconomics:
     """Split a booking into VAT, platform share and host payable.
 
     Model B: the guest-side 6% is added to the guest's taxable amount;
     the host-side 6% is a commission deducted from the host payable.
-    ``platform_share_waived`` implements the closed-alpha incentive — the
-    guest charge is unchanged, StayOS revenue is zero, no commission is
-    deducted and the collected guest 6% accrues to the host, who is
-    payable the full taxable amount. VAT is a separate tax on the
-    taxable amount and is never waived.
+    VAT is a separate tax on the taxable amount and is never waived.
     """
     accom = money(accommodation_egp)
     cleaning = money(cleaning_fee_egp)
@@ -138,12 +131,8 @@ def compute_booking_economics(
         taxable_amount_egp=taxable,
         vat_egp=vat,
         guest_total_egp=taxable + vat,
-        platform_share_egp=(
-            Decimal("0") if platform_share_waived else host_side + guest_side
-        ),
-        host_net_egp=(
-            taxable if platform_share_waived else accom + cleaning - host_side
-        ),
+        platform_share_egp=host_side + guest_side,
+        host_net_egp=accom + cleaning - host_side,
         host_side_share_egp=host_side,
         guest_side_share_egp=guest_side,
     )

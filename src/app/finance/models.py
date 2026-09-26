@@ -6,9 +6,9 @@ from sqlalchemy import (
     JSON,
     DateTime,
     ForeignKey,
-    Integer,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     func,
 )
@@ -16,7 +16,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.models import Base, TimestampMixin, UUIDMixin
 
-from .constants import EscrowStatus, PayoutStatus, TransactionStatus
+from .constants import (
+    AdjustmentStatus,
+    EscrowStatus,
+    PayoutStatus,
+    TransactionStatus,
+)
 
 
 class Wallet(UUIDMixin, TimestampMixin, Base):
@@ -149,6 +154,59 @@ class LedgerEntry(UUIDMixin, Base):
         "EscrowAccount",
         back_populates="ledger_entries",
         foreign_keys="LedgerEntry.escrow_id",
+    )
+
+
+class CommercialAdjustment(UUIDMixin, TimestampMixin, Base):
+    """Explicit, audited admin-initiated commercial adjustment.
+
+    Records exceptional commercial treatment — compensation, fee waivers,
+    goodwill credits — as a first-class append-only record. Applying an
+    approved adjustment posts a distinct ``financial_transactions`` row
+    (type ``adjustment``) plus its double-entry ledger pair; the booking's
+    original stored amounts are never rewritten. VAT is untouched —
+    adjustments move money between platform/host/guest after the fact and
+    do not alter the booking's taxable base.
+    """
+
+    __tablename__ = "commercial_adjustments"
+    __table_args__ = ({"schema": "finance"},)
+
+    booking_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("booking.bookings.id"), nullable=True
+    )
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("auth.users.id"), nullable=True
+    )
+    listing_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("pms.units.id"), nullable=True
+    )
+    adjustment_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    category: Mapped[str] = mapped_column(String(30), nullable=False)
+    amount_egp: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    internal_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    customer_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=AdjustmentStatus.PENDING
+    )
+    requested_by_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("auth.users.id"), nullable=True
+    )
+    created_by_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("auth.users.id"), nullable=False
+    )
+    decided_by_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("auth.users.id"), nullable=True
+    )
+    decided_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    applied_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    financial_transaction_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True
     )
 
 

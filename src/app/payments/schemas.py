@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
+
 from app.shared.schemas import Money
 
 
@@ -158,7 +159,6 @@ class PaymentListItem(BaseModel):
     # total-only pricing and internal economics stay hidden.
     host_net_egp: Money | None = None
     platform_fee_egp: Money | None = None
-    platform_share_waived: bool | None = None
     funds_status: str | None = None
     funds_held_egp: Money | None = None
     expected_payout_at: datetime | None = None

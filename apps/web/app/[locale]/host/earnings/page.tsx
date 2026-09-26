@@ -409,13 +409,11 @@ function PaymentActivity({ locale }: { locale: string }) {
                       </p>
                       <p>
                         <span className="font-medium">{t("stayosFee")}: </span>
-                        {payment.platform_share_waived
-                          ? t("stayosFeeWaived")
-                          : formatMoney(
-                              payment.platform_fee_egp ?? 0,
-                              "EGP",
-                              locale
-                            )}
+                        {formatMoney(
+                          payment.platform_fee_egp ?? 0,
+                          "EGP",
+                          locale
+                        )}
                       </p>
                       {payment.funds_status && (
                         <p>

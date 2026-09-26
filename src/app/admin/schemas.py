@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
 from app.shared.schemas import Money
 
 
@@ -131,3 +132,51 @@ class DisputeContextResponse(BaseModel):
     dispute: dict
     reporter: dict | None = None
     booking: BookingFinancialContextResponse | None = None
+
+
+class AdjustmentCreateRequest(BaseModel):
+    """Create a commercial adjustment. ``requested_by_id`` set → the
+    record is a host/guest request entering at ``pending`` and requires
+    an explicit approve/reject decision; unset → the admin's own action,
+    created already ``approved`` (the admin IS the decision)."""
+
+    adjustment_type: str = Field(
+        description="host_credit | host_debit | guest_credit | guest_debit"
+    )
+    category: str = Field(
+        description="adjustment | compensation | promotion | fee_waiver"
+    )
+    amount_egp: Money = Field(gt=0)
+    reason: str = Field(min_length=1)
+    booking_id: str | None = None
+    user_id: str | None = None
+    listing_id: str | None = None
+    requested_by_id: str | None = None
+    internal_note: str | None = None
+    customer_note: str | None = None
+
+
+class AdjustmentDecisionRequest(BaseModel):
+    approve: bool
+
+
+class AdjustmentResponse(BaseModel):
+    id: str
+    booking_id: str | None
+    user_id: str | None
+    listing_id: str | None
+    adjustment_type: str
+    category: str
+    amount_egp: Money
+    reason: str
+    internal_note: str | None
+    customer_note: str | None
+    status: str
+    requested_by_id: str | None
+    created_by_id: str
+    decided_by_id: str | None
+    decided_at: datetime | None
+    applied_at: datetime | None
+    financial_transaction_id: str | None
+    created_at: datetime
+    updated_at: datetime

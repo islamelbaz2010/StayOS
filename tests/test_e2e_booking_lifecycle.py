@@ -13,8 +13,8 @@ Guest contract: only the all-inclusive accommodation amount and total
 are visible — no cleaning line, no 12%, no 6%, no VAT line, no
 service-fee line, no host economics.
 
-The alpha free-bookings incentive is exercised honestly: the host is
-seeded with 3 prior completed bookings so the 12% share is NOT waived.
+The launch waiver is removed — the host is seeded with 3 prior
+completed bookings and the normal Model B 12% share always applies.
 
 Runs against a real Postgres (default stayos_e2e). Skips when the
 database is unreachable so CI without a DB does not fail.
@@ -306,8 +306,7 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
                 select(Payment).where(Payment.booking_id == booking_id)
             )
         ).scalar_one()
-        economics, waived = await finance_services.booking_economics(session, payment)
-        assert waived is False  # host already completed ≥ alpha threshold
+        economics = await finance_services.booking_economics(session, payment)
         assert economics.accommodation_egp == ACCOMMODATION_EGP
         assert economics.taxable_amount_egp == TAXABLE_EGP
         assert economics.vat_egp == VAT_EGP

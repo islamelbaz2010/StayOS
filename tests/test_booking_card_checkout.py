@@ -837,12 +837,7 @@ async def test_host_payments_attach_earnings(
     monkeypatch.setattr(
         finance_services,
         "booking_economics",
-        AsyncMock(
-            return_value=(
-                commercial.compute_booking_economics(1950, 50),
-                False,
-            )
-        ),
+        AsyncMock(return_value=commercial.compute_booking_economics(1950, 50)),
     )
 
     items = await payment_services.list_host_payments(fake_session, host)
@@ -854,7 +849,6 @@ async def test_host_payments_attach_earnings(
     # host payable.
     assert item.host_net_egp == 1883
     assert item.platform_fee_egp == round(1950 * 0.12)
-    assert item.platform_share_waived is False
     assert item.funds_status == "held"
     assert item.funds_held_egp == 2050
     assert item.payout_status == "ready"

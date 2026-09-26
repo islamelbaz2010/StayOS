@@ -67,7 +67,6 @@ export interface PaymentListItem {
   // Host-facing earnings fields — only populated on /payments/host.
   host_net_egp?: number | null;
   platform_fee_egp?: number | null;
-  platform_share_waived?: boolean | null;
   funds_status?: string | null;
   funds_held_egp?: number | null;
   expected_payout_at?: string | null;

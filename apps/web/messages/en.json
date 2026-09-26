@@ -877,7 +877,6 @@
     "accommodation": "Accommodation",
     "cleaningFee": "Cleaning fee",
     "serviceFee": "Service fee",
-    "serviceFeeWaived": "Free",
     "timelineTitle": "Stay progress",
     "timeline": {
       "booked": "Booked",
@@ -934,7 +933,6 @@
     "available": "Available",
     "unavailable": "Unavailable",
     "clearDates": "Clear dates",
-    "serviceFeeWaived": "Free during launch",
     "instantBook": "Instant Book",
     "instantBookBadge": "Instant Book",
     "instantBookConfirmed": "Your Instant Book for {title} is confirmed!",
@@ -1166,7 +1164,6 @@
     "nights": "Nights",
     "accommodation": "Accommodation",
     "serviceFee": "Service fee",
-    "serviceFeeWaived": "Free",
     "totalAmount": "Total amount",
     "includesAllFees": "Prices include all fees",
     "egp": "EGP",
@@ -1509,7 +1506,6 @@
     "disclaimer": "Earnings are released after payment verification and stay completion.",
     "yourEarnings": "Your earnings",
     "stayosFee": "StayOS fee",
-    "stayosFeeWaived": "EGP 0 — launch waiver",
     "fundsStatus": "Funds status",
     "fundsStatuses": {
       "created": "Held",
@@ -2021,7 +2017,6 @@
     "hostSide": "Host side",
     "guestSide": "Guest side",
     "stayosRevenue": "StayOS revenue",
-    "shareWaived": "waived — alpha offer",
     "hostPayable": "Host payable",
     "payout": "Payout",
     "fundsStatus": "Funds status",
@@ -2046,6 +2041,45 @@
       "paid_out": "Completed payouts",
       "refund_pending": "Refunds awaiting provider confirmation",
       "refunded": "Refunded payments"
+    },
+    "adjustments": {
+      "title": "Commercial adjustments",
+      "subtitle": "Explicit, audited exceptions — every adjustment records reason, actor and ledger entries. Original booking amounts are never overwritten.",
+      "empty": "No adjustments for this context.",
+      "newAdjustment": "New adjustment",
+      "amountPlaceholder": "Amount (EGP)",
+      "userIdPlaceholder": "Target user ID (optional)",
+      "reasonPlaceholder": "Reason (required)",
+      "notePlaceholder": "Internal note (optional)",
+      "create": "Create adjustment",
+      "createFailed": "Could not create the adjustment. Check the targets and try again.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "apply": "Apply to ledger",
+      "cancel": "Cancel",
+      "actor": "Actor",
+      "booking": "Booking",
+      "user": "User",
+      "requestedBy": "Requested by",
+      "types": {
+        "host_credit": "Host credit",
+        "host_debit": "Host debit",
+        "guest_credit": "Guest credit",
+        "guest_debit": "Guest debit"
+      },
+      "categories": {
+        "adjustment": "Adjustment",
+        "compensation": "Compensation",
+        "promotion": "Promotion",
+        "fee_waiver": "Fee waiver"
+      },
+      "statuses": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "applied": "Applied",
+        "cancelled": "Cancelled"
+      }
     }
   },
   "notifications": {

@@ -877,7 +877,6 @@
     "accommodation": "الإقامة",
     "cleaningFee": "رسوم التنظيف",
     "serviceFee": "رسوم الخدمة",
-    "serviceFeeWaived": "مجاناً",
     "timelineTitle": "تقدم الإقامة",
     "timeline": {
       "booked": "تم الحجز",
@@ -934,7 +933,6 @@
     "available": "متاح",
     "unavailable": "غير متاح",
     "clearDates": "مسح التواريخ",
-    "serviceFeeWaived": "مجاني خلال الإطلاق",
     "instantBook": "حجز فوري",
     "instantBookBadge": "حجز فوري",
     "instantBookConfirmed": "تم تأكيد حجزك الفوري لـ {title}!",
@@ -1166,7 +1164,6 @@
     "nights": "الليالي",
     "accommodation": "الإقامة",
     "serviceFee": "رسوم الخدمة",
-    "serviceFeeWaived": "مجاناً",
     "totalAmount": "المبلغ الإجمالي",
     "includesAllFees": "الأسعار تشمل جميع الرسوم",
     "egp": "ج.م",
@@ -1509,7 +1506,6 @@
     "disclaimer": "يتم تحرير الأرباح بعد التحقق من الدفع واكتمال الإقامة.",
     "yourEarnings": "أرباحك",
     "stayosFee": "رسوم StayOS",
-    "stayosFeeWaived": "0 ج.م — إعفاء الإطلاق",
     "fundsStatus": "حالة الأموال",
     "fundsStatuses": {
       "created": "محتجزة",
@@ -2021,7 +2017,6 @@
     "hostSide": "حصة المضيف",
     "guestSide": "حصة الضيف",
     "stayosRevenue": "إيراد StayOS",
-    "shareWaived": "معفاة — عرض الإطلاق",
     "hostPayable": "مستحق للمضيف",
     "payout": "السحب",
     "fundsStatus": "حالة الأموال",
@@ -2046,6 +2041,45 @@
       "paid_out": "مدفوعات مكتملة",
       "refund_pending": "استردادات بانتظار تأكيد المزود",
       "refunded": "مدفوعات مستردة"
+    },
+    "adjustments": {
+      "title": "التعديلات التجارية",
+      "subtitle": "استثناءات واضحة وموثّقة — كل تعديل يسجّل السبب والمسؤول وقيود دفتر الأستاذ. لا تُمسّ المبالغ الأصلية للحجز.",
+      "empty": "لا توجد تعديلات في هذا السياق.",
+      "newAdjustment": "تعديل جديد",
+      "amountPlaceholder": "المبلغ (ج.م)",
+      "userIdPlaceholder": "معرّف المستخدم (اختياري)",
+      "reasonPlaceholder": "السبب (إلزامي)",
+      "notePlaceholder": "ملاحظة داخلية (اختياري)",
+      "create": "إنشاء التعديل",
+      "createFailed": "تعذّر إنشاء التعديل. تحقّق من الأهداف وحاول مجدداً.",
+      "approve": "اعتماد",
+      "reject": "رفض",
+      "apply": "ترحيل إلى دفتر الأستاذ",
+      "cancel": "إلغاء",
+      "actor": "المسؤول",
+      "booking": "الحجز",
+      "user": "المستخدم",
+      "requestedBy": "مقدّم الطلب",
+      "types": {
+        "host_credit": "رصيد للمضيف",
+        "host_debit": "خصم من المضيف",
+        "guest_credit": "رصيد للضيف",
+        "guest_debit": "خصم من الضيف"
+      },
+      "categories": {
+        "adjustment": "تعديل",
+        "compensation": "تعويض",
+        "promotion": "عرض ترويجي",
+        "fee_waiver": "إعفاء من الرسوم"
+      },
+      "statuses": {
+        "pending": "قيد المراجعة",
+        "approved": "معتمد",
+        "rejected": "مرفوض",
+        "applied": "مُرحَّل",
+        "cancelled": "ملغى"
+      }
     }
   },
   "notifications": {

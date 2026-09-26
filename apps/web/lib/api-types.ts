@@ -115,6 +115,29 @@ export interface paths {
     /** Export My Data */
     get: operations["export_my_data_api_v1_auth_me_export_get"];
   };
+  "/api/v1/auth/me/privacy": {
+    /** Get Privacy Settings */
+    get: operations["get_privacy_settings_api_v1_auth_me_privacy_get"];
+    /** Update Privacy Settings */
+    patch: operations["update_privacy_settings_api_v1_auth_me_privacy_patch"];
+  };
+  "/api/v1/auth/me/notification-preferences": {
+    /** Get Notification Preferences */
+    get: operations["get_notification_preferences_api_v1_auth_me_notification_preferences_get"];
+    /** Update Notification Preferences */
+    put: operations["update_notification_preferences_api_v1_auth_me_notification_preferences_put"];
+  };
+  "/api/v1/auth/me/sessions": {
+    /** List Sessions */
+    get: operations["list_sessions_api_v1_auth_me_sessions_get"];
+  };
+  "/api/v1/auth/me/logout-all": {
+    /**
+     * Logout All Sessions
+     * @description Revoke every refresh token — all devices, including this one.
+     */
+    post: operations["logout_all_sessions_api_v1_auth_me_logout_all_post"];
+  };
   "/api/v1/auth/me/role": {
     /** Upgrade Role */
     patch: operations["upgrade_role_api_v1_auth_me_role_patch"];
@@ -1012,6 +1035,14 @@ export interface components {
       address: {
         [key: string]: unknown;
       } | null;
+      /** Mailing Address */
+      mailing_address?: {
+        [key: string]: unknown;
+      } | null;
+      /** Emergency Contact */
+      emergency_contact?: {
+        [key: string]: unknown;
+      } | null;
       /** Payout Method */
       payout_method?: string | null;
       /** Payout Bank Name */
@@ -1047,6 +1078,8 @@ export interface components {
       address?: {
         [key: string]: unknown;
       } | null;
+      mailing_address?: components["schemas"]["AddressFields"] | null;
+      emergency_contact?: components["schemas"]["EmergencyContactFields"] | null;
       /** Payout Method */
       payout_method?: string | null;
       /** Payout Bank Name */
@@ -1057,6 +1090,17 @@ export interface components {
       payout_wallet_msisdn?: string | null;
       /** Payout Holder Name */
       payout_holder_name?: string | null;
+    };
+    /** AddressFields */
+    AddressFields: {
+      /** Street */
+      street?: string | null;
+      /** City */
+      city?: string | null;
+      /** Governorate */
+      governorate?: string | null;
+      /** Postal Code */
+      postal_code?: string | null;
     };
     /**
      * AdjustmentCreateRequest
@@ -2595,6 +2639,15 @@ export interface components {
        */
       locale?: string;
     };
+    /** EmergencyContactFields */
+    EmergencyContactFields: {
+      /** Name */
+      name?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Relationship */
+      relationship?: string | null;
+    };
     /** EscrowListResponse */
     EscrowListResponse: {
       /**
@@ -3010,6 +3063,8 @@ export interface components {
       locale?: string | null;
       /** Languages */
       languages?: string[] | null;
+      /** Location */
+      location?: string | null;
     };
     /** HostReservationCalendarItem */
     HostReservationCalendarItem: {
@@ -3419,6 +3474,8 @@ export interface components {
       id: string;
       /** Event Type */
       event_type: string;
+      /** Category */
+      category: string;
       /** Subject */
       subject: string | null;
       /** Body */
@@ -4390,6 +4447,24 @@ export interface components {
       /** Locale */
       locale: string;
     };
+    /**
+     * NotificationPreferencesResponse
+     * @description Effective per-category state — every category is always present so
+     * the UI can render deterministically; locked categories are always True.
+     */
+    NotificationPreferencesResponse: {
+      /** Preferences */
+      preferences: {
+        [key: string]: boolean;
+      };
+    };
+    /** NotificationPreferencesUpdate */
+    NotificationPreferencesUpdate: {
+      /** Preferences */
+      preferences?: {
+        [key: string]: boolean;
+      };
+    };
     /** OperationsDashboardResponse */
     OperationsDashboardResponse: {
       /** Pending Tasks */
@@ -5045,6 +5120,20 @@ export interface components {
       /** Buckets */
       buckets: components["schemas"]["PriceBucket"][];
     };
+    /** PrivacySettingsResponse */
+    PrivacySettingsResponse: {
+      /** Profile Public */
+      profile_public: boolean;
+      /** Read Receipts */
+      read_receipts: boolean;
+    };
+    /** PrivacySettingsUpdate */
+    PrivacySettingsUpdate: {
+      /** Profile Public */
+      profile_public?: boolean | null;
+      /** Read Receipts */
+      read_receipts?: boolean | null;
+    };
     /** PromoApplicationResponse */
     PromoApplicationResponse: {
       /** Id */
@@ -5502,6 +5591,23 @@ export interface components {
       /** Version */
       version: string;
     };
+    /** SessionItem */
+    SessionItem: {
+      /** Id */
+      id: string;
+      /** Created At */
+      created_at: string | null;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+    };
+    /** SessionListResponse */
+    SessionListResponse: {
+      /** Sessions */
+      sessions: components["schemas"]["SessionItem"][];
+    };
     /** StaffCreateRequest */
     StaffCreateRequest: {
       /** Phone Number */
@@ -5799,13 +5905,23 @@ export interface components {
     };
     /**
      * UserProfileUpdate
-     * @description Self-service user profile fields — display name only. Email and
-     * phone are sign-in/recovery identities and legal identity fields live
-     * on the account record; none of those change through this endpoint.
+     * @description Self-service profile fields. Email and phone are sign-in/recovery
+     * identities and legal identity fields live on the account record; none
+     * of those change through this endpoint.
      */
     UserProfileUpdate: {
       /** Display Name */
       display_name?: string | null;
+      /** Bio */
+      bio?: string | null;
+      /** Location */
+      location?: string | null;
+      /** Interests */
+      interests?: string[] | null;
+      /** Languages */
+      languages?: string[] | null;
+      /** Locale */
+      locale?: string | null;
     };
     /** UserResponse */
     UserResponse: {
@@ -5837,6 +5953,17 @@ export interface components {
       has_password?: boolean;
       /** Guest Preferences */
       guest_preferences?: string[] | null;
+      /** Bio */
+      bio?: string | null;
+      /**
+       * Languages
+       * @default []
+       */
+      languages?: string[];
+      /** Location */
+      location?: string | null;
+      /** Interests */
+      interests?: string[] | null;
       /** Avatar Url */
       avatar_url?: string | null;
       /**
@@ -5970,6 +6097,8 @@ export interface components {
       locale: string;
       /** Languages */
       languages?: string[];
+      /** Location */
+      location?: string | null;
       /** Is Active */
       is_active: boolean;
       /** Total Listings */
@@ -6040,6 +6169,8 @@ export interface components {
       joined_at: string | null;
       /** Languages */
       languages?: string[];
+      /** Location */
+      location?: string | null;
       /** Response Rate */
       response_rate?: number | null;
       /** Response Time Hours */
@@ -6474,6 +6605,99 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["UserExportResponse"];
+        };
+      };
+    };
+  };
+  /** Get Privacy Settings */
+  get_privacy_settings_api_v1_auth_me_privacy_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PrivacySettingsResponse"];
+        };
+      };
+    };
+  };
+  /** Update Privacy Settings */
+  update_privacy_settings_api_v1_auth_me_privacy_patch: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PrivacySettingsUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["PrivacySettingsResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Notification Preferences */
+  get_notification_preferences_api_v1_auth_me_notification_preferences_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["NotificationPreferencesResponse"];
+        };
+      };
+    };
+  };
+  /** Update Notification Preferences */
+  update_notification_preferences_api_v1_auth_me_notification_preferences_put: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NotificationPreferencesUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["NotificationPreferencesResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** List Sessions */
+  list_sessions_api_v1_auth_me_sessions_get: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["SessionListResponse"];
+        };
+      };
+    };
+  };
+  /**
+   * Logout All Sessions
+   * @description Revoke every refresh token — all devices, including this one.
+   */
+  logout_all_sessions_api_v1_auth_me_logout_all_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": {
+            [key: string]: number;
+          };
         };
       };
     };

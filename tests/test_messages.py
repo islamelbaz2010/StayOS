@@ -249,6 +249,9 @@ async def test_get_conversation_for_booking_guest(fake_session: AsyncMock, monke
     host = _make_user(user_id="host-1", role=UserRole.HOST)
     booking = _make_booking(guest.id, host.id)
     conversation = _make_conversation()
+    fake_session.execute = AsyncMock(
+        return_value=MagicMock(all=MagicMock(return_value=[]))
+    )
 
     monkeypatch.setattr(
         bookings_repository,
@@ -272,6 +275,9 @@ async def test_get_conversation_for_booking_host(fake_session: AsyncMock, monkey
     host = _make_user(user_id="host-1", role=UserRole.HOST)
     booking = _make_booking(guest.id, host.id)
     conversation = _make_conversation()
+    fake_session.execute = AsyncMock(
+        return_value=MagicMock(all=MagicMock(return_value=[]))
+    )
 
     monkeypatch.setattr(
         bookings_repository,
@@ -1570,6 +1576,9 @@ def test_render_quick_reply_unknown_template_raises() -> None:
 @pytest.mark.asyncio
 async def test_get_conversation_detail_success(fake_session: AsyncMock, monkeypatch) -> None:
     conversation = _make_conversation()
+    fake_session.execute = AsyncMock(
+        return_value=MagicMock(all=MagicMock(return_value=[]))
+    )
     message = _make_message()
     monkeypatch.setattr(
         messages_repository,

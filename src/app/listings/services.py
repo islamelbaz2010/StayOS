@@ -1018,6 +1018,19 @@ async def _calculate_host_response_metrics(
     return rate, med
 
 
+def _public_optional_profile_fields(host: User) -> dict[str, Any]:
+    """Optional host-profile details gated by the ``profile_public``
+    privacy flag (R1). Name, photo, verification and listings are the
+    host's marketplace identity and are not masked."""
+    if host.profile_public is False:
+        return {"bio": None, "languages": [], "location": None}
+    return {
+        "bio": host.bio,
+        "languages": list(host.languages or []),
+        "location": host.location,
+    }
+
+
 async def get_host_profile(
     session: AsyncSession, host_id: str
 ) -> HostProfileResponse:
@@ -1061,11 +1074,10 @@ async def get_host_profile(
     return HostProfileResponse(
         id=host.id,
         display_name=host.display_name,
-        bio=host.bio,
+        **_public_optional_profile_fields(host),
         avatar_url=auth_services.avatar_url(host),
         kyc_status=host.kyc_status,
         joined_at=str(host.created_at) if host.created_at else None,
-        languages=list(host.languages or []),
         response_rate=response_rate,
         response_time_hours=response_time_hours,
         listings=listings,

@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 export interface InAppNotificationItem {
   id: string;
   event_type: string;
+  category: string;
   subject: string | null;
   body: string;
   locale: string;

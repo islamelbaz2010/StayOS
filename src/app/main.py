@@ -144,7 +144,14 @@ def _validation_error_handler(request: Request[Any], exc: Exception) -> JSONResp
         "VALIDATION_ERROR",
         "Request validation failed",
         status.HTTP_422_UNPROCESSABLE_CONTENT,
-        {"errors": validation_exc.errors()},
+        # Drop ctx — it holds the raised exception object, which is not
+        # JSON-serializable and would turn a clean 422 into a 500.
+        {
+            "errors": [
+                {k: v for k, v in error.items() if k != "ctx"}
+                for error in validation_exc.errors()
+            ]
+        },
     )
 
 

@@ -4,10 +4,16 @@ from typing import Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import repository as auth_repository
 from app.listings import repository as listings_repository
 
 from . import providers, repository, templates
-from .constants import NotificationChannel, NotificationStatus
+from .constants import (
+    LOCKED_NOTIFICATION_CATEGORIES,
+    NotificationChannel,
+    NotificationStatus,
+    category_for_event,
+)
 from .models import Notification
 
 logger = logging.getLogger(__name__)
@@ -133,6 +139,27 @@ async def create_notifications_for_event(
     )
 
 
+async def _user_allows_notification(
+    session: AsyncSession, user_id: str | None, event_type: str
+) -> bool:
+    """Enforce per-category notification preferences (R1).
+
+    Locked categories always deliver. Toggleable categories read the
+    user's stored opt-out map; when the recipient cannot be resolved to a
+    user the contact-level delivery stands (e.g. a guest without an
+    account).
+    """
+    if category_for_event(event_type) in LOCKED_NOTIFICATION_CATEGORIES:
+        return True
+    if not user_id:
+        return True
+    recipient_user = await auth_repository.get_user_by_id(session, user_id)
+    if recipient_user is None:
+        return True
+    prefs = recipient_user.notification_preferences or {}
+    return bool(prefs.get(category_for_event(event_type), True))
+
+
 async def _create_notifications_for_contact(
     session: AsyncSession,
     event_id: str,
@@ -143,8 +170,11 @@ async def _create_notifications_for_contact(
     locale = contact.get("locale") or "ar"
     notifications: list[Notification] = []
 
+    user_id = _in_app_user_id(event_type, payload, contact)
+    if not await _user_allows_notification(session, user_id, event_type):
+        return notifications
+
     for channel in channels_for_event(event_type):
-        user_id = _in_app_user_id(event_type, payload, contact)
         if channel == NotificationChannel.IN_APP:
             if not user_id:
                 logger.warning("No in-app user for event %s", event_id)

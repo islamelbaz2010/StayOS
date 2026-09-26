@@ -6,6 +6,7 @@ from app.auth.models import User
 from app.database import get_session
 
 from . import repository
+from .constants import category_for_event
 from .schemas import (
     InAppNotificationItem,
     InAppNotificationList,
@@ -13,6 +14,19 @@ from .schemas import (
 )
 
 router = APIRouter(tags=["notifications"])
+
+
+def _to_item(notification) -> InAppNotificationItem:
+    return InAppNotificationItem(
+        id=notification.id,
+        event_type=notification.event_type,
+        category=category_for_event(notification.event_type),
+        subject=notification.subject,
+        body=notification.body,
+        locale=notification.locale,
+        read_at=notification.read_at,
+        created_at=notification.created_at,
+    )
 
 
 @router.get("/notifications", response_model=InAppNotificationList)
@@ -26,7 +40,7 @@ async def list_notifications(
     )
     unread = await repository.count_unread_in_app(session, str(user.id))
     return InAppNotificationList(
-        items=[InAppNotificationItem.model_validate(item) for item in items],
+        items=[_to_item(item) for item in items],
         unread_count=unread,
     )
 
@@ -44,7 +58,7 @@ async def mark_notification_read(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     if notification.read_at is None:
         notification = await repository.mark_read(session, notification)
-    return InAppNotificationItem.model_validate(notification)
+    return _to_item(notification)
 
 
 @router.post("/notifications/read-all", response_model=MarkAllReadResponse)

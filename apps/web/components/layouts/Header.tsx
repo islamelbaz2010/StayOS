@@ -168,7 +168,10 @@ export function Header() {
         count: notificationsUnread,
       },
       { href: `/${locale}/account-settings`, label: t("accountSettings") },
-      { href: `/${locale}/account-settings#language`, label: t("language") }
+      {
+        href: `/${locale}/account-settings/language`,
+        label: t("language"),
+      }
     );
     if (user?.role === "guest") {
       accountItems.push({ href: `/${locale}/payments`, label: t("payments") });

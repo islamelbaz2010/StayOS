@@ -50,6 +50,33 @@ def _participant_role_for_user(user: User, conversation: Conversation) -> str:
     raise AuthorizationError("Not a participant in this conversation")
 
 
+async def _participant_responses(
+    session: AsyncSession, conversation: Conversation, viewer: User
+) -> list[ParticipantResponse]:
+    """Serialize participants for ``viewer``.
+
+    Read receipts (R1 privacy): a participant whose ``read_receipts`` flag
+    is off exposes ``last_read_at=None`` to everyone else — the flag hides
+    the timestamp, not the viewer's own read state.
+    """
+    other_ids = [
+        p.user_id for p in conversation.participants if p.user_id != viewer.id
+    ]
+    hidden: set[str] = set()
+    if other_ids:
+        result = await session.execute(
+            select(User.id, User.read_receipts).where(User.id.in_(other_ids))
+        )
+        hidden = {row[0] for row in result.all() if row[1] is False}
+    items: list[ParticipantResponse] = []
+    for participant in conversation.participants:
+        item = ParticipantResponse.model_validate(participant)
+        if participant.user_id in hidden:
+            item.last_read_at = None
+        items.append(item)
+    return items
+
+
 async def _notify_message_recipients(
     session: AsyncSession,
     conversation: Conversation,
@@ -189,9 +216,7 @@ async def get_conversation_detail(
         unit_id=conversation.unit_id,
         type=conversation.type,
         status=conversation.status,
-        participants=[
-            ParticipantResponse.model_validate(p) for p in conversation.participants
-        ],
+        participants=await _participant_responses(session, conversation, user),
         created_at=conversation.created_at,
         updated_at=conversation.updated_at,
         messages=[MessageResponse.model_validate(m) for m in messages],
@@ -369,9 +394,7 @@ async def get_conversation_for_booking(
         unit_id=conversation.unit_id,
         type=conversation.type,
         status=conversation.status,
-        participants=[
-            ParticipantResponse.model_validate(p) for p in conversation.participants
-        ],
+        participants=await _participant_responses(session, conversation, user),
         created_at=conversation.created_at,
         updated_at=conversation.updated_at,
     )
@@ -668,9 +691,9 @@ async def admin_contact_participant(
         unit_id=conversation.unit_id,
         type=conversation.type,
         status=conversation.status,
-        participants=[
-            ParticipantResponse.model_validate(p) for p in conversation.participants
-        ],
+        participants=await _participant_responses(
+            session, conversation, staff_user
+        ),
         created_at=conversation.created_at,
         updated_at=conversation.updated_at,
     )

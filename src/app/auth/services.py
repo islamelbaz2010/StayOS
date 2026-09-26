@@ -833,7 +833,121 @@ async def update_account(
             "Legal name is locked after identity verification"
         )
 
+    # JSON contact/address maps: drop empty values so the stored document
+    # only carries fields the user actually filled.
+    for key in ("address", "mailing_address", "emergency_contact"):
+        if key in update_data and update_data[key] is not None:
+            cleaned = {
+                k: v.strip()
+                for k, v in dict(update_data[key]).items()
+                if isinstance(v, str) and v.strip()
+            }
+            update_data[key] = cleaned or None
+
     return await auth_repository.update_account(session, account, **update_data)
+
+
+def notification_preferences_state(user: User) -> dict[str, bool]:
+    """Effective per-category state. Locked (transactional/security)
+    categories are always True — only the toggleable categories read the
+    stored opt-out map."""
+    from app.notifications.constants import (
+        LOCKED_NOTIFICATION_CATEGORIES,
+        TOGGLEABLE_NOTIFICATION_CATEGORIES,
+    )
+
+    stored = dict(user.notification_preferences or {})
+    state = {
+        category: bool(stored.get(category, True))
+        for category in sorted(TOGGLEABLE_NOTIFICATION_CATEGORIES)
+    }
+    state.update(
+        {category: True for category in sorted(LOCKED_NOTIFICATION_CATEGORIES)}
+    )
+    return state
+
+
+async def update_notification_preferences(
+    session: AsyncSession,
+    user: User,
+    data: auth_schemas.NotificationPreferencesUpdate,
+) -> User:
+    """Persist opt-outs for toggleable categories. Attempts to disable a
+    locked category are rejected — they are contractual."""
+    from app.notifications.constants import (
+        LOCKED_NOTIFICATION_CATEGORIES,
+        TOGGLEABLE_NOTIFICATION_CATEGORIES,
+    )
+
+    known = LOCKED_NOTIFICATION_CATEGORIES | TOGGLEABLE_NOTIFICATION_CATEGORIES
+    unknown = set(data.preferences) - known
+    if unknown:
+        raise ValidationError(
+            f"Unknown notification categories: {sorted(unknown)}"
+        )
+    locked_disabled = [
+        c
+        for c in LOCKED_NOTIFICATION_CATEGORIES
+        if data.preferences.get(c) is False
+    ]
+    if locked_disabled:
+        raise ValidationError(
+            "These notifications are required and cannot be turned off: "
+            + ", ".join(sorted(locked_disabled))
+        )
+
+    stored = dict(user.notification_preferences or {})
+    for category, enabled in data.preferences.items():
+        if category in TOGGLEABLE_NOTIFICATION_CATEGORIES:
+            stored[category] = bool(enabled)
+    return await auth_repository.update_user(
+        session, user, notification_preferences=stored
+    )
+
+
+async def update_privacy_settings(
+    session: AsyncSession, user: User, data: auth_schemas.PrivacySettingsUpdate
+) -> User:
+    update_data = data.model_dump(exclude_unset=True)
+    if update_data:
+        user = await auth_repository.update_user(session, user, **update_data)
+    return user
+
+
+async def list_active_sessions(
+    session: AsyncSession, user: User
+) -> list[RefreshToken]:
+    """Non-revoked, non-expired refresh tokens — each row is one signed-in
+    session. No device fingerprint is stored, so sessions list timestamps
+    only."""
+    result = await session.execute(
+        select(RefreshToken)
+        .where(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked_at.is_(None),
+            RefreshToken.expires_at > datetime.now(UTC),
+        )
+        .order_by(RefreshToken.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+async def revoke_all_sessions(session: AsyncSession, user: User) -> int:
+    """Revoke every refresh token for the user — including the current
+    session. The caller is expected to sign the user out locally after."""
+    result = await session.execute(
+        select(RefreshToken).where(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked_at.is_(None),
+        )
+    )
+    tokens = list(result.scalars().all())
+    now = datetime.now(UTC)
+    for token in tokens:
+        token.revoked_at = now
+        session.add(token)
+    await session.flush()
+    return len(tokens)
 
 
 async def export_user_data(
@@ -996,10 +1110,17 @@ async def export_user_data(
         "profile": {
             "id": user.id,
             "display_name": user.display_name,
+            "bio": user.bio,
+            "languages": list(user.languages or []),
+            "location": user.location,
+            "interests": user.interests,
             "locale": user.locale,
             "role": user.role,
             "kyc_status": user.kyc_status,
             "is_active": user.is_active,
+            "profile_public": user.profile_public,
+            "read_receipts": user.read_receipts,
+            "notification_preferences": notification_preferences_state(user),
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "updated_at": user.updated_at.isoformat() if user.updated_at else None,
             # Phone/email/Firebase are omitted from the user-facing JSON to avoid

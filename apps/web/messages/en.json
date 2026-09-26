@@ -49,7 +49,10 @@
     "hostStandards": "Host responsibilities",
     "notifications": "Notifications",
     "accountSettings": "Account settings",
-    "language": "Languages & currency"
+    "language": "Languages & currency",
+    "privacy": "Privacy",
+    "terms": "Terms of service",
+    "activity": "Account activity"
   },
   "auth": {
     "signIn": "Sign in",
@@ -1407,7 +1410,43 @@
     "addressCity": "City",
     "addressGovernorate": "Governorate",
     "edit": "Edit",
-    "notSet": "Not set"
+    "notSet": "Not set",
+    "aboutYou": "About you",
+    "bio": "Introduction",
+    "bioHint": "Tell guests and hosts a little about yourself — where you're from, what you enjoy.",
+    "location": "Where you live",
+    "languages": "Languages you speak",
+    "interests": "Interests",
+    "add": "Add",
+    "aboutEmpty": "Add a short introduction, languages you speak, and interests so hosts and guests can get to know you.",
+    "contactLocked": "Email and phone are your sign-in details — contact support to change them.",
+    "mailingAddress": "Mailing address",
+    "postalCode": "Postal code",
+    "emergencyContact": "Emergency contact",
+    "emergencyName": "Contact name",
+    "emergencyPhone": "Contact phone",
+    "emergencyRelationship": "Relationship",
+    "taxId": "Tax ID",
+    "languageNames": {
+      "en": "English",
+      "ar": "Arabic",
+      "fr": "French",
+      "de": "German",
+      "es": "Spanish",
+      "tr": "Turkish"
+    },
+    "interestNames": {
+      "travel": "Travel",
+      "food": "Food",
+      "culture": "Culture",
+      "history": "History",
+      "nature": "Nature",
+      "beach": "Beach",
+      "photography": "Photography",
+      "music": "Music",
+      "sports": "Sports",
+      "art": "Art"
+    }
   },
   "hostNav": {
     "dashboard": "Dashboard",
@@ -2088,5 +2127,180 @@
     "loadError": "Could not load notifications.",
     "markRead": "Mark read",
     "markAllRead": "Mark all as read"
+  },
+  "settings": {
+    "title": "Account settings",
+    "subtitle": "Manage your personal information, security, privacy, notifications, and language.",
+    "open": "Open",
+    "legalName": "Legal name",
+    "verified": "Identity verification",
+    "notConfigured": "Not set",
+    "cards": {
+      "personal": {
+        "title": "Personal information",
+        "body": "Legal name, contact details, addresses, emergency contact, and identity verification."
+      },
+      "security": {
+        "title": "Login & security",
+        "body": "Change your password, review active sessions, and sign out everywhere."
+      },
+      "privacy": {
+        "title": "Privacy",
+        "body": "Control profile visibility and read receipts, download your data, or deactivate your account."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "body": "Choose which optional notifications you receive. Booking, payment, and security notices always arrive."
+      },
+      "activity": {
+        "title": "Account activity & policies",
+        "body": "Review account notices, policy updates, and your notification history by category."
+      },
+      "language": {
+        "title": "Language & currency",
+        "body": "Arabic or English interface. All prices are in Egyptian pounds (EGP)."
+      },
+      "payments": {
+        "title": "Payments & payouts",
+        "body": "Payment history and, for hosts, your declared payout destination."
+      },
+      "taxes": {
+        "title": "Taxes",
+        "body": "Record your tax ID for invoices and host earnings statements."
+      },
+      "hosting": {
+        "title": "Hosting",
+        "body": "Host dashboard, listings, calendar, earnings, and hosting tools."
+      },
+      "becomeHost": {
+        "title": "Become a host",
+        "body": "Verify your identity and list your property on StayOS."
+      }
+    },
+    "personalPage": {
+      "back": "Account settings",
+      "title": "Personal information",
+      "body": "This information is private to your account. Only your display name and profile appear to other users.",
+      "taxNote": "Your tax ID is used for invoices and earnings statements. Tax documents are not generated automatically."
+    },
+    "securityPage": {
+      "back": "Account settings",
+      "title": "Login & security",
+      "body": "Password, active sessions, and account access.",
+      "sessions": "Active sessions",
+      "sessionsBody": "Each entry is a signed-in session that can access your account.",
+      "session": "Signed-in session",
+      "created": "Started",
+      "expires": "expires",
+      "logoutAll": "Sign out of all devices",
+      "logoutAllHint": "You will need to sign in again on every device, including this one."
+    },
+    "privacyPage": {
+      "back": "Account settings",
+      "title": "Privacy",
+      "body": "Control what other users can see and manage your data.",
+      "controlsTitle": "Privacy controls",
+      "profilePublic": "Public profile",
+      "profilePublicBody": "When off, your public profile page is hidden and only shows your name to people you transact with.",
+      "readReceipts": "Read receipts",
+      "readReceiptsBody": "When off, people you message can't see when you've read their messages.",
+      "saveError": "Could not save. Try again.",
+      "dataTitle": "Your data",
+      "dataBody": "Download a copy of your StayOS account data, or permanently deactivate your account.",
+      "export": "Download my data",
+      "exporting": "Preparing…",
+      "deactivate": "Deactivate account",
+      "deactivateConfirm": "This permanently anonymizes your account and signs you out. Continue?",
+      "deactivateBody": "Deactivation anonymizes your profile and signs you out. Completed bookings and financial records are retained for legal and audit purposes. Accounts with active bookings or live listings cannot be deactivated."
+    },
+    "notifPage": {
+      "back": "Account settings",
+      "title": "Notifications",
+      "body": "Choose which optional updates reach you. Required notices can't be turned off.",
+      "requiredTitle": "Always on",
+      "requiredBody": "These are required for your bookings, payments, and account security — they can't be disabled.",
+      "alwaysOn": "Always on",
+      "optionalTitle": "Optional",
+      "optionalBody": "Turn optional notification types on or off.",
+      "saveError": "Could not save. Try again.",
+      "inboxLink": "View notification inbox",
+      "categories": {
+        "account_policies": {
+          "title": "Account activity & policies",
+          "body": "Sign-in alerts, identity verification decisions, and policy updates."
+        },
+        "reservations": {
+          "title": "Reservations & payments",
+          "body": "Booking confirmations, cancellations, payment results, and check-in updates."
+        },
+        "reminders": {
+          "title": "Reminders",
+          "body": "Payment and booking action reminders."
+        },
+        "messages": {
+          "title": "Messages",
+          "body": "New message notifications from hosts and guests."
+        },
+        "host_activity": {
+          "title": "Hosting activity",
+          "body": "Listing review decisions and hosting updates."
+        },
+        "offers": {
+          "title": "Offers & updates",
+          "body": "Product news, offers, and owner outreach."
+        }
+      }
+    },
+    "activityPage": {
+      "back": "Account settings",
+      "title": "Account activity & policies",
+      "body": "Your account notices and policy-related communication, organized by category.",
+      "all": "All",
+      "empty": "No activity yet.",
+      "loadError": "Couldn't load activity. Try again.",
+      "policiesTitle": "Policies & support",
+      "forGuests": "Guest guidelines",
+      "hostStandards": "Host standards",
+      "contactSupport": "Contact support",
+      "categories": {
+        "account_policies": "Account & policies",
+        "reservations": "Reservations",
+        "reminders": "Reminders",
+        "messages": "Messages",
+        "host_activity": "Hosting",
+        "offers": "Offers"
+      }
+    },
+    "languagePage": {
+      "back": "Account settings",
+      "title": "Language & currency",
+      "language": "Language",
+      "languageBody": "Your language is saved to your account and applies across devices.",
+      "currency": "Currency",
+      "currencyBody": "All StayOS prices and payments are in Egyptian pounds. Multi-currency pricing is not available.",
+      "egp": "EGP — Egyptian pound",
+      "saveError": "Could not save. Try again."
+    },
+    "paymentsPage": {
+      "back": "Account settings",
+      "title": "Payments & payouts",
+      "history": "Payment history",
+      "historyBody": "View all your payments. StayOS never stores card details — card checkout is hosted by the payment provider.",
+      "viewPayments": "View payments",
+      "payouts": "Payout destination",
+      "payoutsBody": "Where host earnings are sent. Account details are shown masked.",
+      "payoutMethod": "Method",
+      "payoutBank": "Bank",
+      "payoutAccount": "Account number",
+      "payoutWallet": "Wallet number",
+      "payoutHolder": "Account holder",
+      "noPayout": "No payout destination configured yet.",
+      "editPayouts": "Update payout details",
+      "taxes": "Taxes",
+      "taxesBody": "Your tax ID appears on invoices and earnings statements.",
+      "taxId": "Tax ID",
+      "notConfigured": "Not set",
+      "editTax": "Update in personal information"
+    }
   }
 }

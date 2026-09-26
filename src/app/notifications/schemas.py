@@ -26,6 +26,7 @@ class InAppNotificationItem(BaseModel):
 
     id: str
     event_type: str
+    category: str
     subject: str | None
     body: str
     locale: str

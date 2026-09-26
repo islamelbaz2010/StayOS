@@ -19,6 +19,22 @@ from app.shared.exceptions import StayOSError, to_http_exception
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _privacy_response(user: User) -> auth_schemas.PrivacySettingsResponse:
+    # None-safe: unsaved/legacy in-memory rows default to the public
+    # posture — only an explicit False is treated as opted out.
+    return auth_schemas.PrivacySettingsResponse(
+        profile_public=user.profile_public is not False,
+        read_receipts=user.read_receipts is not False,
+    )
+
+
+def _user_response(user: User) -> auth_schemas.UserResponse:
+    response = auth_schemas.UserResponse.model_validate(user)
+    response.has_password = bool(user.password_hash)
+    response.avatar_url = auth_services.avatar_url(user)
+    return response
+
+
 @router.get("/otp/challenge", response_model=auth_schemas.OtpChallengeResponse)
 async def get_otp_challenge(
     _rate_limit: None = Depends(otp_challenge_rate_limit),
@@ -169,9 +185,7 @@ async def get_me(
     user: User = Depends(auth_dependencies.require_active_user),
     session: AsyncSession = Depends(get_session),
 ) -> auth_schemas.UserResponse:
-    response = auth_schemas.UserResponse.model_validate(user)
-    response.has_password = bool(user.password_hash)
-    response.avatar_url = auth_services.avatar_url(user)
+    response = _user_response(user)
     from app.auth.constants import UserRole
 
     if user.role == UserRole.STAFF:
@@ -213,10 +227,7 @@ async def confirm_avatar(
         await auth_services.confirm_avatar(session, user, request)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc
-    response = auth_schemas.UserResponse.model_validate(user)
-    response.has_password = bool(user.password_hash)
-    response.avatar_url = auth_services.avatar_url(user)
-    return response
+    return _user_response(user)
 
 
 @router.get("/me/account", response_model=auth_schemas.AccountResponse)
@@ -242,9 +253,7 @@ async def update_preferences(
     session.add(user)
     await session.flush()
     await session.refresh(user)
-    response = auth_schemas.UserResponse.model_validate(user)
-    response.has_password = bool(user.password_hash)
-    return response
+    return _user_response(user)
 
 
 @router.get("/me/export", response_model=auth_schemas.UserExportResponse)
@@ -281,7 +290,88 @@ async def update_me(
     if update_data:
         user = await auth_repository.update_user(session, user, **update_data)
         await session.commit()
-    return auth_schemas.UserResponse.model_validate(user)
+    return _user_response(user)
+
+
+@router.get("/me/privacy", response_model=auth_schemas.PrivacySettingsResponse)
+async def get_privacy_settings(
+    user: User = Depends(auth_dependencies.require_active_user),
+) -> auth_schemas.PrivacySettingsResponse:
+    return _privacy_response(user)
+
+
+@router.patch("/me/privacy", response_model=auth_schemas.PrivacySettingsResponse)
+async def update_privacy_settings(
+    data: auth_schemas.PrivacySettingsUpdate,
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.PrivacySettingsResponse:
+    try:
+        updated = await auth_services.update_privacy_settings(session, user, data)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    return _privacy_response(updated)
+
+
+@router.get(
+    "/me/notification-preferences",
+    response_model=auth_schemas.NotificationPreferencesResponse,
+)
+async def get_notification_preferences(
+    user: User = Depends(auth_dependencies.require_active_user),
+) -> auth_schemas.NotificationPreferencesResponse:
+    return auth_schemas.NotificationPreferencesResponse(
+        preferences=auth_services.notification_preferences_state(user)
+    )
+
+
+@router.put(
+    "/me/notification-preferences",
+    response_model=auth_schemas.NotificationPreferencesResponse,
+)
+async def update_notification_preferences(
+    data: auth_schemas.NotificationPreferencesUpdate,
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.NotificationPreferencesResponse:
+    try:
+        updated = await auth_services.update_notification_preferences(
+            session, user, data
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    return auth_schemas.NotificationPreferencesResponse(
+        preferences=auth_services.notification_preferences_state(updated)
+    )
+
+
+@router.get("/me/sessions", response_model=auth_schemas.SessionListResponse)
+async def list_sessions(
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.SessionListResponse:
+    tokens = await auth_services.list_active_sessions(session, user)
+    return auth_schemas.SessionListResponse(
+        sessions=[
+            auth_schemas.SessionItem(
+                id=str(token.id),
+                created_at=token.created_at,
+                expires_at=token.expires_at,
+            )
+            for token in tokens
+        ]
+    )
+
+
+@router.post("/me/logout-all")
+async def logout_all_sessions(
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, int]:
+    """Revoke every refresh token — all devices, including this one."""
+    revoked = await auth_services.revoke_all_sessions(session, user)
+    await session.commit()
+    return {"revoked": revoked}
 
 
 @router.patch("/me/account", response_model=auth_schemas.AccountResponse)

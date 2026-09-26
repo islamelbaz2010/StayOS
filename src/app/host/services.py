@@ -1205,6 +1205,7 @@ async def get_host_profile(
         kyc_status=user.kyc_status,
         locale=user.locale,
         languages=list(user.languages or []),
+        location=user.location,
         is_active=user.is_active,
         total_listings=total_listings,
         listed_listings=listed_listings,
@@ -1240,6 +1241,9 @@ async def update_host_profile(
         user.locale = request.locale
     if request.languages is not None:
         user.languages = request.languages
+    if request.location is not None:
+        location = request.location.strip()
+        user.location = location or None
 
     session.add(user)
     await session.flush()

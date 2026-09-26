@@ -54,6 +54,27 @@ class User(UUIDMixin, TimestampMixin, Base):
     guest_preferences: Mapped[list[str] | None] = mapped_column(
         JSON, nullable=True
     )
+    # Optional profile fields (R1). ``location`` and ``bio`` surface on the
+    # public host profile when ``profile_public`` is True; ``interests``
+    # stays account-private.
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    interests: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    # Per-category opt-outs for optional notification categories
+    # (messages / host activity / offers). Locked transactional categories
+    # are never stored here — they cannot be disabled.
+    notification_preferences: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    # When False, optional details (bio/languages/location) are hidden on
+    # the public host profile; name/photo/verification remain for trust.
+    profile_public: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true", nullable=False
+    )
+    # When False, counterparties cannot see this user's read timestamp in
+    # messaging (the user still sees their own).
+    read_receipts: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true", nullable=False
+    )
 
     account: Mapped["Account | None"] = relationship(
         "Account", back_populates="user", uselist=False
@@ -92,6 +113,13 @@ class Account(UUIDMixin, TimestampMixin, Base):
     )
     payout_holder_name: Mapped[str | None] = mapped_column(
         String(255), nullable=True
+    )
+    # Distinct from ``address`` (residential) — postal/correspondence use.
+    mailing_address: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    emergency_contact: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
     )
 
     user: Mapped["User"] = relationship("User", back_populates="account")

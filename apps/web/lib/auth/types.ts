@@ -12,6 +12,10 @@ export interface User {
   is_active: boolean;
   staff_permissions?: string[];
   has_password?: boolean;
+  bio?: string | null;
+  languages?: string[];
+  location?: string | null;
+  interests?: string[] | null;
   avatar_url?: string | null;
   created_at: string;
   updated_at: string;

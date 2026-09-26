@@ -1,5 +1,5 @@
 import os
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from cryptography.hazmat.primitives import serialization
@@ -84,5 +84,14 @@ def client(mock_redis_client) -> TestClient:
 
 @pytest.fixture
 def fake_session() -> AsyncMock:
-    """Return a generic async SQLAlchemy session mock."""
-    return AsyncMock()
+    """Return a generic async SQLAlchemy session mock.
+
+    ``execute`` defaults to an empty result so service code that reads
+    participants/privacy state iterates cleanly; tests override it when
+    they assert on a specific query.
+    """
+    session = AsyncMock()
+    session.execute = AsyncMock(
+        return_value=MagicMock(all=MagicMock(return_value=[]))
+    )
+    return session

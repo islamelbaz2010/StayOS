@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
-from app.auth.constants import KycStatus, UserRole
+from app.auth.constants import KycStatus, SpokenLanguage, UserRole
 
 
 class UserCreate(BaseModel):
@@ -34,7 +34,18 @@ class UserResponse(BaseModel):
     # StayOS Local Fit (FD-24): the guest's stay preferences, a list of
     # supported rule keys. Empty/null means matching is not shown.
     guest_preferences: list[str] | None = None
+    bio: str | None = None
+    languages: list[str] = []
+    location: str | None = None
+    interests: list[str] | None = None
     avatar_url: str | None = None
+
+    @field_validator("languages", mode="before")
+    @classmethod
+    def _languages_not_none(cls, v: Any) -> Any:
+        # ORM column defaults apply on flush — an unsaved/refreshed
+        # instance can expose None here.
+        return v if v is not None else []
     created_at: datetime
     updated_at: datetime
 
@@ -53,12 +64,33 @@ class AvatarConfirmRequest(BaseModel):
     s3_key: str = Field(..., min_length=1, max_length=512)
 
 
+class AddressFields(BaseModel):
+    street: str | None = Field(default=None, max_length=255)
+    city: str | None = Field(default=None, max_length=100)
+    governorate: str | None = Field(default=None, max_length=100)
+    postal_code: str | None = Field(default=None, max_length=20)
+
+    def as_map(self) -> dict[str, Any] | None:
+        return self.model_dump(exclude_none=True) or None
+
+
+class EmergencyContactFields(BaseModel):
+    name: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=30)
+    relationship: str | None = Field(default=None, max_length=100)
+
+    def as_map(self) -> dict[str, Any] | None:
+        return self.model_dump(exclude_none=True) or None
+
+
 class AccountUpdate(BaseModel):
     legal_name: str | None = None
     national_id: str | None = None
     date_of_birth: date | None = None
     tax_id: str | None = None
     address: dict[str, Any] | None = None
+    mailing_address: AddressFields | None = None
+    emergency_contact: EmergencyContactFields | None = None
     # Host payout preferences (FD-26) — collection only. Payout execution
     # stays gated on provider/legal prerequisites; these fields are the
     # host's declared destination, not a live disbursement mandate.
@@ -80,15 +112,74 @@ class AccountUpdate(BaseModel):
 
 
 class UserProfileUpdate(BaseModel):
-    """Self-service user profile fields — display name only. Email and
-    phone are sign-in/recovery identities and legal identity fields live
-    on the account record; none of those change through this endpoint."""
+    """Self-service profile fields. Email and phone are sign-in/recovery
+    identities and legal identity fields live on the account record; none
+    of those change through this endpoint."""
 
     display_name: str | None = Field(default=None, max_length=255)
+    bio: str | None = Field(default=None, max_length=2000)
+    location: str | None = Field(default=None, max_length=255)
+    interests: list[str] | None = Field(default=None, max_length=20)
+    languages: list[str] | None = None
+    locale: str | None = Field(default=None, pattern=r"^(en|ar)$")
+
+    @field_validator("languages")
+    @classmethod
+    def _valid_languages(cls, v: list[str] | None) -> list[str] | None:
+        """Same DEC-019 vocabulary as the host profile editor."""
+        if v is None:
+            return v
+        allowed = {str(lang) for lang in SpokenLanguage}
+        normalized = [lang.strip().lower() for lang in v if lang.strip()]
+        unknown = [lang for lang in normalized if lang not in allowed]
+        if unknown:
+            raise ValueError(f"unsupported languages: {unknown}")
+        return list(dict.fromkeys(normalized))
+
+    @field_validator("interests")
+    @classmethod
+    def _valid_interests(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return v
+        cleaned = [item.strip() for item in v if isinstance(item, str) and item.strip()]
+        if any(len(item) > 80 for item in cleaned):
+            raise ValueError("interests must be 80 characters or fewer")
+        return cleaned or None
 
 
 class GuestPreferencesUpdate(BaseModel):
     guest_preferences: list[str] = Field(default_factory=list)
+
+
+class PrivacySettingsResponse(BaseModel):
+    profile_public: bool
+    read_receipts: bool
+
+
+class PrivacySettingsUpdate(BaseModel):
+    profile_public: bool | None = None
+    read_receipts: bool | None = None
+
+
+class NotificationPreferencesResponse(BaseModel):
+    """Effective per-category state — every category is always present so
+    the UI can render deterministically; locked categories are always True."""
+
+    preferences: dict[str, bool]
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    preferences: dict[str, bool] = Field(default_factory=dict)
+
+
+class SessionItem(BaseModel):
+    id: str
+    created_at: datetime | None
+    expires_at: datetime
+
+
+class SessionListResponse(BaseModel):
+    sessions: list[SessionItem]
 
 
 def _mask_payout(value: str | None) -> str | None:
@@ -109,6 +200,8 @@ class AccountResponse(BaseModel):
     date_of_birth: date | None
     tax_id: str | None
     address: dict[str, Any] | None
+    mailing_address: dict[str, Any] | None = None
+    emergency_contact: dict[str, Any] | None = None
     payout_method: str | None = None
     payout_bank_name: str | None = None
     payout_account_number: str | None = None

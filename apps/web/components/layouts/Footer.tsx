@@ -149,6 +149,22 @@ export function Footer() {
                   {t("helpCenter")}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href={`/${locale}/p/privacy`}
+                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                >
+                  {t("privacy")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={`/${locale}/p/terms`}
+                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                >
+                  {t("terms")}
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

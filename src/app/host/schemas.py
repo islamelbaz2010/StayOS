@@ -199,6 +199,7 @@ class HostProfileResponse(BaseModel):
     kyc_status: str
     locale: str
     languages: list[str] = Field(default_factory=list)
+    location: str | None = None
     is_active: bool
     total_listings: int
     listed_listings: int
@@ -214,6 +215,7 @@ class HostProfileUpdate(BaseModel):
     )
     locale: str | None = Field(None, max_length=10)
     languages: list[str] | None = None
+    location: str | None = Field(None, max_length=255)
 
     @field_validator("languages")
     @classmethod

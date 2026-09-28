@@ -90,6 +90,11 @@ export default function AdminKycPage() {
                         <p className="text-sm text-neutral-600">
                           {t("documentType")}: {doc.document_type}
                         </p>
+                        {doc.provider && (
+                          <p className="text-sm text-neutral-600">
+                            {t("provider")}: {doc.provider} · {doc.status}
+                          </p>
+                        )}
                         {doc.legal_name && (
                           <p className="text-sm text-neutral-600">
                             {t("legalName")}: {doc.legal_name}

@@ -3,7 +3,7 @@
 # third-party, ``app`` sorts before ``sqlalchemy``) and CI Ruff (0.16.1:
 # treats ``app`` as first-party). No single ordering satisfies both, so
 # I001 is suppressed for this file only.
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -771,12 +771,55 @@ async def check_in_booking(session: AsyncSession, user: User, booking_id: str) -
     return _to_response(updated)
 
 
+async def _mark_booking_completed(
+    session: AsyncSession, booking: Booking, *, completed_by: str
+) -> Booking:
+    """System completion: CONFIRMED → COMPLETED once the stay has ended.
+
+    Finances live in the escrow lifecycle — the payment created an escrow
+    at verification and check-in scheduled the 24h hold release — so
+    completion is a lifecycle/status transition only; it must never credit
+    a wallet directly. ``completed_by`` is recorded on the audit event as
+    either an actor user ID or the ``system`` marker for the sweep task.
+    """
+    _assert_status_transition(BookingStatus(booking.status), BookingStatus.COMPLETED)
+
+    fields: dict[str, object] = {"status": str(BookingStatus.COMPLETED)}
+    if booking.checked_out_at is None:
+        # Stay ended per dates but neither party checked out explicitly —
+        # anchor the record to the scheduled checkout day so downstream
+        # aggregates (reviews, host stats) keep a consistent reference.
+        hour, minute = settings.DEFAULT_CHECK_OUT_TIME.split(":")[:2]
+        fields["checked_out_at"] = datetime.combine(
+            booking.check_out, time(int(hour), int(minute)), UTC
+        )
+
+    updated = await bookings_repository.update_booking(session, booking, **fields)
+
+    await write_event(
+        session,
+        aggregate_type="Booking",
+        aggregate_id=UUID(booking.id),
+        event_type="booking.completed",
+        payload={
+            "reservation_id": booking.id,
+            "booking_id": booking.id,
+            "unit_id": booking.unit_id,
+            "host_id": booking.unit.host_id if booking.unit is not None else None,
+            "completed_by": completed_by,
+            "checked_out_at": (updated.checked_out_at.isoformat() if updated.checked_out_at else None),
+        },
+    )
+
+    return updated
+
+
 async def check_out_booking(session: AsyncSession, user: User, booking_id: str) -> BookingResponse:
     """Self-reported (guest or host) checkout.
 
-    Also does not touch `status` or trigger the finance ledger — that
-    remains the admin-only `complete_booking` transition. This only
-    unlocks review eligibility and the checked-out Trip UI state.
+    Completes the booking lifecycle immediately — routine checkouts never
+    require admin approval. This only unlocks review eligibility and the
+    checked-out Trip UI state; finances are handled by the escrow lifecycle.
     """
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
     await _cancellation_actor(session, booking, user)
@@ -806,7 +849,20 @@ async def check_out_booking(session: AsyncSession, user: User, booking_id: str) 
         },
     )
 
+    updated = await _mark_booking_completed(session, updated, completed_by=user.id)
+
     return _to_response(updated)
+
+
+async def complete_booking_system(session: AsyncSession, booking_id: str) -> Booking:
+    """System-initiated completion for stays that already ended.
+
+    Used by the periodic sweep: a routine checkout must not wait on admin
+    approval, so once the stay is over (explicit checkout recorded, or the
+    checkout day has fully passed) the booking transitions to COMPLETED.
+    """
+    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
+    return await _mark_booking_completed(session, booking, completed_by="system")
 
 
 async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> StayInfoResponse:
@@ -860,13 +916,13 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
                 # Airbnb only allows reviews within 14 days after checkout.
                 reference = booking.checked_out_at or booking.check_out
                 if reference is not None:
-                    from datetime import datetime, timedelta, timezone
+                    from datetime import datetime, timedelta
                     if isinstance(reference, datetime):
-                        ref_dt = reference if reference.tzinfo else reference.replace(tzinfo=timezone.utc)
+                        ref_dt = reference if reference.tzinfo else reference.replace(tzinfo=UTC)
                     else:
-                        ref_dt = datetime.combine(reference, datetime.min.time(), tzinfo=timezone.utc)
+                        ref_dt = datetime.combine(reference, datetime.min.time(), tzinfo=UTC)
                     deadline = ref_dt + timedelta(days=REVIEW_ELIGIBILITY_WINDOW_DAYS)
-                    now_utc = datetime.now(timezone.utc)
+                    now_utc = datetime.now(UTC)
                     review_eligible = now_utc <= deadline
                     review_window_expired = now_utc > deadline
                 else:

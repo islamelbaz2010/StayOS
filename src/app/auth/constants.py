@@ -67,6 +67,11 @@ STAFF_ROLE_GROUPS: dict[str, dict[str, object]] = {
 class KycStatus(StrEnum):
     UNVERIFIED = "unverified"
     PENDING = "pending"
+    # Provider-driven states (automated verification mode):
+    #   retry_required — recoverable rejection; the user may retry
+    #   manual_review  — provider escalated to human review
+    RETRY_REQUIRED = "retry_required"
+    MANUAL_REVIEW = "manual_review"
     VERIFIED = "verified"
     REJECTED = "rejected"
 
@@ -75,6 +80,9 @@ class KycDocumentType(StrEnum):
     PASSPORT = "passport"
     NATIONAL_ID = "national_id"
     DRIVING_LICENSE = "driving_license"
+    # Provider-managed verification: the document type is selected and
+    # validated by the identity-verification provider per country.
+    PROVIDER_MANAGED = "provider_managed"
 
 
 class SpokenLanguage(StrEnum):

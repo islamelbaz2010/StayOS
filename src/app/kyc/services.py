@@ -7,11 +7,18 @@ import boto3
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import repository as auth_repository
+from app.auth.constants import KycStatus
 from app.auth.models import User
 from app.config import settings
 from app.kyc import repository as kyc_repository
 from app.kyc import schemas as kyc_schemas
 from app.kyc.models import KycDocument
+from app.kyc.providers import (
+    ProviderEvent,
+    ProviderOutcome,
+    ProviderUnavailableError,
+    get_verification_provider,
+)
 from app.kyc.schemas import KycInitiateRequest, KycInitiateResponse, KycUploadUrls
 from app.shared.exceptions import (
     NotFoundError,
@@ -155,7 +162,10 @@ async def get_kyc_document_image_downloads(
         raise NotFoundError("KYC document not found")
 
     def url(key: str | None) -> str | None:
-        if not key:
+        # Presigned GETs generate regardless of object existence — only
+        # offer links for objects that were actually uploaded (initiate
+        # records the optional back-side key before any PUT happens).
+        if not key or not _object_exists(settings.S3_KYC_BUCKET, key):
             return None
         return _generate_presigned_get_url(settings.S3_KYC_BUCKET, key)
 
@@ -164,6 +174,19 @@ async def get_kyc_document_image_downloads(
         back_url=url(document.back_image_key),
         selfie_url=url(document.selfie_image_key),
     )
+
+
+def _object_exists(bucket: str, key: str) -> bool:
+    """HEAD the object to confirm the browser-side PUT actually landed."""
+    if settings.ENVIRONMENT == "test":
+        # No storage in unit tests; existence checks are covered by the
+        # upload-path integration tests.
+        return True
+    try:
+        _s3_client().head_object(Bucket=bucket, Key=key)
+        return True
+    except Exception:
+        return False
 
 
 def _queue_kyc_processing(document_id: str) -> None:
@@ -181,6 +204,18 @@ async def submit_kyc_document(
     document = await kyc_repository.get_kyc_document_by_id(session, document_id)
     if document is None or document.user_id != user.id:
         raise ValidationError("KYC document not found")
+
+    # A key recorded at initiate is only a claim — the browser may never
+    # have PUT the object (e.g. the optional back side). Verify each
+    # claimed object and clear keys that were never uploaded so admin
+    # review and downstream consumers see exactly what was submitted.
+    bucket = settings.S3_KYC_BUCKET
+    for field_name in ("front_image_key", "back_image_key", "selfie_image_key"):
+        key = getattr(document, field_name)
+        if key and not _object_exists(bucket, key):
+            await kyc_repository.update_kyc_document(
+                session, document, **{field_name: None}
+            )
 
     if not document.front_image_key or not document.selfie_image_key:
         raise ValidationError("Missing required image uploads")
@@ -376,3 +411,165 @@ async def manual_reject_kyc(
         await auth_repository.update_user(session, user, kyc_status="rejected")
 
     return updated
+
+
+# ---------------------------------------------------------------------------
+# Automated provider verification (supersedes FD-02 manual-only alpha)
+# ---------------------------------------------------------------------------
+
+_PROVIDER_DOC_STATUSES_OPEN = ("pending", "retry_required", "manual_review")
+
+
+def verification_mode() -> str:
+    """Effective mode: ``automated`` degrades to the manual path when the
+    provider is not configured unless strict ``automated`` was requested."""
+    return settings.KYC_VERIFICATION_MODE
+
+
+def automated_verification_available() -> bool:
+    return get_verification_provider() is not None
+
+
+async def create_verification_session(
+    session: AsyncSession, user: User
+) -> kyc_schemas.KycVerificationSessionResponse:
+    """Start (or resume) an automated verification session for the client
+    SDK. Falls back to the manual upload flow per KYC_VERIFICATION_MODE —
+    a provider outage must never block onboarding or silently pass/fail.
+    """
+    mode = verification_mode()
+    if mode == "manual":
+        return kyc_schemas.KycVerificationSessionResponse(mode="manual")
+
+    provider = get_verification_provider()
+    if provider is None:
+        if mode == "automated_fallback":
+            return kyc_schemas.KycVerificationSessionResponse(mode="manual")
+        raise ServiceUnavailableError(
+            "Automated identity verification is not configured."
+        )
+
+    # Resume an in-flight provider verification so retries continue the
+    # same applicant attempt chain instead of orphaning sessions.
+    documents = await kyc_repository.get_kyc_documents_by_user_id(session, user.id)
+    document = next(
+        (
+            d
+            for d in documents
+            if d.provider == provider.name and d.status in _PROVIDER_DOC_STATUSES_OPEN
+        ),
+        None,
+    )
+
+    try:
+        vs = await provider.create_session(
+            user.id,
+            applicant_id=document.provider_applicant_id if document else None,
+        )
+    except ProviderUnavailableError:
+        if mode == "automated_fallback":
+            return kyc_schemas.KycVerificationSessionResponse(mode="manual")
+        raise ServiceUnavailableError(
+            "Automated identity verification is temporarily unavailable."
+        )
+
+    if document is None:
+        account = await auth_repository.get_account_by_user_id(session, user.id)
+        document = await kyc_repository.create_kyc_document(
+            session,
+            user_id=user.id,
+            document_type="provider_managed",
+            account_id=account.id if account else None,
+            provider=provider.name,
+            provider_applicant_id=vs.applicant_id,
+            status="pending",
+        )
+    if user.kyc_status == str(KycStatus.UNVERIFIED):
+        await auth_repository.update_user(session, user, kyc_status="pending")
+
+    return kyc_schemas.KycVerificationSessionResponse(
+        mode=provider.name,
+        provider=provider.name,
+        document_id=document.id,
+        access_token=vs.access_token,
+        expires_at=vs.expires_at,
+    )
+
+
+_TERMINAL_STATUSES = {"verified", "rejected"}
+
+_OUTCOME_TO_STATUS = {
+    ProviderOutcome.VERIFIED: "verified",
+    ProviderOutcome.RETRY_REQUIRED: "retry_required",
+    ProviderOutcome.MANUAL_REVIEW: "manual_review",
+    ProviderOutcome.REJECTED: "rejected",
+    ProviderOutcome.IN_PROGRESS: "pending",
+}
+
+
+async def apply_provider_event(
+    session: AsyncSession, event: ProviderEvent
+) -> str:
+    """Server-authoritative state transition from a provider webhook.
+
+    Idempotent: replays that would re-apply the current status return
+    ``"already processed"``; a verified record never downgrades; a rejected
+    record may only be corrected by a subsequent VERIFIED outcome (provider
+    re-review). The provider payload is retained for audit but personal
+    data and fraud labels are never logged or returned to the user.
+    """
+    from app.kyc import repository as kyc_repository
+
+    document = await kyc_repository.get_kyc_document_by_applicant(
+        session, event.applicant_id
+    )
+    if document is None:
+        return "not found"
+
+    new_status = _OUTCOME_TO_STATUS[event.outcome]
+    if document.status == new_status:
+        return "already processed"
+    if document.status == "verified":
+        return "ignored"
+    if document.status == "rejected" and event.outcome is not ProviderOutcome.VERIFIED:
+        return "ignored"
+
+    now = datetime.now(UTC)
+    fields: dict[str, object] = {"status": new_status}
+    if event.outcome is ProviderOutcome.VERIFIED:
+        fields["verified_at"] = now
+        provider = get_verification_provider()
+        if provider is not None and provider.name == event.provider:
+            try:
+                legal_name = await provider.get_applicant_legal_name(
+                    event.applicant_id
+                )
+            except Exception:
+                legal_name = None
+            if legal_name:
+                fields["legal_name"] = legal_name
+    elif event.outcome is ProviderOutcome.REJECTED:
+        fields["rejected_at"] = now
+        fields["rejection_reason"] = event.reason or "Verification rejected"
+
+    payload = dict(document.verification_payload or {})
+    payload["last_provider_event"] = event.event_type
+    fields["verification_payload"] = payload
+
+    await kyc_repository.update_kyc_document(session, document, **fields)
+    owner = await auth_repository.get_user_by_id(session, document.user_id)
+    if owner is not None:
+        await auth_repository.update_user(
+            session, owner, kyc_status=new_status
+        )
+
+    if event.outcome is ProviderOutcome.VERIFIED and document.legal_name:
+        account = await auth_repository.get_account_by_user_id(
+            session, document.user_id
+        )
+        if account is not None:
+            await auth_repository.update_account(
+                session, account, legal_name=document.legal_name
+            )
+
+    return "processed"

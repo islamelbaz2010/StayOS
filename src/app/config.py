@@ -136,6 +136,26 @@ class Settings(BaseSettings):
     )
     S3_PRESIGNED_GET_TTL_SECONDS: int = Field(default=86400, ge=300, le=7776000)
 
+    # Identity verification (supersedes FD-02 manual-only alpha).
+    #   manual              — upload + admin review only (default; no provider creds needed)
+    #   automated           — provider-driven capture/decision; fails if unconfigured
+    #   automated_fallback  — provider-driven when available, manual upload otherwise
+    KYC_VERIFICATION_MODE: str = Field(
+        default="manual",
+        description="Identity verification mode: manual | automated | automated_fallback",
+    )
+    SUMSUB_BASE_URL: str = Field(default="https://api.sumsub.com")
+    SUMSUB_APP_TOKEN: str = Field(default="", description="Sumsub app token")
+    SUMSUB_SECRET_KEY: str = Field(default="", description="Sumsub API secret for request signing")
+    SUMSUB_LEVEL_NAME: str = Field(
+        default="basic-kyc-level",
+        description="Sumsub verification level configured in the provider dashboard",
+    )
+    SUMSUB_WEBHOOK_SECRET: str = Field(
+        default="",
+        description="Secret key configured on the Sumsub webhook receiver for digest verification",
+    )
+
     SENTRY_DSN: str = Field(default="", description="Sentry DSN")
 
     SES_FROM_EMAIL: str = Field(

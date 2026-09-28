@@ -1310,7 +1310,13 @@
     "pendingTitle": "Your identity is under review",
     "pendingMessage": "Your documents will be reviewed shortly. You will be notified of the result.",
     "rejectedTitle": "Documents rejected",
-    "rejectedMessage": "We could not verify your identity. Please re-upload your documents."
+    "rejectedMessage": "We could not verify your identity. Please re-upload your documents.",
+    "autoVerifyTitle": "Verify your identity",
+    "autoVerifyHint": "Follow the on-screen steps to scan your document and take a quick selfie. It usually takes under a minute.",
+    "retry": "Try again",
+    "retryTitle": "Verification could not be completed",
+    "retryMessage": "We could not confirm your identity from the last attempt. Please try again with a clearer photo in good lighting.",
+    "manualReviewMessage": "Your verification needs an additional review. We will notify you once it is complete."
   },
   "adminImport": {
     "title": "Bulk Import Listings",
@@ -1367,7 +1373,8 @@
     "viewImages": "View images",
     "viewFront": "Front",
     "viewBack": "Back",
-    "viewSelfie": "Selfie"
+    "viewSelfie": "Selfie",
+    "provider": "Provider"
   },
   "profile": {
     "title": "Profile",
@@ -1391,7 +1398,9 @@
       "unverified": "Unverified",
       "pending": "Under review",
       "verified": "Verified",
-      "rejected": "Rejected"
+      "rejected": "Rejected",
+      "retry_required": "Action needed",
+      "manual_review": "Under review"
     },
     "permissions": "Permissions",
     "accountStatus": "Account status",

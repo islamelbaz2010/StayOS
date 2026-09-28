@@ -31,6 +31,13 @@ class KycDocument(UUIDMixin, TimestampMixin, Base):
     verification_payload: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True
     )
+    # Automated verification provider linkage (supersedes FD-02
+    # manual-only): which provider ran this verification and its applicant
+    # reference for webhook reconciliation.
+    provider: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    provider_applicant_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)

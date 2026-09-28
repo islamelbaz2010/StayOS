@@ -67,6 +67,10 @@ celery_app.conf.update(
             "task": "app.bookings.tasks.expire_unanswered_bookings",
             "schedule": 900.0,
         },
+        "complete-past-stays-hourly": {
+            "task": "app.bookings.tasks.complete_past_stays",
+            "schedule": 3600.0,
+        },
         "send-scheduled-reservation-messages-daily-0800-utc": {
             "task": "app.messages.tasks.process_scheduled_messages",
             "schedule": crontab(hour=8, minute=0),

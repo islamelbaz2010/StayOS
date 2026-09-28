@@ -14,6 +14,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@sumsub/websdk": "^2.9.0",
     "@tanstack/react-query": "^5.28.0",
     "@types/leaflet": "^1.9.22",
     "axios": "^1.6.8",

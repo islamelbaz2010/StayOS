@@ -120,6 +120,31 @@ async def list_expired_requested_bookings(
     return list(result.scalars().all())
 
 
+async def list_past_due_confirmed_bookings(
+    session: AsyncSession,
+    today: date,
+    limit: int = 100,
+) -> list[Booking]:
+    """Confirmed bookings whose stay has ended and need system completion.
+
+    Covers two cases: stays the guest/host already checked out (drains any
+    rows that predate auto-completion-on-checkout) and stays whose checkout
+    day has fully passed without either party checking out.
+    """
+    stmt = (
+        select(Booking)
+        .options(selectinload(Booking.unit))
+        .where(
+            Booking.status == BookingStatus.CONFIRMED,
+            or_(Booking.checked_out_at.is_not(None), Booking.check_out < today),
+        )
+        .order_by(Booking.check_out)
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
 async def update_booking(session: AsyncSession, booking: Booking, **kwargs: object) -> Booking:
     for key, value in kwargs.items():
         setattr(booking, key, value)

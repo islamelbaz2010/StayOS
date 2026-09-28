@@ -91,3 +91,41 @@ def expire_unanswered_bookings(self: Any, batch_size: int = 100) -> int:
         return expired
 
     return asyncio.run(_expire())
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    bind=True,
+    name="app.bookings.tasks.complete_past_stays",
+    autoretry_for=(Exception,),
+    max_retries=3,
+    retry_backoff=True,
+    retry_jitter=True,
+)
+def complete_past_stays(self: Any, batch_size: int = 100) -> int:
+    """Complete confirmed bookings whose stay has ended.
+
+    Routine checkouts complete immediately inside ``check_out_booking``;
+    this sweep drains the remainder — stays where neither party recorded a
+    checkout and any rows predating auto-completion — so a finished stay
+    never waits on a manual admin transition.
+    """
+
+    async def _complete() -> int:
+        completed = 0
+        async with AsyncSessionLocal() as session:
+            async with session.begin():
+                bookings = await bookings_repository.list_past_due_confirmed_bookings(
+                    session, datetime.now(UTC).date(), limit=batch_size
+                )
+                for booking in bookings:
+                    try:
+                        await booking_services.complete_booking_system(
+                            session, booking.id
+                        )
+                        completed += 1
+                    except StayOSError:
+                        # Booking changed state concurrently — skip it.
+                        continue
+        return completed
+
+    return asyncio.run(_complete())

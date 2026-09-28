@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useInitiateKyc, useKycStatus, useSubmitKyc, useUpgradeRole } from "@/lib/queries/kyc";
 import { useAuth } from "@/lib/auth/useAuth";
 import { getApiErrorMessage } from "@/lib/utils";
+import { KycProviderFlow } from "@/components/kyc/KycProviderFlow";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -36,8 +37,14 @@ export function KycUpload() {
     front: 0,
     selfie: 0,
   });
+  // Manual upload fallback when the automated provider is unavailable.
+  const [manualFallback, setManualFallback] = useState(false);
 
   const currentStatus = kycStatus?.kyc_status ?? user?.kyc_status ?? "unverified";
+  const automated =
+    Boolean(kycStatus?.automated_available) &&
+    kycStatus?.verification_mode !== "manual" &&
+    !manualFallback;
   const latestDoc = kycStatus?.documents?.[0];
   // Host onboarding requires a document that completed review — a verified
   // flag without one (e.g. a seeded account) must still submit documents.
@@ -180,7 +187,10 @@ export function KycUpload() {
     );
   }
 
-  if (currentStatus === "pending" && latestDoc?.status === "pending") {
+  if (
+    (currentStatus === "pending" && latestDoc?.status === "pending") ||
+    currentStatus === "manual_review"
+  ) {
     return (
       <div className="rounded-xl bg-warning-50 p-6 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-warning-100">
@@ -189,7 +199,41 @@ export function KycUpload() {
           </svg>
         </div>
         <h3 className="text-lg font-bold text-neutral-900">{t("pendingTitle")}</h3>
-        <p className="mt-2 text-sm text-neutral-600">{t("pendingMessage")}</p>
+        <p className="mt-2 text-sm text-neutral-600">
+          {currentStatus === "manual_review"
+            ? t("manualReviewMessage")
+            : t("pendingMessage")}
+        </p>
+      </div>
+    );
+  }
+
+  // Recoverable provider rejection — the user may retry without admin
+  // intervention. No fraud details are surfaced.
+  if (currentStatus === "retry_required") {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-xl bg-warning-50 p-6">
+          <h3 className="text-lg font-bold text-warning-700">{t("retryTitle")}</h3>
+          <p className="mt-2 text-sm text-warning-700">{t("retryMessage")}</p>
+        </div>
+        {automated ? (
+          <KycProviderFlow onManualFallback={() => setManualFallback(true)} />
+        ) : (
+          <KycUploadForm
+            t={t}
+            frontRef={frontRef}
+            selfieRef={selfieRef}
+            frontPreview={frontPreview}
+            selfiePreview={selfiePreview}
+            onFrontSelect={handleFrontSelect}
+            onSelfieSelect={handleSelfieSelect}
+            error={error}
+            onSubmit={handleSubmit}
+            isSubmitting={initiateMutation.isPending || submitMutation.isPending}
+            uploadProgress={uploadProgress}
+          />
+        )}
       </div>
     );
   }
@@ -208,21 +252,29 @@ export function KycUpload() {
             </p>
           )}
         </div>
-        <KycUploadForm
-          t={t}
-          frontRef={frontRef}
-          selfieRef={selfieRef}
-          frontPreview={frontPreview}
-          selfiePreview={selfiePreview}
-          onFrontSelect={handleFrontSelect}
-          onSelfieSelect={handleSelfieSelect}
-          error={error}
-          onSubmit={handleSubmit}
-          isSubmitting={initiateMutation.isPending || submitMutation.isPending}
-          uploadProgress={uploadProgress}
-        />
+        {automated ? (
+          <KycProviderFlow onManualFallback={() => setManualFallback(true)} />
+        ) : (
+          <KycUploadForm
+            t={t}
+            frontRef={frontRef}
+            selfieRef={selfieRef}
+            frontPreview={frontPreview}
+            selfiePreview={selfiePreview}
+            onFrontSelect={handleFrontSelect}
+            onSelfieSelect={handleSelfieSelect}
+            error={error}
+            onSubmit={handleSubmit}
+            isSubmitting={initiateMutation.isPending || submitMutation.isPending}
+            uploadProgress={uploadProgress}
+          />
+        )}
       </div>
     );
+  }
+
+  if (automated) {
+    return <KycProviderFlow onManualFallback={() => setManualFallback(true)} />;
   }
 
   return (

@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends
+import hashlib
+import json
+import logging
+
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
@@ -6,7 +10,14 @@ from app.auth.models import User
 from app.database import get_session
 from app.kyc import schemas as kyc_schemas
 from app.kyc import services as kyc_services
-from app.shared.exceptions import StayOSError, to_http_exception
+from app.shared import redis as redis_state
+from app.shared.exceptions import (
+    AuthenticationError,
+    StayOSError,
+    to_http_exception,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/kyc", tags=["kyc"])
 
@@ -54,7 +65,70 @@ async def kyc_status(
         documents=[
             kyc_schemas.KycDocumentResponse.model_validate(d) for d in documents
         ],
+        verification_mode=kyc_services.verification_mode(),
+        automated_available=kyc_services.automated_verification_available(),
     )
+
+
+@router.post(
+    "/verification/session",
+    response_model=kyc_schemas.KycVerificationSessionResponse,
+)
+async def verification_session(
+    user: User = Depends(auth_dependencies.require_active_user),
+    session: AsyncSession = Depends(get_session),
+) -> kyc_schemas.KycVerificationSessionResponse:
+    """Mint a provider SDK session, or report the manual fallback mode."""
+    try:
+        return await kyc_services.create_verification_session(session, user)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+async def _acquire_kyc_webhook_idempotency(key: str) -> bool:
+    client = redis_state.redis_client
+    if client is None:
+        # In production Redis must be available; tests may leave it mocked.
+        return True
+    result = await client.set(f"kyc_webhook:{key}", "1", nx=True, ex=86400 * 7)
+    return bool(result)
+
+
+@router.post(
+    "/webhooks/sumsub", response_model=kyc_schemas.KycWebhookResponse
+)
+async def sumsub_webhook(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+) -> kyc_schemas.KycWebhookResponse:
+    """Sumsub verification webhook — server-authoritative result channel.
+
+    The browser's "finished" state is never trusted: the signature-verified
+    webhook is the only path that mutates verification state.
+    """
+    from app.kyc.providers.sumsub import SumsubProvider
+
+    body = await request.body()
+    provider = SumsubProvider()
+    if not provider.verify_webhook_signature(dict(request.headers), body):
+        raise to_http_exception(AuthenticationError("Invalid webhook signature"))
+
+    try:
+        payload = json.loads(body)
+    except ValueError:
+        raise to_http_exception(AuthenticationError("Invalid webhook payload"))
+
+    if not await _acquire_kyc_webhook_idempotency(
+        hashlib.sha256(body).hexdigest()
+    ):
+        return kyc_schemas.KycWebhookResponse(message="already processed")
+
+    event = provider.parse_webhook(payload)
+    if event is None:
+        return kyc_schemas.KycWebhookResponse(message="ignored")
+
+    message = await kyc_services.apply_provider_event(session, event)
+    return kyc_schemas.KycWebhookResponse(message=message)
 
 
 @router.get("/pending", response_model=kyc_schemas.KycPendingListResponse)

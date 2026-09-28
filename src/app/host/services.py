@@ -4,21 +4,20 @@ Orchestrates existing bookings, payments, listings, messages, and
 reviews services through a host lens. Does NOT duplicate business logic.
 """
 
-from decimal import Decimal
 from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import repository as auth_repository
 from app.auth.constants import UserRole
 from app.auth.models import User
-from app.auth import repository as auth_repository
 from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
-from app.bookings.schemas import BookingResponse
 from app.bookings.services import _compute_stay_phase, _to_response
 from app.finance.commercial import money
 from app.listings.constants import CalendarStatus, UnitStatus
@@ -33,8 +32,8 @@ from app.shared.exceptions import (
     ValidationError,
 )
 
-from . import repository as host_repository
 from . import permissions as host_permissions
+from . import repository as host_repository
 from . import schemas as host_schemas
 from .constants import CoHostPermissionScope, HostTodayItemType, ListingReadinessStatus
 from .permissions import (
@@ -592,13 +591,13 @@ async def get_host_earnings(
     )
     host_earnings = Decimal("0")
     for payment in verified_rows.scalars().all():
-        economics, _ = await finance_services.booking_economics(session, payment)
+        economics = await finance_services.booking_economics(session, payment)
         host_earnings += economics.host_net_egp
 
     # Card path: reservations with captured intents carry the canonical
     # host_amount_egp on the row.
-    from app.reservations.models import PaymentIntent, Reservation
     from app.reservations.constants import PaymentStatus as IntentPaymentStatus
+    from app.reservations.models import PaymentIntent, Reservation
 
     card_rows = await session.execute(
         select(func.coalesce(func.sum(Reservation.host_amount_egp), 0))

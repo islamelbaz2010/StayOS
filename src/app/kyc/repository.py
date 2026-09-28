@@ -22,14 +22,28 @@ async def get_kyc_documents_by_user_id(
 async def get_pending_kyc_documents(
     session: AsyncSession, limit: int = 50, offset: int = 0
 ) -> list[KycDocument]:
+    """Admin exception queue: manual upload submissions (``pending``) plus
+    provider escalations (``manual_review``). Automated in-flight
+    verifications are excluded — they resolve via webhook."""
     result = await session.execute(
         select(KycDocument)
-        .where(KycDocument.status == "pending")
+        .where(KycDocument.status.in_(("pending", "manual_review")))
         .order_by(KycDocument.updated_at.desc())
         .limit(limit)
         .offset(offset)
     )
     return list(result.scalars().all())
+
+
+async def get_kyc_document_by_applicant(
+    session: AsyncSession, provider_applicant_id: str
+) -> KycDocument | None:
+    result = await session.execute(
+        select(KycDocument).where(
+            KycDocument.provider_applicant_id == provider_applicant_id
+        )
+    )
+    return result.scalar_one_or_none()
 
 
 async def create_kyc_document(

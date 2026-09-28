@@ -1485,9 +1485,13 @@ async def test_check_out_booking_success(fake_session: AsyncMock, monkeypatch) -
 
     result = await booking_services.check_out_booking(fake_session, guest, booking.id)
 
-    assert result.stay_phase == "checked_out"
+    # A routine checkout completes the booking immediately — no admin
+    # approval is part of the normal lifecycle.
+    assert result.stay_phase == "completed"
+    assert result.status == "completed"
     assert result.checked_out_at is not None
-    assert write_event_mock.call_args.kwargs["event_type"] == "booking.checked_out"
+    assert write_event_mock.call_args.kwargs["event_type"] == "booking.completed"
+    assert write_event_mock.call_args_list[0].kwargs["event_type"] == "booking.checked_out"
 
 
 @pytest.mark.asyncio

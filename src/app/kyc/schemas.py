@@ -41,6 +41,7 @@ class KycDocumentResponse(BaseModel):
     document_number: str | None
     status: KycStatus
     legal_name: str | None
+    provider: str | None = None
     front_image_key: str | None
     back_image_key: str | None
     selfie_image_key: str | None
@@ -55,6 +56,24 @@ class KycStatusResponse(BaseModel):
     user_id: str
     kyc_status: KycStatus
     documents: list[KycDocumentResponse]
+    verification_mode: str = "manual"
+    automated_available: bool = False
+
+
+class KycVerificationSessionResponse(BaseModel):
+    """Client-side verification session. ``mode="manual"`` tells the client
+    to render the upload fallback; ``mode=<provider>`` carries an SDK
+    access token for the embedded capture flow."""
+
+    mode: str
+    provider: str | None = None
+    document_id: str | None = None
+    access_token: str | None = None
+    expires_at: datetime | None = None
+
+
+class KycWebhookResponse(BaseModel):
+    message: str
 
 
 class KycSubmitResponse(BaseModel):

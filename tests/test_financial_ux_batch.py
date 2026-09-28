@@ -186,7 +186,7 @@ async def test_host_earnings_lifecycle_aggregates(
     monkeypatch.setattr(
         finance_services,
         "booking_economics",
-        AsyncMock(return_value=(commercial.compute_booking_economics(1000, 0), False)),
+        AsyncMock(return_value=commercial.compute_booking_economics(1000, 0)),
     )
 
     result = await host_services.get_host_earnings(fake_session, host)

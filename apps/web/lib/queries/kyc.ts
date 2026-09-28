@@ -22,6 +22,7 @@ export interface KycDocument {
   document_number: string | null;
   status: string;
   legal_name: string | null;
+  provider: string | null;
   front_image_key: string | null;
   back_image_key: string | null;
   selfie_image_key: string | null;
@@ -36,6 +37,31 @@ export interface KycStatusResponse {
   user_id: string;
   kyc_status: string;
   documents: KycDocument[];
+  verification_mode: string;
+  automated_available: boolean;
+}
+
+export interface KycVerificationSession {
+  mode: string;
+  provider: string | null;
+  document_id: string | null;
+  access_token: string | null;
+  expires_at: string | null;
+}
+
+export function useKycVerificationSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<KycVerificationSession>(
+        "/kyc/verification/session"
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kyc-status"] });
+    },
+  });
 }
 
 export interface KycPendingListResponse {

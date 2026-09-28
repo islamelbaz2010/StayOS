@@ -21,7 +21,7 @@
 ## Host
 
 - [ ] Host can sign up and verify OTP.
-- [ ] Host can complete KYC (national ID, address, tax ID).
+- [ ] Host can complete identity verification (supported government-issued document + selfie; automated provider flow when configured).
 - [ ] Host can create a unit with coordinates, photos, and amenities.
 - [ ] Host can set calendar availability and pricing.
 - [ ] Host can see booking requests and approve/reject them.

@@ -438,7 +438,9 @@ def _payload(answer=None, reject_type=None, event="applicantReviewed"):
         (_payload(event="applicantOnHold"), ProviderOutcome.MANUAL_REVIEW),
         (_payload(event="applicantPending"), ProviderOutcome.IN_PROGRESS),
         (_payload(event="applicantAwaitingUser"), ProviderOutcome.RETRY_REQUIRED),
-        (_payload(event="applicantCreated"), None),
+        # applicantCreated maps to in_progress so the first webhook
+        # backfills provider_applicant_id via externalUserId resolution.
+        (_payload(event="applicantCreated"), ProviderOutcome.IN_PROGRESS),
         (_payload(answer="IGNORE"), None),
     ],
 )
@@ -758,3 +760,175 @@ def test_kyc_status_response_exposes_required_sides() -> None:
     )
     assert response.required_sides["passport"] == ["front", "selfie"]
     assert response.required_sides["national_id"] == ["front", "back", "selfie"]
+
+
+# ---- Sumsub session contract (official /accessTokens/sdk) -------------------
+
+
+@pytest.mark.asyncio
+async def test_sumsub_session_uses_external_user_id_contract(
+    monkeypatch,
+) -> None:
+    """Official contract: POST /resources/accessTokens/sdk with a JSON
+    body whose ``userId`` is the *externalUserId* (our user.id) — never
+    the provider applicantId. The response carries no applicantId, so the
+    session must not claim one (the first webhook backfills it)."""
+    captured: dict = {}
+
+    async def fake_request(self, method, path, *, params=None, json_body=None):
+        captured.update(
+            {"method": method, "path": path, "json_body": json_body}
+        )
+        return {"token": "_act-token", "userId": "user-1"}
+
+    monkeypatch.setattr(settings, "SUMSUB_APP_TOKEN", "sbx:token")
+    monkeypatch.setattr(settings, "SUMSUB_SECRET_KEY", "secret")
+    monkeypatch.setattr(settings, "SUMSUB_LEVEL_NAME", "basic-kyc-level")
+    monkeypatch.setattr(SumsubProvider, "_request", fake_request)
+
+    provider = SumsubProvider()
+    session = await provider.create_session(
+        "user-1", applicant_id="old-applicant-id"
+    )
+
+    assert captured["method"] == "POST"
+    assert captured["path"] == "/resources/accessTokens/sdk"
+    assert captured["json_body"]["userId"] == "user-1"
+    assert captured["json_body"]["levelName"] == "basic-kyc-level"
+    assert captured["json_body"]["ttlInSecs"] == 600
+    assert session.access_token == "_act-token"
+    assert session.applicant_id is None
+
+
+def test_sumsub_request_signing_covers_json_body(monkeypatch) -> None:
+    """Signature input is ts + METHOD + path + body — a tampered body must
+    produce a different signature."""
+    monkeypatch.setattr(settings, "SUMSUB_APP_TOKEN", "sbx:token")
+    monkeypatch.setattr(settings, "SUMSUB_SECRET_KEY", "secret")
+    provider = SumsubProvider()
+
+    import json as _json
+
+    body = _json.dumps({"userId": "u1", "levelName": "lvl"}).encode()
+    headers = provider._signed_headers("POST", "/resources/accessTokens/sdk", body)
+    ts = headers["X-App-Access-Ts"]
+    expected = hmac.new(
+        b"secret",
+        (ts + "POST" + "/resources/accessTokens/sdk").encode() + body,
+        hashlib.sha256,
+    ).hexdigest()
+    assert headers["X-App-Access-Sig"] == expected
+    assert headers["X-App-Token"] == "sbx:token"
+
+    tampered = provider._signed_headers(
+        "POST", "/resources/accessTokens/sdk", b'{"userId":"evil"}'
+    )
+    assert tampered["X-App-Access-Sig"] != headers["X-App-Access-Sig"]
+
+
+# ---- Webhook resolution via externalUserId + applicantId backfill -----------
+
+
+def _wire_external_resolution(monkeypatch, doc):
+    """Document lookup by applicantId misses (unknown yet); resolution
+    falls back to externalUserId -> user's provider document."""
+
+    async def _update(session, d, **kwargs):
+        for k, v in kwargs.items():
+            setattr(d, k, v)
+        return d
+
+    monkeypatch.setattr(
+        kyc_repository,
+        "get_kyc_document_by_applicant",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        kyc_repository,
+        "get_kyc_documents_by_user_id",
+        AsyncMock(return_value=[doc]),
+    )
+    monkeypatch.setattr(kyc_repository, "update_kyc_document", _update)
+
+    from app.auth import repository as auth_repository
+
+    owner = _make_user(user_id=doc.user_id)
+    monkeypatch.setattr(
+        auth_repository, "get_user_by_id", AsyncMock(return_value=owner)
+    )
+    monkeypatch.setattr(auth_repository, "update_user", AsyncMock())
+    monkeypatch.setattr(
+        auth_repository, "get_account_by_user_id", AsyncMock(return_value=None)
+    )
+    return doc
+
+
+@pytest.mark.asyncio
+async def test_webhook_resolves_via_external_user_id(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """First Sumsub event arrives before we ever knew the applicantId —
+    resolution via externalUserId must find the doc and backfill the
+    provider applicantId."""
+    doc = _make_doc(status="pending", provider="sumsub", applicant_id=None)
+    _wire_external_resolution(monkeypatch, doc)
+
+    event = ProviderEvent(
+        provider="sumsub",
+        applicant_id="real-sumsub-app-1",
+        outcome=ProviderOutcome.IN_PROGRESS,
+        event_type="applicantCreated",
+        external_user_id=doc.user_id,
+    )
+    result = await kyc_services.apply_provider_event(fake_session, event)
+
+    assert doc.provider_applicant_id == "real-sumsub-app-1"
+    assert result in ("processed", "already processed")
+
+
+@pytest.mark.asyncio
+async def test_webhook_status_noop_still_backfills_applicant(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """applicantCreated maps to pending; when the doc is already pending
+    the no-op path must still bind the provider applicantId."""
+    doc = _make_doc(status="pending", provider="sumsub", applicant_id=None)
+    _wire_external_resolution(monkeypatch, doc)
+
+    event = ProviderEvent(
+        provider="sumsub",
+        applicant_id="real-app-x",
+        outcome=ProviderOutcome.IN_PROGRESS,
+        event_type="applicantPending",
+        external_user_id=doc.user_id,
+    )
+    result = await kyc_services.apply_provider_event(fake_session, event)
+
+    assert result == "already processed"
+    assert doc.provider_applicant_id == "real-app-x"
+
+
+@pytest.mark.asyncio
+async def test_webhook_unknown_external_user_id_not_found(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    doc = _make_doc(
+        user_id="other-user", status="pending", provider="sumsub",
+        applicant_id=None,
+    )
+    _wire_external_resolution(monkeypatch, doc)
+
+    event = ProviderEvent(
+        provider="sumsub",
+        applicant_id="real-app-y",
+        outcome=ProviderOutcome.VERIFIED,
+        event_type="applicantReviewed",
+        external_user_id="nobody",
+    )
+    monkeypatch.setattr(
+        kyc_repository,
+        "get_kyc_documents_by_user_id",
+        AsyncMock(return_value=[]),
+    )
+    result = await kyc_services.apply_provider_event(fake_session, event)
+    assert result == "not found"

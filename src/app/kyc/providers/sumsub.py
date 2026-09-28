@@ -13,6 +13,7 @@ algorithm named by ``x-payload-digest-alg``.
 import asyncio
 import hashlib
 import hmac
+import json
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -74,6 +75,7 @@ class SumsubProvider(IdentityVerificationProvider):
         path: str,
         *,
         params: dict[str, Any] | None = None,
+        json_body: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not self.is_configured():
             raise ProviderUnavailableError("Sumsub is not configured")
@@ -84,14 +86,19 @@ class SumsubProvider(IdentityVerificationProvider):
 
         query = urllib.parse.urlencode(params or {})
         path_with_query = f"{path}?{query}" if query else path
-        headers = self._signed_headers(method, path_with_query)
+        body = json.dumps(json_body).encode() if json_body is not None else b""
+        headers = self._signed_headers(method, path_with_query, body)
+        if json_body is not None:
+            headers["Content-Type"] = "application/json"
         url = f"{settings.SUMSUB_BASE_URL}{path_with_query}"
 
         last_exc: Exception | None = None
         async with httpx.AsyncClient(timeout=30.0) as client:
             for attempt in range(_MAX_RETRIES + 1):
                 try:
-                    response = await client.request(method, url, headers=headers)
+                    response = await client.request(
+                        method, url, headers=headers, content=body or None
+                    )
                     if response.status_code >= 500:
                         raise VerificationProviderError(
                             f"Sumsub transient error {response.status_code}"
@@ -114,20 +121,30 @@ class SumsubProvider(IdentityVerificationProvider):
     async def create_session(
         self, user_id: str, applicant_id: str | None = None
     ) -> VerificationSession:
-        """Mint a WebSDK access token. ``user_id`` is sent as Sumsub's
-        ``externalUserId`` so webhooks resolve back to our user."""
-        params: dict[str, Any] = {
-            "userId": applicant_id or user_id,
-            "levelName": settings.SUMSUB_LEVEL_NAME,
-            "ttlInSecs": _ACCESS_TOKEN_TTL_SECONDS,
-        }
-        data = await self._request("POST", "/resources/accessTokens", params=params)
+        """Mint a WebSDK access token.
+
+        ``userId`` in the request body is the applicant's
+        ``externalUserId`` — our stable user id. Sumsub binds the token
+        (and the applicant the SDK creates) to it, so retry/resume of the
+        same user continues the same applicant automatically; the Sumsub
+        ``applicantId`` is never sent here. It arrives on the first
+        webhook and is backfilled onto the KYC document then.
+        """
+        data = await self._request(
+            "POST",
+            "/resources/accessTokens/sdk",
+            json_body={
+                "userId": user_id,
+                "levelName": settings.SUMSUB_LEVEL_NAME,
+                "ttlInSecs": _ACCESS_TOKEN_TTL_SECONDS,
+            },
+        )
         token = data.get("token")
         if not token:
             raise VerificationProviderError("Sumsub returned no access token")
         return VerificationSession(
             provider=self.name,
-            applicant_id=data.get("userId") or applicant_id or user_id,
+            applicant_id=None,
             access_token=token,
             expires_at=datetime.fromtimestamp(
                 int(time.time()) + _ACCESS_TOKEN_TTL_SECONDS, UTC
@@ -180,8 +197,10 @@ class SumsubProvider(IdentityVerificationProvider):
         elif event_type == "applicantOnHold":
             outcome = ProviderOutcome.MANUAL_REVIEW
         elif event_type in (
+            "applicantCreated",
             "applicantPending",
             "applicantPrechecked",
+            "applicantAwaitingService",
             "applicantWorkflowPending",
             "applicantWorkflowCompleted",
         ):
@@ -197,6 +216,7 @@ class SumsubProvider(IdentityVerificationProvider):
             applicant_id=applicant_id,
             outcome=outcome,
             event_type=event_type,
+            external_user_id=body.get("externalUserId") or "",
             reason=reason,
             raw=body,
         )

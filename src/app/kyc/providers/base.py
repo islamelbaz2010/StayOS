@@ -40,10 +40,16 @@ class ProviderOutcome(StrEnum):
 
 @dataclass
 class VerificationSession:
-    """A provider verification session handed to the client SDK."""
+    """A provider verification session handed to the client SDK.
+
+    ``applicant_id`` is the provider-side applicant identifier when the
+    provider returns one at session time; providers that create the
+    applicant lazily inside the SDK (Sumsub) return ``None`` — the real
+    applicantId arrives on the first webhook and is backfilled then.
+    """
 
     provider: str
-    applicant_id: str
+    applicant_id: str | None
     access_token: str
     expires_at: datetime | None = None
 
@@ -57,6 +63,10 @@ class ProviderEvent:
     applicant_id: str
     outcome: ProviderOutcome
     event_type: str
+    # Client-side applicant identifier (Sumsub ``externalUserId`` = our
+    # stable user.id). Present on provider webhooks; used to correlate
+    # the first event before the provider applicantId is known locally.
+    external_user_id: str = ""
     reason: str | None = None
     legal_name: str | None = None
     document_type: str | None = None
@@ -97,3 +107,9 @@ class IdentityVerificationProvider(ABC):
     @abstractmethod
     async def get_status(self, applicant_id: str) -> ProviderOutcome:
         """Pull the provider-side status for reconciliation."""
+
+    async def get_applicant_legal_name(self, applicant_id: str) -> str | None:
+        """Optional capability — extracted legal name after a verified
+        decision, fetched server-side only (webhook payloads carry no
+        personal data). Providers without it return None."""
+        return None

@@ -506,7 +506,7 @@ async def create_verification_session(
             document_type="provider_managed",
             account_id=account.id if account else None,
             provider=provider.name,
-            provider_applicant_id=vs.applicant_id,
+            provider_applicant_id=vs.applicant_id or None,
             status="pending",
         )
     if user.kyc_status == str(KycStatus.UNVERIFIED):
@@ -548,8 +548,26 @@ async def apply_provider_event(
     document = await kyc_repository.get_kyc_document_by_applicant(
         session, event.applicant_id
     )
+    if document is None and event.external_user_id:
+        # Providers that create the applicant lazily inside their SDK
+        # (Sumsub) can't hand us the applicantId at session time — the
+        # first webhook resolves by externalUserId (our stable user id)
+        # and backfills the real applicantId below.
+        documents = await kyc_repository.get_kyc_documents_by_user_id(
+            session, event.external_user_id
+        )
+        document = next(
+            (d for d in documents if d.provider == event.provider), None
+        )
     if document is None:
         return "not found"
+
+    if document.provider_applicant_id != event.applicant_id:
+        # Backfill the real provider applicantId — happens before the
+        # idempotency guards so a status-noop first event still binds.
+        await kyc_repository.update_kyc_document(
+            session, document, provider_applicant_id=event.applicant_id
+        )
 
     new_status = _OUTCOME_TO_STATUS[event.outcome]
     if document.status == new_status:

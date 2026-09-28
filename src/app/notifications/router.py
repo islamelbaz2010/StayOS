@@ -7,6 +7,7 @@ from app.database import get_session
 
 from . import repository
 from .constants import category_for_event
+from .models import Notification
 from .schemas import (
     InAppNotificationItem,
     InAppNotificationList,
@@ -16,7 +17,7 @@ from .schemas import (
 router = APIRouter(tags=["notifications"])
 
 
-def _to_item(notification) -> InAppNotificationItem:
+def _to_item(notification: Notification) -> InAppNotificationItem:
     return InAppNotificationItem(
         id=notification.id,
         event_type=notification.event_type,

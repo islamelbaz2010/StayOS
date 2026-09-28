@@ -6,6 +6,8 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
+
 from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import Account, RefreshToken, User
@@ -18,7 +20,6 @@ from app.notifications.constants import (
     NotificationCategory,
     category_for_event,
 )
-from fastapi.testclient import TestClient
 
 
 def _make_user(

@@ -175,6 +175,7 @@ async def _create_notifications_for_contact(
         return notifications
 
     for channel in channels_for_event(event_type):
+        recipient: str | None
         if channel == NotificationChannel.IN_APP:
             if not user_id:
                 logger.warning("No in-app user for event %s", event_id)

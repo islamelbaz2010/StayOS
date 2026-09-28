@@ -1,6 +1,7 @@
 import asyncio
 from typing import Any, cast
 
+import boto3
 import httpx
 
 from app.config import settings
@@ -64,25 +65,33 @@ async def send_email(
     if not settings.AWS_ACCESS_KEY_ID or not settings.AWS_SECRET_ACCESS_KEY:
         raise NotificationError("Email provider is not configured")
 
-    # SES SendEmail endpoint (region-specific)
     region = settings.AWS_REGION or "us-east-1"
-    url = f"https://email.{region}.amazonaws.com/v2/email/outbound-emails"
-    payload = {
-        "Content": {
-            "Simple": {
-                "Subject": {"Data": subject, "Charset": "UTF-8"},
-                "Body": {"Text": {"Data": body, "Charset": "UTF-8"}},
-            }
-        },
-        "Destination": {"ToAddresses": [recipient]},
-        "FromEmailAddress": "noreply@stayos.co",
+    client = boto3.client(
+        "sesv2",
+        region_name=region,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    )
+    try:
+        response = await asyncio.to_thread(
+            client.send_email,
+            FromEmailAddress=settings.SES_FROM_EMAIL,
+            Destination={"ToAddresses": [recipient]},
+            Content={
+                "Simple": {
+                    "Subject": {"Data": subject, "Charset": "UTF-8"},
+                    "Body": {"Text": {"Data": body, "Charset": "UTF-8"}},
+                }
+            },
+        )
+    except Exception as exc:
+        raise NotificationError(f"SES send failed: {exc}") from exc
+    return {
+        "status": "sent",
+        "channel": "email",
+        "recipient": recipient,
+        "id": response.get("MessageId", ""),
     }
-    # SES v2 uses SigV4; in production this should be signed with boto3/aiobotocore.
-    # The test path bypasses the network, so this function is exercised structurally.
-    headers = {
-        "Content-Type": "application/json",
-    }
-    return await _post_with_retry(url, payload, headers)
 
 
 async def send_sms(
@@ -96,14 +105,44 @@ async def send_sms(
 
     if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
         raise NotificationError("SMS provider is not configured")
+    if not settings.TWILIO_SMS_FROM:
+        raise NotificationError("SMS sender is not configured")
 
     url = (
         f"https://api.twilio.com/2010-04-01/Accounts/{settings.TWILIO_ACCOUNT_SID}/Messages.json"
     )
     payload = {
         "To": recipient,
-        "From": "+0000000000",
+        "From": settings.TWILIO_SMS_FROM,
         "Body": body,
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    return await _post_with_retry(url, payload, headers)
+
+
+async def send_push(
+    recipient: str,
+    body: str,
+    _locale: str = "ar",
+    subject: str | None = None,
+) -> dict[str, Any]:
+    """Send an Expo push notification to a registered device token.
+
+    ``recipient`` is the Expo push token stored on the notification row
+    (one row per device). Expo's push API accepts unauthenticated sends;
+    ``EXPO_ACCESS_TOKEN`` hardens delivery once configured.
+    """
+    if settings.ENVIRONMENT == "test":
+        return {"status": "sent", "channel": "push", "recipient": recipient}
+
+    url = "https://exp.host/--/api/v2/push/send"
+    payload: dict[str, Any] = {
+        "to": recipient,
+        "title": subject or "StayOS",
+        "body": body,
+        "sound": "default",
+    }
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+    if settings.EXPO_ACCESS_TOKEN:
+        headers["Authorization"] = f"Bearer {settings.EXPO_ACCESS_TOKEN}"
     return await _post_with_retry(url, payload, headers)

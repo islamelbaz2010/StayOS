@@ -107,6 +107,18 @@ async def revoke_refresh_token(
     return token
 
 
+async def get_active_device_tokens(
+    session: AsyncSession, user_id: str
+) -> list[DeviceToken]:
+    result = await session.execute(
+        select(DeviceToken).where(
+            DeviceToken.user_id == user_id,
+            DeviceToken.is_active.is_(True),
+        )
+    )
+    return list(result.scalars().all())
+
+
 async def get_device_token_by_token(
     session: AsyncSession, token: str
 ) -> DeviceToken | None:

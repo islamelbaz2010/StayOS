@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Alert,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import axios from "axios";
 
-import { usePaymentByBooking, usePresignProof, useStayInfo, useUploadProof } from "../lib/hooks";
+import { useCheckoutSession, usePaymentByBooking, usePresignProof, useStayInfo, useUploadProof } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, ErrorView } from "../components/States";
@@ -56,8 +57,10 @@ export function PaymentScreen() {
   const paymentQuery = usePaymentByBooking(bookingId);
   const presign = usePresignProof();
   const uploadProof = useUploadProof();
+  const checkoutSession = useCheckoutSession();
 
   const [uploading, setUploading] = useState(false);
+  const [openingCheckout, setOpeningCheckout] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const payment = paymentQuery.data;
@@ -105,6 +108,27 @@ export function PaymentScreen() {
       setUploadError(t("payUploadFailed"));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const payByCard = async () => {
+    if (!payment) return;
+    setOpeningCheckout(true);
+    try {
+      let url = payment.checkout_url;
+      if (!url) {
+        const data = await checkoutSession.mutateAsync(payment.id);
+        url = data.checkout_url;
+      }
+      if (!url) {
+        throw new Error("no checkout url");
+      }
+      await Linking.openURL(url);
+      paymentQuery.refetch();
+    } catch {
+      Alert.alert(t("payCheckoutFailed"));
+    } finally {
+      setOpeningCheckout(false);
     }
   };
 
@@ -220,6 +244,21 @@ export function PaymentScreen() {
           <Text style={styles.bodyText}>{payment.instructions}</Text>
         </View>
       ) : null}
+
+      {/* Card payment via Paymob hosted checkout */}
+      {canUpload && (
+        <View style={styles.section}>
+          <Pressable
+            style={[styles.primaryButton, openingCheckout && styles.disabledButton]}
+            onPress={payByCard}
+            disabled={openingCheckout}
+          >
+            <Text style={styles.primaryButtonText}>
+              {openingCheckout ? t("payOpeningCheckout") : t("payByCard")}
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* Proof upload */}
       <View style={styles.section}>

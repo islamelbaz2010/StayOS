@@ -364,6 +364,21 @@ export function usePaymentByBooking(bookingId: string) {
   });
 }
 
+export function useCheckoutSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { data } = await api.post<Payment>(
+        `/payments/${paymentId}/checkout-session`
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["payment", "booking", data.booking_id] });
+    },
+  });
+}
+
 export function usePresignProof() {
   return useMutation({
     mutationFn: async ({

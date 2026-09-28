@@ -148,6 +148,7 @@ export interface Payment {
   unit_id: string;
   status: PaymentStatus;
   method: string;
+  checkout_url: string | null;
   amount_egp: number;
   accommodation_amount_egp: number | null;
   guest_service_fee_egp: number | null;

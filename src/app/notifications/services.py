@@ -24,6 +24,7 @@ _CHANNEL_DISPATCHERS: dict[str, str] = {
     NotificationChannel.WHATSAPP: "send_whatsapp",
     NotificationChannel.EMAIL: "send_email",
     NotificationChannel.SMS: "send_sms",
+    NotificationChannel.PUSH: "send_push",
 }
 
 
@@ -71,7 +72,13 @@ def channels_for_event(event_type: str) -> list[str]:
         "listing.edit_approved": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         "listing.edit_rejected": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
     }
-    return mapping.get(event_type, [NotificationChannel.IN_APP, NotificationChannel.EMAIL])
+    base = mapping.get(
+        event_type, [NotificationChannel.IN_APP, NotificationChannel.EMAIL]
+    )
+    # Every event that produces an in-app notification is also pushed to the
+    # recipient's registered mobile devices (rows are only created for users
+    # with active device tokens — see _create_notifications_for_contact).
+    return [*base, NotificationChannel.PUSH]
 
 
 _IN_APP_HOST_EVENTS = {
@@ -175,21 +182,35 @@ async def _create_notifications_for_contact(
         return notifications
 
     for channel in channels_for_event(event_type):
-        recipient: str | None
+        channel_recipients: list[str]
         if channel == NotificationChannel.IN_APP:
             if not user_id:
                 logger.warning("No in-app user for event %s", event_id)
                 continue
-            recipient = user_id
+            channel_recipients = [user_id]
+            template_channel = NotificationChannel.EMAIL
+        elif channel == NotificationChannel.PUSH:
+            if not user_id:
+                continue
+            # One notification row per active device token — the token is the
+            # recipient and keeps per-device delivery auditable.
+            device_tokens = await auth_repository.get_active_device_tokens(
+                session, user_id
+            )
+            channel_recipients = [d.token for d in device_tokens]
             template_channel = NotificationChannel.EMAIL
         else:
-            recipient = contact.get("phone_number") if channel in (
+            single = contact.get("phone_number") if channel in (
                 NotificationChannel.WHATSAPP,
                 NotificationChannel.SMS,
             ) else contact.get("email")
+            channel_recipients = [single] if single else []
             template_channel = channel
-        if not recipient:
-            logger.warning("No %s recipient for event %s", channel, event_id)
+        if not channel_recipients:
+            if channel != NotificationChannel.PUSH:
+                logger.warning(
+                    "No %s recipient for event %s", channel, event_id
+                )
             continue
 
         try:
@@ -202,18 +223,19 @@ async def _create_notifications_for_contact(
                 continue
             raise
 
-        notification = await repository.create_notification(
-            session=session,
-            event_id=event_id,
-            event_type=event_type,
-            channel=channel,
-            recipient=recipient,
-            user_id=user_id,
-            locale=locale,
-            subject=subject,
-            body=body,
-        )
-        notifications.append(notification)
+        for recipient in channel_recipients:
+            notification = await repository.create_notification(
+                session=session,
+                event_id=event_id,
+                event_type=event_type,
+                channel=channel,
+                recipient=recipient,
+                user_id=user_id,
+                locale=locale,
+                subject=subject,
+                body=body,
+            )
+            notifications.append(notification)
 
     return notifications
 

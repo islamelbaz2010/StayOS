@@ -25,7 +25,9 @@
           "cameraPermission": "StayOS needs camera access to photograph your identity document and take a verification selfie."
         }
       ],
-      "expo-document-picker"
+      "expo-document-picker",
+      "expo-notifications",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { I18nManager } from "react-native";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
@@ -10,6 +11,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LocaleProvider, useLocale } from "./src/lib/LocaleContext";
 import { colors } from "./src/lib/theme";
 import { useMe, useUnreadCount } from "./src/lib/hooks";
+import { registerForPushNotifications } from "./src/lib/push";
 
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { SearchScreen } from "./src/screens/SearchScreen";
@@ -76,6 +78,42 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const linking = {
+  prefixes: ["stayos://"],
+  config: {
+    screens: {
+      Home: "home",
+      Search: "search",
+      ListingDetail: "listing/:unitId",
+      HostProfile: "host/:hostId",
+      Booking: "booking/:unitId",
+      TripDetail: "trip/:bookingId",
+      Payment: "payment/:bookingId",
+      Payments: "payments",
+      Kyc: "kyc",
+      Message: "message",
+      Login: "login",
+      Favorites: "favorites",
+      Trips: "trips",
+      Account: "account",
+      Support: "support",
+      HostToday: "host/today",
+      HostCalendar: "host/calendar",
+      HostListings: "host/listings",
+      HostMessages: "host/messages",
+      HostReservationDetail: "host/reservation/:bookingId",
+      HostEarnings: "host/earnings",
+      HostSettings: "host/settings",
+      HostListingDetail: "host/listing/:unitId",
+      HostListingEditor: "host/listing/:unitId/edit/:section",
+      HostListingPhotos: "host/listing/:unitId/photos",
+      HostListingAvailability: "host/listing/:unitId/availability",
+      HostListingCoHosts: "host/listing/:unitId/cohosts",
+      HostCreateListing: "host/create-listing",
+    },
+  },
+};
 const Tab = createBottomTabNavigator();
 
 const queryClient = new QueryClient({
@@ -192,6 +230,14 @@ function AppContent() {
   const { isRTL } = useLocale();
   const { data: user } = useMe();
 
+  useEffect(() => {
+    if (user?.id) {
+      registerForPushNotifications().catch(() => {
+        // Push registration is best-effort; never block the app on it.
+      });
+    }
+  }, [user?.id]);
+
   if (isRTL && !I18nManager.isRTL) {
     I18nManager.forceRTL(true);
   } else if (!isRTL && I18nManager.isRTL) {
@@ -216,7 +262,7 @@ function AppContent() {
   const HomeComponent = isHost ? HostTabs : GuestTabs;
 
   return (
-    <NavigationContainer theme={theme}>
+    <NavigationContainer theme={theme} linking={linking}>
       <Stack.Navigator>
         <Stack.Screen name="Home" component={HomeComponent} options={{ headerShown: false }} />
         <Stack.Screen

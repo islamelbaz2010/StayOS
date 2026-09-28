@@ -1,5 +1,5 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -14,29 +14,29 @@ export function hasTokens(): boolean {
 
 export async function getTokens() {
   const [access, refresh] = await Promise.all([
-    AsyncStorage.getItem(TOKEN_KEY),
-    AsyncStorage.getItem(REFRESH_KEY),
+    SecureStore.getItemAsync(TOKEN_KEY),
+    SecureStore.getItemAsync(REFRESH_KEY),
   ]);
   _hasTokens = Boolean(access);
   return { access, refresh };
 }
 
 export async function getRefreshToken(): Promise<string | null> {
-  return AsyncStorage.getItem(REFRESH_KEY);
+  return SecureStore.getItemAsync(REFRESH_KEY);
 }
 
 export async function setTokens(access: string, refresh: string) {
   await Promise.all([
-    AsyncStorage.setItem(TOKEN_KEY, access),
-    AsyncStorage.setItem(REFRESH_KEY, refresh),
+    SecureStore.setItemAsync(TOKEN_KEY, access),
+    SecureStore.setItemAsync(REFRESH_KEY, refresh),
   ]);
   _hasTokens = true;
 }
 
 export async function clearTokens() {
   await Promise.all([
-    AsyncStorage.removeItem(TOKEN_KEY),
-    AsyncStorage.removeItem(REFRESH_KEY),
+    SecureStore.deleteItemAsync(TOKEN_KEY),
+    SecureStore.deleteItemAsync(REFRESH_KEY),
   ]);
   _hasTokens = false;
 }

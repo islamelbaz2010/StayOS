@@ -5,12 +5,23 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
+import app.bookings.models  # noqa: F401 - registers Booking mapper for string refs
+from app.auth import repository as auth_repository
 from app.listings import repository as listings_repository
 from app.notifications import constants as notification_constants
 from app.notifications import consumers, providers, repository, services, templates
 from app.notifications import tasks as notification_tasks
 from app.notifications.models import Notification, NotificationTemplate
 from app.shared.models import OutboxEvent
+
+
+@pytest.fixture(autouse=True)
+def _no_device_tokens(monkeypatch) -> None:
+    monkeypatch.setattr(
+        auth_repository,
+        "get_active_device_tokens",
+        AsyncMock(return_value=[]),
+    )
 
 
 def test_render_template_arabic_reservation_created() -> None:
@@ -417,7 +428,16 @@ async def test_send_email_non_test_environment(monkeypatch) -> None:
     monkeypatch.setattr(providers.settings, "AWS_ACCESS_KEY_ID", "key")
     monkeypatch.setattr(providers.settings, "AWS_SECRET_ACCESS_KEY", "secret")
     monkeypatch.setattr(providers.settings, "AWS_REGION", "us-east-1")
-    monkeypatch.setattr(providers, "httpx", _fake_httpx_module(_fake_client_with_success_response()))
+
+    class _FakeSesClient:
+        def send_email(self, **kwargs):
+            assert kwargs["FromEmailAddress"]
+            assert kwargs["Destination"]["ToAddresses"] == ["user@example.com"]
+            return {"MessageId": "msg-1"}
+
+    monkeypatch.setattr(
+        providers.boto3, "client", lambda *a, **kw: _FakeSesClient()
+    )
     result = await providers.send_email("user@example.com", "subject", "body")
     assert result["id"] == "msg-1"
 
@@ -435,8 +455,42 @@ async def test_send_sms_non_test_environment(monkeypatch) -> None:
     monkeypatch.setattr(providers.settings, "ENVIRONMENT", "development")
     monkeypatch.setattr(providers.settings, "TWILIO_ACCOUNT_SID", "sid")
     monkeypatch.setattr(providers.settings, "TWILIO_AUTH_TOKEN", "token")
+    monkeypatch.setattr(providers.settings, "TWILIO_SMS_FROM", "+15551234567")
     monkeypatch.setattr(providers, "httpx", _fake_httpx_module(_fake_client_with_success_response()))
     result = await providers.send_sms("+201012345678", "hello")
+    assert result["id"] == "msg-1"
+
+
+@pytest.mark.asyncio
+async def test_send_sms_no_sender_configured(monkeypatch) -> None:
+    monkeypatch.setattr(providers.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(providers.settings, "TWILIO_ACCOUNT_SID", "sid")
+    monkeypatch.setattr(providers.settings, "TWILIO_AUTH_TOKEN", "token")
+    monkeypatch.setattr(providers.settings, "TWILIO_SMS_FROM", "")
+    with pytest.raises(providers.NotificationError):
+        await providers.send_sms("+201012345678", "hello")
+
+
+@pytest.mark.asyncio
+async def test_send_push_test_environment() -> None:
+    result = await providers.send_push(
+        "ExponentPushToken[abc]", "body", subject="hi"
+    )
+    assert result["status"] == "sent"
+    assert result["channel"] == "push"
+
+
+@pytest.mark.asyncio
+async def test_send_push_non_test_environment(monkeypatch) -> None:
+    monkeypatch.setattr(providers.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(
+        providers,
+        "httpx",
+        _fake_httpx_module(_fake_client_with_success_response()),
+    )
+    result = await providers.send_push(
+        "ExponentPushToken[abc]", "body", subject="hi"
+    )
     assert result["id"] == "msg-1"
 
 
@@ -470,7 +524,7 @@ async def test_resolve_recipient_enriches_from_unit(monkeypatch) -> None:
 
 
 def test_channels_for_event_unknown_defaults_to_email() -> None:
-    assert services.channels_for_event("unknown.event") == ["in_app", "email"]
+    assert services.channels_for_event("unknown.event") == ["in_app", "email", "push"]
 
 
 @pytest.mark.asyncio
@@ -528,7 +582,7 @@ async def test_dispatch_notification_unknown_channel(monkeypatch) -> None:
         return notification
 
     monkeypatch.setattr(repository, "update_notification_status", _mock_update_status)
-    notification = _make_notification(channel="push")
+    notification = _make_notification(channel="carrier_pigeon")
     session = AsyncMock()
     await services.dispatch_notification(session, notification)
     assert notification.status == notification_constants.NotificationStatus.DEAD_LETTER

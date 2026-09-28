@@ -2,6 +2,7 @@ class NotificationChannel:
     WHATSAPP = "whatsapp"
     EMAIL = "email"
     SMS = "sms"
+    PUSH = "push"
     IN_APP = "in_app"
 
 

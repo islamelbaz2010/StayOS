@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     TWILIO_VERIFY_SERVICE_SID: str = Field(
         default="", description="Unused (legacy Twilio Verify service SID; OTP auth now uses Akedly)"
     )
+    TWILIO_SMS_FROM: str = Field(
+        default="", description="Twilio sender number/messaging service for transactional SMS"
+    )
 
     # Akedly: OTP send/verify provider for phone auth (app/auth/services.py).
     # V1.2 (Shield tier) — this pipeline has PoW and Turnstile enabled; V1.0 does
@@ -134,6 +137,15 @@ class Settings(BaseSettings):
     S3_PRESIGNED_GET_TTL_SECONDS: int = Field(default=86400, ge=300, le=7776000)
 
     SENTRY_DSN: str = Field(default="", description="Sentry DSN")
+
+    SES_FROM_EMAIL: str = Field(
+        default="noreply@stayos.co",
+        description="SES-verified sender address for transactional email",
+    )
+    EXPO_ACCESS_TOKEN: str = Field(
+        default="",
+        description="Optional Expo push API access token (unauthenticated sends still work)",
+    )
 
     GOOGLE_MAPS_API_KEY: str = Field(default="", description="Google Maps Platform API key (mobile app maps; never used by Supply Discovery)")
     GOOGLE_PLACES_API_KEY: str = Field(default="", description="Google Places API key for Supply Discovery (server-side; separate credential from GOOGLE_MAPS_API_KEY)")

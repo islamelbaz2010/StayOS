@@ -22,6 +22,15 @@ from app.notifications.constants import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _no_device_tokens(monkeypatch) -> None:
+    monkeypatch.setattr(
+        notification_services.auth_repository,
+        "get_active_device_tokens",
+        AsyncMock(return_value=[]),
+    )
+
+
 def _make_user(
     user_id: str | None = None,
     role: UserRole = UserRole.GUEST,

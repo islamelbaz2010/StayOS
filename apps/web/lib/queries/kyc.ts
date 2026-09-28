@@ -39,6 +39,10 @@ export interface KycStatusResponse {
   documents: KycDocument[];
   verification_mode: string;
   automated_available: boolean;
+  /** Manual-upload capture contract per document type — e.g.
+   * {"passport": ["front","selfie"], "national_id": ["front","back","selfie"]}.
+   * Provider mode owns side requirements internally. */
+  required_sides: Record<string, string[]>;
 }
 
 export interface KycVerificationSession {

@@ -88,7 +88,10 @@ export default function AdminKycPage() {
                           </span>
                         </p>
                         <p className="text-sm text-neutral-600">
-                          {t("documentType")}: {doc.document_type}
+                          {t("documentType")}:{" "}
+                          {t.has(`docTypes.${doc.document_type}`)
+                            ? t(`docTypes.${doc.document_type}`)
+                            : doc.document_type}
                         </p>
                         {doc.provider && (
                           <p className="text-sm text-neutral-600">

@@ -58,6 +58,10 @@ class KycStatusResponse(BaseModel):
     documents: list[KycDocumentResponse]
     verification_mode: str = "manual"
     automated_available: bool = False
+    # Manual-upload capture contract per document type, e.g.
+    # {"passport": ["front", "selfie"], "national_id": ["front", "back",
+    # "selfie"]}. Provider mode owns side requirements internally.
+    required_sides: dict[str, list[str]] = {}
 
 
 class KycVerificationSessionResponse(BaseModel):

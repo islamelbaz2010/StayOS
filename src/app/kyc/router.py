@@ -67,6 +67,10 @@ async def kyc_status(
         ],
         verification_mode=kyc_services.verification_mode(),
         automated_available=kyc_services.automated_verification_available(),
+        required_sides={
+            doc_type: list(sides)
+            for doc_type, sides in kyc_services.DOCUMENT_REQUIRED_SIDES.items()
+        },
     )
 
 

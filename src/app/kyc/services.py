@@ -7,7 +7,7 @@ import boto3
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import repository as auth_repository
-from app.auth.constants import KycStatus
+from app.auth.constants import KycDocumentType, KycStatus
 from app.auth.models import User
 from app.config import settings
 from app.kyc import repository as kyc_repository
@@ -30,6 +30,16 @@ _UPLOAD_TTL_SECONDS = 900
 logger = logging.getLogger(__name__)
 
 _DOWNLOAD_TTL_SECONDS = 900
+
+# Manual-upload capture contract per document type. Provider-managed
+# verification owns document-side requirements per country/document, so
+# StayOS must not assume a universal Front/Back/Selfie layout.
+DOCUMENT_REQUIRED_SIDES: dict[str, tuple[str, ...]] = {
+    KycDocumentType.PASSPORT: ("front", "selfie"),
+    KycDocumentType.NATIONAL_ID: ("front", "back", "selfie"),
+    KycDocumentType.DRIVING_LICENSE: ("front", "back", "selfie"),
+    KycDocumentType.RESIDENCE_PERMIT: ("front", "back", "selfie"),
+}
 
 
 def _require_storage_config() -> None:
@@ -108,6 +118,11 @@ async def initiate_kyc_document(
     user: User,
     request: KycInitiateRequest,
 ) -> KycInitiateResponse:
+    # ``provider_managed`` rows are created by verification sessions only —
+    # a client must not initiate a manual upload under that type.
+    if request.document_type == KycDocumentType.PROVIDER_MANAGED:
+        raise ValidationError("Unsupported document type for manual upload")
+
     # Fail fast before writing a KYC document row when storage is not
     # configured — otherwise presigning crashes (500) and orphans the row.
     _require_storage_config()
@@ -217,8 +232,18 @@ async def submit_kyc_document(
                 session, document, **{field_name: None}
             )
 
-    if not document.front_image_key or not document.selfie_image_key:
-        raise ValidationError("Missing required image uploads")
+    required_sides = DOCUMENT_REQUIRED_SIDES.get(
+        document.document_type, ("front", "selfie")
+    )
+    missing = [
+        side
+        for side in required_sides
+        if not getattr(document, f"{side}_image_key")
+    ]
+    if missing:
+        raise ValidationError(
+            f"Missing required image uploads: {', '.join(missing)}"
+        )
 
     updated = await kyc_repository.update_kyc_document(
         session, document, status="pending"

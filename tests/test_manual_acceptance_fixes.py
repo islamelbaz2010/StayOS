@@ -356,13 +356,15 @@ def _make_doc(
     status: str = "pending",
     provider: str | None = None,
     applicant_id: str | None = None,
+    document_type: str | None = None,
 ) -> KycDocument:
     now = datetime.now(UTC)
     doc = KycDocument(
         id=str(uuid.uuid4()),
         user_id=user_id,
         account_id=None,
-        document_type="provider_managed" if provider else "national_id",
+        document_type=document_type
+        or ("provider_managed" if provider else "national_id"),
         status=status,
         created_at=now,
         updated_at=now,
@@ -611,7 +613,7 @@ async def test_submit_clears_unuploaded_keys(
     image, submit must clear the phantom key so admin sees exactly what
     was uploaded (front + selfie, no misleading empty Back slot)."""
     user = _make_user()
-    doc = _make_doc(user_id=user.id)
+    doc = _make_doc(user_id=user.id, document_type="passport")
     doc.front_image_key = "kyc/u/d/front.jpg"
     doc.back_image_key = "kyc/u/d/back.jpg"  # claimed, never uploaded
     doc.selfie_image_key = "kyc/u/d/selfie.jpg"
@@ -641,3 +643,118 @@ async def test_submit_clears_unuploaded_keys(
     assert updated.back_image_key is None
     assert updated.front_image_key is not None
     assert updated.status == "pending"
+
+
+# ---- Document-type-aware required sides --------------------------------------
+
+
+def _stub_submit_deps(monkeypatch, doc: KycDocument) -> None:
+    """Shared stubbing for submit tests: objects exist only when their key
+    is set, updates write through, processing is not queued."""
+    monkeypatch.setattr(
+        kyc_repository, "get_kyc_document_by_id", AsyncMock(return_value=doc)
+    )
+
+    async def _update(session, d, **kwargs):
+        for k, v in kwargs.items():
+            setattr(d, k, v)
+        return d
+
+    monkeypatch.setattr(kyc_repository, "update_kyc_document", _update)
+    monkeypatch.setattr(kyc_services, "_object_exists", lambda bucket, key: True)
+    monkeypatch.setattr(kyc_services, "_queue_kyc_processing", lambda _id: None)
+
+    from app.auth import repository as auth_repository
+
+    monkeypatch.setattr(auth_repository, "update_user", AsyncMock())
+
+
+def test_required_sides_contract() -> None:
+    """The manual-upload contract is per document type — no universal
+    Front+Back+Selfie and no universal Front+Selfie assumption."""
+    sides = kyc_services.DOCUMENT_REQUIRED_SIDES
+    assert set(sides["passport"]) == {"front", "selfie"}
+    for doc_type in ("national_id", "driving_license", "residence_permit"):
+        assert set(sides[doc_type]) == {"front", "back", "selfie"}
+    assert "provider_managed" not in sides
+
+
+@pytest.mark.asyncio
+async def test_submit_national_id_requires_back(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A national ID without a back image must not reach pending."""
+    from app.shared.exceptions import ValidationError
+
+    user = _make_user()
+    doc = _make_doc(user_id=user.id, status="unverified", document_type="national_id")
+    doc.front_image_key = "kyc/u/d/front.jpg"
+    doc.selfie_image_key = "kyc/u/d/selfie.jpg"
+    _stub_submit_deps(monkeypatch, doc)
+
+    with pytest.raises(ValidationError, match="back"):
+        await kyc_services.submit_kyc_document(fake_session, user, doc.id)
+    assert doc.status == "unverified"
+
+
+@pytest.mark.asyncio
+async def test_submit_national_id_with_all_sides(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    user = _make_user()
+    doc = _make_doc(user_id=user.id, status="unverified", document_type="national_id")
+    doc.front_image_key = "kyc/u/d/front.jpg"
+    doc.back_image_key = "kyc/u/d/back.jpg"
+    doc.selfie_image_key = "kyc/u/d/selfie.jpg"
+    _stub_submit_deps(monkeypatch, doc)
+
+    updated = await kyc_services.submit_kyc_document(fake_session, user, doc.id)
+    assert updated.status == "pending"
+
+
+@pytest.mark.asyncio
+async def test_submit_passport_needs_no_back(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Passport flow is photo page + selfie — no fake second side."""
+    user = _make_user()
+    doc = _make_doc(user_id=user.id, status="unverified", document_type="passport")
+    doc.front_image_key = "kyc/u/d/front.jpg"
+    doc.selfie_image_key = "kyc/u/d/selfie.jpg"
+    _stub_submit_deps(monkeypatch, doc)
+
+    updated = await kyc_services.submit_kyc_document(fake_session, user, doc.id)
+    assert updated.status == "pending"
+
+
+@pytest.mark.asyncio
+async def test_initiate_rejects_provider_managed_type(
+    fake_session: AsyncMock,
+) -> None:
+    """provider_managed rows are created by verification sessions only —
+    clients must not initiate a manual upload under that type."""
+    from app.kyc.schemas import KycInitiateRequest
+    from app.shared.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
+        await kyc_services.initiate_kyc_document(
+            fake_session,
+            _make_user(),
+            KycInitiateRequest(document_type="provider_managed"),
+        )
+
+
+def test_kyc_status_response_exposes_required_sides() -> None:
+    from app.kyc.schemas import KycStatusResponse
+
+    response = KycStatusResponse(
+        user_id="u1",
+        kyc_status="unverified",
+        documents=[],
+        required_sides={
+            doc_type: list(sides)
+            for doc_type, sides in kyc_services.DOCUMENT_REQUIRED_SIDES.items()
+        },
+    )
+    assert response.required_sides["passport"] == ["front", "selfie"]
+    assert response.required_sides["national_id"] == ["front", "back", "selfie"]

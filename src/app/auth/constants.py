@@ -80,6 +80,7 @@ class KycDocumentType(StrEnum):
     PASSPORT = "passport"
     NATIONAL_ID = "national_id"
     DRIVING_LICENSE = "driving_license"
+    RESIDENCE_PERMIT = "residence_permit"
     # Provider-managed verification: the document type is selected and
     # validated by the identity-verification provider per country.
     PROVIDER_MANAGED = "provider_managed"

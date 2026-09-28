@@ -12,7 +12,19 @@ import { KycProviderFlow } from "@/components/kyc/KycProviderFlow";
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-type Step = "select" | "uploading" | "submitted" | "verified" | "rejected";
+const DOCUMENT_TYPES = [
+  "passport",
+  "national_id",
+  "driving_license",
+  "residence_permit",
+] as const;
+
+type ImageSide = "front" | "back" | "selfie";
+
+interface SideFile {
+  file: File | null;
+  preview: string | null;
+}
 
 export function KycUpload() {
   const t = useTranslations("kyc");
@@ -26,15 +38,24 @@ export function KycUpload() {
   const submitMutation = useSubmitKyc();
   const upgradeMutation = useUpgradeRole();
 
+  const [documentType, setDocumentType] = useState<string>("");
+  const [files, setFiles] = useState<Record<ImageSide, SideFile>>({
+    front: { file: null, preview: null },
+    back: { file: null, preview: null },
+    selfie: { file: null, preview: null },
+  });
   const frontRef = useRef<HTMLInputElement>(null);
+  const backRef = useRef<HTMLInputElement>(null);
   const selfieRef = useRef<HTMLInputElement>(null);
-  const [frontFile, setFrontFile] = useState<File | null>(null);
-  const [selfieFile, setSelfieFile] = useState<File | null>(null);
-  const [frontPreview, setFrontPreview] = useState<string | null>(null);
-  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const inputRefs: Record<ImageSide, React.RefObject<HTMLInputElement>> = {
+    front: frontRef,
+    back: backRef,
+    selfie: selfieRef,
+  };
   const [error, setError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<{ front: number; selfie: number }>({
+  const [uploadProgress, setUploadProgress] = useState<Record<ImageSide, number>>({
     front: 0,
+    back: 0,
     selfie: 0,
   });
   // Manual upload fallback when the automated provider is unavailable.
@@ -51,6 +72,14 @@ export function KycUpload() {
   const hasVerifiedDoc =
     kycStatus?.documents?.some((d) => d.status === "verified") ?? false;
 
+  // Document-side requirements come from the backend contract
+  // (kyc.required_sides), not a universal front/selfie assumption.
+  const requiredSides: ImageSide[] =
+    (kycStatus?.required_sides?.[documentType] as ImageSide[] | undefined) ??
+    (documentType === "passport"
+      ? ["front", "selfie"]
+      : ["front", "back", "selfie"]);
+
   const validateFile = (file: File): string | null => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
       return t("invalidType");
@@ -61,34 +90,34 @@ export function KycUpload() {
     return null;
   };
 
-  const handleFrontSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const err = validateFile(file);
-    if (err) {
-      setError(err);
-      return;
-    }
-    setError(null);
-    setFrontFile(file);
-    setFrontPreview(URL.createObjectURL(file));
-  };
+  const makeSelectHandler =
+    (side: ImageSide) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const err = validateFile(file);
+      if (err) {
+        setError(err);
+        return;
+      }
+      setError(null);
+      setFiles((prev) => ({
+        ...prev,
+        [side]: { file, preview: URL.createObjectURL(file) },
+      }));
+    };
 
-  const handleSelfieSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const err = validateFile(file);
-    if (err) {
-      setError(err);
-      return;
-    }
+  const handleDocumentTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDocumentType(e.target.value);
+    setFiles({
+      front: { file: null, preview: null },
+      back: { file: null, preview: null },
+      selfie: { file: null, preview: null },
+    });
     setError(null);
-    setSelfieFile(file);
-    setSelfiePreview(URL.createObjectURL(file));
   };
 
   const uploadToS3 = useCallback(
-    async (url: string, file: File, side: "front" | "selfie") => {
+    async (url: string, file: File, side: ImageSide) => {
       return new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener("progress", (e) => {
@@ -111,23 +140,32 @@ export function KycUpload() {
   );
 
   const handleSubmit = async () => {
-    if (!frontFile || !selfieFile) {
+    if (!documentType) {
+      setError(t("documentTypeRequired"));
+      return;
+    }
+    if (requiredSides.some((side) => !files[side].file)) {
       setError(t("bothRequired"));
       return;
     }
 
     setError(null);
-    setUploadProgress({ front: 0, selfie: 0 });
+    setUploadProgress({ front: 0, back: 0, selfie: 0 });
 
     try {
       const initiate = await initiateMutation.mutateAsync({
-        document_type: "national_id",
-        front_content_type: frontFile.type,
-        selfie_content_type: selfieFile.type,
+        document_type: documentType,
+        front_content_type: files.front.file?.type,
+        back_content_type: files.back.file?.type,
+        selfie_content_type: files.selfie.file?.type,
       });
 
-      await uploadToS3(initiate.upload_urls.front, frontFile, "front");
-      await uploadToS3(initiate.upload_urls.selfie, selfieFile, "selfie");
+      for (const side of requiredSides) {
+        const file = files[side].file;
+        if (file) {
+          await uploadToS3(initiate.upload_urls[side], file, side);
+        }
+      }
 
       await submitMutation.mutateAsync(initiate.document_id);
     } catch (err) {
@@ -146,6 +184,22 @@ export function KycUpload() {
       setError(t("upgradeFailed"));
     }
   };
+
+  const manualForm = (
+    <KycUploadForm
+      t={t}
+      documentType={documentType}
+      requiredSides={requiredSides}
+      files={files}
+      inputRefs={inputRefs}
+      onDocumentTypeChange={handleDocumentTypeChange}
+      onSelect={makeSelectHandler}
+      error={error}
+      onSubmit={handleSubmit}
+      isSubmitting={initiateMutation.isPending || submitMutation.isPending}
+      uploadProgress={uploadProgress}
+    />
+  );
 
   if (statusLoading) {
     return (
@@ -220,19 +274,7 @@ export function KycUpload() {
         {automated ? (
           <KycProviderFlow onManualFallback={() => setManualFallback(true)} />
         ) : (
-          <KycUploadForm
-            t={t}
-            frontRef={frontRef}
-            selfieRef={selfieRef}
-            frontPreview={frontPreview}
-            selfiePreview={selfiePreview}
-            onFrontSelect={handleFrontSelect}
-            onSelfieSelect={handleSelfieSelect}
-            error={error}
-            onSubmit={handleSubmit}
-            isSubmitting={initiateMutation.isPending || submitMutation.isPending}
-            uploadProgress={uploadProgress}
-          />
+          manualForm
         )}
       </div>
     );
@@ -255,19 +297,7 @@ export function KycUpload() {
         {automated ? (
           <KycProviderFlow onManualFallback={() => setManualFallback(true)} />
         ) : (
-          <KycUploadForm
-            t={t}
-            frontRef={frontRef}
-            selfieRef={selfieRef}
-            frontPreview={frontPreview}
-            selfiePreview={selfiePreview}
-            onFrontSelect={handleFrontSelect}
-            onSelfieSelect={handleSelfieSelect}
-            error={error}
-            onSubmit={handleSubmit}
-            isSubmitting={initiateMutation.isPending || submitMutation.isPending}
-            uploadProgress={uploadProgress}
-          />
+          manualForm
         )}
       </div>
     );
@@ -277,50 +307,47 @@ export function KycUpload() {
     return <KycProviderFlow onManualFallback={() => setManualFallback(true)} />;
   }
 
-  return (
-    <KycUploadForm
-      t={t}
-      frontRef={frontRef}
-      selfieRef={selfieRef}
-      frontPreview={frontPreview}
-      selfiePreview={selfiePreview}
-      onFrontSelect={handleFrontSelect}
-      onSelfieSelect={handleSelfieSelect}
-      error={error}
-      onSubmit={handleSubmit}
-      isSubmitting={initiateMutation.isPending || submitMutation.isPending}
-      uploadProgress={uploadProgress}
-    />
-  );
+  return manualForm;
 }
 
 interface KycUploadFormProps {
   t: (key: string) => string;
-  frontRef: React.RefObject<HTMLInputElement>;
-  selfieRef: React.RefObject<HTMLInputElement>;
-  frontPreview: string | null;
-  selfiePreview: string | null;
-  onFrontSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSelfieSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  documentType: string;
+  requiredSides: ImageSide[];
+  files: Record<ImageSide, SideFile>;
+  inputRefs: Record<ImageSide, React.RefObject<HTMLInputElement>>;
+  onDocumentTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onSelect: (side: ImageSide) => (e: React.ChangeEvent<HTMLInputElement>) => void;
   error: string | null;
   onSubmit: () => void;
   isSubmitting: boolean;
-  uploadProgress: { front: number; selfie: number };
+  uploadProgress: Record<ImageSide, number>;
 }
 
 function KycUploadForm({
   t,
-  frontRef,
-  selfieRef,
-  frontPreview,
-  selfiePreview,
-  onFrontSelect,
-  onSelfieSelect,
+  documentType,
+  requiredSides,
+  files,
+  inputRefs,
+  onDocumentTypeChange,
+  onSelect,
   error,
   onSubmit,
   isSubmitting,
   uploadProgress,
 }: KycUploadFormProps) {
+  // Side label: passports capture the photo page rather than a "front".
+  const sideLabel = (side: ImageSide): string =>
+    side === "front" && documentType === "passport"
+      ? t("passportPhotoPage")
+      : side === "selfie"
+        ? t("selfie")
+        : t(side === "front" ? "documentFront" : "documentBack");
+
+  const sideHint = (side: ImageSide): string =>
+    side === "selfie" ? t("selfieHint") : t("documentImageHint");
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl bg-neutral-50 p-4">
@@ -332,24 +359,45 @@ function KycUploadForm({
         </ul>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <UploadSlot
-          label={t("frontId")}
-          hint={t("frontIdHint")}
-          preview={frontPreview}
-          inputRef={frontRef}
-          onSelect={onFrontSelect}
-          progress={uploadProgress.front}
-        />
-        <UploadSlot
-          label={t("selfie")}
-          hint={t("selfieHint")}
-          preview={selfiePreview}
-          inputRef={selfieRef}
-          onSelect={onSelfieSelect}
-          progress={uploadProgress.selfie}
-        />
+      <div>
+        <label
+          htmlFor="kyc-document-type"
+          className="block text-sm font-semibold text-neutral-700"
+        >
+          {t("documentType")}
+        </label>
+        <select
+          id="kyc-document-type"
+          value={documentType}
+          onChange={onDocumentTypeChange}
+          className="input mt-2 w-full"
+        >
+          <option value="" disabled>
+            {t("documentTypePlaceholder")}
+          </option>
+          {DOCUMENT_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {t(`docTypes.${type}`)}
+            </option>
+          ))}
+        </select>
       </div>
+
+      {documentType && (
+        <div className={`grid gap-6 ${requiredSides.length > 2 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+          {requiredSides.map((side) => (
+            <UploadSlot
+              key={side}
+              label={sideLabel(side)}
+              hint={sideHint(side)}
+              preview={files[side].preview}
+              inputRef={inputRefs[side]}
+              onSelect={onSelect(side)}
+              progress={uploadProgress[side]}
+            />
+          ))}
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="text-sm text-danger-600">
@@ -361,7 +409,7 @@ function KycUploadForm({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !documentType}
           className="btn-primary text-sm"
         >
           {isSubmitting ? t("submitting") : t("submit")}

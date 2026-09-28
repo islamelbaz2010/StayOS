@@ -173,6 +173,23 @@ export interface paths {
     /** Kyc Status */
     get: operations["kyc_status_api_v1_kyc_status_get"];
   };
+  "/api/v1/kyc/verification/session": {
+    /**
+     * Verification Session
+     * @description Mint a provider SDK session, or report the manual fallback mode.
+     */
+    post: operations["verification_session_api_v1_kyc_verification_session_post"];
+  };
+  "/api/v1/kyc/webhooks/sumsub": {
+    /**
+     * Sumsub Webhook
+     * @description Sumsub verification webhook — server-authoritative result channel.
+     *
+     * The browser's "finished" state is never trusted: the signature-verified
+     * webhook is the only path that mutates verification state.
+     */
+    post: operations["sumsub_webhook_api_v1_kyc_webhooks_sumsub_post"];
+  };
   "/api/v1/kyc/pending": {
     /** List Pending Kyc */
     get: operations["list_pending_kyc_api_v1_kyc_pending_get"];
@@ -3523,6 +3540,8 @@ export interface components {
       status: components["schemas"]["KycStatus"];
       /** Legal Name */
       legal_name: string | null;
+      /** Provider */
+      provider?: string | null;
       /** Front Image Key */
       front_image_key: string | null;
       /** Back Image Key */
@@ -3550,7 +3569,7 @@ export interface components {
      * KycDocumentType
      * @enum {string}
      */
-    KycDocumentType: "passport" | "national_id" | "driving_license";
+    KycDocumentType: "passport" | "national_id" | "driving_license" | "residence_permit" | "provider_managed";
     /** KycImageDownloadResponse */
     KycImageDownloadResponse: {
       /** Front Url */
@@ -3611,7 +3630,7 @@ export interface components {
      * KycStatus
      * @enum {string}
      */
-    KycStatus: "unverified" | "pending" | "verified" | "rejected";
+    KycStatus: "unverified" | "pending" | "retry_required" | "manual_review" | "verified" | "rejected";
     /** KycStatusResponse */
     KycStatusResponse: {
       /** User Id */
@@ -3619,6 +3638,23 @@ export interface components {
       kyc_status: components["schemas"]["KycStatus"];
       /** Documents */
       documents: components["schemas"]["KycDocumentResponse"][];
+      /**
+       * Verification Mode
+       * @default manual
+       */
+      verification_mode?: string;
+      /**
+       * Automated Available
+       * @default false
+       */
+      automated_available?: boolean;
+      /**
+       * Required Sides
+       * @default {}
+       */
+      required_sides?: {
+        [key: string]: string[];
+      };
     };
     /** KycSubmitResponse */
     KycSubmitResponse: {
@@ -3634,6 +3670,29 @@ export interface components {
       back: string;
       /** Selfie */
       selfie: string;
+    };
+    /**
+     * KycVerificationSessionResponse
+     * @description Client-side verification session. ``mode="manual"`` tells the client
+     * to render the upload fallback; ``mode=<provider>`` carries an SDK
+     * access token for the embedded capture flow.
+     */
+    KycVerificationSessionResponse: {
+      /** Mode */
+      mode: string;
+      /** Provider */
+      provider?: string | null;
+      /** Document Id */
+      document_id?: string | null;
+      /** Access Token */
+      access_token?: string | null;
+      /** Expires At */
+      expires_at?: string | null;
+    };
+    /** KycWebhookResponse */
+    KycWebhookResponse: {
+      /** Message */
+      message: string;
     };
     /** LedgerEntryResponse */
     LedgerEntryResponse: {
@@ -6839,6 +6898,37 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["KycStatusResponse"];
+        };
+      };
+    };
+  };
+  /**
+   * Verification Session
+   * @description Mint a provider SDK session, or report the manual fallback mode.
+   */
+  verification_session_api_v1_kyc_verification_session_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["KycVerificationSessionResponse"];
+        };
+      };
+    };
+  };
+  /**
+   * Sumsub Webhook
+   * @description Sumsub verification webhook — server-authoritative result channel.
+   *
+   * The browser's "finished" state is never trusted: the signature-verified
+   * webhook is the only path that mutates verification state.
+   */
+  sumsub_webhook_api_v1_kyc_webhooks_sumsub_post: {
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["KycWebhookResponse"];
         };
       };
     };

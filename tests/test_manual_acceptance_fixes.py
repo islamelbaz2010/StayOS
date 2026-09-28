@@ -389,6 +389,7 @@ def _sumsub_headers(secret: str, body: bytes, alg="sha256") -> dict[str, str]:
 
 def test_sumsub_webhook_signature_valid(monkeypatch) -> None:
     monkeypatch.setattr(settings, "SUMSUB_WEBHOOK_SECRET", "whsec")
+    monkeypatch.setattr(settings, "SUMSUB_ALLOW_SANDBOX", True)
     body = b'{"type":"applicantReviewed"}'
     provider = SumsubProvider()
     assert provider.verify_webhook_signature(
@@ -402,6 +403,7 @@ def test_sumsub_webhook_signature_valid(monkeypatch) -> None:
 def test_sumsub_webhook_signature_fails_closed(monkeypatch) -> None:
     monkeypatch.setattr(settings, "SUMSUB_WEBHOOK_SECRET", "")
     monkeypatch.setattr(settings, "SUMSUB_SECRET_KEY", "")
+    monkeypatch.setattr(settings, "SUMSUB_ALLOW_SANDBOX", True)
     provider = SumsubProvider()
     assert not provider.verify_webhook_signature(
         {"x-payload-digest": "x"}, b"{}"
@@ -585,6 +587,7 @@ def test_sumsub_webhook_endpoint_verifies_signature(
 
     app.dependency_overrides[get_session] = _override
     monkeypatch.setattr(settings, "SUMSUB_WEBHOOK_SECRET", "whsec")
+    monkeypatch.setattr(settings, "SUMSUB_ALLOW_SANDBOX", True)
     monkeypatch.setattr(
         kyc_services, "apply_provider_event", AsyncMock(return_value="processed")
     )
@@ -824,6 +827,63 @@ def test_sumsub_request_signing_covers_json_body(monkeypatch) -> None:
         "POST", "/resources/accessTokens/sdk", b'{"userId":"evil"}'
     )
     assert tampered["X-App-Access-Sig"] != headers["X-App-Access-Sig"]
+
+
+# ---- Sumsub environment scoping (sbx:/prd: token guard) ----------------------
+
+
+def _sumsub_creds(monkeypatch, token: str) -> None:
+    monkeypatch.setattr(settings, "SUMSUB_APP_TOKEN", token)
+    monkeypatch.setattr(settings, "SUMSUB_SECRET_KEY", "secret")
+    monkeypatch.setattr(settings, "SUMSUB_LEVEL_NAME", "id-and-liveness")
+    monkeypatch.setattr(settings, "SUMSUB_WEBHOOK_SECRET", "")
+
+
+def test_sumsub_sandbox_token_inert_in_deployed_environment(monkeypatch) -> None:
+    """Sandbox creds copied to a deployed service must never activate the
+    automated flow or authenticate sandbox webhooks — regardless of the
+    opt-in flag. Deployed ENVIROMENTs here include ``staging`` because the
+    live deployment is labelled staging."""
+    _sumsub_creds(monkeypatch, "sbx:token")
+    body = b'{"type":"applicantReviewed"}'
+    for env in ("staging", "production"):
+        monkeypatch.setattr(settings, "ENVIRONMENT", env)
+        for flag in (False, True):
+            monkeypatch.setattr(settings, "SUMSUB_ALLOW_SANDBOX", flag)
+            assert not SumsubProvider().is_configured()
+            assert not SumsubProvider().verify_webhook_signature(
+                _sumsub_headers("secret", body), body
+            )
+
+
+def test_sumsub_sandbox_token_requires_explicit_opt_in(monkeypatch) -> None:
+    """Locally, a sandbox token still requires SUMSUB_ALLOW_SANDBOX=true."""
+    _sumsub_creds(monkeypatch, "sbx:token")
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(settings, "SUMSUB_ALLOW_SANDBOX", False)
+    assert not SumsubProvider().is_configured()
+
+    monkeypatch.setattr(settings, "SUMSUB_ALLOW_SANDBOX", True)
+    provider = SumsubProvider()
+    assert provider.is_configured()
+    body = b'{"type":"applicantReviewed"}'
+    assert provider.verify_webhook_signature(
+        _sumsub_headers("secret", body), body
+    )
+
+
+def test_sumsub_production_token_requires_production_environment(
+    monkeypatch,
+) -> None:
+    """A ``prd:`` token must not activate outside production."""
+    _sumsub_creds(monkeypatch, "prd:token")
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(settings, "SUMSUB_ALLOW_SANDBOX", True)
+    assert not SumsubProvider().is_configured()
+
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "SUMSUB_ALLOW_SANDBOX", False)
+    assert SumsubProvider().is_configured()
 
 
 # ---- Webhook resolution via externalUserId + applicantId backfill -----------

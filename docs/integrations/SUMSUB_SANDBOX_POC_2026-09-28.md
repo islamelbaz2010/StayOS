@@ -47,64 +47,93 @@ against the official contract:
 4. Request signing now covers the JSON body (`ts+METHOD+path+body`,
    `Content-Type: application/json`).
 
-## 3. POC execution status
+## 3. POC execution status — 2026-09-29 update
 
-**SANDBOX BLOCKED — SUMSUB ACCOUNT ACTION REQUIRED (Blocker class B/E).**
+**LIVE SANDBOX RUN: PASS** (server-side chain) / **PARTIAL** (in-browser
+capture is a human step — see below).
 
-No Sumsub account credentials exist anywhere in the project (env files,
-Railway production, secrets — all verified empty). The Dashboard account
-can only be created by the Founder. Until then no SDK token can be
-minted and no live sandbox applicant can be created.
+Sandbox credentials were supplied via `.env` (never committed). All five
+legs were executed against the real Sumsub Sandbox API and a live local
+StayOS API (`ENVIRONMENT=development` + `SUMSUB_ALLOW_SANDBOX=true`,
+scratch DB, `cloudflared` tunnel):
 
-**Not** a code blocker — the chain is fully implemented and unit-verified:
-session mint → SDK launch → webhook signature → idempotency → state
-mapping → `/kyc/status` → UI.
+| Step | Result |
+|---|---|
+| `POST /resources/accessTokens/sdk` | PASS — real token minted (`_act-s…`, 600s TTL); signing + `userId`=externalUserId + `levelName=id-and-liveness` all accepted |
+| `POST /resources/applicants` (externalUserId) | PASS — applicant `6abae755…` created (201), `externalUserId` round-trips |
+| `POST …/status/testCompleted` GREEN | PASS — `{ok:1}`; sandbox decision simulated |
+| WebSDK launch (headless Chromium, real `@sumsub/websdk@2.9`) | PASS — iframe booted with the minted token, zero console errors, level rendered "Provide identity document → liveness check" steps |
+| `applicantCreated` webhook → local API | PASS — externalUserId resolution + real `applicantId` backfill (ordering fix proven live) |
+| `applicantReviewed` GREEN webhook | PASS — doc→`verified`, `verified_at` set, `user.kyc_status`→`verified` |
+| `applicantReviewed` RED RETRY → GREEN | PASS — `retry_required` → `verified` |
+| `applicantReviewed` RED FINAL → GREEN re-review | PASS — `rejected` → `verified` (documented re-review semantics) |
+| Duplicate deliveries | PASS — `already processed` (Redis idempotency) |
+| Unsigned / tampered-body webhooks | PASS — 401 (fail closed) |
+| `GET /resources/applicants/{id}/status` + `/one` | BLOCKED — 404; the sandbox token lacks the **View applicants** permission. Only affects `get_applicant_legal_name` (best-effort, fails to `None`) and `get_status` (currently uncalled). Core webhook-authoritative flow unaffected. |
+| In-browser document capture + liveness | EXTERNAL — requires a human with a camera; SDK boot/level flow proven |
+| Sumsub→StayOS live webhook delivery | EXTERNAL — receiver registration is Dashboard-only (no `POST /resources/webhooks` API); see §4 |
 
-## 4. Exact Founder checklist (Sandbox only — no subscription)
+**Production-safety guard added this batch:** `sbx:` tokens are active
+only when `SUMSUB_ALLOW_SANDBOX=true` **and** `ENVIRONMENT` is
+`development`/`test`; `prd:` tokens require `ENVIRONMENT=production`.
+The guard applies to both session/config paths (`is_configured`) and
+webhook signature verification (sandbox-signed webhooks fail closed in
+deployed environments). This matters because the Founder placed sandbox
+credentials on Railway production — they are now inert there regardless
+of `KYC_VERIFICATION_MODE`/`SUMSUB_LEVEL_NAME`/`SUMSUB_WEBHOOK_SECRET`.
 
-1. Register / sign in at `dashboard.sumsub.com` (email verification;
-   do **not** start a paid plan, enter card details, or accept
-   production terms — if signup *forces* a card/trial activation, stop
-   and report back before proceeding).
-2. Toggle the mode switch (top-right) to **Sandbox**.
-3. **Settings → Developers → App tokens**: generate app token + secret
-   key (sandbox pair — shown once).
-4. **Verification levels**: confirm or create a Basic KYC level
-   (e.g. `basic-kyc-level`) — document capture + selfie/liveness only;
-   no AML/address/KYB steps.
-5. **Settings → Developers → Webhooks**: add a receiver pointing at the
-   sandbox test host (see §5) for `/api/v1/kyc/webhooks/sumsub`, signing
-   algorithm SHA-256; copy the webhook secret.
-6. Hand Devin **only** these via the secrets mechanism (never chat/git):
-   `SUMSUB_APP_TOKEN`, `SUMSUB_SECRET_KEY`, `SUMSUB_LEVEL_NAME`,
-   `SUMSUB_WEBHOOK_SECRET`.
-7. Do **not** set these in the Railway `production` environment and do
-   not set `KYC_VERIFICATION_MODE` there.
+## 4. Sumsub Dashboard actions (Sandbox only — still required)
+
+1. **Webhook manager** (Dev space → Webhooks): create one receiver —
+   Target: `https://<api-host>/api/v1/kyc/webhooks/sumsub`, receiver
+   HTTP address, signature algorithm **SHA256**, resend enabled,
+   applicant types: Individuals, webhook types:
+   `applicantCreated`, `applicantPending`, `applicantReviewed`,
+   `applicantOnHold`, `applicantAwaitingUser`, `applicantAwaitingService`,
+   `applicantActionPending`, `applicantActionReviewed` — all mapped to
+   StayOS outcomes in `parse_webhook`. Copy the generated **Secret key**
+   into `SUMSUB_WEBHOOK_SECRET` (local `.env`) — Production toggle stays
+   OFF. For a live-delivery re-test keep the temporary tunnel running
+   (or register a stable staging URL).
+2. **App token permissions** (optional, recommended): add **View
+   applicants** to `stayos-sandbox-websdk-poc` — enables
+   `get_applicant_legal_name` enrichment on GREEN and any future
+   `get_status` polling. Without it those calls return 404 (handled —
+   legal name simply stays unset). Do not add any other permissions.
+3. Do **not** switch to Production mode, verify the company, or start a
+   trial.
 
 ## 5. Recommended sandbox isolation
 
-- **Primary path — local:** run the API locally with `.env` sandbox
-  values + `KYC_VERIFICATION_MODE=automated_fallback`; expose the webhook
-  via a tunnel (ngrok/cloudflared) registered as the Sumsub receiver;
-  run the Web UI locally against it; use one dedicated StayOS test
-  account and Sumsub's official test documents/data only.
-- **Optional later — Railway `staging` environment:** if a shared
-  acceptance run is wanted, create a separate Railway environment rather
-  than touching `production`. Sandbox tokens cannot perform production
-  checks (mode-scoped by Sumsub), but keep them out of the production
-  service anyway — their presence flips `automated_available` and would
-  surface the provider flow to real users.
+- **Local path (used for this run):** `.env` sandbox values +
+  `KYC_VERIFICATION_MODE=automated_fallback` +
+  `SUMSUB_ALLOW_SANDBOX=true` (dev/test only); `cloudflared` tunnel for
+  the webhook receiver; dedicated test users only.
+- **Deployed environments:** sandbox tokens are inert by construction
+  (see §3 guard) — a `sbx:` token on Railway production can neither mint
+  sessions nor authenticate webhooks.
+- **Production activation (future, intentional):** requires a `prd:`
+  token pair + `ENVIRONMENT=production` + `KYC_VERIFICATION_MODE` +
+  production webhook secret — plus the legal/privacy prerequisites.
 
 ## 6. Production safety (verified after this batch)
 
-`KYC_VERIFICATION_MODE`/`SUMSUB_*` — all unset in Railway production;
-`automated_available=false` → `/kyc` renders the manual fallback; session
-endpoint returns `mode="manual"`; unsigned webhooks rejected (401);
-ENVIRONMENT=test blocks any outbound provider call in the test suite.
-No marketing or legal claims changed; no production applicant can exist.
+Railway production currently carries `SUMSUB_APP_TOKEN`/`SUMSUB_SECRET_KEY`
+(sbx:-scoped) but no `SUMSUB_LEVEL_NAME`/`KYC_VERIFICATION_MODE`/
+`SUMSUB_WEBHOOK_SECRET`, and `ENVIRONMENT=staging` there. With the
+guard deployed: `is_configured()`=False → `automated_available`=False →
+manual mode everywhere; sandbox-signed webhooks rejected 401.
+Recommendation (hygiene, not a vulnerability): remove the sbx variables
+from Railway production once POC work concludes — they can only ever be
+inert there.
 
-## 7. What remains after Founder provides sandbox credentials
+## 7. Remaining external steps
 
-Run `→ POST /kyc/verification/session` → WebSDK capture → Sumsub sandbox
-decision → signed webhook → `/kyc/status` → UI. Record results in this
-file's §3 (flip blocker to PASS/PARTIAL with evidence).
+1. Founder: create the Dashboard webhook receiver (§4.1) — enables live
+   Sumsub→StayOS delivery (the only leg not yet observed end-to-end;
+   every property it exercises — signature, idempotency, resolution,
+   state mapping — is verified with real signed payloads).
+2. Founder (optional): add **View applicants** to the token (§4.2).
+3. Optional UX pass: a human runs the in-browser capture/liveness once
+   — the SDK owns document quality, authenticity, liveness and
+   face-match; StayOS code contains no custom capture logic.

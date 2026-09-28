@@ -581,6 +581,10 @@ async def apply_provider_event(
     fields: dict[str, object] = {"status": new_status}
     if event.outcome is ProviderOutcome.VERIFIED:
         fields["verified_at"] = now
+        # A provider re-review can correct a prior rejection — clear the
+        # stale rejection audit fields so a verified record is clean.
+        fields["rejected_at"] = None
+        fields["rejection_reason"] = None
         provider = get_verification_provider()
         if provider is not None and provider.name == event.provider:
             try:

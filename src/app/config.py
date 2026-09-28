@@ -155,6 +155,13 @@ class Settings(BaseSettings):
         default="",
         description="Secret key configured on the Sumsub webhook receiver for digest verification",
     )
+    # Sandbox app tokens (``sbx:``) activate only when this is explicitly set
+    # AND ENVIRONMENT is development/test — a sandbox token must never drive
+    # verification for real users in a deployed environment.
+    SUMSUB_ALLOW_SANDBOX: bool = Field(
+        default=False,
+        description="Explicit opt-in to activate a Sumsub sandbox (sbx:) token — development/test only",
+    )
 
     SENTRY_DSN: str = Field(default="", description="Sentry DSN")
 

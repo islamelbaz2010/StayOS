@@ -50,7 +50,27 @@ class SumsubProvider(IdentityVerificationProvider):
             settings.SUMSUB_APP_TOKEN
             and settings.SUMSUB_SECRET_KEY
             and settings.SUMSUB_LEVEL_NAME
+            and self._environment_compatible()
         )
+
+    def _environment_compatible(self) -> bool:
+        """Sumsub tokens are environment-scoped: sandbox apps issue ``sbx:``
+        tokens, production apps ``prd:``. A sandbox token must never activate
+        automated verification (or validate its webhooks) in a deployed
+        environment, even if credentials were copied there by mistake.
+
+        ``sbx:`` requires explicit opt-in via ``SUMSUB_ALLOW_SANDBOX`` and a
+        local/test ``ENVIRONMENT``; ``prd:`` requires ``ENVIRONMENT`` to be
+        production. Unprefixed tokens keep legacy behaviour (tests/mocks)."""
+        token = settings.SUMSUB_APP_TOKEN
+        if token.startswith("sbx:"):
+            return (
+                settings.SUMSUB_ALLOW_SANDBOX
+                and settings.ENVIRONMENT in ("development", "test")
+            )
+        if token.startswith("prd:"):
+            return settings.ENVIRONMENT == "production"
+        return True
 
     # ---- request signing -------------------------------------------------
 
@@ -154,6 +174,8 @@ class SumsubProvider(IdentityVerificationProvider):
     def verify_webhook_signature(
         self, headers: dict[str, str], body: bytes
     ) -> bool:
+        if not self._environment_compatible():
+            return False  # sandbox credentials must not authenticate webhooks here
         secret = settings.SUMSUB_WEBHOOK_SECRET or settings.SUMSUB_SECRET_KEY
         if not secret:
             return False  # fail closed — unverifiable results are not trusted

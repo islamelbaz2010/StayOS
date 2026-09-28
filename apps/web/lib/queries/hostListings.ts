@@ -240,11 +240,12 @@ export async function rejectListing(
   return data;
 }
 
-export function useHostListings() {
+export function useHostListings(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["host-listings"],
     queryFn: getHostListings,
     refetchInterval: 30_000,
+    enabled: options.enabled ?? true,
   });
 }
 

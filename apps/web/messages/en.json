@@ -32,6 +32,7 @@
     "signOut": "Sign out",
     "admin": "Admin",
     "becomeHost": "Become a host",
+    "hostGuide": "Hosting guide",
     "myListings": "My listings",
     "pendingListings": "Pending listings",
     "kycReview": "KYC Review",
@@ -1450,6 +1451,7 @@
   },
   "hostNav": {
     "dashboard": "Dashboard",
+    "guide": "Guide",
     "properties": "Properties",
     "reservations": "Reservations",
     "kyc": "Identity Verification",
@@ -2302,5 +2304,301 @@
       "notConfigured": "Not set",
       "editTax": "Update in personal information"
     }
+  },
+  "becomeHost": {
+    "title": "Become a host on StayOS",
+    "subtitle": "Share your place with guests across Egypt. StayOS walks with you from identity verification to your first published listing — with a manual review at every step that matters.",
+    "stepsTitle": "How hosting works",
+    "stepStatus": {
+      "done": "Done",
+      "pending": "In review",
+      "todo": "To do"
+    },
+    "steps": {
+      "account": {
+        "title": "Create your StayOS account",
+        "body": "Sign up with your phone number and set up your profile. Your account is the base for hosting, messaging, and payouts."
+      },
+      "verify": {
+        "title": "Verify your identity",
+        "body": "Upload your national ID and a selfie. Our team reviews every submission manually — there is no automated or instant approval."
+      },
+      "activate": {
+        "title": "Activate hosting",
+        "body": "Once your identity is verified, activate the host role from the verification page to unlock hosting tools."
+      },
+      "listing": {
+        "title": "Create your listing",
+        "body": "Add your property details, photos, location, amenities, house rules, availability, and nightly price. You can save a draft and finish later."
+      },
+      "live": {
+        "title": "Submit for review and go live",
+        "body": "Send your listing for review. Once approved it appears in search and guests can book it. You stay in control of availability and pricing."
+      }
+    },
+    "earningsTitle": "How earnings work",
+    "earningsBody": "You set your nightly accommodation price and an optional cleaning fee. StayOS shows every charge clearly before a guest books.",
+    "earningsPoints": {
+      "setPrice": "You set the nightly accommodation price and cleaning fee for each listing.",
+      "commission": "StayOS charges hosts a 6% service commission on the accommodation amount of each confirmed booking.",
+      "allInclusive": "Guests see one all-inclusive price that already includes the StayOS guest fee and VAT — no surprise charges at checkout.",
+      "net": "Your net earnings per booking equal accommodation plus cleaning, minus the 6% host commission.",
+      "payouts": "Set your payout preference under Payments & payouts; payout status is tracked on your Earnings page."
+    },
+    "expectationsTitle": "What we ask of hosts",
+    "expectations": {
+      "accurate": "Keep your listing accurate: photos, amenities, location, and house rules must match the real stay.",
+      "photos": "Clear, honest photos help guests book with confidence and reduce disputes.",
+      "review": "Listings and identity documents are reviewed manually by the StayOS team — approval is not automatic.",
+      "communication": "Respond to guest messages and reservation requests promptly through StayOS messaging."
+    },
+    "cta": {
+      "signIn": "Sign in to start",
+      "verifyIdentity": "Verify your identity",
+      "continueVerification": "Continue verification",
+      "createListing": "Create your listing",
+      "openDashboard": "Open your hosting dashboard"
+    },
+    "links": {
+      "standards": "Hosting standards",
+      "help": "Help center",
+      "support": "Contact support"
+    }
+  },
+  "hostGuide": {
+    "title": "Hosting guide",
+    "subtitle": "Everything you need to run your stay on StayOS — what each tool does, why it matters, and where to use it.",
+    "readGuide": "Read guide",
+    "back": "Back to the hosting guide",
+    "notFoundTitle": "Guide not found",
+    "notFoundBody": "This guide topic doesn't exist. Head back to the hosting guide.",
+    "readinessTitle": "Your hosting readiness",
+    "readinessBody": "{count} of {total} ready — based on your real account, verification, and listing status.",
+    "status": {
+      "ready": "Ready",
+      "pending": "In review",
+      "attention": "Needs attention"
+    },
+    "readiness": {
+      "identity": {
+        "title": "Identity verified",
+        "body": "Your identity documents have been submitted and reviewed."
+      },
+      "listing": {
+        "title": "Listing created",
+        "body": "You have at least one listing draft or published property."
+      },
+      "live": {
+        "title": "Listing live",
+        "body": "At least one listing is approved and visible to guests."
+      },
+      "photos": {
+        "title": "Photos added",
+        "body": "A listing has a cover photo so guests can see your place."
+      },
+      "pricing": {
+        "title": "Pricing set",
+        "body": "A nightly accommodation price is set on a listing."
+      },
+      "payout": {
+        "title": "Payout method",
+        "body": "You have chosen how you want to receive your earnings."
+      }
+    },
+    "sections": {
+      "start": {
+        "title": "Getting started",
+        "body": "Set yourself up to host on StayOS."
+      },
+      "manage": {
+        "title": "Manage your stay",
+        "body": "Your day-to-day tools: calendar, reservations, and guest messages."
+      },
+      "improve": {
+        "title": "Improve your hosting",
+        "body": "Make your listing clearer, fairer, and easier to book."
+      },
+      "money": {
+        "title": "Earnings & payouts",
+        "body": "Understand what you earn and how you get paid."
+      },
+      "safety": {
+        "title": "Safety & responsibilities",
+        "body": "Host responsibly and keep guests safe."
+      }
+    },
+    "topics": {
+      "verification": {
+        "title": "Identity verification",
+        "intro": "StayOS reviews every host's identity manually. A verified host builds trust with guests before the first booking.",
+        "points": {
+          "p1": "Upload a photo of your national ID and a selfie from the verification page.",
+          "p2": "Documents are stored securely and reviewed by the StayOS team — nothing is automated or instant.",
+          "p3": "Once approved, activate hosting from the verification page to unlock host tools.",
+          "p4": "If a submission is rejected you'll see the reason and can submit again."
+        }
+      },
+      "listing-setup": {
+        "title": "Setting up your listing",
+        "intro": "A complete, accurate listing is what guests see in search. Take your time — you can save a draft and come back.",
+        "points": {
+          "p1": "Start with the basics: property type, location, rooms, beds, and guest capacity.",
+          "p2": "Write a clear title and description that tells guests what makes the place comfortable.",
+          "p3": "Add honest photos — a cover image first, then every room and key amenity.",
+          "p4": "Set amenities, house rules, check-in instructions, and your cancellation policy.",
+          "p5": "Choose your nightly price and cleaning fee, then submit the listing for review when it's ready."
+        }
+      },
+      "calendar": {
+        "title": "Calendar & availability",
+        "intro": "Your calendar controls when guests can book. Keep it up to date so you never get a booking you can't honor.",
+        "points": {
+          "p1": "Blocked dates can't be booked — use them for maintenance, personal stays, or downtime.",
+          "p2": "Booked dates fill automatically when a reservation is confirmed.",
+          "p3": "Minimum and maximum stay lengths come from your listing settings.",
+          "p4": "Review upcoming check-ins and check-outs from your host dashboard each day."
+        }
+      },
+      "instant-book": {
+        "title": "Instant Book",
+        "intro": "Instant Book lets guests confirm a reservation immediately instead of sending you a request first.",
+        "points": {
+          "p1": "With Instant Book on, guests book your open dates instantly — no manual approval needed.",
+          "p2": "With it off, each booking arrives as a request you accept or decline.",
+          "p3": "You can switch Instant Book per listing from the listing editor at any time.",
+          "p4": "Keep your calendar accurate either way — confirmed bookings are binding."
+        }
+      },
+      "reservations": {
+        "title": "Reservations",
+        "intro": "Your reservations page is where every booking lives: requests, upcoming stays, and past trips.",
+        "points": {
+          "p1": "New requests show the guest, dates, and price — respond before they expire.",
+          "p2": "Track upcoming check-ins and current stays from the host dashboard.",
+          "p3": "Payment status is tracked on each booking — StayOS collects payment from the guest.",
+          "p4": "Cancellations follow your listing's cancellation policy automatically."
+        }
+      },
+      "messaging": {
+        "title": "Guest communication",
+        "intro": "All guest communication happens inside StayOS messaging so both sides have a record.",
+        "points": {
+          "p1": "Reply promptly — fast answers turn questions into confirmed bookings.",
+          "p2": "Share check-in details in the message thread before arrival.",
+          "p3": "Keep payments and personal contact details inside the platform for your protection.",
+          "p4": "Notification preferences control which alerts you receive — reservation-critical messages still reach you."
+        }
+      },
+      "check-in-out": {
+        "title": "Check-in & check-out",
+        "intro": "Smooth arrivals and departures start with clear instructions set on your listing.",
+        "points": {
+          "p1": "Set your check-in and check-out times in the listing editor so guests know what to expect.",
+          "p2": "Write check-in instructions guests can actually follow — directions, keys, building access, parking.",
+          "p3": "If your place supports it, enable self check-in and choose the methods you use.",
+          "p4": "Message guests before arrival to confirm timing and answer last questions."
+        }
+      },
+      "house-rules": {
+        "title": "House rules",
+        "intro": "House rules set expectations before a guest books — guests see them on your listing page.",
+        "points": {
+          "p1": "Write rules in plain language: smoking, pets, gatherings, quiet hours, visitors.",
+          "p2": "Rules you set are part of the listing — guests agree to them when they book.",
+          "p3": "Keep rules reasonable and specific so they're easy to follow and enforce.",
+          "p4": "Update rules any time in the listing editor; changes apply to new bookings."
+        }
+      },
+      "listing-quality": {
+        "title": "Listing quality",
+        "intro": "Listings that look and read well get more bookings. Small improvements add up.",
+        "points": {
+          "p1": "Use bright, real photos of every room — shoot in daylight and tidy up first.",
+          "p2": "Describe the space honestly: size, floor, stairs, noise, and anything a guest should know.",
+          "p3": "List every amenity you actually provide — mismatches lead to bad reviews.",
+          "p4": "Mention what makes the neighborhood useful: transport, shops, and landmarks."
+        }
+      },
+      "reviews": {
+        "title": "Reviews",
+        "intro": "Reviews are how hosts and guests build trust on StayOS after every completed stay.",
+        "points": {
+          "p1": "Guests can review a stay after check-out; their reviews appear on your listing.",
+          "p2": "You can leave a review for your guest from the reservation page.",
+          "p3": "Respond to reviews politely — future guests read your responses.",
+          "p4": "If a review breaks StayOS rules, report it — reports go to the admin moderation queue."
+        }
+      },
+      "pricing": {
+        "title": "Pricing",
+        "intro": "You control what guests pay per night. StayOS calculates fees and taxes automatically on every booking.",
+        "points": {
+          "p1": "Your nightly accommodation price and cleaning fee are set per listing.",
+          "p2": "StayOS takes a 6% host commission on the accommodation amount only.",
+          "p3": "Guests pay a 6% service fee on accommodation plus VAT — already included in the price they see.",
+          "p4": "Your net earnings equal accommodation plus cleaning minus the 6% commission.",
+          "p5": "Listing, weekly, and monthly discounts plus weekend and peak multipliers live in the listing editor — use the earnings page to simulate the math."
+        }
+      },
+      "earnings": {
+        "title": "Earnings",
+        "intro": "Your earnings page shows what you've made across bookings — calculated by StayOS, not estimated.",
+        "points": {
+          "p1": "Each booking shows accommodation, cleaning, the 6% host commission, and your net.",
+          "p2": "Earnings are grouped by period so you can track income over time.",
+          "p3": "Any manual adjustment by the StayOS team appears as an audited entry — never applied silently.",
+          "p4": "Totals always come from the server — the numbers you see are the numbers that count."
+        }
+      },
+      "payouts": {
+        "title": "Payouts",
+        "intro": "Choose how you want to receive your earnings and track payout status from your account.",
+        "points": {
+          "p1": "Set your payout preference — bank account or wallet — under Payments & payouts.",
+          "p2": "Payout details are stored securely and only ever shown masked.",
+          "p3": "Payout status and history live on your earnings page.",
+          "p4": "Questions about a specific payout? Contact support with the booking reference."
+        }
+      },
+      "safety": {
+        "title": "Host & guest safety",
+        "intro": "A few habits protect you, your property, and your guests on every stay.",
+        "points": {
+          "p1": "Keep a working smoke detector and clear exits; share emergency numbers in your check-in instructions.",
+          "p2": "Confirm the booking details before sharing access information.",
+          "p3": "Keep communication and payments on StayOS — moving off-platform removes your protection.",
+          "p4": "If something feels wrong — suspicious requests, pressure, or unsafe situations — contact support immediately.",
+          "p5": "StayOS does not provide insurance; you are responsible for your own property and liability arrangements."
+        }
+      },
+      "responsible-hosting": {
+        "title": "Responsible hosting",
+        "intro": "Hosting well means respecting your neighbors, your community, and your guests.",
+        "points": {
+          "p1": "Keep noise reasonable and set quiet-hour expectations in your house rules.",
+          "p2": "Make sure your listing information stays accurate — guests rely on it.",
+          "p3": "Price transparently and never ask guests to pay outside StayOS.",
+          "p4": "Know your local obligations — rules for short-term rentals vary, so check what applies to your property.",
+          "p5": "Treat every guest with respect; discrimination has no place on StayOS."
+        }
+      }
+    },
+    "actions": {
+      "openKyc": "Verify identity",
+      "newListing": "New listing",
+      "manageListings": "Manage listings",
+      "openCalendar": "Open calendar",
+      "openReservations": "Open reservations",
+      "openMessages": "Open messages",
+      "openEarnings": "Open earnings",
+      "openPayouts": "Payout settings",
+      "editListing": "Edit listing",
+      "openProfile": "Host profile",
+      "standards": "Hosting standards",
+      "help": "Help center",
+      "support": "Contact support"
+    },
+    "supportTitle": "Need help?",
+    "supportBody": "Our team can help with verification, listings, reservations, and payouts."
   }
 }

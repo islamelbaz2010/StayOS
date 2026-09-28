@@ -40,15 +40,16 @@ export function Footer() {
       ? [
           { href: `/${locale}/host`, label: t("hostDashboard") },
           { href: `/${locale}/host/listings`, label: t("myListings") },
+          { href: `/${locale}/host/guide`, label: t("hostGuide") },
           { href: `/${locale}/host-standards`, label: t("hostStandards") },
         ]
       : isInternal
         ? []
-        : [{ href: `/${locale}/kyc`, label: t("becomeHost") }];
+        : [{ href: `/${locale}/become-a-host`, label: t("becomeHost") }];
 
   // Anonymous/guest users get the host-entry column; its heading must use the
-  // same canonical label as the header link for /kyc ("Become a host"), not
-  // the host-side "List your property" terminology.
+  // same canonical label as the header link for /become-a-host
+  // ("Become a host"), not the host-side "List your property" terminology.
   const workspaceHeading = hasAdminAccess
     ? t("admin")
     : isInternal

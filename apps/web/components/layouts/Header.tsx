@@ -184,6 +184,7 @@ export function Header() {
           count: hostPendingCount,
         },
         { href: `/${locale}/host/listings`, label: t("myListings") },
+        { href: `/${locale}/host/guide`, label: t("hostGuide") },
         { href: `/${locale}/host/earnings`, label: t("earnings") }
       );
     }
@@ -258,7 +259,7 @@ export function Header() {
         <div className="flex items-center gap-2 sm:gap-3">
           {showBecomeHost && (
             <Link
-              href={`/${locale}/kyc`}
+              href={`/${locale}/become-a-host`}
               className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-accent-600 hover:bg-neutral-100 sm:inline-block"
             >
               {t("becomeHost")}
@@ -320,7 +321,7 @@ export function Header() {
                 {showBecomeHost && (
                   <div className="border-t border-neutral-100 py-1">
                     <Link
-                      href={`/${locale}/kyc`}
+                      href={`/${locale}/become-a-host`}
                       onClick={() => setAccountOpen(false)}
                       className="block rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                     >
@@ -384,7 +385,7 @@ export function Header() {
             {accountMenuItems(() => setMobileOpen(false))}
             {showBecomeHost && (
               <Link
-                href={`/${locale}/kyc`}
+                href={`/${locale}/become-a-host`}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
                 onClick={() => setMobileOpen(false)}
               >

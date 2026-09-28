@@ -136,7 +136,7 @@ export default function AccountSettingsPage() {
               <Card
                 title={t("cards.becomeHost.title")}
                 body={t("cards.becomeHost.body")}
-                href={`/${locale}/kyc`}
+                href={`/${locale}/become-a-host`}
                 action={t("open")}
               />
             )}

@@ -128,8 +128,9 @@ describe("Header role visibility", () => {
     // /host/earnings is earnings — must not reuse the guest "Payments" label
     for (const a of byHref("/en/host/earnings"))
       expect(a.textContent).toContain(t.earnings);
-    // hosts are already hosts — no guest CTA toward /kyc
+    // hosts are already hosts — no guest CTA toward the host-entry page
     expect(byHref("/en/kyc")).toHaveLength(0);
+    expect(byHref("/en/become-a-host")).toHaveLength(0);
   });
 
   it("admin sees the admin link", () => {
@@ -201,20 +202,24 @@ describe("Footer role visibility", () => {
     const hrefs = anchors.map((a) => a.getAttribute("href"));
     expect(hrefs).toContain("/en/host");
     expect(hrefs).toContain("/en/host/listings");
+    expect(hrefs).toContain("/en/host/guide");
     expect(hrefs.filter((h) => h?.includes("/admin"))).toHaveLength(0);
     expect(hrefs).not.toContain("/en/kyc");
+    expect(hrefs).not.toContain("/en/become-a-host");
     // /host link is labeled as the dashboard, not the guest CTA
     const dash = anchors.find((a) => a.getAttribute("href") === "/en/host");
     expect(dash?.textContent).toContain(t.hostDashboard);
     expect(screen.queryByText(t.becomeHost)).toBeNull();
   });
 
-  it("guest footer uses the canonical 'Become a host' label for /kyc", () => {
+  it("guest footer uses the canonical 'Become a host' label for /become-a-host", () => {
     as("guest");
     const { container } = renderWith(<Footer />);
     const anchors = Array.from(container.querySelectorAll("a"));
-    const kycLink = anchors.find((a) => a.getAttribute("href") === "/en/kyc");
-    expect(kycLink?.textContent).toBe(t.becomeHost);
+    const entryLink = anchors.find(
+      (a) => a.getAttribute("href") === "/en/become-a-host"
+    );
+    expect(entryLink?.textContent).toBe(t.becomeHost);
     // The host-side 'List your property' label must not appear for a guest.
     expect(
       Array.from(container.querySelectorAll("p, a")).some(
@@ -223,12 +228,14 @@ describe("Footer role visibility", () => {
     ).toBe(false);
   });
 
-  it("anonymous footer uses the canonical 'Become a host' label for /kyc", () => {
+  it("anonymous footer uses the canonical 'Become a host' label for /become-a-host", () => {
     as(null);
     const { container } = renderWith(<Footer />);
     const anchors = Array.from(container.querySelectorAll("a"));
-    const kycLink = anchors.find((a) => a.getAttribute("href") === "/en/kyc");
-    expect(kycLink?.textContent).toBe(t.becomeHost);
+    const entryLink = anchors.find(
+      (a) => a.getAttribute("href") === "/en/become-a-host"
+    );
+    expect(entryLink?.textContent).toBe(t.becomeHost);
     expect(
       Array.from(container.querySelectorAll("p, a")).some(
         (el) => el.textContent === t.host

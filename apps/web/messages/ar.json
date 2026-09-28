@@ -812,7 +812,7 @@
     "cancelBooking": "إلغاء الحجز",
     "cancelModalTitle": "هل تريد إلغاء هذا الحجز؟",
     "cancelPolicyLabel": "سياسة الإلغاء: {policy}",
-    "cancelServiceFeeRetained": "رسوم الخدمة البالغة {amount} جنيه غير قابلة للاسترداد.",
+    "cancelServiceFeeRetained": "مبلغ غير قابل للاسترداد بقيمة {amount} جنيه يُطبَّق على هذا الإلغاء.",
     "policy": {
       "flexible": "مرن",
       "moderate": "معتدل",

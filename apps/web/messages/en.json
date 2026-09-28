@@ -812,7 +812,7 @@
     "cancelBooking": "Cancel booking",
     "cancelModalTitle": "Cancel this booking?",
     "cancelPolicyLabel": "Cancellation policy: {policy}",
-    "cancelServiceFeeRetained": "The service fee of {amount} EGP is non-refundable.",
+    "cancelServiceFeeRetained": "A non-refundable amount of {amount} EGP applies to this cancellation.",
     "policy": {
       "flexible": "Flexible",
       "moderate": "Moderate",

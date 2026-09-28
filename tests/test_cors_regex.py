@@ -156,3 +156,42 @@ def test_project_specific_regex_rejects_arbitrary_vercel_subdomain() -> None:
             _request_with_origin("https://evil-attacker.vercel.app")
         )
     assert not headers
+
+
+# ---------------------------------------------------------------------------
+# Bucket-level CORS canonical origins (scripts/sync_bucket_cors.py)
+# ---------------------------------------------------------------------------
+# Tigris bucket CORS only matches exact origins or a bare "*". A past outage
+# whitelisted per-deployment preview URLs (stayos-<hash>-...) which went
+# stale on the next deploy and silently broke every browser upload.
+
+
+def test_bucket_cors_canonical_origins_exclude_per_deployment_urls() -> None:
+    """The canonical bucket CORS list must not hard-code per-deployment
+    preview URLs — they change on every Vercel deploy."""
+    import re
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import sync_bucket_cors  # noqa: E402
+
+    for origin in sync_bucket_cors.ALLOWED_ORIGINS:
+        assert not re.search(
+            r"https://stayos-[a-z0-9]{9}-", origin
+        ), f"per-deployment preview URL whitelisted: {origin}"
+
+
+def test_bucket_cors_canonical_origins_required_and_no_wildcard() -> None:
+    """Canonical origins must cover prod + local dev and must never use
+    a bare wildcard on buckets that hold private objects."""
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import sync_bucket_cors  # noqa: E402
+
+    origins = sync_bucket_cors.ALLOWED_ORIGINS
+    assert "https://web-amber-pi-98.vercel.app" in origins
+    assert "http://localhost:3000" in origins
+    assert "*" not in origins

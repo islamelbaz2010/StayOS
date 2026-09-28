@@ -62,7 +62,7 @@ scratch DB, `cloudflared` tunnel):
 | `POST /resources/accessTokens/sdk` | PASS — real token minted (`_act-s…`, 600s TTL); signing + `userId`=externalUserId + `levelName=id-and-liveness` all accepted |
 | `POST /resources/applicants` (externalUserId) | PASS — applicant `6abae755…` created (201), `externalUserId` round-trips |
 | `POST …/status/testCompleted` GREEN | PASS — `{ok:1}`; sandbox decision simulated |
-| WebSDK launch (headless Chromium, real `@sumsub/websdk@2.9`) | PASS — iframe booted with the minted token, zero console errors, level rendered "Provide identity document → liveness check" steps |
+| WebSDK launch (headless Chromium, real `@sumsub/websdk@2.9`) | PASS — iframe booted with the minted token, zero console errors; driven through provider screens (privacy notice → consent → step list "Provide identity document → liveness check" → Start); capture itself requires a real camera/human |
 | `applicantCreated` webhook → local API | PASS — externalUserId resolution + real `applicantId` backfill (ordering fix proven live) |
 | `applicantReviewed` GREEN webhook | PASS — doc→`verified`, `verified_at` set, `user.kyc_status`→`verified` |
 | `applicantReviewed` RED RETRY → GREEN | PASS — `retry_required` → `verified` |
@@ -70,7 +70,7 @@ scratch DB, `cloudflared` tunnel):
 | Duplicate deliveries | PASS — `already processed` (Redis idempotency) |
 | Unsigned / tampered-body webhooks | PASS — 401 (fail closed) |
 | `GET /resources/applicants/{id}/status` + `/one` | BLOCKED — 404; the sandbox token lacks the **View applicants** permission. Only affects `get_applicant_legal_name` (best-effort, fails to `None`) and `get_status` (currently uncalled). Core webhook-authoritative flow unaffected. |
-| In-browser document capture + liveness | EXTERNAL — requires a human with a camera; SDK boot/level flow proven |
+| In-browser document capture + liveness | EXTERNAL — requires a human with a camera (headless drive reached the capture entry incl. provider Sumsub-ID email gate; fake camera feeds cannot complete liveness) |
 | Sumsub→StayOS live webhook delivery | EXTERNAL — receiver registration is Dashboard-only (no `POST /resources/webhooks` API); see §4 |
 
 **Production-safety guard added this batch:** `sbx:` tokens are active

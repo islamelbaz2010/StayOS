@@ -37,11 +37,21 @@ export default function AdminReportsPage() {
     <ProtectedRoute allowedRoles={["admin", "staff"]}>
       <AdminLayout>
         <section className="mx-auto w-full max-w-[1600px] py-2">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
-              {t("title")}
-            </h1>
-            <p className="mt-2 text-sm text-neutral-600">{t("subtitle")}</p>
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
+                {t("title")}
+              </h1>
+              <p className="mt-2 text-sm text-neutral-600">{t("subtitle")}</p>
+            </div>
+            {allowed && (
+              <Link
+                href={`/${locale}/admin/reports/management`}
+                className="btn-primary inline-flex items-center px-4 py-2 text-sm"
+              >
+                {t("managementReport")}
+              </Link>
+            )}
           </div>
 
           {!allowed ? (

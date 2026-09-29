@@ -574,3 +574,179 @@ def test_no_duplicate_report_semantics() -> None:
     categories = {r.category for r in CATALOG}
     assert "users" not in categories and "trust" not in categories
     assert "users_trust" in categories
+
+
+# ---------------------------------------------------------------------------
+# Management report — RBAC + canonical composition
+# ---------------------------------------------------------------------------
+
+
+def test_management_requires_auth(reports_client) -> None:
+    response = reports_client.get("/api/v1/admin/reports/management")
+    assert response.status_code in (401, 403)
+
+
+def test_management_staff_without_reports_perm_forbidden(
+    reports_client, fake_session, monkeypatch
+) -> None:
+    user = _make_user("staff-noperm", role="staff")
+    _patch_auth_user(monkeypatch, user)
+    _deny_permission(fake_session)
+    response = reports_client.get(
+        "/api/v1/admin/reports/management",
+        headers={"Authorization": f"Bearer {_token_for(user)}"},
+    )
+    assert response.status_code == 403
+
+
+def test_management_guest_forbidden(reports_client, monkeypatch) -> None:
+    user = _make_user("guest-mgmt", role="guest")
+    _patch_auth_user(monkeypatch, user)
+    response = reports_client.get(
+        "/api/v1/admin/reports/management",
+        headers={"Authorization": f"Bearer {_token_for(user)}"},
+    )
+    assert response.status_code == 403
+
+
+def test_management_admin_ok(reports_client, fake_session, monkeypatch) -> None:
+    """Empty dataset → all-zero KPIs, all sections present."""
+    user = _make_user()
+    _patch_auth_user(monkeypatch, user)
+    _empty_result_session(fake_session)
+    response = reports_client.get(
+        "/api/v1/admin/reports/management",
+        headers={"Authorization": f"Bearer {_token_for(user)}"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["kpis"]["collected_egp"] == 0
+    assert body["kpis"]["stayos_revenue_egp"] == 0
+    assert body["kpis"]["vat_payable_egp"] == 0
+    assert body["kpis"]["funds_held_egp"] == 0
+    assert body["kpis"]["host_payable_egp"] == 0
+    assert body["revenue"]["by_month"] == []
+    assert body["settlement"]["open_escrows"] == []
+    assert body["top_bookings"] == []
+    assert body["date_bases"]["revenue"] == "ledger_recognised"
+
+
+# ---------------------------------------------------------------------------
+# VAT reversal helper + escrow decomposition + ledger nets
+# ---------------------------------------------------------------------------
+
+from app.reports.queries import _ledger_nets, _refund_vat_reversal
+from app.finance import services as finance_services
+
+
+def _eco(vat: str, guest_total: str = "2295.96"):
+    return SimpleNamespace(vat_egp=Decimal(vat), guest_total_egp=Decimal(guest_total))
+
+
+def test_refund_vat_reversal_full() -> None:
+    """Fully refunded booking — all calculated VAT reversed out of payable."""
+    payment = Payment(
+        id="p1", booking_id="b1", status="refunded",
+        amount_egp=Decimal("2295.96"), vat_egp=Decimal("281.96"),
+        refund_amount_egp=Decimal("2295.96"),
+    )
+    escrow = EscrowAccount(
+        id="e1", reservation_id="b1", host_id="h",
+        amount_egp=Decimal("2295.96"), status="refunded",
+    )
+    out = _refund_vat_reversal(payment, escrow, _eco("281.96", "2295.96"))
+    assert out == Decimal("281.96")
+
+
+def test_refund_vat_reversal_partial() -> None:
+    """Partial refund — proportional VAT reversal, retained share stays."""
+    payment = Payment(
+        id="p2", booking_id="b2", status="refunded",
+        amount_egp=Decimal("1760.16"), vat_egp=Decimal("216.16"),
+        refund_amount_egp=Decimal("880.08"),
+    )
+    escrow = EscrowAccount(
+        id="e2", reservation_id="b2", host_id="h",
+        amount_egp=Decimal("1760.16"), status="refunded",
+    )
+    out = _refund_vat_reversal(payment, escrow, _eco("216.16", "1760.16"))
+    assert out == Decimal("108.08")
+
+
+def test_refund_vat_reversal_none_when_not_refunded() -> None:
+    payment = Payment(
+        id="p3", booking_id="b3", status="verified",
+        amount_egp=Decimal("1057.92"), vat_egp=Decimal("129.92"),
+    )
+    escrow = EscrowAccount(
+        id="e3", reservation_id="b3", host_id="h",
+        amount_egp=Decimal("1057.92"), status="held",
+    )
+    assert _refund_vat_reversal(payment, escrow, _eco("129.92", "1057.92")) == Decimal("0")
+
+
+async def test_escrow_decompositions_sept28_fixture() -> None:
+    """The Sept-28 Marassi escrow decomposes exactly as the founder saw:
+    10,579.20 = 8,320 host + 960 StayOS + 1,299.20 VAT."""
+    payment = Payment(
+        id="pay-1", booking_id="6310f3c9", status="verified",
+        amount_egp=Decimal("10579.20"),
+        accommodation_amount_egp=Decimal("8800"),
+        cleaning_fee_egp=Decimal("800"),
+        guest_service_fee_egp=Decimal("0"),
+        vat_egp=Decimal("1299.20"),
+    )
+    escrow = EscrowAccount(
+        id="esc-1", reservation_id="6310f3c9", host_id="h1",
+        amount_egp=Decimal("10579.20"), status="held",
+    )
+    meta_row = SimpleNamespace(
+        id="6310f3c9", status="confirmed",
+        title_en="Luxury Villa in Marassi", title_ar=None,
+    )
+    payments_result = MagicMock()
+    payments_result.scalars.return_value.all.return_value = [payment]
+    reservations_result = MagicMock()
+    reservations_result.scalars.return_value.all.return_value = []
+    meta_result = MagicMock()
+    meta_result.all.return_value = [meta_row]
+    session = MagicMock()
+    session.execute = AsyncMock(
+        side_effect=[payments_result, reservations_result, meta_result]
+    )
+
+    out = await finance_services.escrow_decompositions(session, [escrow])
+
+    d = out["esc-1"]
+    assert d["host_amount_egp"] == pytest.approx(8320.0)
+    assert d["platform_share_egp"] == pytest.approx(960.0)
+    assert d["vat_egp"] == pytest.approx(1299.20)
+    assert d["unit_title"] == "Luxury Villa in Marassi"
+    assert (
+        d["host_amount_egp"] + d["platform_share_egp"] + d["vat_egp"]
+    ) == pytest.approx(10579.20)
+
+
+async def test_ledger_nets_signed() -> None:
+    """Signed aggregation — the observed revenue dataset nets to
+    3,674.40 (credits 3,764.40, debits 90)."""
+    result = MagicMock()
+    result.all.return_value = [
+        ("platform_revenue", Decimal("3764.40"), Decimal("90"), Decimal("3674.40")),
+        ("vat_payable", Decimal("529.14"), Decimal("0"), Decimal("529.14")),
+        ("host_payable", Decimal("9328"), Decimal("0"), Decimal("9328")),
+    ]
+    session = MagicMock()
+    session.execute = AsyncMock(return_value=result)
+
+    nets = await _ledger_nets(
+        session,
+        (LedgerAccount.PLATFORM_REVENUE, LedgerAccount.VAT_PAYABLE,
+         LedgerAccount.HOST_PAYABLE),
+        ReportParams(),
+    )
+    rev = nets[LedgerAccount.PLATFORM_REVENUE]
+    assert rev["net"] == Decimal("3674.40")
+    assert rev["credit"] == Decimal("3764.40")
+    assert rev["debit"] == Decimal("90")
+    assert nets[LedgerAccount.VAT_PAYABLE]["net"] == Decimal("529.14")

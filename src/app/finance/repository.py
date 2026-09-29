@@ -234,7 +234,16 @@ async def list_ledger_entries(
     limit: int = 100,
     offset: int = 0,
 ) -> list[LedgerEntry]:
-    stmt = select(LedgerEntry).order_by(LedgerEntry.created_at.desc())
+    # Outer-join the parent transaction so each entry can name the
+    # booking/reservation it belongs to in admin drill-downs.
+    stmt = (
+        select(LedgerEntry, FinancialTransaction.reservation_id)
+        .outerjoin(
+            FinancialTransaction,
+            FinancialTransaction.id == LedgerEntry.transaction_id,
+        )
+        .order_by(LedgerEntry.created_at.desc())
+    )
     if wallet_id:
         stmt = stmt.where(LedgerEntry.wallet_id == wallet_id)
     if escrow_id:
@@ -242,7 +251,11 @@ async def list_ledger_entries(
     if ledger_account:
         stmt = stmt.where(LedgerEntry.ledger_account == ledger_account)
     result = await session.execute(stmt.limit(limit).offset(offset))
-    return list(result.scalars().all())
+    entries = []
+    for entry, reservation_id in result.all():
+        entry.reservation_id = reservation_id
+        entries.append(entry)
+    return entries
 
 
 async def count_ledger_entries(

@@ -30,6 +30,16 @@ class EscrowResponse(BaseModel):
     refunded_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    # Canonical decomposition behind the escrow amount — populated on the
+    # list endpoint so drill-downs can explain funds held:
+    # amount_egp = host_amount + platform_share + vat (where derivable).
+    # Pre-VAT legacy rows carry vat_egp = 0.
+    host_amount_egp: Money | None = None
+    platform_share_egp: Money | None = None
+    vat_egp: Money | None = None
+    unit_title: str | None = None
+    booking_status: str | None = None
+    payment_status: str | None = None
 
 
 class LedgerEntryResponse(BaseModel):
@@ -46,6 +56,9 @@ class LedgerEntryResponse(BaseModel):
     balance_after: Money
     description: str | None
     created_at: datetime
+    # Booking/reservation the posting belongs to (joined from the parent
+    # financial transaction) — lets drill-down rows name their booking.
+    reservation_id: str | None = None
 
 
 class FinancialTransactionResponse(BaseModel):

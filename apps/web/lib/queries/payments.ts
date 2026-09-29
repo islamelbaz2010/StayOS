@@ -326,6 +326,14 @@ export interface EscrowRecord {
   refunded_at: string | null;
   created_at: string;
   updated_at: string;
+  // Canonical decomposition behind the escrow amount (amount = host +
+  // platform share + VAT); null when the source row cannot be resolved.
+  host_amount_egp: number | null;
+  platform_share_egp: number | null;
+  vat_egp: number | null;
+  unit_title: string | null;
+  booking_status: string | null;
+  payment_status: string | null;
 }
 
 export interface PayoutRecord {
@@ -354,6 +362,7 @@ export interface LedgerRecord {
   balance_after: number;
   description: string | null;
   created_at: string;
+  reservation_id: string | null;
 }
 
 async function getEscrows(status?: string): Promise<EscrowRecord[]> {

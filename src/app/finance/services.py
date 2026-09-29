@@ -249,6 +249,83 @@ async def escrow_host_amount(
     return host_amount
 
 
+async def escrow_decompositions(
+    session: AsyncSession, escrows: list[EscrowAccount]
+) -> dict[str, dict[str, Any]]:
+    """Batch decomposition for the escrow list endpoint.
+
+    For every escrow resolves the canonical split behind the amount —
+    ``amount = host_amount + platform_share + vat`` — via the same rules
+    ``_resolve_escrow_split`` uses (booking-path rows through
+    ``booking_economics``; reservation rows carry persisted amounts), plus
+    listing title and booking/payment status for drill-down context.
+    Batched lookups — no N+1.
+    """
+    from app.bookings.models import Booking
+    from app.listings.models import UnitListing
+    from app.payments.models import Payment
+
+    ids = [e.reservation_id for e in escrows]
+    if not ids:
+        return {}
+    payments = {
+        p.booking_id: p
+        for p in (
+            await session.execute(
+                select(Payment).where(Payment.booking_id.in_(ids))
+            )
+        ).scalars().all()
+    }
+    reservations = {
+        r.id: r
+        for r in (
+            await session.execute(select(Reservation).where(Reservation.id.in_(ids)))
+        ).scalars().all()
+    }
+    meta = {
+        row.id: row
+        for row in (
+            await session.execute(
+                select(
+                    Booking.id,
+                    Booking.status,
+                    UnitListing.title_en,
+                    UnitListing.title_ar,
+                )
+                .outerjoin(UnitListing, UnitListing.unit_id == Booking.unit_id)
+                .where(Booking.id.in_(ids))
+            )
+        ).all()
+    }
+    out: dict[str, dict[str, Any]] = {}
+    for escrow in escrows:
+        payment = payments.get(escrow.reservation_id)
+        reservation = reservations.get(escrow.reservation_id)
+        if payment is not None:
+            eco = await booking_economics(session, payment)
+            host = commercial.money(eco.host_net_egp)
+            vat = commercial.money(eco.vat_egp)
+            share = commercial.money(eco.platform_share_egp)
+        elif reservation is not None:
+            host = commercial.money(reservation.host_amount_egp)
+            share = commercial.money(reservation.platform_fee_egp)
+            vat = commercial.money(
+                max(commercial.money(escrow.amount_egp) - host - share, Decimal(0))
+            )
+        else:
+            continue
+        mrow = meta.get(escrow.reservation_id)
+        out[escrow.id] = {
+            "host_amount_egp": float(host),
+            "platform_share_egp": float(share),
+            "vat_egp": float(vat),
+            "unit_title": (mrow.title_en or mrow.title_ar) if mrow else None,
+            "booking_status": str(mrow.status) if mrow else None,
+            "payment_status": str(payment.status) if payment is not None else None,
+        }
+    return out
+
+
 async def _ensure_reservation_amounts(
     session: AsyncSession,
     reservation_id: str,

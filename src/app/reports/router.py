@@ -110,6 +110,34 @@ async def get_catalog(
     )
 
 
+@router.get("/management")
+async def get_management_report(
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    status: str | None = Query(default=None),
+    governorate: str | None = Query(default=None),
+    city: str | None = Query(default=None),
+    user: User = Depends(_REPORTS_PERMISSION),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Executive management report — composed from the same canonical
+    facts as the report endpoints (payments, ledger, escrows, booking
+    economics). No independent financial math; unfiltered KPIs equal
+    Admin Earnings exactly."""
+    from app.reports.queries import management_report
+
+    return await management_report(
+        session,
+        ReportParams(
+            date_from=date_from,
+            date_to=date_to,
+            status=status,
+            governorate=governorate,
+            city=city,
+        ),
+    )
+
+
 @router.get("/{report_key}", response_model=ReportResult)
 async def get_report(
     report_key: str,

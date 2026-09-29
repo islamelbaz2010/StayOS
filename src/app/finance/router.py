@@ -125,6 +125,13 @@ async def list_escrows(
         escrows = await finance_repository.list_escrows(
             session, host_id=host_id, status=status, limit=limit, offset=offset
         )
+        # Attach the canonical decomposition (host amount / platform share /
+        # VAT + listing and payment context) so funds-held drill-downs can
+        # explain every escrow row.
+        decomps = await finance_services.escrow_decompositions(session, escrows)
+        for escrow in escrows:
+            for key, value in decomps.get(escrow.id, {}).items():
+                setattr(escrow, key, value)
         return EscrowListResponse(data=escrows)
     except StayOSError as exc:
         raise to_http_exception(exc) from exc

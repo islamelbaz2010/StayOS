@@ -185,10 +185,13 @@ async def test_list_ledger_entries(fake_session: AsyncMock) -> None:
         balance_after=500,
         created_at=datetime.now(UTC),
     )
-    fake_session.execute = AsyncMock(return_value=_make_result(scalars=[entry]))
+    query_result = _make_result()
+    query_result.all.return_value = [(entry, "res-1")]
+    fake_session.execute = AsyncMock(return_value=query_result)
 
     result = await finance_repository.list_ledger_entries(fake_session, wallet_id="wallet-1")
     assert result == [entry]
+    assert entry.reservation_id == "res-1"
 
 
 @pytest.mark.asyncio

@@ -277,3 +277,42 @@ generated timestamp, date basis, applied filters, row counts).
   `host_payable` is the recognised ledger liability — never conflated.
 - **Every total is labelled.** `ReportDef.total_labels` maps each money
   total to an explicit i18n label; exports emit labeled totals rows.
+
+### Recognition timing (verified against production)
+
+- **Capture** posts only `platform_cash` (debit) + `escrow` (credit) via
+  `ESCROW_CREATE` — cash in, liability held.
+- **`platform_revenue` / `vat_payable` / `host_payable` post at escrow
+  release** (`_post_ledger_for_escrow_release`) or on refund for the
+  retained/reversed shares (`_post_ledger_for_escrow_refund`).
+- Therefore held escrows legitimately carry **no** revenue/VAT/host
+  ledger rows yet — their economics exist as booking economics only.
+  Admin Earnings nonetheless surfaces VAT payable = `vat_payable` ledger
+  net + VAT inside open escrows (VAT is a liability from collection);
+  StayOS revenue and host payable KPIs are ledger-recognised nets.
+
+### Drill-downs explain their KPI
+
+- `GET /finance/escrow` now returns the canonical decomposition per
+  escrow (`host_amount_egp`, `platform_share_egp`, `vat_egp`, listing
+  title, booking/payment status) via `escrow_decompositions` — the same
+  split `_resolve_escrow_split` uses. Funds-held rows show
+  `amount = host + StayOS share + VAT`.
+- `GET /finance/ledger` rows carry `reservation_id` so every ledger row
+  names its booking; debits render negative and the drill-down totals to
+  the signed net.
+- VAT drill: recognised ledger rows + held-escrow VAT rows + payable
+  total. Revenue / host-payable drills: recognised ledger rows + pending
+  held-escrow economics, labelled "not yet recognised/payable".
+
+### Management report (PDF)
+
+`GET /admin/reports/management` returns an executive aggregation —
+KPIs, signed revenue decomposition + monthly series, VAT
+calculated/recognised/held/reversed/payable, bookings by status and
+governorate, settlement lifecycle, refunds/adjustments, top bookings —
+composed entirely from the canonical facts (identical aggregates to
+Admin Earnings when unfiltered; a date range windows each metric on its
+declared basis). The web management-report page renders it as a
+print-optimised executive document (EN/AR, RTL-safe) whose "Download PDF"
+uses browser print; CSV/XLSX remain the raw/analytical exports.

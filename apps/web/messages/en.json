@@ -2200,7 +2200,25 @@
       "payouts_pending": "Pending payouts",
       "paid_out": "Completed payouts",
       "refund_pending": "Refunds awaiting provider confirmation",
-      "refunded": "Refunded payments"
+      "refunded": "Refunded payments",
+      "recognised": "Recognised in ledger",
+      "heldVat": "VAT held in open escrows",
+      "pendingRevenue": "Booking economics pending in held escrows",
+      "pendingHost": "Host net pending in held escrows",
+      "grossCredits": "Gross credits",
+      "grossDebits": "Debits / reversals",
+      "netRecognised": "Net recognised (ledger)",
+      "netPayable": "Net payable (ledger)",
+      "vatRecognised": "VAT recognised in ledger",
+      "vatHeld": "VAT held in escrows",
+      "vatPayable": "VAT payable",
+      "pendingRevenueTotal": "Pending in escrows (not yet recognised)",
+      "pendingHostTotal": "Pending in escrows (not yet payable)",
+      "pendingNote": "Held-escrow economics are booking-level amounts that post to the ledger on escrow release — they are not yet recognised.",
+      "hostNet": "Host net",
+      "stayosShare": "StayOS share",
+      "vatAmount": "VAT",
+      "escrowTotal": "Escrow total:"
     },
     "adjustments": {
       "title": "Commercial adjustments",
@@ -3045,6 +3063,123 @@
       "signed_ledger": "Signed ledger entries — credits are positive, debits/reversals are negative. Net total reconciles with Admin Earnings.",
       "vat_calculated_semantics": "VAT calculated on booking economics for the selected bookings — includes refunded bookings whose VAT is later reversed. Not the payable balance.",
       "vat_payable_semantics": "VAT payable per booking = VAT calculated − VAT reversed on refunds. A fully refunded booking contributes zero payable VAT."
+    },
+    "managementReport": "Management Report (PDF)"
+  },
+  "managementReport": {
+    "title": "Financial Management Report",
+    "period": "Period",
+    "allTime": "All time",
+    "generatedAt": "Generated",
+    "filtersApplied": "Filters",
+    "downloadPdf": "Download PDF",
+    "backToReports": "← Reports",
+    "noPermission": "You don't have permission to view management reports.",
+    "empty": "No data",
+    "filters": {
+      "date_from": "From",
+      "date_to": "To",
+      "governorate": "Governorate",
+      "city": "City",
+      "apply": "Apply"
+    },
+    "kpi": {
+      "collected": "Collected",
+      "stayosRevenue": "StayOS Revenue",
+      "vatPayable": "VAT Payable",
+      "hostPayable": "Host Payable",
+      "fundsHeld": "Funds Held",
+      "refunded": "Refunded"
+    },
+    "sections": {
+      "composition": "Financial composition",
+      "revenue": "StayOS revenue",
+      "vat": "VAT",
+      "bookings": "Bookings",
+      "settlement": "Host settlement",
+      "refunds": "Refunds & exceptions",
+      "topBookings": "Top bookings",
+      "appendix": "Appendix — open escrows"
+    },
+    "flow": {
+      "guestPayments": "Guest payments",
+      "fundsHeld": "Funds held",
+      "hostPayable": "Host payable",
+      "stayosVat": "VAT payable"
+    },
+    "compositionNote": "Composition of collected funds — not cash movement. Revenue, VAT and host payable are recognised per the canonical ledger rules.",
+    "revenue": {
+      "grossCredits": "Gross credits",
+      "debits": "Debits / reversals",
+      "net": "Net recognised",
+      "pending": "Pending in escrows",
+      "byMonth": "Recognised revenue by month",
+      "pendingNote": "Pending amounts are booking economics inside held escrows — recognised on escrow release, not included in net recognised revenue."
+    },
+    "vat": {
+      "calculated": "Calculated",
+      "recognised": "Recognised",
+      "held": "Held in escrows",
+      "reversed": "Reversed",
+      "payable": "Payable",
+      "note": "VAT payable = recognised in ledger + held inside open escrows. Calculated VAT is a booking-economics figure, not the liability."
+    },
+    "bookings": {
+      "total": "{count} bookings",
+      "count": "Bookings",
+      "governorate": "Governorate"
+    },
+    "settlement": {
+      "hostNetPending": "Host net pending",
+      "payoutsPending": "Pending payout",
+      "paidOut": "Paid out",
+      "fundsStatus": "Funds status",
+      "amount": "Amount"
+    },
+    "refunds": {
+      "refunded": "Refunded",
+      "pending": "Refund pending",
+      "vatReversed": "VAT reversed",
+      "date": "Date",
+      "type": "Adjustment",
+      "actor": "Actor"
+    },
+    "top": {
+      "property": "Property",
+      "status": "Status",
+      "guestTotal": "Guest total",
+      "hostNet": "Host net",
+      "stayos": "StayOS",
+      "vat": "VAT"
+    },
+    "appendix": {
+      "booking": "Booking",
+      "fundsStatus": "Status",
+      "held": "Held"
+    },
+    "status": {
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "requested": "Requested",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "pending": "Pending"
+    },
+    "escrowStatus": {
+      "created": "Collected — awaiting check-in",
+      "held": "Held",
+      "released": "Released",
+      "refunded": "Refunded",
+      "disputed": "Disputed"
+    },
+    "basis": {
+      "payment_verified_or_recognised": "Date basis: payment verification / ledger recognition",
+      "ledger_recognised": "Date basis: ledger recognition",
+      "ledger_plus_escrow_held": "Date basis: ledger recognition + escrow creation (held VAT)",
+      "booking_created": "Date basis: booking creation",
+      "refund_completed": "Date basis: refund completion",
+      "payment_created": "Date basis: payment creation"
     }
   }
 }

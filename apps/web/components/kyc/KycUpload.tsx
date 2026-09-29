@@ -8,6 +8,7 @@ import { useInitiateKyc, useKycStatus, useSubmitKyc, useUpgradeRole } from "@/li
 import { useAuth } from "@/lib/auth/useAuth";
 import { getApiErrorMessage } from "@/lib/utils";
 import { KycProviderFlow } from "@/components/kyc/KycProviderFlow";
+import { SelfieCamera } from "@/components/kyc/SelfieCamera";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -60,6 +61,7 @@ export function KycUpload() {
   });
   // Manual upload fallback when the automated provider is unavailable.
   const [manualFallback, setManualFallback] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const currentStatus = kycStatus?.kyc_status ?? user?.kyc_status ?? "unverified";
   const automated =
@@ -105,6 +107,21 @@ export function KycUpload() {
         [side]: { file, preview: URL.createObjectURL(file) },
       }));
     };
+
+  // Camera capture feeds the same validation + state as a file pick —
+  // only the user-confirmed "Use photo" frame reaches this point.
+  const handleCameraCapture = (file: File) => {
+    const err = validateFile(file);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    setFiles((prev) => ({
+      ...prev,
+      selfie: { file, preview: URL.createObjectURL(file) },
+    }));
+  };
 
   const handleDocumentTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setDocumentType(e.target.value);
@@ -186,7 +203,8 @@ export function KycUpload() {
   };
 
   const manualForm = (
-    <KycUploadForm
+    <>
+      <KycUploadForm
       t={t}
       documentType={documentType}
       requiredSides={requiredSides}
@@ -198,7 +216,15 @@ export function KycUpload() {
       onSubmit={handleSubmit}
       isSubmitting={initiateMutation.isPending || submitMutation.isPending}
       uploadProgress={uploadProgress}
-    />
+      onOpenCamera={() => setCameraOpen(true)}
+      />
+      {cameraOpen && (
+        <SelfieCamera
+          onCapture={handleCameraCapture}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
+    </>
   );
 
   if (statusLoading) {
@@ -322,6 +348,7 @@ interface KycUploadFormProps {
   onSubmit: () => void;
   isSubmitting: boolean;
   uploadProgress: Record<ImageSide, number>;
+  onOpenCamera: () => void;
 }
 
 function KycUploadForm({
@@ -336,6 +363,7 @@ function KycUploadForm({
   onSubmit,
   isSubmitting,
   uploadProgress,
+  onOpenCamera,
 }: KycUploadFormProps) {
   // Side label: passports capture the photo page rather than a "front".
   const sideLabel = (side: ImageSide): string =>
@@ -394,6 +422,9 @@ function KycUploadForm({
               inputRef={inputRefs[side]}
               onSelect={onSelect(side)}
               progress={uploadProgress[side]}
+              onOpenCamera={side === "selfie" ? onOpenCamera : undefined}
+              cameraLabel={t("camera.takeSelfie")}
+              uploadLabel={t("camera.uploadFromDevice")}
             />
           ))}
         </div>
@@ -426,13 +457,34 @@ interface UploadSlotProps {
   inputRef: React.RefObject<HTMLInputElement>;
   onSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   progress: number;
+  onOpenCamera?: () => void;
+  cameraLabel?: string;
+  uploadLabel?: string;
 }
 
-function UploadSlot({ label, hint, preview, inputRef, onSelect, progress }: UploadSlotProps) {
+function UploadSlot({ label, hint, preview, inputRef, onSelect, progress, onOpenCamera, cameraLabel, uploadLabel }: UploadSlotProps) {
   return (
     <div>
       <label className="block text-sm font-semibold text-neutral-700">{label}</label>
       <p className="mt-1 text-xs text-neutral-500">{hint}</p>
+      {onOpenCamera && (
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={onOpenCamera}
+            className="btn-primary flex-1 text-sm"
+          >
+            {cameraLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="btn-secondary flex-1 text-sm"
+          >
+            {uploadLabel}
+          </button>
+        </div>
+      )}
       <div className="mt-3">
         <button
           type="button"

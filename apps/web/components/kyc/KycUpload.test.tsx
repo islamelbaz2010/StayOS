@@ -127,6 +127,24 @@ describe("KycUpload — manual fallback", () => {
     expect(screen.getAllByText(t.selfie).length).toBeGreaterThan(0);
   });
 
+  it("selfie slot offers camera capture plus device upload fallback", () => {
+    renderWith(<KycUpload />);
+    fireEvent.change(screen.getByLabelText(t.documentType), {
+      target: { value: "national_id" },
+    });
+    const camera = t.camera as Record<string, string>;
+    expect(
+      screen.getByRole("button", { name: camera.takeSelfie })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: camera.uploadFromDevice })
+    ).toBeInTheDocument();
+    // Front/back keep the plain upload slot — camera is selfie-only.
+    expect(
+      screen.getAllByRole("button", { name: camera.takeSelfie })
+    ).toHaveLength(1);
+  });
+
   it("submit without required photos shows the missing-images error", () => {
     renderWith(<KycUpload />);
     fireEvent.change(screen.getByLabelText(t.documentType), {

@@ -71,7 +71,7 @@ scratch DB, `cloudflared` tunnel):
 | Unsigned / tampered-body webhooks | PASS — 401 (fail closed) |
 | `GET /resources/applicants/{id}/status` + `/one` | BLOCKED — 404; the sandbox token lacks the **View applicants** permission. Only affects `get_applicant_legal_name` (best-effort, fails to `None`) and `get_status` (currently uncalled). Core webhook-authoritative flow unaffected. |
 | In-browser document capture + liveness | EXTERNAL — requires a human with a camera (headless drive reached the capture entry incl. provider Sumsub-ID email gate; fake camera feeds cannot complete liveness) |
-| Sumsub→StayOS live webhook delivery | EXTERNAL — receiver registration is Dashboard-only (no `POST /resources/webhooks` API); see §4 |
+| Sumsub→StayOS live webhook delivery | PASS — 2026-09-29: founder created the Sandbox webhook receiver; real `applicantCreated` + `applicantReviewed` delivered from Sumsub egress (18.193.226.48) via cloudflared tunnel → 200 → signature verified → `provider_applicant_id` backfilled → doc+user `verified` |
 
 **Production-safety guard added this batch:** `sbx:` tokens are active
 only when `SUMSUB_ALLOW_SANDBOX=true` **and** `ENVIRONMENT` is
@@ -123,17 +123,18 @@ Railway production currently carries `SUMSUB_APP_TOKEN`/`SUMSUB_SECRET_KEY`
 `SUMSUB_WEBHOOK_SECRET`, and `ENVIRONMENT=staging` there. With the
 guard deployed: `is_configured()`=False → `automated_available`=False →
 manual mode everywhere; sandbox-signed webhooks rejected 401.
-Recommendation (hygiene, not a vulnerability): remove the sbx variables
-from Railway production once POC work concludes — they can only ever be
-inert there.
+Update 2026-09-29: the inert `sbx:` variables were **removed** from all
+three Railway production services (api/worker/beat) as hygiene. The
+Dashboard webhook receiver targets a temporary cloudflared tunnel — it
+must be re-pointed (or the tunnel kept running) for any future live
+delivery tests.
 
 ## 7. Remaining external steps
 
-1. Founder: create the Dashboard webhook receiver (§4.1) — enables live
-   Sumsub→StayOS delivery (the only leg not yet observed end-to-end;
-   every property it exercises — signature, idempotency, resolution,
-   state mapping — is verified with real signed payloads).
-2. Founder (optional): add **View applicants** to the token (§4.2).
-3. Optional UX pass: a human runs the in-browser capture/liveness once
+1. Founder (optional): add **View applicants** to the token (§4.2).
+2. Optional UX pass: a human runs the in-browser capture/liveness once
    — the SDK owns document quality, authenticity, liveness and
    face-match; StayOS code contains no custom capture logic.
+3. For repeatable live delivery: point the Dashboard receiver at a
+   stable URL (named tunnel or a dedicated staging deployment) — the
+   POC used an ephemeral quick tunnel.

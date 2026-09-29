@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { BookingFinancialSummary } from "@/components/bookings/BookingFinancialSummary";
 import { HostBookingDetail } from "@/components/bookings/HostBookingDetail";
 import { HostBookingList } from "@/components/bookings/HostBookingList";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -150,6 +151,7 @@ function AdminBookingOps({ booking }: { booking: BookingResponse }) {
 
 export default function AdminBookingsPage() {
   const t = useTranslations("adminBookings");
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get("status");
   const viewFilter = searchParams.get("view");
@@ -293,6 +295,10 @@ export default function AdminBookingsPage() {
                             refetch();
                             setSelectedId(null);
                           }}
+                        />
+                        <BookingFinancialSummary
+                          bookingId={selected.id}
+                          locale={locale}
                         />
                         <AdminBookingOps booking={selected} />
                       </div>

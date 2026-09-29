@@ -126,6 +126,9 @@ class BookingFinancialContextResponse(BaseModel):
     payout: dict | None = None
     transactions: list[dict] = []
     disputes: list[dict] = []
+    # Commercial adjustments attached to this booking — the audit trail
+    # for any deviation from standard pricing.
+    adjustments: list[dict] = []
 
 
 class DisputeContextResponse(BaseModel):

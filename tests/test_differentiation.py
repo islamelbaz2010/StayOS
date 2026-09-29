@@ -381,7 +381,7 @@ async def test_staff_create_with_role_group(monkeypatch) -> None:
 
     session.add = _capture
     result = await staff_services.create_staff(session, admin, request)
-    assert set(result.permissions) == {"payments", "disputes"}
+    assert set(result.permissions) == {"payments", "disputes", "reports"}
 
 
 @pytest.mark.asyncio

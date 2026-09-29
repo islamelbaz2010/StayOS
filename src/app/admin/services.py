@@ -28,6 +28,7 @@ from app.finance.constants import (
     PayoutStatus,
 )
 from app.finance.models import (
+    CommercialAdjustment,
     EscrowAccount,
     FinancialTransaction,
     LedgerEntry,
@@ -486,6 +487,25 @@ async def get_booking_financial_context(
         )
         ledger = list(ledger_rows.scalars().all())
 
+    adj_rows = await session.execute(
+        select(CommercialAdjustment)
+        .where(CommercialAdjustment.booking_id == booking.id)
+        .order_by(CommercialAdjustment.created_at.desc())
+    )
+    adjustments = [
+        {
+            "id": a.id,
+            "adjustment_type": a.adjustment_type,
+            "category": a.category,
+            "amount_egp": a.amount_egp,
+            "status": a.status,
+            "reason": a.reason,
+            "created_at": a.created_at.isoformat() if a.created_at else None,
+            "applied_at": a.applied_at.isoformat() if a.applied_at else None,
+        }
+        for a in adj_rows.scalars().all()
+    ]
+
     dispute_rows = await session.execute(
         select(Dispute)
         .where(Dispute.booking_id == booking.id)
@@ -601,6 +621,7 @@ async def get_booking_financial_context(
             for t in transactions
         ],
         disputes=disputes,
+        adjustments=adjustments,
     )
 
 

@@ -475,11 +475,13 @@ async def test_booking_financial_context_joins_payment_context(monkeypatch):
 
     txn_result = MagicMock()
     txn_result.scalars.return_value.all.return_value = []
+    adj_result = MagicMock()
+    adj_result.scalars.return_value.all.return_value = []
     dispute_result = MagicMock()
     dispute_result.scalars.return_value.all.return_value = []
 
     session.execute = AsyncMock(
-        side_effect=[booking_result, txn_result, dispute_result]
+        side_effect=[booking_result, txn_result, adj_result, dispute_result]
     )
 
     ctx = await get_booking_financial_context(session, "booking-1")
@@ -559,6 +561,7 @@ async def test_dispute_context_includes_booking():
             dispute_result,
             booking_result,
             empty_rows,  # financial transactions
+            empty_rows,  # commercial adjustments
             empty_rows,  # disputes on booking
         ]
     )

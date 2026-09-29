@@ -206,3 +206,49 @@ credentials exist.
 Production Paymob merchant approval, production credentials, payout
 onboarding, and legal/accounting/CBE characterization remain external
 blockers — unchanged.
+
+## 9. Financial visibility & Admin Reports
+
+**Source of truth.** All financial surfaces read the same canonical facts —
+there is no second math:
+
+- Per-booking economics: `finance.services.booking_economics` (generation-
+  aware over the persisted payment row — Model B, DEC-023 additive and
+  pre-VAT containment rows each resolve from their own stored facts).
+- Recognised revenue/VAT: `finance.ledger_entries` accounts
+  `platform_revenue` / `vat_payable` / `host_payable`.
+- Settlement state: `escrow_accounts` lifecycle via
+  `derive_payout_state` — `paid | refunded | disputed | ready | held |
+  waiting_checkin`.
+
+**Recognition is not gated on payout.** VAT, StayOS revenue, host/guest
+commission and host net are known as soon as the booking's payment facts
+exist — "funds held / payout pending" never suppresses the economics.
+
+**Surfaces consuming the canonical facts.**
+
+| Surface | Endpoint | Permission |
+|---------|----------|------------|
+| Host Earnings | `GET /payments/host` (+ economics) | host |
+| Admin Earnings | `GET /admin/earnings` (+ drill-down) | payments |
+| Operations → Booking → Financial Summary | `GET /admin/bookings/{id}/financial` | payments |
+| Reports Center | `GET /admin/reports/*` | reports |
+
+**Admin Reports** (`/admin/reports`): `GET /admin/reports/catalog` returns
+the full registry (columns, filters, sortable keys, money columns, date
+basis, implemented flag). `GET /admin/reports/{key}` returns a paginated
+`ReportResult` (rows + filtered-set totals + filters_applied +
+generated_at). `GET /admin/reports/{key}/export?format=csv|xlsx` streams
+the filtered set (bounded at 10k rows) with a metadata header (report key,
+generated timestamp, date basis, applied filters, row counts).
+
+- **RBAC:** new `reports` staff permission; admins implicit. Sidebar link
+  is permission-gated UX — enforcement is server-side on every route.
+- **Filters** are real query parameters; date semantics are declared per
+  report (`date_basis`) and shown in the UI.
+- **Not implemented is stated, not faked:** `rebooked_bookings` is listed
+  disabled — bookings have no rebooking linkage field.
+- Scans are bounded (`MAX_SCAN = 5000`), sorted/paginated server-side;
+  computed columns (stay_phase, payout status) filter in memory after the
+  SQL window. No N+1: joins/subqueries carry names, titles, escrow and
+  per-booking adjustment sums.

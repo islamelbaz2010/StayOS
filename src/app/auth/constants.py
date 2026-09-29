@@ -24,6 +24,7 @@ class StaffPermission(StrEnum):
     DISPUTES = "disputes"
     DISCOVERY = "discovery"
     CONTENT = "content"
+    REPORTS = "reports"
 
 
 # FD-18: Job Role / Role Group → Permission Set → Staff User.
@@ -44,7 +45,7 @@ STAFF_ROLE_GROUPS: dict[str, dict[str, object]] = {
     "finance_officer": {
         "label_en": "Finance Officer",
         "label_ar": "مسؤول مالي",
-        "permissions": ["payments", "disputes"],
+        "permissions": ["payments", "disputes", "reports"],
     },
     "listings_manager": {
         "label_en": "Listings Manager",

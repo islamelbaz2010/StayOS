@@ -62,6 +62,17 @@ export interface LinkedDisputeInfo {
   created_at: string | null;
 }
 
+/** Commercial adjustment attached to a booking. */
+export interface AdjustmentInfo {
+  id: string;
+  adjustment_type: string | null;
+  category: string | null;
+  amount_egp: number | null;
+  reason: string | null;
+  status: string | null;
+  created_at: string | null;
+}
+
 /** Canonical booking economics emitted by the finance commercial engine. */
 export interface BookingFinancials {
   guest_paid_egp: number | null;
@@ -91,13 +102,14 @@ export interface BookingPayoutState {
  *  server-emitted shapes. */
 export type BookingFinancialContext = Omit<
   ApiBookingFinancialContext,
-  "escrow" | "transactions" | "disputes" | "financials" | "payout"
+  "escrow" | "transactions" | "disputes" | "financials" | "payout" | "adjustments"
 > & {
   escrow: EscrowInfo | null;
   financials: BookingFinancials | null;
   payout: BookingPayoutState | null;
   transactions: FinancialTransactionInfo[];
   disputes: LinkedDisputeInfo[];
+  adjustments: AdjustmentInfo[];
 };
 
 export interface DisputeContext {

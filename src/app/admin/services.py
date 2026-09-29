@@ -8,7 +8,6 @@ payout and refund policy remain founder decisions (FD-01/FD-12).
 
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
-from uuid import UUID
 
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -692,7 +691,7 @@ async def suspend_user(
     await write_event(
         session,
         aggregate_type="User",
-        aggregate_id=UUID(target.id),
+        aggregate_id=target.id,
         event_type="admin.user_suspended",
         payload={
             "actor_id": admin.id,
@@ -718,7 +717,7 @@ async def reactivate_user(
     await write_event(
         session,
         aggregate_type="User",
-        aggregate_id=UUID(target.id),
+        aggregate_id=target.id,
         event_type="admin.user_reactivated",
         payload={
             "actor_id": admin.id,
@@ -743,7 +742,7 @@ async def admin_deactivate_hosting(
         await write_event(
             session,
             aggregate_type="User",
-            aggregate_id=UUID(target.id),
+            aggregate_id=target.id,
             event_type="admin.hosting_deactivated",
             payload={
                 "actor_id": admin.id,
@@ -782,7 +781,7 @@ async def admin_restore_hosting(
     await write_event(
         session,
         aggregate_type="User",
-        aggregate_id=UUID(target.id),
+        aggregate_id=target.id,
         event_type="admin.hosting_restored",
         payload={
             "actor_id": admin.id,

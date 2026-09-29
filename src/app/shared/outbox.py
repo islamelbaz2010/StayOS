@@ -2,7 +2,7 @@ import json
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,13 +20,26 @@ def to_json_safe(payload: Any) -> Any:
     return json.loads(json.dumps(payload, default=_json_default))
 
 
+def coerce_aggregate_id(value: UUID | str) -> UUID:
+    """Aggregate ids are UUID columns, but a few legacy/seed fixtures use
+    non-UUID string ids. Derive a stable uuid5 for those instead of
+    crashing — the same input always maps to the same UUID."""
+    if isinstance(value, UUID):
+        return value
+    try:
+        return UUID(value)
+    except ValueError:
+        return uuid5(NAMESPACE_URL, f"stayos:{value}")
+
+
 async def write_event(
     session: AsyncSession,
     aggregate_type: str,
-    aggregate_id: UUID,
+    aggregate_id: UUID | str,
     event_type: str,
     payload: dict[str, Any],
 ) -> None:
+    aggregate_id = coerce_aggregate_id(aggregate_id)
     query = text(
         """
         INSERT INTO outbox.outbox_events (id, aggregate_type, aggregate_id, event_type, payload, created_at)

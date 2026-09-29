@@ -1357,7 +1357,7 @@ async def deactivate_hosting(
     await write_event(
         session,
         aggregate_type="User",
-        aggregate_id=uuid.UUID(user.id),
+        aggregate_id=user.id,
         event_type="user.hosting_deactivated",
         payload={
             "user_id": user.id,

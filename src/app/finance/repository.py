@@ -147,6 +147,7 @@ async def _update_balance(
     amount: int,
     wallet: Wallet | None = None,
     escrow: EscrowAccount | None = None,
+    escrow_balance_after: int | None = None,
 ) -> int:
     if wallet is not None:
         current = wallet.balance_egp
@@ -173,8 +174,12 @@ async def _update_balance(
     if escrow is not None:
         # escrow.amount_egp is the held principal, not a running balance —
         # release/refund read it to size the payout, so ledger posting must
-        # never mutate it. The escrow liability equals the principal once
-        # funded and zero once released/refunded (a DEBIT).
+        # never mutate it. Under capture-time recognition the escrow
+        # liability steps down (total → host net → 0), so the caller
+        # supplies the remaining liability explicitly when it differs
+        # from the funded/zeroed convention.
+        if escrow_balance_after is not None:
+            return escrow_balance_after
         return 0 if entry_type == LedgerEntryType.DEBIT else escrow.amount_egp
 
     return 0
@@ -189,10 +194,17 @@ async def create_ledger_entry(
     amount_egp: int,
     wallet: Wallet | None = None,
     escrow: EscrowAccount | None = None,
+    escrow_balance_after: int | None = None,
     description: str | None = None,
 ) -> LedgerEntry:
     balance_after = await _update_balance(
-        session, account_type, entry_type, amount_egp, wallet=wallet, escrow=escrow
+        session,
+        account_type,
+        entry_type,
+        amount_egp,
+        wallet=wallet,
+        escrow=escrow,
+        escrow_balance_after=escrow_balance_after,
     )
     entry = LedgerEntry(
         id=str(uuid4()),

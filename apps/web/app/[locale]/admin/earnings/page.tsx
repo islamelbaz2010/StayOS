@@ -34,6 +34,7 @@ type DrillView =
   | "revenue"
   | "vat"
   | "funds_held"
+  | "host_funds_held"
   | "host_payable"
   | "payouts_pending"
   | "paid_out"
@@ -45,6 +46,7 @@ const DRILL_VIEWS: DrillView[] = [
   "revenue",
   "vat",
   "funds_held",
+  "host_funds_held",
   "host_payable",
   "payouts_pending",
   "paid_out",
@@ -160,6 +162,11 @@ export default function AdminEarningsPage() {
                 egp(overview.data.escrows_held_amount_egp),
                 to("escrowsHeldAmount"),
                 String(overview.data.escrows_held)
+              )}
+              {card(
+                "host_funds_held",
+                egp(overview.data.host_funds_held_egp),
+                to("hostFundsHeld")
               )}
               {card(
                 "host_payable",
@@ -772,7 +779,7 @@ function DrillDown({
     v ? new Date(v).toLocaleString(intlLocale) : "—";
 
   const isQueue = view === "collected" || view === "refund_pending" || view === "refunded";
-  const isEscrow = view === "funds_held";
+  const isEscrow = view === "funds_held" || view === "host_funds_held";
   const isPayout = view === "payouts_pending" || view === "paid_out";
   const isLedger =
     view === "revenue" || view === "vat" || view === "host_payable";
@@ -833,6 +840,8 @@ function DrillDown({
         </div>
       ) : isQueue ? (
         <QueueRows rows={(queueQuery.data ?? []) as PaymentListItem[]} egp={egp} fmtDate={fmtDate} />
+      ) : view === "host_funds_held" ? (
+        <HostFundsHeldRows rows={escrows} egp={egp} fmtDate={fmtDate} />
       ) : isEscrow ? (
         <EscrowRows rows={escrows} egp={egp} fmtDate={fmtDate} />
       ) : isPayout ? (
@@ -850,10 +859,11 @@ function DrillDown({
   );
 }
 
-/** Ledger drill-downs — signed rows (credit +/debit −) plus the section
- * that explains the KPI: VAT payable = ledger-recognised + VAT held in
- * open escrows; revenue / host payable show the economics still pending
- * inside held escrows, clearly labelled as not yet recognised. */
+/** Ledger drill-downs — signed rows (credit +/debit −). Under
+ * capture-time recognition the KPI equals the ledger net directly:
+ * revenue and VAT recognise at payment capture; the host-payable drill
+ * additionally shows the recognised-but-restricted host obligation
+ * still inside open escrows (held ≠ pending recognition). */
 function LedgerDrill({
   view,
   rows,
@@ -875,12 +885,7 @@ function LedgerDrill({
     .filter((r) => r.entry_type === "debit")
     .reduce((s, r) => s + r.amount_egp, 0);
   const net = credits - debits;
-  const heldVat = escrows.reduce((s, e) => s + (e.vat_egp ?? 0), 0);
-  const pendingRevenue = escrows.reduce(
-    (s, e) => s + (e.platform_share_egp ?? 0),
-    0
-  );
-  const pendingHost = escrows.reduce(
+  const hostHeld = escrows.reduce(
     (s, e) => s + (e.host_amount_egp ?? 0),
     0
   );
@@ -893,42 +898,20 @@ function LedgerDrill({
       <LedgerRows rows={rows} egp={egp} fmtDate={fmtDate} />
 
       {view === "vat" && (
-        <>
-          <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-            {t("drill.heldVat")}
-          </h3>
-          <EscrowHeldRows
-            escrows={escrows.filter((e) => (e.vat_egp ?? 0) > 0)}
-            field="vat_egp"
-            egp={egp}
-            fmtDate={fmtDate}
+        <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
+          <Row label={t("drill.vatRecognised")} value={egp(credits)} />
+          <Row label={t("drill.vatReversed")} value={egp(-debits)} />
+          <Row
+            label={t("drill.vatPayable")}
+            value={
+              <span className="font-bold text-brand-900">{egp(net)}</span>
+            }
           />
-          <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
-            <Row label={t("drill.vatRecognised")} value={egp(net)} />
-            <Row label={t("drill.vatHeld")} value={egp(heldVat)} />
-            <Row
-              label={t("drill.vatPayable")}
-              value={
-                <span className="font-bold text-brand-900">
-                  {egp(net + heldVat)}
-                </span>
-              }
-            />
-          </dl>
-        </>
+        </dl>
       )}
 
       {view === "revenue" && (
         <>
-          <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-            {t("drill.pendingRevenue")}
-          </h3>
-          <EscrowHeldRows
-            escrows={escrows.filter((e) => (e.platform_share_egp ?? 0) > 0)}
-            field="platform_share_egp"
-            egp={egp}
-            fmtDate={fmtDate}
-          />
           <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
             <Row label={t("drill.grossCredits")} value={egp(credits)} />
             <Row label={t("drill.grossDebits")} value={egp(-debits)} />
@@ -938,13 +921,9 @@ function LedgerDrill({
                 <span className="font-bold text-brand-900">{egp(net)}</span>
               }
             />
-            <Row
-              label={t("drill.pendingRevenueTotal")}
-              value={egp(pendingRevenue)}
-            />
           </dl>
           <p className="mt-2 text-xs text-neutral-500">
-            {t("drill.pendingNote")}
+            {t("drill.recognitionNote")}
           </p>
         </>
       )}
@@ -952,7 +931,7 @@ function LedgerDrill({
       {view === "host_payable" && (
         <>
           <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-            {t("drill.pendingHost")}
+            {t("drill.hostFundsHeld")}
           </h3>
           <EscrowHeldRows
             escrows={escrows.filter((e) => (e.host_amount_egp ?? 0) > 0)}
@@ -961,24 +940,61 @@ function LedgerDrill({
             fmtDate={fmtDate}
           />
           <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
-            <Row label={t("drill.grossCredits")} value={egp(credits)} />
-            <Row label={t("drill.grossDebits")} value={egp(-debits)} />
             <Row
-              label={t("drill.netPayable")}
-              value={
-                <span className="font-bold text-brand-900">{egp(net)}</span>
-              }
+              label={t("drill.hostFundsHeldTotal")}
+              value={egp(hostHeld)}
             />
             <Row
-              label={t("drill.pendingHostTotal")}
-              value={egp(pendingHost)}
+              label={t("drill.netPayable")}
+              value={egp(net)}
+            />
+            <Row
+              label={t("drill.totalHostObligation")}
+              value={
+                <span className="font-bold text-brand-900">
+                  {egp(net + hostHeld)}
+                </span>
+              }
             />
           </dl>
           <p className="mt-2 text-xs text-neutral-500">
-            {t("drill.pendingNote")}
+            {t("drill.hostHoldNote")}
           </p>
         </>
       )}
+    </div>
+  );
+}
+
+/** Host-funds-held drill — every open escrow's restricted host share.
+ * These funds are recognised host obligations, not yet payout-eligible
+ * until check-in + the protection window. */
+function HostFundsHeldRows({
+  rows,
+  egp,
+  fmtDate,
+}: {
+  rows: EscrowRecord[];
+  egp: (v: number | null | undefined) => string;
+  fmtDate: (v: string | null | undefined) => string;
+}) {
+  const t = useTranslations("adminEarnings");
+  const held = rows.reduce((s, e) => s + (e.host_amount_egp ?? 0), 0);
+  return (
+    <div>
+      <EscrowHeldRows
+        escrows={rows.filter((e) => (e.host_amount_egp ?? 0) > 0)}
+        field="host_amount_egp"
+        egp={egp}
+        fmtDate={fmtDate}
+      />
+      <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
+        <Row
+          label={t("drill.hostFundsHeldTotal")}
+          value={<span className="font-bold text-brand-900">{egp(held)}</span>}
+        />
+      </dl>
+      <p className="mt-2 text-xs text-neutral-500">{t("drill.hostHoldNote")}</p>
     </div>
   );
 }

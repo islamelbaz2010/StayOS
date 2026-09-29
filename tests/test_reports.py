@@ -628,7 +628,9 @@ def test_management_admin_ok(reports_client, fake_session, monkeypatch) -> None:
     assert body["revenue"]["by_month"] == []
     assert body["settlement"]["open_escrows"] == []
     assert body["top_bookings"] == []
-    assert body["date_bases"]["revenue"] == "ledger_recognised"
+    assert body["date_bases"]["revenue"] == "ledger_recognised_at_capture"
+    assert body["kpis"]["host_funds_held_egp"] == 0
+    assert body["settlement"]["host_funds_held_egp"] == 0
 
 
 # ---------------------------------------------------------------------------

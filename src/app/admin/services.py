@@ -20,7 +20,9 @@ from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.disputes.constants import DisputeStatus
 from app.disputes.models import Dispute
+from app.finance import repository as finance_repository
 from app.finance import services as finance_services
+from app.finance.commercial import money
 from app.finance.constants import (
     EscrowStatus,
     LedgerAccount,
@@ -252,46 +254,20 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
             LedgerEntry.ledger_account == LedgerAccount.VAT_PAYABLE
         ),
     )
-    # VAT is a liability from the moment it is collected, but the ledger
-    # only credits VAT_PAYABLE on escrow release/refund. VAT still held
-    # inside an unreleased escrow therefore never reaches the ledger —
-    # add it per escrow, resolved exactly like _resolve_escrow_split:
-    # booking-path rows carry payment.vat_egp; reservation-path rows
-    # derive it as total − host − platform_fee (0 for pre-VAT rows).
-    vat_held_amount = await _sum(
-        session,
-        select(
-            func.coalesce(
-                func.sum(
-                    case(
-                        (Payment.vat_egp.isnot(None), Payment.vat_egp),
-                        else_=func.greatest(
-                            EscrowAccount.amount_egp
-                            - Reservation.host_amount_egp
-                            - Reservation.platform_fee_egp,
-                            0,
-                        ),
-                    )
-                ),
-                0,
-            )
-        )
-        .select_from(EscrowAccount)
-        .outerjoin(Payment, Payment.booking_id == EscrowAccount.reservation_id)
-        .outerjoin(
-            Reservation, Reservation.id == EscrowAccount.reservation_id
-        )
-        .where(
-            EscrowAccount.status.in_(
-                [
-                    EscrowStatus.CREATED,
-                    EscrowStatus.HELD,
-                    EscrowStatus.DISPUTED,
-                ]
-            )
-        ),
+    # VAT is recognised at payment capture (recognised − reversed = net
+    # VAT_PAYABLE ledger balance). It is never "held because the host is
+    # held" — host payout timing does not gate tax recognition.
+    # Host funds held = host net inside still-open escrows, decomposed via
+    # the canonical economics (same rule _resolve_escrow_split uses).
+    open_escrows = await finance_repository.list_escrows(
+        session, status="created,held,disputed", limit=100000
     )
-    vat_amount = (vat_amount or 0) + (vat_held_amount or 0)
+    decompositions = await finance_services.escrow_decompositions(
+        session, open_escrows
+    )
+    host_funds_held_amount = money(
+        sum(d["host_amount_egp"] for d in decompositions.values())
+    )
     payouts_paid_amount = await _sum(
         session,
         select(func.coalesce(func.sum(PayoutRequest.amount_egp), 0)).where(
@@ -390,6 +366,7 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
         payouts_paid_amount_egp=payouts_paid_amount,
         escrows_held=escrows_held,
         escrows_held_amount_egp=escrows_held_amount,
+        host_funds_held_egp=host_funds_held_amount,
         host_payable_egp=host_payable_amount,
         platform_revenue_egp=platform_revenue_amount,
         vat_egp=vat_amount,

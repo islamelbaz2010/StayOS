@@ -570,20 +570,30 @@ async def test_release_splits_via_canonical_engine() -> None:
             return_value=MagicMock(id=str(uuid.uuid4()))
         )
         fr.create_ledger_entry = AsyncMock()
-        await fs.release_escrow(AsyncMock(), escrow.id)
+        with patch.object(fs, "_recognition_exists",
+                          AsyncMock(return_value=False)):
+            await fs.release_escrow(AsyncMock(), escrow.id)
 
     calls = {c.kwargs["ledger_account"]: c.kwargs["amount_egp"]
              for c in fr.create_ledger_entry.call_args_list}
+    escrow_debits = [
+        c.kwargs["amount_egp"]
+        for c in fr.create_ledger_entry.call_args_list
+        if c.kwargs["ledger_account"] == LedgerAccount.ESCROW
+    ]
+    # Recognition self-heal (revenue+VAT) posted at release for this
+    # legacy escrow, then the remaining host net moves to HOST_PAYABLE.
     assert calls[LedgerAccount.HOST_PAYABLE] == Decimal("1376.00")
     assert calls[LedgerAccount.PLATFORM_REVENUE] == Decimal("168.00")
     assert calls[LedgerAccount.VAT_PAYABLE] == Decimal("216.16")
+    assert sum(escrow_debits) == Decimal("1760.16")
+    assert escrow_debits[-1] == Decimal("1376.00")
     assert (
         calls[LedgerAccount.HOST_PAYABLE]
         + calls[LedgerAccount.PLATFORM_REVENUE]
         + calls[LedgerAccount.VAT_PAYABLE]
         == Decimal("1760.16")
     )
-    assert calls[LedgerAccount.ESCROW] == Decimal("1760.16")
     assert escrow.status == EscrowStatus.RELEASED
 
 
@@ -621,14 +631,15 @@ async def test_release_never_waives_platform_share() -> None:
             return_value=MagicMock(id=str(uuid.uuid4()))
         )
         fr.create_ledger_entry = AsyncMock()
-        await fs.release_escrow(AsyncMock(), escrow.id)
+        with patch.object(fs, "_recognition_exists",
+                          AsyncMock(return_value=False)):
+            await fs.release_escrow(AsyncMock(), escrow.id)
 
     calls = {c.kwargs["ledger_account"]: c.kwargs["amount_egp"]
              for c in fr.create_ledger_entry.call_args_list}
     assert calls[LedgerAccount.HOST_PAYABLE] == Decimal("1376.00")
     assert calls[LedgerAccount.PLATFORM_REVENUE] == Decimal("168.00")
     assert calls[LedgerAccount.VAT_PAYABLE] == Decimal("216.16")
-    assert calls[LedgerAccount.ESCROW] == Decimal("1760.16")
 
 
 # ============================================================
@@ -904,15 +915,24 @@ async def test_reservation_release_derives_vat_from_stored_amounts() -> None:
             return_value=MagicMock(id=str(uuid.uuid4()))
         )
         fr.create_ledger_entry = AsyncMock()
-        await fs.release_escrow(AsyncMock(), escrow.id)
+        with patch.object(fs, "_recognition_exists",
+                          AsyncMock(return_value=False)):
+            await fs.release_escrow(AsyncMock(), escrow.id)
 
     calls = {c.kwargs["ledger_account"]: c.kwargs["amount_egp"]
              for c in fr.create_ledger_entry.call_args_list}
+    escrow_debits = [
+        c.kwargs["amount_egp"]
+        for c in fr.create_ledger_entry.call_args_list
+        if c.kwargs["ledger_account"] == LedgerAccount.ESCROW
+    ]
     # vat = 1140 − 880 − 120 = 140; platform revenue = the stored fee.
+    # Recognition self-heal posts revenue+VAT at release for this legacy
+    # escrow; the remaining escrow debit (880) settles the host net.
     assert calls[LedgerAccount.HOST_PAYABLE] == 880
     assert calls[LedgerAccount.VAT_PAYABLE] == 140
     assert calls[LedgerAccount.PLATFORM_REVENUE] == 120
-    assert calls[LedgerAccount.ESCROW] == 1140
+    assert sum(escrow_debits) == 1140
 
 
 @pytest.mark.asyncio
@@ -952,9 +972,11 @@ async def test_payment_confirmed_reservation_path_derives_amounts() -> None:
             return_value=MagicMock(id=str(uuid.uuid4()))
         )
         fr.create_ledger_entry = AsyncMock()
-        await fs.handle_payment_confirmed(
-            AsyncMock(), {"reservation_id": "r1"}
-        )
+        with patch.object(fs, "_recognition_exists",
+                          AsyncMock(return_value=False)):
+            await fs.handle_payment_confirmed(
+                AsyncMock(), {"reservation_id": "r1"}
+            )
 
     # Escrow holds the full collected total; the event reports platform
     # revenue excluding VAT (1140 − 880 − 140 = 120).

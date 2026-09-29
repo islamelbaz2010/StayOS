@@ -2133,7 +2133,8 @@
     "escrowsHeldAmount": "Funds held",
     "payoutsPaid": "Paid out",
     "refundPendingAmount": "Refund pending",
-    "vat": "VAT payable"
+    "vat": "VAT payable",
+    "hostFundsHeld": "Host funds held"
   },
   "adminEarnings": {
     "title": "Earnings & Financial Operations",
@@ -2194,31 +2195,31 @@
     "drill": {
       "collected": "Collected — verified payments",
       "revenue": "StayOS revenue — ledger entries",
-      "vat": "VAT payable — ledger entries",
+      "vat": "VAT payable — recognised, reversed, payable",
       "funds_held": "Funds held — escrow accounts",
-      "host_payable": "Host payable — ledger entries",
+      "host_payable": "Host payable — payout-eligible ledger entries",
       "payouts_pending": "Pending payouts",
       "paid_out": "Completed payouts",
       "refund_pending": "Refunds awaiting provider confirmation",
       "refunded": "Refunded payments",
-      "recognised": "Recognised in ledger",
-      "heldVat": "VAT held in open escrows",
-      "pendingRevenue": "Booking economics pending in held escrows",
-      "pendingHost": "Host net pending in held escrows",
+      "recognised": "Recognised in ledger (recognition at payment capture)",
       "grossCredits": "Gross credits",
       "grossDebits": "Debits / reversals",
       "netRecognised": "Net recognised (ledger)",
-      "netPayable": "Net payable (ledger)",
-      "vatRecognised": "VAT recognised in ledger",
-      "vatHeld": "VAT held in escrows",
-      "vatPayable": "VAT payable",
-      "pendingRevenueTotal": "Pending in escrows (not yet recognised)",
-      "pendingHostTotal": "Pending in escrows (not yet payable)",
-      "pendingNote": "Held-escrow economics are booking-level amounts that post to the ledger on escrow release — they are not yet recognised.",
+      "netPayable": "Payout-eligible balance (ledger)",
+      "vatRecognised": "VAT recognised",
+      "vatPayable": "VAT payable (net)",
       "hostNet": "Host net",
       "stayosShare": "StayOS share",
       "vatAmount": "VAT",
-      "escrowTotal": "Escrow total:"
+      "escrowTotal": "Escrow total:",
+      "host_funds_held": "Host funds held — restricted host share in escrow",
+      "vatReversed": "VAT reversed",
+      "hostFundsHeld": "Host funds held — restricted until check-in + 24h",
+      "hostFundsHeldTotal": "Host funds held (restricted)",
+      "totalHostObligation": "Total host obligation",
+      "recognitionNote": "StayOS revenue is recognised at successful payment capture. Host payout timing never gates recognition.",
+      "hostHoldNote": "The host share is a recognised obligation that stays restricted inside escrow until the guest checks in and the 24-hour protection window passes."
     },
     "adjustments": {
       "title": "Commercial adjustments",
@@ -3089,7 +3090,8 @@
       "vatPayable": "VAT Payable",
       "hostPayable": "Host Payable",
       "fundsHeld": "Funds Held",
-      "refunded": "Refunded"
+      "refunded": "Refunded",
+      "hostFundsHeld": "Host Funds Held"
     },
     "sections": {
       "composition": "Financial composition",
@@ -3105,24 +3107,25 @@
       "guestPayments": "Guest payments",
       "fundsHeld": "Funds held",
       "hostPayable": "Host payable",
-      "stayosVat": "VAT payable"
+      "stayosVat": "VAT payable",
+      "hostFundsHeld": "Host funds held"
     },
-    "compositionNote": "Composition of collected funds — not cash movement. Revenue, VAT and host payable are recognised per the canonical ledger rules.",
+    "compositionNote": "Financial position snapshot — collected cash, funds held under escrow control, the restricted host share, payout-eligible host payable and recognised VAT are different financial states and liabilities; they are not a sequential cash-flow calculation.",
     "revenue": {
       "grossCredits": "Gross credits",
       "debits": "Debits / reversals",
       "net": "Net recognised",
-      "pending": "Pending in escrows",
       "byMonth": "Recognised revenue by month",
-      "pendingNote": "Pending amounts are booking economics inside held escrows — recognised on escrow release, not included in net recognised revenue."
+      "withinHeldFunds": "Within held funds",
+      "recognitionNote": "StayOS revenue is recognised at successful payment capture. The within-held-funds figure is recognised revenue whose cash still sits under escrow control — never extra revenue on top."
     },
     "vat": {
       "calculated": "Calculated",
       "recognised": "Recognised",
-      "held": "Held in escrows",
       "reversed": "Reversed",
       "payable": "Payable",
-      "note": "VAT payable = recognised in ledger + held inside open escrows. Calculated VAT is a booking-economics figure, not the liability."
+      "note": "VAT payable = recognised in ledger − reversed. Recognised VAT posts at payment capture; within-held-funds shows recognised VAT whose cash still sits inside open escrows.",
+      "withinHeldFunds": "Within held funds"
     },
     "bookings": {
       "total": "{count} bookings",
@@ -3130,11 +3133,12 @@
       "governorate": "Governorate"
     },
     "settlement": {
-      "hostNetPending": "Host net pending",
       "payoutsPending": "Pending payout",
       "paidOut": "Paid out",
       "fundsStatus": "Funds status",
-      "amount": "Amount"
+      "amount": "Amount",
+      "hostFundsHeld": "Host funds held",
+      "hostPayable": "Payout-eligible payable"
     },
     "refunds": {
       "refunded": "Refunded",
@@ -3176,10 +3180,10 @@
     "basis": {
       "payment_verified_or_recognised": "Date basis: payment verification / ledger recognition",
       "ledger_recognised": "Date basis: ledger recognition",
-      "ledger_plus_escrow_held": "Date basis: ledger recognition + escrow creation (held VAT)",
       "booking_created": "Date basis: booking creation",
       "refund_completed": "Date basis: refund completion",
-      "payment_created": "Date basis: payment creation"
+      "payment_created": "Date basis: payment creation",
+      "ledger_recognised_at_capture": "Date basis: ledger recognition (at payment capture)"
     }
   }
 }

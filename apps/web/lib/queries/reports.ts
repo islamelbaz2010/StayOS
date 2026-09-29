@@ -80,6 +80,7 @@ export interface ManagementReport {
     collected_egp: number;
     stayos_revenue_egp: number;
     vat_payable_egp: number;
+    host_funds_held_egp: number;
     host_payable_egp: number;
     funds_held_egp: number;
     refunded_egp: number;
@@ -91,14 +92,15 @@ export interface ManagementReport {
     gross_credits_egp: number;
     debits_egp: number;
     net_egp: number;
-    pending_in_escrow_egp: number;
+    within_held_funds_egp: number;
     by_month: { month: string; amount_egp: number }[];
   };
   vat: {
     calculated_egp: number;
     recognised_egp: number;
-    held_egp: number;
     reversed_egp: number;
+    reversed_calculated_egp: number;
+    within_held_funds_egp: number;
     payable_egp: number;
   };
   bookings: {
@@ -109,8 +111,8 @@ export interface ManagementReport {
   settlement: {
     funds_held_egp: number;
     escrows_held: number;
+    host_funds_held_egp: number;
     host_payable_egp: number;
-    host_net_pending_egp: number;
     payouts_pending_egp: number;
     payouts_paid_egp: number;
     escrows_by_status: { status: string; count: number; amount_egp: number }[];

@@ -14,6 +14,7 @@ from app.finance import services as finance_services
 from app.finance.constants import (
     EscrowStatus,
     LedgerAccount,
+    LedgerEntryType,
     PayoutStatus,
     TransactionStatus,
     TransactionType,
@@ -96,6 +97,7 @@ def _make_reservation(
     host_id: str | None = None,
     total: int = 4500,
     host_amount: int = 3800,
+    platform_fee: int = 200,
 ) -> MagicMock:
     reservation = MagicMock()
     reservation.id = reservation_id or str(uuid.uuid4())
@@ -104,7 +106,7 @@ def _make_reservation(
     reservation.total_amount_egp = total
     reservation.host_amount_egp = host_amount
     reservation.guest_fee_egp = 500
-    reservation.platform_fee_egp = 200
+    reservation.platform_fee_egp = platform_fee
     return reservation
 
 
@@ -227,6 +229,13 @@ async def test_handle_payment_confirmed_creates_escrow(
     monkeypatch.setattr(
         finance_repository, "create_ledger_entry", AsyncMock(return_value=MagicMock())
     )
+    monkeypatch.setattr(
+        "app.finance.services._reservation_or_none",
+        AsyncMock(return_value=_make_reservation()),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists", AsyncMock(return_value=False)
+    )
     monkeypatch.setattr("app.finance.services.write_event", AsyncMock())
 
     reservation_id = str(uuid.uuid4())
@@ -242,8 +251,25 @@ async def test_handle_payment_confirmed_creates_escrow(
     result = await finance_services.handle_payment_confirmed(fake_session, payload)
     assert result == escrow
     finance_repository.create_escrow_account.assert_awaited_once()
-    finance_repository.create_financial_transaction.assert_awaited_once()
-    assert finance_repository.create_ledger_entry.await_count == 2
+    # ESCROW_CREATE + ESCROW_RECOGNIZE — recognition happens at capture.
+    assert finance_repository.create_financial_transaction.await_count == 2
+    tx_types = {
+        c.kwargs["transaction_type"]
+        for c in finance_repository.create_financial_transaction.await_args_list
+    }
+    assert tx_types == {
+        TransactionType.ESCROW_CREATE,
+        TransactionType.ESCROW_RECOGNIZE,
+    }
+    # create: platform_cash dr + escrow cr; recognize: escrow dr (r+v) +
+    # platform_revenue cr + vat_payable cr. No HOST_PAYABLE yet — the host
+    # share stays restricted inside the escrow liability.
+    calls = finance_repository.create_ledger_entry.await_args_list
+    assert len(calls) == 5
+    accounts = [c.kwargs["ledger_account"] for c in calls]
+    assert LedgerAccount.PLATFORM_REVENUE in accounts
+    assert LedgerAccount.VAT_PAYABLE in accounts
+    assert LedgerAccount.HOST_PAYABLE not in accounts
 
 
 @pytest.mark.asyncio
@@ -289,7 +315,7 @@ async def test_handle_payment_confirmed_normalizes_json_float_amounts(
     from app.finance import repository as finance_repository
 
     wallet = _make_wallet()
-    escrow = _make_escrow()
+    escrow = _make_escrow(amount=991.8)
     tx = _make_transaction()
 
     monkeypatch.setattr(
@@ -317,6 +343,13 @@ async def test_handle_payment_confirmed_normalizes_json_float_amounts(
         return MagicMock()
 
     monkeypatch.setattr(finance_repository, "create_ledger_entry", _entry)
+    monkeypatch.setattr(
+        "app.finance.services._reservation_or_none",
+        AsyncMock(return_value=_make_reservation(host_amount=780, platform_fee=90)),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists", AsyncMock(return_value=False)
+    )
     monkeypatch.setattr("app.finance.services.write_event", AsyncMock())
 
     payload = {
@@ -330,7 +363,15 @@ async def test_handle_payment_confirmed_normalizes_json_float_amounts(
 
     await finance_services.handle_payment_confirmed(fake_session, payload)
 
-    assert entry_amounts == [Decimal("991.80"), Decimal("991.80")]
+    # create: cash dr + escrow cr (991.80 each); recognise: escrow dr
+    # 211.80 (r=90 + vat=121.80), revenue cr 90, vat cr 121.80.
+    assert entry_amounts == [
+        Decimal("991.80"),
+        Decimal("991.80"),
+        Decimal("211.80"),
+        Decimal("90"),
+        Decimal("121.80"),
+    ]
     assert all(isinstance(amount, Decimal) for amount in entry_amounts)
     assert create_escrow.await_args.args[3] == Decimal("991.80")
 
@@ -398,19 +439,25 @@ async def test_release_escrow(fake_session: AsyncMock, monkeypatch) -> None:
     monkeypatch.setattr(
         finance_repository, "create_ledger_entry", AsyncMock(return_value=MagicMock())
     )
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists", AsyncMock(return_value=False)
+    )
     monkeypatch.setattr("app.finance.services.write_event", AsyncMock())
 
     await finance_services.release_escrow(fake_session, escrow.id, force=True)
     assert escrow.status == EscrowStatus.RELEASED
     assert escrow.released_at is not None
-    finance_repository.create_financial_transaction.assert_awaited_once()
-    # ESCROW debit + HOST_PAYABLE + PLATFORM_REVENUE (net) + VAT_PAYABLE —
-    # the platform share posts as net revenue and VAT liability, not gross.
+    # Recognition self-heal + release — two transactions.
+    assert finance_repository.create_financial_transaction.await_count == 2
     calls = finance_repository.create_ledger_entry.await_args_list
-    accounts = {c.kwargs["ledger_account"] for c in calls}
-    assert len(calls) == 4
-    assert LedgerAccount.VAT_PAYABLE in accounts
-    assert LedgerAccount.PLATFORM_REVENUE in accounts
+    # recognise: escrow dr (r+v) + revenue cr + vat cr; release: escrow dr
+    # (host net) + host_payable cr — revenue/VAT post exactly once.
+    assert len(calls) == 5
+    accounts = [c.kwargs["ledger_account"] for c in calls]
+    assert accounts.count(LedgerAccount.PLATFORM_REVENUE) == 1
+    assert accounts.count(LedgerAccount.VAT_PAYABLE) == 1
+    assert accounts.count(LedgerAccount.HOST_PAYABLE) == 1
+    assert accounts.count(LedgerAccount.ESCROW) == 2
 
 
 @pytest.mark.asyncio
@@ -434,6 +481,12 @@ async def test_handle_cancel_event_refund(fake_session: AsyncMock, monkeypatch) 
     monkeypatch.setattr(
         "app.finance.services._reservation_or_none",
         AsyncMock(return_value=_make_reservation(host_id=escrow.host_id)),
+    )
+    # First call (inside _ensure_capture_recognition) → post recognition;
+    # second (cancel branch) → recognised model applies.
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists",
+        AsyncMock(side_effect=[False, True]),
     )
     monkeypatch.setattr(
         finance_repository,
@@ -1482,3 +1535,419 @@ async def test_request_payout_uses_locked_wallet(
 
     locked_fetch.assert_awaited_once()
     assert wallet.available_balance_egp == 1640
+
+
+# ---------------------------------------------------------------------------
+# Capture-time recognition — revenue/VAT post at payment capture while the
+# host share stays restricted inside the escrow liability.
+# ---------------------------------------------------------------------------
+
+
+def _recognition_mocks(monkeypatch, *, reservation=None, payment=None):
+    """Wire the mocks _ensure_capture_recognition needs, letting the real
+    posting path run. ``reservation`` forces the reservation-path split;
+    ``payment`` drives the booking-path capture gate."""
+    from app.finance import repository as finance_repository
+
+    monkeypatch.setattr(
+        "app.finance.services._reservation_or_none",
+        AsyncMock(return_value=reservation),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._payment_or_none",
+        AsyncMock(return_value=payment),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists", AsyncMock(return_value=False)
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=None),
+    )
+    tx = _make_transaction(transaction_type=TransactionType.ESCROW_RECOGNIZE)
+    create_tx = AsyncMock(return_value=tx)
+    monkeypatch.setattr(
+        finance_repository, "create_financial_transaction", create_tx
+    )
+    entries: list[dict] = []
+
+    async def _entry(session, **kwargs):
+        entries.append(kwargs)
+        return MagicMock()
+
+    monkeypatch.setattr(finance_repository, "create_ledger_entry", _entry)
+    return create_tx, entries
+
+
+@pytest.mark.asyncio
+async def test_capture_recognition_posts_revenue_vat_keeps_host_held(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """At capture: escrow liability steps down by (revenue + VAT) to the
+    host net; PLATFORM_REVENUE and VAT_PAYABLE credit; NO HOST_PAYABLE
+    wallet credit — the host share stays restricted."""
+    escrow = _make_escrow(amount=4500)
+    reservation = _make_reservation(
+        reservation_id=escrow.reservation_id,
+        host_id=escrow.host_id,
+        host_amount=3800,
+        platform_fee=200,
+    )
+    create_tx, entries = _recognition_mocks(monkeypatch, reservation=reservation)
+
+    tx = await finance_services._ensure_capture_recognition(
+        fake_session, escrow, source="test"
+    )
+
+    assert tx is not None
+    create_tx.assert_awaited_once()
+    assert create_tx.await_args.kwargs["transaction_type"] == (
+        TransactionType.ESCROW_RECOGNIZE
+    )
+    by_account = {e["ledger_account"]: e for e in entries}
+    # escrow liability reduced by share+vat → remaining = host net
+    assert by_account[LedgerAccount.ESCROW]["entry_type"] == LedgerEntryType.DEBIT
+    assert by_account[LedgerAccount.ESCROW]["amount_egp"] == 700
+    assert by_account[LedgerAccount.ESCROW]["escrow_balance_after"] == 3800
+    assert by_account[LedgerAccount.PLATFORM_REVENUE]["entry_type"] == (
+        LedgerEntryType.CREDIT
+    )
+    assert by_account[LedgerAccount.PLATFORM_REVENUE]["amount_egp"] == 200
+    assert by_account[LedgerAccount.VAT_PAYABLE]["amount_egp"] == 500
+    # No wallet passed anywhere → host funds are NOT withdrawable.
+    assert all(e.get("wallet") is None for e in entries)
+    assert LedgerAccount.HOST_PAYABLE not in by_account
+
+
+@pytest.mark.asyncio
+async def test_capture_recognition_idempotent_replay(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A second call (webhook retry / worker replay / release fallback)
+    must not double-post revenue or VAT."""
+    from app.finance import repository as finance_repository
+
+    escrow = _make_escrow()
+    create_tx, entries = _recognition_mocks(
+        monkeypatch,
+        reservation=_make_reservation(reservation_id=escrow.reservation_id),
+    )
+    await finance_services._ensure_capture_recognition(
+        fake_session, escrow, source="first"
+    )
+
+    # Replay: the recognition idempotency key now resolves → no-op.
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=_make_transaction()),
+    )
+    out = await finance_services._ensure_capture_recognition(
+        fake_session, escrow, source="replay"
+    )
+    assert out is None
+    assert create_tx.await_count == 1
+    assert len(entries) == 3
+
+    # Ledger-existence guard covers legacy rows whose recognise
+    # transaction predates the idempotency key.
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists", AsyncMock(return_value=True)
+    )
+    out = await finance_services._ensure_capture_recognition(
+        fake_session, escrow, source="replay2"
+    )
+    assert out is None
+    assert create_tx.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_capture_recognition_gate_skips_uncaptured_payment(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Booking-path escrow without a captured payment must not
+    recognise — pending/failed Paymob states are not capture."""
+    escrow = _make_escrow()
+    payment = MagicMock()
+    payment.status = "pending"
+    create_tx, entries = _recognition_mocks(
+        monkeypatch, reservation=None, payment=payment
+    )
+    # booking-path split needs booking_economics — keep it from running.
+    monkeypatch.setattr(
+        finance_services,
+        "booking_economics",
+        AsyncMock(
+            return_value=MagicMock(
+                host_net_egp=3800, vat_egp=500, platform_share_egp=200
+            )
+        ),
+    )
+
+    out = await finance_services._ensure_capture_recognition(
+        fake_session, escrow, source="test"
+    )
+    assert out is None
+    create_tx.assert_not_awaited()
+    assert entries == []
+
+
+@pytest.mark.asyncio
+async def test_cancel_on_recognised_escrow_posts_reversals(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Partial-refund cancellation on a recognised escrow: the host share
+    is voided from escrow, refunded-share VAT debits VAT_PAYABLE, revenue
+    nets to the retained taxable amount, refund posts as a payable."""
+    from app.finance import repository as finance_repository
+
+    escrow = _make_escrow(amount=4500)
+    reservation = _make_reservation(
+        reservation_id=escrow.reservation_id,
+        host_id=escrow.host_id,
+        host_amount=3800,
+        platform_fee=200,
+    )  # vat = 500, revenue = 200
+    platform_wallet = _make_wallet(wallet_type="platform")
+    tx = _make_transaction(transaction_type=TransactionType.ESCROW_REFUND)
+
+    monkeypatch.setattr(
+        finance_repository,
+        "get_escrow_by_reservation",
+        AsyncMock(return_value=escrow),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_or_create_wallet",
+        AsyncMock(return_value=platform_wallet),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._reservation_or_none",
+        AsyncMock(return_value=reservation),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists",
+        AsyncMock(side_effect=[False, True]),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=None),
+    )
+    recognize_tx = _make_transaction(
+        transaction_type=TransactionType.ESCROW_RECOGNIZE
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "create_financial_transaction",
+        AsyncMock(side_effect=[recognize_tx, tx]),
+    )
+    entries: list[dict] = []
+
+    async def _entry(session, **kwargs):
+        entries.append(kwargs)
+        return MagicMock()
+
+    monkeypatch.setattr(finance_repository, "create_ledger_entry", _entry)
+    # No provider-confirmed refund intent → GUEST_REFUND_PAYABLE path.
+    intent_result = MagicMock()
+    intent_result.scalar_one_or_none = MagicMock(return_value=None)
+    fake_session.execute = AsyncMock(return_value=intent_result)
+    monkeypatch.setattr("app.finance.services.write_event", AsyncMock())
+
+    await finance_services.handle_cancel_event(
+        fake_session,
+        {
+            "reservation_id": escrow.reservation_id,
+            "refund_amount_egp": 3500,
+            "guest_id": str(uuid.uuid4()),
+        },
+    )
+
+    assert escrow.status == EscrowStatus.REFUNDED
+    refund_entries = [
+        e for e in entries if e["transaction_id"] == tx.id
+    ]
+    signed = {
+        (e["ledger_account"], e["entry_type"]): e["amount_egp"]
+        for e in refund_entries
+    }
+    from decimal import Decimal as D
+
+    # host share voided: escrow dr 3800
+    assert signed[(LedgerAccount.ESCROW, LedgerEntryType.DEBIT)] == D(3800)
+    # VAT reversal: 500 × 3500/4500 = 388.89
+    assert signed[(LedgerAccount.VAT_PAYABLE, LedgerEntryType.DEBIT)] == (
+        D("388.89")
+    )
+    # retained = 1000, retained_vat = 111.11, retained_taxable = 888.89 >
+    # recognised revenue 200 → retained-fee CREDIT of 688.89
+    assert signed[(LedgerAccount.PLATFORM_REVENUE, LedgerEntryType.CREDIT)] == (
+        D("688.89")
+    )
+    # refund owed, not yet provider-confirmed
+    assert signed[
+        (LedgerAccount.GUEST_REFUND_PAYABLE, LedgerEntryType.CREDIT)
+    ] == D(3500)
+    # double-entry balanced: debits = credits
+    debits = sum(
+        e["amount_egp"]
+        for e in refund_entries
+        if e["entry_type"] == LedgerEntryType.DEBIT
+    )
+    credits = sum(
+        e["amount_egp"]
+        for e in refund_entries
+        if e["entry_type"] == LedgerEntryType.CREDIT
+    )
+    assert debits == credits
+
+
+@pytest.mark.asyncio
+async def test_release_does_not_double_recognise(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Release on an already-recognised escrow posts ONLY the host
+    transfer — no second revenue/VAT entries."""
+    from app.finance import repository as finance_repository
+    from app.reservations import repository as reservations_repository
+
+    escrow = _make_escrow(status=EscrowStatus.HELD)
+    host_wallet = _make_wallet()
+    tx = _make_transaction(transaction_type=TransactionType.ESCROW_RELEASE)
+
+    monkeypatch.setattr(
+        finance_repository, "get_escrow_by_id", AsyncMock(return_value=escrow)
+    )
+    monkeypatch.setattr(
+        reservations_repository,
+        "get_reservation_with_relations",
+        AsyncMock(
+            return_value=_make_reservation(
+                reservation_id=escrow.reservation_id, host_id=escrow.host_id
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=None),
+    )
+    # Already recognised at capture → ensure is a no-op.
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists", AsyncMock(return_value=True)
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "create_financial_transaction",
+        AsyncMock(return_value=tx),
+    )
+    monkeypatch.setattr(
+        finance_repository,
+        "get_or_create_wallet",
+        AsyncMock(side_effect=[_make_wallet(wallet_type="platform"), host_wallet]),
+    )
+    entries: list[dict] = []
+
+    async def _entry(session, **kwargs):
+        entries.append(kwargs)
+        return MagicMock()
+
+    monkeypatch.setattr(finance_repository, "create_ledger_entry", _entry)
+    monkeypatch.setattr("app.finance.services.write_event", AsyncMock())
+
+    await finance_services.release_escrow(fake_session, escrow.id, force=True)
+
+    assert escrow.status == EscrowStatus.RELEASED
+    accounts = [e["ledger_account"] for e in entries]
+    assert sorted(accounts) == [
+        LedgerAccount.ESCROW,
+        LedgerAccount.HOST_PAYABLE,
+    ]
+    assert entries[1]["wallet"] is host_wallet  # funds become withdrawable
+
+
+@pytest.mark.asyncio
+async def test_backfill_capture_recognition(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Backfill recognises open escrows, skips cancelled bookings, and is
+    idempotent on re-run."""
+    from app.finance import repository as finance_repository
+
+    open_escrow = _make_escrow(amount=4500)
+    cancelled_escrow = _make_escrow(amount=1000, status=EscrowStatus.HELD)
+    reservation = _make_reservation(
+        reservation_id=open_escrow.reservation_id, host_amount=3800
+    )
+
+    monkeypatch.setattr(
+        finance_repository,
+        "list_escrows",
+        AsyncMock(return_value=[open_escrow, cancelled_escrow]),
+    )
+    monkeypatch.setattr(
+        "app.finance.services._reservation_or_none",
+        AsyncMock(
+            side_effect=lambda s, rid: reservation
+            if rid == open_escrow.reservation_id
+            else _make_reservation(reservation_id=rid)
+        ),
+    )
+    recognised_ids: list[str] = []
+    exists_calls: list[str] = []
+
+    async def _exists(session, rid):
+        exists_calls.append(rid)
+        return rid in recognised_ids
+
+    monkeypatch.setattr(
+        "app.finance.services._recognition_exists", AsyncMock(side_effect=_exists)
+    )
+
+    async def _tx(session, **kwargs):
+        recognised_ids.append(kwargs["reservation_id"])
+        return _make_transaction()
+
+    monkeypatch.setattr(
+        finance_repository,
+        "get_transaction_by_idempotency_key",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        finance_repository, "create_financial_transaction", AsyncMock(side_effect=_tx)
+    )
+    monkeypatch.setattr(
+        finance_repository, "create_ledger_entry", AsyncMock(return_value=MagicMock())
+    )
+
+    # Booking lookup: session.scalar returns the Booking.status — the
+    # cancelled escrow's booking reads "cancelled".
+    cancelled_id = cancelled_escrow.reservation_id
+
+    async def _scalar(stmt):
+        sql = str(stmt.compile(compile_kwargs={"literal_binds": True}))
+        return "cancelled" if cancelled_id in sql else None
+
+    fake_session.scalar = AsyncMock(side_effect=_scalar)
+
+    result = await finance_services.backfill_capture_recognition(fake_session)
+
+    assert [r["reservation_id"] for r in result["recognised"]] == [
+        open_escrow.reservation_id
+    ]
+    assert result["skipped"] == [
+        {"reservation_id": cancelled_id, "reason": "cancelled"}
+    ]
+    assert finance_repository.create_financial_transaction.await_count == 1
+
+    # Second run: everything already recognised → all skipped.
+    result2 = await finance_services.backfill_capture_recognition(fake_session)
+    assert result2["recognised"] == []
+    assert finance_repository.create_financial_transaction.await_count == 1

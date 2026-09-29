@@ -58,6 +58,7 @@ const fixture: ManagementReport = {
     collected_egp: 27110.02,
     stayos_revenue_egp: 3674.4,
     vat_payable_egp: 2185.62,
+    host_funds_held_egp: 10608.0,
     host_payable_egp: 9328.0,
     funds_held_egp: 21078.48,
     refunded_egp: 5445.96,
@@ -69,14 +70,15 @@ const fixture: ManagementReport = {
     gross_credits_egp: 3764.4,
     debits_egp: 90.0,
     net_egp: 3674.4,
-    pending_in_escrow_egp: 1224.0,
+    within_held_funds_egp: 1224.0,
     by_month: [{ month: "2026-09", amount_egp: 3674.4 }],
   },
   vat: {
     calculated_egp: 2467.58,
-    recognised_egp: 529.14,
-    held_egp: 1656.48,
-    reversed_egp: 0,
+    recognised_egp: 2185.62,
+    reversed_egp: 281.96,
+    reversed_calculated_egp: 281.96,
+    within_held_funds_egp: 1656.48,
     payable_egp: 2185.62,
   },
   bookings: {
@@ -87,8 +89,8 @@ const fixture: ManagementReport = {
   settlement: {
     funds_held_egp: 21078.48,
     escrows_held: 6,
+    host_funds_held_egp: 10608.0,
     host_payable_egp: 9328.0,
-    host_net_pending_egp: 10608.0,
     payouts_pending_egp: 0,
     payouts_paid_egp: 0,
     escrows_by_status: [
@@ -137,8 +139,8 @@ const fixture: ManagementReport = {
   ],
   date_bases: {
     kpis: "payment_verified_or_recognised",
-    revenue: "ledger_recognised",
-    vat: "ledger_plus_escrow_held",
+    revenue: "ledger_recognised_at_capture",
+    vat: "ledger_recognised_at_capture",
     bookings: "booking_created",
     refunds: "refund_completed",
     top_bookings: "payment_created",
@@ -195,22 +197,33 @@ describe("Management report (PDF view)", () => {
     expect(screen.getAllByText(/27,110\.02/).length).toBeGreaterThan(0);
   });
 
-  it("shows VAT decomposition: recognised + held − reversed = payable", () => {
+  it("shows VAT decomposition: recognised − reversed = payable", () => {
     renderWith();
     const vat = tMgmt.vat as Record<string, string>;
     expect(screen.getByText(vat.recognised)).toBeInTheDocument();
-    expect(screen.getByText(vat.held)).toBeInTheDocument();
+    expect(
+      screen.getAllByText(vat.withinHeldFunds).length
+    ).toBeGreaterThan(0);
     expect(screen.getByText(vat.reversed)).toBeInTheDocument();
     expect(screen.getByText(vat.payable)).toBeInTheDocument();
-    // 1,656.48 held VAT inside the Sept-28 escrows
+    // 1,656.48 recognised VAT whose cash sits in the Sept-28 escrows
     expect(screen.getAllByText(/1,656\.48/).length).toBeGreaterThan(0);
   });
 
-  it("shows pending held-escrow revenue as not-yet-recognised", () => {
+  it("shows within-held-funds revenue as recognised, not pending", () => {
     renderWith();
     const revenue = tMgmt.revenue as Record<string, string>;
-    expect(screen.getByText(revenue.pending)).toBeInTheDocument();
+    expect(
+      screen.getAllByText(revenue.withinHeldFunds).length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText(/1,224/).length).toBeGreaterThan(0);
+  });
+
+  it("shows host funds held as a restricted recognised obligation", () => {
+    renderWith();
+    const kpi = tMgmt.kpi as Record<string, string>;
+    expect(screen.getByText(kpi.hostFundsHeld)).toBeInTheDocument();
+    expect(screen.getAllByText(/10,608/).length).toBeGreaterThan(0);
   });
 
   it("renders bookings-by-status, top bookings and the appendix", () => {

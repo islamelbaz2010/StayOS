@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.celery_app import celery_app
@@ -28,9 +28,19 @@ from .constants import (
     TransactionType,
     WalletType,
 )
-from .models import EscrowAccount, FinancialTransaction, PayoutRequest, Wallet
+from .models import (
+    EscrowAccount,
+    FinancialTransaction,
+    LedgerEntry,
+    PayoutRequest,
+    Wallet,
+)
 
 ESCROW_RELEASE_HOURS = 24
+
+# Payment states that mean the guest money was actually captured —
+# recognition only ever posts against these.
+_CAPTURED_PAYMENT_STATUSES = frozenset({"verified", "refund_pending", "refunded"})
 
 
 def _idempotency_key(transaction_type: str, reservation_id: str) -> str:
@@ -417,42 +427,67 @@ async def _post_ledger_for_escrow_create(
     )
 
 
-async def _post_ledger_for_escrow_release(
+async def _recognition_exists(
+    session: AsyncSession, reservation_id: str
+) -> bool:
+    """Whether capture-time recognition was already posted for a
+    reservation — either as a dedicated ``escrow_recognize`` transaction
+    or as platform_revenue / VAT credits on any of its transactions."""
+    if (
+        await finance_repository.get_transaction_by_idempotency_key(
+            session, _idempotency_key("escrow-recognize", reservation_id)
+        )
+        is not None
+    ):
+        return True
+    result = await session.execute(
+        select(func.count(LedgerEntry.id))
+        .join(
+            FinancialTransaction,
+            LedgerEntry.transaction_id == FinancialTransaction.id,
+        )
+        .where(
+            FinancialTransaction.reservation_id == reservation_id,
+            LedgerEntry.ledger_account.in_(
+                (LedgerAccount.PLATFORM_REVENUE, LedgerAccount.VAT_PAYABLE)
+            ),
+            LedgerEntry.entry_type == LedgerEntryType.CREDIT,
+        )
+    )
+    return (result.scalar() or 0) > 0
+
+
+async def _post_ledger_for_capture_recognition(
     session: AsyncSession,
     tx: FinancialTransaction,
     escrow: EscrowAccount,
-    host_wallet: Wallet,
-    host_amount: int,
     platform_revenue: int,
     vat_egp: int,
 ) -> None:
-    """Release an escrow into its three canonical components.
+    """Recognise StayOS revenue and VAT at payment capture.
 
-    The escrow principal is the full guest payment (taxable + VAT). VAT
-    is a separate tax — it posts to VAT_PAYABLE, never to platform
-    revenue or the host. ``host + platform_revenue + vat == total``.
+    The escrow liability was credited with the full guest amount at
+    capture; recognition reallocates the StayOS + VAT shares out of it,
+    leaving the escrow balance equal to the host net — the funds that
+    stay restricted until payout eligibility. Debits/credits balance:
+    ``(platform_revenue + vat) == platform_revenue + vat``.
     """
-    total = host_amount + platform_revenue + vat_egp
-    await finance_repository.create_ledger_entry(
-        session,
-        transaction_id=tx.id,
-        ledger_account=LedgerAccount.ESCROW,
-        account_type=AccountType.LIABILITY,
-        entry_type=LedgerEntryType.DEBIT,
-        amount_egp=total,
-        escrow=escrow,
-        description="Escrow released to host",
-    )
-    await finance_repository.create_ledger_entry(
-        session,
-        transaction_id=tx.id,
-        ledger_account=LedgerAccount.HOST_PAYABLE,
-        account_type=AccountType.LIABILITY,
-        entry_type=LedgerEntryType.CREDIT,
-        amount_egp=host_amount,
-        wallet=host_wallet,
-        description="Host payout owed",
-    )
+    recognised = platform_revenue + vat_egp
+    if recognised > 0:
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.ESCROW,
+            account_type=AccountType.LIABILITY,
+            entry_type=LedgerEntryType.DEBIT,
+            amount_egp=recognised,
+            escrow=escrow,
+            # The remaining escrow liability is exactly the held host
+            # share — kept truthful for ledger drill-downs.
+            escrow_balance_after=int(commercial.money(escrow.amount_egp))
+            - recognised,
+            description="StayOS share and VAT recognised at capture",
+        )
     if platform_revenue > 0:
         await finance_repository.create_ledger_entry(
             session,
@@ -473,6 +508,197 @@ async def _post_ledger_for_escrow_release(
             amount_egp=vat_egp,
             description="VAT on taxable booking amount",
         )
+
+
+async def _ensure_capture_recognition(
+    session: AsyncSession,
+    escrow: EscrowAccount,
+    source: str,
+    require_captured: bool = True,
+) -> FinancialTransaction | None:
+    """Post capture-time recognition for an escrow exactly once.
+
+    Idempotent: guarded by the ``escrow-recognize`` idempotency key AND by
+    a ledger-existence check, so event replays, worker retries, backfill
+    runs and the release/cancel paths can all call it safely. Booking-path
+    escrows only recognise against a captured payment unless
+    ``require_captured`` is off — the release/cancel paths set it off
+    because an existing escrow already proves a capture event ran.
+    Reservation-path escrows rely on the reservation's persisted amounts.
+    Returns the recognition transaction, or ``None`` when already posted /
+    not yet capturable.
+    """
+    if (
+        require_captured
+        and await _reservation_or_none(session, escrow.reservation_id) is None
+    ):
+        payment = await _payment_or_none(session, escrow.reservation_id)
+        if payment is not None and str(payment.status) not in (
+            _CAPTURED_PAYMENT_STATUSES
+        ):
+            return None
+    key = _idempotency_key("escrow-recognize", escrow.reservation_id)
+    if (
+        await finance_repository.get_transaction_by_idempotency_key(session, key)
+        is not None
+    ) or await _recognition_exists(session, escrow.reservation_id):
+        return None
+    total = commercial.money(escrow.amount_egp)
+    host_amount, vat_egp = await _resolve_escrow_split(
+        session, escrow.reservation_id, total
+    )
+    platform_revenue = total - host_amount - vat_egp
+    tx = await finance_repository.create_financial_transaction(
+        session,
+        transaction_type=TransactionType.ESCROW_RECOGNIZE,
+        amount_egp=total,
+        reservation_id=escrow.reservation_id,
+        idempotency_key=key,
+        provider_metadata={"source": source, "model": "recognition_at_capture"},
+        status=TransactionStatus.COMPLETED,
+    )
+    await _post_ledger_for_capture_recognition(
+        session, tx, escrow, platform_revenue, vat_egp
+    )
+    return tx
+
+
+async def _post_ledger_for_escrow_release(
+    session: AsyncSession,
+    tx: FinancialTransaction,
+    escrow: EscrowAccount,
+    host_wallet: Wallet,
+    host_amount: int,
+) -> None:
+    """Release the held host share to HOST_PAYABLE.
+
+    Revenue and VAT were recognised at capture — release is only the
+    host-funds transfer: it clears the remaining escrow liability (the
+    host net) into the host-payable account and credits the host wallet,
+    which is what makes the funds withdrawable. Payout timing never
+    controls StayOS revenue recognition.
+    """
+    await finance_repository.create_ledger_entry(
+        session,
+        transaction_id=tx.id,
+        ledger_account=LedgerAccount.ESCROW,
+        account_type=AccountType.LIABILITY,
+        entry_type=LedgerEntryType.DEBIT,
+        amount_egp=host_amount,
+        escrow=escrow,
+        description="Escrow released to host",
+    )
+    await finance_repository.create_ledger_entry(
+        session,
+        transaction_id=tx.id,
+        ledger_account=LedgerAccount.HOST_PAYABLE,
+        account_type=AccountType.LIABILITY,
+        entry_type=LedgerEntryType.CREDIT,
+        amount_egp=host_amount,
+        wallet=host_wallet,
+        description="Host payout owed",
+    )
+
+
+async def _post_ledger_for_recognised_refund(
+    session: AsyncSession,
+    tx: FinancialTransaction,
+    escrow: EscrowAccount,
+    platform_wallet: Wallet,
+    refund_amount: int,
+    host_amount: int,
+    platform_revenue: int,
+    vat_total_egp: int,
+    provider_confirmed: bool,
+) -> None:
+    """Cancellation/refund on a capture-recognised escrow.
+
+    Revenue, VAT and the host share were already recognised at capture —
+    cancellation reverses the parts that no longer apply and credits the
+    guest refund. The retained (unrefunded) share keeps its VAT portion
+    as a liability and its taxable remainder as platform revenue, exactly
+    as the legacy refund posting produced. Balance check:
+    ``host + (revenue − retained_taxable) + refund_vat == refund_amount``.
+    """
+    total = commercial.money(escrow.amount_egp)
+    refund_vat = (
+        commercial.money(vat_total_egp * refund_amount / total)
+        if total
+        else Decimal("0")
+    )
+    retained = total - refund_amount
+    retained_vat = vat_total_egp - refund_vat
+    retained_taxable = retained - retained_vat
+    revenue_reversal = platform_revenue - retained_taxable
+
+    # The host never earns on a cancelled booking — the held host share
+    # is extinguished from the escrow liability.
+    if host_amount > 0:
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.ESCROW,
+            account_type=AccountType.LIABILITY,
+            entry_type=LedgerEntryType.DEBIT,
+            amount_egp=host_amount,
+            escrow=escrow,
+            description="Held host funds voided — booking cancelled",
+        )
+    if revenue_reversal > 0:
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.PLATFORM_REVENUE,
+            account_type=AccountType.REVENUE,
+            entry_type=LedgerEntryType.DEBIT,
+            amount_egp=revenue_reversal,
+            description="Revenue reversal — refunded share",
+        )
+    elif revenue_reversal < 0:
+        # Retained cancellation economics exceed the originally recognised
+        # share (e.g. full-retention cancellation): the excess lands as
+        # retained-fee revenue, same net as the legacy posting.
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.PLATFORM_REVENUE,
+            account_type=AccountType.REVENUE,
+            entry_type=LedgerEntryType.CREDIT,
+            amount_egp=-revenue_reversal,
+            description="Retained cancellation fees",
+        )
+    if refund_vat > 0:
+        await finance_repository.create_ledger_entry(
+            session,
+            transaction_id=tx.id,
+            ledger_account=LedgerAccount.VAT_PAYABLE,
+            account_type=AccountType.LIABILITY,
+            entry_type=LedgerEntryType.DEBIT,
+            amount_egp=refund_vat,
+            description="VAT reversal — refunded share",
+        )
+    if refund_amount > 0:
+        if provider_confirmed:
+            await finance_repository.create_ledger_entry(
+                session,
+                transaction_id=tx.id,
+                ledger_account=LedgerAccount.PLATFORM_CASH,
+                account_type=AccountType.ASSET,
+                entry_type=LedgerEntryType.CREDIT,
+                amount_egp=refund_amount,
+                wallet=platform_wallet,
+                description="Refund to guest",
+            )
+        else:
+            await finance_repository.create_ledger_entry(
+                session,
+                transaction_id=tx.id,
+                ledger_account=LedgerAccount.GUEST_REFUND_PAYABLE,
+                account_type=AccountType.LIABILITY,
+                entry_type=LedgerEntryType.CREDIT,
+                amount_egp=refund_amount,
+                description="Refund owed to guest",
+            )
 
 
 async def _post_ledger_for_escrow_refund(
@@ -623,7 +849,23 @@ async def handle_payment_confirmed(
         session, key
     )
     if existing is not None:
-        return await finance_repository.get_escrow_by_reservation(session, reservation_id)
+        escrow = await finance_repository.get_escrow_by_reservation(
+            session, reservation_id
+        )
+        # Replay self-heal: escrows created under the legacy release-time
+        # model still get capture recognition on any event replay.
+        if escrow is not None and escrow.status in (
+            EscrowStatus.CREATED,
+            EscrowStatus.HELD,
+            EscrowStatus.DISPUTED,
+        ):
+            try:
+                await _ensure_capture_recognition(
+                    session, escrow, source="payment_confirmed_replay"
+                )
+            except NotFoundError:
+                pass
+        return escrow
 
     platform_wallet, _ = await _get_or_create_wallets(session, host_id)
     escrow = await finance_repository.get_escrow_by_reservation(session, reservation_id)
@@ -649,6 +891,13 @@ async def handle_payment_confirmed(
     )
 
     await _post_ledger_for_escrow_create(session, tx, platform_wallet, escrow, total)
+
+    # Recognition at capture: StayOS revenue and VAT post immediately;
+    # the host net stays inside the escrow liability (restricted) until
+    # the post-check-in hold releases it to HOST_PAYABLE.
+    await _ensure_capture_recognition(
+        session, escrow, source="payment_confirmed"
+    )
 
     await write_event(
         session,
@@ -687,6 +936,21 @@ async def handle_checkin_event(
         escrow = await finance_repository.create_escrow_account(
             session, reservation_id, host_id, total
         )
+        try:
+            await _ensure_capture_recognition(
+                session, escrow, source="checkin_fallback"
+            )
+        except NotFoundError:
+            pass
+    elif escrow.status in (EscrowStatus.CREATED, EscrowStatus.HELD):
+        # Legacy escrows created under release-time recognition self-heal
+        # here too — check-in never moves money, only marks the hold.
+        try:
+            await _ensure_capture_recognition(
+                session, escrow, source="checkin_event"
+            )
+        except NotFoundError:
+            pass
 
     if escrow.status not in (EscrowStatus.CREATED, EscrowStatus.HELD):
         return escrow
@@ -736,12 +1000,15 @@ async def release_escrow(
         return escrow
 
     total = escrow.amount_egp
-    host_amount, vat_egp = await _resolve_escrow_split(
+    host_amount, _vat_egp = await _resolve_escrow_split(
         session, escrow.reservation_id, total
     )
-    # StayOS revenue is the commercial share only — VAT is a separate
-    # liability, never revenue.
-    platform_revenue = total - host_amount - vat_egp
+    # Capture-time recognition must exist before the release transfer —
+    # posts it for escrows opened under the legacy release-time model or
+    # whose payment-confirmed event never reached this consumer.
+    await _ensure_capture_recognition(
+        session, escrow, source="escrow_release", require_captured=False
+    )
 
     _, host_wallet = await _get_or_create_wallets(session, escrow.host_id)
 
@@ -755,7 +1022,7 @@ async def release_escrow(
     )
 
     await _post_ledger_for_escrow_release(
-        session, tx, escrow, host_wallet, host_amount, platform_revenue, vat_egp
+        session, tx, escrow, host_wallet, host_amount
     )
 
     escrow.status = EscrowStatus.RELEASED
@@ -808,10 +1075,21 @@ async def handle_cancel_event(
     # portion stays a liability. When neither a payment nor a reservation
     # row resolves (legacy payload-created escrows), no VAT was ever
     # recorded — the retained amount is then entirely platform revenue.
+    host_amount = 0
+    platform_revenue = 0
+    recognised = False
     try:
-        _, vat_total_egp = await _resolve_escrow_split(
+        host_amount, vat_total_egp = await _resolve_escrow_split(
             session, reservation_id, total
         )
+        # Recognise first if this escrow predates the capture-time model —
+        # the cancellation then reverses the recognised components rather
+        # than posting fresh retained-fee credits.
+        await _ensure_capture_recognition(
+            session, escrow, source="cancellation", require_captured=False
+        )
+        recognised = await _recognition_exists(session, reservation_id)
+        platform_revenue = total - host_amount - vat_total_egp
     except NotFoundError:
         vat_total_egp = 0
 
@@ -845,16 +1123,29 @@ async def handle_cancel_event(
         status=TransactionStatus.COMPLETED,
     )
 
-    await _post_ledger_for_escrow_refund(
-        session,
-        tx,
-        escrow,
-        platform_wallet,
-        refund_amount,
-        retained,
-        vat_total_egp,
-        provider_confirmed,
-    )
+    if recognised:
+        await _post_ledger_for_recognised_refund(
+            session,
+            tx,
+            escrow,
+            platform_wallet,
+            refund_amount,
+            host_amount,
+            platform_revenue,
+            vat_total_egp,
+            provider_confirmed,
+        )
+    else:
+        await _post_ledger_for_escrow_refund(
+            session,
+            tx,
+            escrow,
+            platform_wallet,
+            refund_amount,
+            retained,
+            vat_total_egp,
+            provider_confirmed,
+        )
 
     escrow.status = EscrowStatus.REFUNDED
     escrow.refunded_at = datetime.now(UTC)
@@ -941,6 +1232,74 @@ async def settle_guest_refund(
         wallet=platform_wallet,
         description="Refund to guest",
     )
+
+
+async def backfill_capture_recognition(
+    session: AsyncSession, limit: int = 500
+) -> dict[str, Any]:
+    """Idempotent migration onto capture-time recognition.
+
+    Every still-open escrow (created/held/disputed) that has a resolvable
+    payment/reservation and no existing recognition postings gets an
+    ``escrow_recognize`` transaction marked ``source=backfill`` in its
+    provider metadata — auditable, and safe to re-run: the idempotency
+    key plus the ledger-existence check make repeat runs no-ops.
+    Cancelled bookings/reservations are skipped (their economics belong
+    to the refund path) and reported for manual review.
+    """
+    from app.bookings.models import Booking
+    from app.reservations.constants import ReservationStatus
+    from app.bookings.constants import BookingStatus
+
+    escrows = await finance_repository.list_escrows(
+        session,
+        status="created,held,disputed",
+        limit=limit,
+    )
+    recognised: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    for escrow in escrows:
+        rid = escrow.reservation_id
+        booking_status = await session.scalar(
+            select(Booking.status).where(Booking.id == rid)
+        )
+        reservation = await _reservation_or_none(session, rid)
+        if (
+            booking_status is not None
+            and str(booking_status) == str(BookingStatus.CANCELLED)
+        ) or (
+            reservation is not None
+            and str(reservation.status) == str(ReservationStatus.CANCELLED)
+        ):
+            skipped.append({"reservation_id": rid, "reason": "cancelled"})
+            continue
+        try:
+            tx = await _ensure_capture_recognition(
+                session, escrow, source="backfill"
+            )
+        except NotFoundError:
+            skipped.append(
+                {"reservation_id": rid, "reason": "no_payment_or_reservation"}
+            )
+            continue
+        if tx is None:
+            skipped.append(
+                {
+                    "reservation_id": rid,
+                    "reason": "already_recognised_or_uncaptured",
+                }
+            )
+            continue
+        recognised.append(
+            {
+                "reservation_id": rid,
+                "escrow_id": escrow.id,
+                "escrow_status": str(escrow.status),
+                "amount_egp": float(commercial.money(escrow.amount_egp)),
+                "transaction_id": tx.id,
+            }
+        )
+    return {"recognised": recognised, "skipped": skipped}
 
 
 async def manual_hold_escrow(

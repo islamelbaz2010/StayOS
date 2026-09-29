@@ -17,6 +17,10 @@ class EscrowStatus(StrEnum):
 class TransactionType(StrEnum):
     PAYMENT_CAPTURE = "payment_capture"
     ESCROW_CREATE = "escrow_create"
+    # Recognition of StayOS revenue + VAT liability at successful payment
+    # capture (the host share stays inside the ESCROW liability until the
+    # 24h post-check-in hold releases it to HOST_PAYABLE).
+    ESCROW_RECOGNIZE = "escrow_recognize"
     ESCROW_RELEASE = "escrow_release"
     ESCROW_REFUND = "escrow_refund"
     PAYOUT = "payout"

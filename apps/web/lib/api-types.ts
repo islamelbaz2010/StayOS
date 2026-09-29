@@ -1319,6 +1319,11 @@ export interface components {
        */
       escrows_held_amount_egp?: number;
       /**
+       * Host Funds Held Egp
+       * @default 0
+       */
+      host_funds_held_egp?: number;
+      /**
        * Host Payable Egp
        * @default 0
        */

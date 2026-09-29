@@ -506,9 +506,9 @@ def _refund_vat_reversal(
 async def _vat_held_by_month(
     session: AsyncSession, params: ReportParams
 ) -> dict[str, Decimal]:
-    """VAT still inside open escrows, bucketed by escrow creation month —
-    the same held-VAT component Admin Earnings adds on top of the
-    VAT_PAYABLE ledger (the ledger only credits VAT at release/refund)."""
+    """Recognised VAT whose cash still sits inside open escrows, bucketed
+    by escrow creation month. Informational funds-position figure — this
+    VAT posts to VAT_PAYABLE at capture and is never added on top."""
     month = func.date_trunc("month", EscrowAccount.created_at)
     vat_expr = case(
         (Payment.vat_egp.isnot(None), Payment.vat_egp),
@@ -542,10 +542,13 @@ async def recognition_by_month(
     """Revenue Summary — true financial-recognition report.
 
     Date basis: ledger/transaction recognition date. Per month:
-    recognised StayOS revenue, VAT payable (ledger-recognised + VAT still
-    held inside open escrows, matching Admin Earnings), host payable,
+    recognised StayOS revenue, VAT payable (recognised at payment
+    capture, net of reversals — matching Admin Earnings), host payable,
     collected captures, refunds, net financial activity and the count of
-    bookings whose payment was recognised that month.
+    bookings whose payment was recognised that month. ``vat_held_egp``
+    remains for backwards-compatible consumers and reports VAT whose
+    cash still sits inside an open escrow — it is already recognised,
+    never added on top.
     """
     month = func.date_trunc("month", LedgerEntry.created_at).label("m")
     signed = case(
@@ -628,7 +631,7 @@ async def recognition_by_month(
         bucket(m)["vat_held_egp"] += held
     rows = []
     for _, b in sorted(months.items(), reverse=True):
-        b["vat_payable_egp"] = b["vat_recognised_egp"] + b["vat_held_egp"]
+        b["vat_payable_egp"] = b["vat_recognised_egp"]
         b["net_activity_egp"] = b["collected_egp"] - b["refunded_egp"]
         rows.append({k: (_num(v) if isinstance(v, Decimal) else v) for k, v in b.items()})
     return await _finalize(report, params, rows)
@@ -1471,40 +1474,13 @@ async def marketplace_overview(
             ),
         },
         {
-            # VAT payable = ledger-recognised VAT + VAT still held inside
-            # open escrows — identical to Admin Earnings.
+            # VAT payable = ledger-recognised VAT net of reversals — VAT
+            # is recognised at capture; identical to Admin Earnings.
             "metric": "vat_payable_egp",
             "value": await _scalar(
                 select(ledger_net).where(
                     LedgerEntry.ledger_account == LedgerAccount.VAT_PAYABLE
                 )
-            )
-            + await _scalar(
-                select(
-                    func.coalesce(
-                        func.sum(
-                            case(
-                                (Payment.vat_egp.isnot(None), Payment.vat_egp),
-                                else_=func.greatest(
-                                    EscrowAccount.amount_egp
-                                    - Reservation.host_amount_egp
-                                    - Reservation.platform_fee_egp,
-                                    0,
-                                ),
-                            )
-                        ),
-                        0,
-                    )
-                )
-                .select_from(EscrowAccount)
-                .outerjoin(
-                    Payment, Payment.booking_id == EscrowAccount.reservation_id
-                )
-                .outerjoin(
-                    Reservation,
-                    Reservation.id == EscrowAccount.reservation_id,
-                )
-                .where(EscrowAccount.status.in_(_HELD_ESCROW_STATUSES))
             ),
         },
         {
@@ -1519,6 +1495,23 @@ async def marketplace_overview(
                         ]
                     )
                 )
+            ),
+        },
+        {
+            # Host net inside still-open escrows — recognised host
+            # obligation, restricted until check-in + 24h. Decomposed via
+            # the canonical economics helper, never duplicated math.
+            "metric": "host_funds_held_egp",
+            "value": sum(
+                (
+                    Decimal(str(d["host_amount_egp"]))
+                    for d in (
+                        await finance_services.escrow_decompositions(
+                            session, await _open_escrows(session, params)
+                        )
+                    ).values()
+                ),
+                Decimal(0),
             ),
         },
         {
@@ -1562,31 +1555,6 @@ async def _open_escrows(session: AsyncSession, params: ReportParams):
         *_window(EscrowAccount.created_at, params),
     )
     return list((await session.execute(q.limit(MAX_SCAN))).scalars().all())
-
-
-async def _open_escrow_vat(session: AsyncSession, params: ReportParams) -> Decimal:
-    """VAT still held inside open escrows — same expression Admin
-    Earnings adds on top of the VAT_PAYABLE ledger."""
-    vat_expr = case(
-        (Payment.vat_egp.isnot(None), Payment.vat_egp),
-        else_=func.greatest(
-            EscrowAccount.amount_egp
-            - Reservation.host_amount_egp
-            - Reservation.platform_fee_egp,
-            0,
-        ),
-    )
-    q = (
-        select(func.coalesce(func.sum(vat_expr), 0))
-        .select_from(EscrowAccount)
-        .outerjoin(Payment, Payment.booking_id == EscrowAccount.reservation_id)
-        .outerjoin(Reservation, Reservation.id == EscrowAccount.reservation_id)
-        .where(
-            EscrowAccount.status.in_(_HELD_ESCROW_STATUSES),
-            *_window(EscrowAccount.created_at, params),
-        )
-    )
-    return Decimal(str(await session.scalar(q) or 0))
 
 
 async def _ledger_nets(
@@ -1684,7 +1652,6 @@ async def management_report(
         (LedgerAccount.PLATFORM_REVENUE, LedgerAccount.VAT_PAYABLE, LedgerAccount.HOST_PAYABLE),
         params,
     )
-    vat_held = await _open_escrow_vat(session, params)
     open_escrows = await _open_escrows(session, params)
     funds_held = sum(
         (Decimal(str(e.amount_egp)) for e in open_escrows), Decimal(0)
@@ -1702,11 +1669,13 @@ async def management_report(
         )
     )
 
-    # ---- Pending economics behind open escrows --------------------------
-    # Booking economics inside held funds — NOT recognised revenue/VAT/
-    # payable until escrow release, exactly like the earnings drill-down.
-    host_pending = Decimal(0)
-    revenue_pending = Decimal(0)
+    # ---- Composition of open escrows ------------------------------------
+    # Booking economics inside held funds — recognised at capture, but
+    # the CASH still sits under escrow control until check-in + 24h.
+    # These are decomposition figures, never extra revenue/VAT on top.
+    host_funds_held = Decimal(0)
+    revenue_in_held = Decimal(0)
+    vat_in_held = Decimal(0)
     escrow_rows: list[dict[str, Any]] = []
     for escrow in open_escrows:
         try:
@@ -1720,8 +1689,9 @@ async def management_report(
         share = commercial.money(
             Decimal(str(escrow.amount_egp)) - host_amount - vat
         )
-        host_pending += host_amount
-        revenue_pending += share
+        host_funds_held += host_amount
+        revenue_in_held += share
+        vat_in_held += vat
         escrow_rows.append(
             {
                 "escrow_id": escrow.id,
@@ -1756,8 +1726,8 @@ async def management_report(
 
     # ---- VAT decomposition ----------------------------------------------
     # calculated = VAT on collected bookings in scope; reversed = the
-    # canonical refund reversal; recognised = VAT_PAYABLE ledger net;
-    # payable = recognised + held.
+    # canonical refund reversal; recognised = VAT_PAYABLE ledger net
+    # (recognised at capture); payable = recognised − reversed = net.
     pay_escrow_q = (
         select(Payment, EscrowAccount)
         .outerjoin(EscrowAccount, EscrowAccount.reservation_id == Payment.booking_id)
@@ -1774,7 +1744,7 @@ async def management_report(
         vat_calculated += Decimal(str(payment.vat_egp or 0))
         eco = await finance_services.booking_economics(session, payment)
         vat_reversed += _refund_vat_reversal(payment, escrow, eco)
-    vat_recognised = ledger[LedgerAccount.VAT_PAYABLE]["net"]
+    vat_ledger = ledger[LedgerAccount.VAT_PAYABLE]
 
     # ---- Bookings --------------------------------------------------------
     bk_q = _apply_booking_filters(
@@ -1860,7 +1830,7 @@ async def management_report(
 
     revenue_ledger = ledger[LedgerAccount.PLATFORM_REVENUE]
     host_ledger = ledger[LedgerAccount.HOST_PAYABLE]
-    vat_payable = vat_recognised + vat_held
+    vat_payable = vat_ledger["net"]
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "period": {
@@ -1872,6 +1842,7 @@ async def management_report(
             "collected_egp": _num(collected),
             "stayos_revenue_egp": _num(revenue_ledger["net"]),
             "vat_payable_egp": _num(vat_payable),
+            "host_funds_held_egp": _num(host_funds_held),
             "host_payable_egp": _num(host_ledger["net"]),
             "funds_held_egp": _num(funds_held),
             "refunded_egp": _num(refunded),
@@ -1883,14 +1854,18 @@ async def management_report(
             "gross_credits_egp": _num(revenue_ledger["credit"]),
             "debits_egp": _num(revenue_ledger["debit"]),
             "net_egp": _num(revenue_ledger["net"]),
-            "pending_in_escrow_egp": _num(revenue_pending),
+            # Recognised revenue whose CASH still sits inside open
+            # escrows — a funds-position fact, not pending recognition.
+            "within_held_funds_egp": _num(revenue_in_held),
             "by_month": revenue_by_month,
         },
         "vat": {
             "calculated_egp": _num(vat_calculated),
-            "recognised_egp": _num(vat_recognised),
-            "held_egp": _num(vat_held),
-            "reversed_egp": _num(vat_reversed),
+            "recognised_egp": _num(vat_ledger["credit"]),
+            "reversed_egp": _num(vat_ledger["debit"]),
+            "reversed_calculated_egp": _num(vat_reversed),
+            # Recognised VAT whose cash still sits inside open escrows.
+            "within_held_funds_egp": _num(vat_in_held),
             "payable_egp": _num(vat_payable),
         },
         "bookings": {
@@ -1904,8 +1879,10 @@ async def management_report(
         "settlement": {
             "funds_held_egp": _num(funds_held),
             "escrows_held": len(open_escrows),
+            # Recognised host obligation still restricted in escrow.
+            "host_funds_held_egp": _num(host_funds_held),
+            # Ledger HOST_PAYABLE net — released/eligible, net of paid.
             "host_payable_egp": _num(host_ledger["net"]),
-            "host_net_pending_egp": _num(host_pending),
             "payouts_pending_egp": _num(payouts_pending),
             "payouts_paid_egp": _num(payouts_paid),
             "escrows_by_status": escrows_by_status,
@@ -1920,8 +1897,8 @@ async def management_report(
         "top_bookings": top_bookings,
         "date_bases": {
             "kpis": "payment_verified_or_recognised",
-            "revenue": "ledger_recognised",
-            "vat": "ledger_plus_escrow_held",
+            "revenue": "ledger_recognised_at_capture",
+            "vat": "ledger_recognised_at_capture",
             "bookings": "booking_created",
             "refunds": "refund_completed",
             "top_bookings": "payment_created",

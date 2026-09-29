@@ -27,7 +27,7 @@ async def main() -> None:
     async with AsyncSession(eng) as s:
         # --- Bookings by status ---
         rows = await s.execute(text(
-            "SELECT status, count(*) FROM bookings GROUP BY status ORDER BY 2 DESC"
+            "SELECT status, count(*) FROM booking.bookings GROUP BY status ORDER BY 2 DESC"
         ))
         print("== BOOKING STATUS ==")
         for r in rows:
@@ -35,17 +35,17 @@ async def main() -> None:
 
         # --- Verified payments ---
         row = (await s.execute(text(
-            "SELECT count(*), coalesce(sum(amount_egp),0) FROM payments WHERE status='verified'"
+            "SELECT count(*), coalesce(sum(amount_egp),0) FROM payment.payments WHERE status='verified'"
         ))).one()
         print(f"== VERIFIED PAYMENTS == count={row[0]} collected={row[1]}")
         row = (await s.execute(text(
-            "SELECT coalesce(sum(refund_amount_egp),0) FROM payments WHERE refund_amount_egp IS NOT NULL"
+            "SELECT coalesce(sum(refund_amount_egp),0) FROM payment.payments WHERE refund_amount_egp IS NOT NULL"
         ))).one()
         print(f"== REFUNDED TOTAL == {row[0]}")
 
         # --- Escrows ---
         rows = await s.execute(text(
-            "SELECT status, count(*), coalesce(sum(amount_egp),0) FROM escrow_accounts GROUP BY status ORDER BY 1"
+            "SELECT status, count(*), coalesce(sum(amount_egp),0) FROM finance.escrow_accounts GROUP BY status ORDER BY 1"
         ))
         print("== ESCROWS ==")
         held_amt = Decimal(0)
@@ -59,7 +59,7 @@ async def main() -> None:
         # --- Ledger nets by account ---
         rows = await s.execute(text(
             "SELECT ledger_account, entry_type, count(*), coalesce(sum(amount_egp),0) "
-            "FROM ledger_entries GROUP BY 1,2 ORDER BY 1,2"
+            "FROM finance.ledger_entries GROUP BY 1,2 ORDER BY 1,2"
         ))
         print("== LEDGER BY ACCOUNT/TYPE ==")
         nets = {}
@@ -72,8 +72,8 @@ async def main() -> None:
         # --- Per-ledger-entry detail for platform_revenue / vat_payable ---
         rows = await s.execute(text(
             "SELECT ledger_account, entry_type, amount_egp, description, created_at, "
-            "(SELECT ft.reservation_id FROM financial_transactions ft WHERE ft.id = le.transaction_id) AS rid "
-            "FROM ledger_entries le WHERE ledger_account IN ('platform_revenue','vat_payable','host_payable') "
+            "(SELECT ft.reservation_id FROM finance.financial_transactions ft WHERE ft.id = le.transaction_id) AS rid "
+            "FROM finance.ledger_entries le WHERE ledger_account IN ('platform_revenue','vat_payable','host_payable') "
             "ORDER BY created_at"
         ))
         print("== LEDGER ROWS (revenue/vat/host) ==")
@@ -85,12 +85,14 @@ async def main() -> None:
             "SELECT e.id, e.reservation_id, e.status, e.amount_egp, e.hold_until, "
             "b.status AS bstatus, b.created_at, "
             "p.id AS pay_id, p.status AS pstatus, p.amount_egp, p.accommodation_amount_egp, "
-            "p.cleaning_fee_egp, p.host_service_fee_egp, p.guest_service_fee_egp, p.vat_egp, "
-            "u.title_en "
-            "FROM escrow_accounts e "
-            "LEFT JOIN bookings b ON b.id = e.reservation_id "
-            "LEFT JOIN payments p ON p.booking_id = e.reservation_id "
-            "LEFT JOIN units u ON u.id = b.unit_id "
+            "p.cleaning_fee_egp, p.guest_service_fee_egp, p.vat_egp, "
+            "ul.title_en, res.host_amount_egp, res.platform_fee_egp, res.status "
+            "FROM finance.escrow_accounts e "
+            "LEFT JOIN booking.bookings b ON b.id = e.reservation_id "
+            "LEFT JOIN payment.payments p ON p.booking_id = e.reservation_id "
+            "LEFT JOIN reservation.reservations res ON res.id = e.reservation_id "
+            "LEFT JOIN pms.units u ON u.id = b.unit_id "
+            "LEFT JOIN pms.unit_listings ul ON ul.unit_id = u.id "
             "WHERE e.status IN ('created','held','disputed') ORDER BY e.amount_egp DESC"
         ))
         print("== HELD ESCROWS DECOMPOSITION ==")
@@ -98,19 +100,28 @@ async def main() -> None:
         rev_pending = Decimal(0)
         host_pending = Decimal(0)
         for r in rows:
-            # indices: 3=escrow amount, 11=accommodation, 12=cleaning,
-            # 13=host_fee, 14=guest_fee, 15=vat, 16=title
+            # indices: 3=escrow amount, 10=accommodation, 11=cleaning,
+            # 13=vat, 14=title, 15=res_host, 16=res_fee — Model B rule.
             total = D(r[3])
-            host_net = D(r[11]) + D(r[12]) - D(r[13])
-            stayos = D(r[13]) + D(r[14])
-            vat = D(r[15])
+            accom_cleaning = D(r[10]) + D(r[11]) if r[10] is not None else None
+            vat = D(r[13])
+            if accom_cleaning is not None:
+                fee_base = D(r[10])
+                host_commission = (fee_base * Decimal("0.06")).quantize(Decimal("0.01"))
+                host_net = accom_cleaning - host_commission
+            elif r[15] is not None:  # reservation-path row
+                host_net = D(r[15])
+                vat = max(total - host_net - D(r[16]), Decimal(0))
+            else:
+                host_net = Decimal(0)
+            stayos = total - host_net - vat
             recon = host_net + stayos + vat
             ok = abs(recon - total) < Decimal("0.01")
             vat_held += vat
             rev_pending += stayos
             host_pending += host_net
             print(
-                f"  {str(r[1])[:8]} {str(r[16] or '')[:32]:32} escrow={r[2]} amt={total} "
+                f"  {str(r[1])[:8]} {str(r[14] or '')[:32]:32} escrow={r[2]} amt={total} "
                 f"bstat={r[5]} pstat={r[9]} host_net={host_net} stayos={stayos} vat={vat} "
                 f"recon={'OK' if ok else 'MISMATCH ' + str(recon)}"
             )
@@ -118,7 +129,7 @@ async def main() -> None:
 
         # --- payouts ---
         rows = await s.execute(text(
-            "SELECT status, count(*), coalesce(sum(amount_egp),0) FROM payout_requests GROUP BY 1"
+            "SELECT status, count(*), coalesce(sum(amount_egp),0) FROM finance.payout_requests GROUP BY 1"
         ))
         print("== PAYOUTS ==")
         for r in rows:
@@ -126,15 +137,15 @@ async def main() -> None:
 
         # --- refund-pending ---
         row = (await s.execute(text(
-            "SELECT coalesce(sum(refund_amount_egp),0) FROM payments WHERE status='refund_pending'"
+            "SELECT coalesce(sum(refund_amount_egp),0) FROM payment.payments WHERE status='refund_pending'"
         ))).one()
         print(f"== REFUND PENDING == {row[0]}")
 
         # --- fully refunded booking VAT check ---
         rows = await s.execute(text(
             "SELECT p.booking_id, p.amount_egp, p.vat_egp, p.refund_amount_egp, p.status, "
-            "(SELECT e.status FROM escrow_accounts e WHERE e.reservation_id = p.booking_id) "
-            "FROM payments p WHERE p.refund_amount_egp IS NOT NULL ORDER BY p.refund_amount_egp DESC"
+            "(SELECT e.status FROM finance.escrow_accounts e WHERE e.reservation_id = p.booking_id) "
+            "FROM payment.payments p WHERE p.refund_amount_egp IS NOT NULL ORDER BY p.refund_amount_egp DESC"
         ))
         print("== REFUNDED PAYMENTS ==")
         for r in rows:

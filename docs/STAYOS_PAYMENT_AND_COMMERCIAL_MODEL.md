@@ -262,54 +262,94 @@ generated timestamp, date basis, applied filters, row counts).
 - **VAT is three different numbers, labelled as such.** `vat_calculated`
   is booking-economics VAT (`booking_economics`, includes bookings whose
   VAT is later reversed). `vat_reversed` is the refunded share — the VAT
-  portion returned to the guest on refund. `vat_payable` =
-  calculated − reversed, which equals Admin Earnings' VAT payable
-  (VAT_PAYABLE ledger net + VAT still held inside open escrows — the
-  ledger only credits VAT at escrow release/refund).
+  portion returned to the guest on refund. `vat_payable` is the
+  VAT_PAYABLE ledger net (recognised at capture, reduced by reversals).
 - **Booking economics ≠ recognised financials.** `booking_financials`
   and `booking_economics_summary` report gross booking economics for the
   selected set (unpaid/cancelled/refunded included) — their totals are
   gross booking value, never collected revenue. `revenue_summary` is the
   recognition report: net signed ledger balances for `platform_revenue` /
-  `vat_payable` (+ held VAT) / `host_payable`, plus collected captures,
-  refunds and net activity, on the ledger-recognition date basis.
-- **Host net vs host payable.** `host_net_egp` is booking economics;
-  `host_payable` is the recognised ledger liability — never conflated.
+  `vat_payable` / `host_payable`, plus collected captures, refunds and
+  net activity, on the ledger-recognition date basis.
+- **Host net vs host payable vs host funds held.** `host_net_egp` is
+  booking economics; `host_payable` is the ledger liability credited at
+  escrow release (payout-eligible, net of payouts); `host_funds_held` is
+  the recognised-but-restricted host share still inside open escrows —
+  three different lifecycle states, never conflated.
 - **Every total is labelled.** `ReportDef.total_labels` maps each money
   total to an explicit i18n label; exports emit labeled totals rows.
 
-### Recognition timing (verified against production)
+### Recognition timing (canonical model)
 
-- **Capture** posts only `platform_cash` (debit) + `escrow` (credit) via
-  `ESCROW_CREATE` — cash in, liability held.
-- **`platform_revenue` / `vat_payable` / `host_payable` post at escrow
-  release** (`_post_ledger_for_escrow_release`) or on refund for the
-  retained/reversed shares (`_post_ledger_for_escrow_refund`).
-- Therefore held escrows legitimately carry **no** revenue/VAT/host
-  ledger rows yet — their economics exist as booking economics only.
-  Admin Earnings nonetheless surfaces VAT payable = `vat_payable` ledger
-  net + VAT inside open escrows (VAT is a liability from collection);
-  StayOS revenue and host payable KPIs are ledger-recognised nets.
+The StayOS lifecycle separates recognition from payout:
+
+```text
+PAYMENT CAPTURED (authoritative Paymob/payment success event)
+│
+├── StayOS Revenue  → RECOGNISED  (platform_revenue credit)
+├── VAT             → RECOGNISED  (vat_payable credit)
+└── Host Net        → HELD        (stays inside the escrow liability)
+         │
+         ▼
+   Guest check-in confirmed → 24h protection window → escrow release
+         │
+         ▼
+   HOST_PAYABLE credit (payout-eligible, wallet withdrawable)
+         │
+         ▼
+   Host payout (host_payable debit / platform_cash credit)
+```
+
+- **Capture** (`ESCROW_CREATE`) posts `platform_cash` debit + `escrow`
+  credit — cash in, full guest amount held as the escrow liability.
+- **Recognition** (`ESCROW_RECOGNIZE`, `_ensure_capture_recognition`)
+  posts at successful capture: `escrow` debit for the StayOS share + VAT,
+  `platform_revenue` credit, `vat_payable` credit. The escrow liability
+  balance steps down to exactly the host net — the restricted host
+  obligation. No wallet is touched, so host funds are never withdrawable
+  before the protection window.
+- **Release** (`ESCROW_RELEASE`) is only the host-funds transfer: `escrow`
+  debit (host net) / `host_payable` credit with the host wallet — that is
+  what makes the funds payout-eligible after check-in + 24h. Revenue and
+  VAT are not reposted.
+- **Cancellation/refund** on a recognised escrow reverses the recognised
+  components: the held host share is voided from the escrow liability,
+  the refunded share's VAT debits `vat_payable` (proportional on partial
+  refunds), revenue reverses to the retained-taxable amount, and the
+  guest refund credits `guest_refund_payable` (or `platform_cash` once
+  provider-confirmed). Pre-recognition escrows keep the legacy posting.
+- **Idempotency:** recognition is guarded by the `escrow-recognize`
+  transaction key plus a ledger-existence check — webhook retries, worker
+  replays, check-in fallback, release/cancel self-healing and the
+  backfill can all trigger it exactly once.
+- **Backfill:** `backfill_capture_recognition`
+  (`scripts/backfill_capture_recognition.py`) posts `ESCROW_RECOGNIZE`
+  for open escrows created under the legacy release-time model, skipping
+  cancelled bookings and already-recognised escrows. Auditable via
+  `provider_metadata.source = backfill`.
 
 ### Drill-downs explain their KPI
 
-- `GET /finance/escrow` now returns the canonical decomposition per
-  escrow (`host_amount_egp`, `platform_share_egp`, `vat_egp`, listing
-  title, booking/payment status) via `escrow_decompositions` — the same
-  split `_resolve_escrow_split` uses. Funds-held rows show
+- `GET /finance/escrow` returns the canonical decomposition per escrow
+  (`host_amount_egp`, `platform_share_egp`, `vat_egp`, listing title,
+  booking/payment status) via `escrow_decompositions` — the same split
+  `_resolve_escrow_split` uses. Funds-held rows show
   `amount = host + StayOS share + VAT`.
 - `GET /finance/ledger` rows carry `reservation_id` so every ledger row
   names its booking; debits render negative and the drill-down totals to
   the signed net.
-- VAT drill: recognised ledger rows + held-escrow VAT rows + payable
-  total. Revenue / host-payable drills: recognised ledger rows + pending
-  held-escrow economics, labelled "not yet recognised/payable".
+- VAT drill: recognised credits / reversed debits / net payable — no
+  "held VAT" (recognition is not gated on host payout). Host payable
+  drill: ledger balance (payout-eligible) plus the restricted host share
+  inside open escrows, labelled "host funds held".
 
 ### Management report (PDF)
 
 `GET /admin/reports/management` returns an executive aggregation —
-KPIs, signed revenue decomposition + monthly series, VAT
-calculated/recognised/held/reversed/payable, bookings by status and
+KPIs (collected, recognised StayOS revenue, VAT payable, host funds
+held, host payable, funds held, refunded), signed revenue decomposition
++ monthly series, VAT calculated/recognised/reversed/payable plus the
+"within held funds" cash-position figures, bookings by status and
 governorate, settlement lifecycle, refunds/adjustments, top bookings —
 composed entirely from the canonical facts (identical aggregates to
 Admin Earnings when unfiltered; a date range windows each metric on its

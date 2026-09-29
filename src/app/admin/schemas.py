@@ -42,6 +42,7 @@ class AdminOverviewResponse(BaseModel):
     payouts_paid_amount_egp: Money = 0
     escrows_held: int
     escrows_held_amount_egp: Money = 0
+    host_funds_held_egp: Money = 0
     host_payable_egp: Money = 0
     platform_revenue_egp: Money = 0
     vat_egp: Money = 0

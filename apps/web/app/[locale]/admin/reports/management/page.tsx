@@ -128,7 +128,7 @@ export default function ManagementReportPage() {
     1,
     data?.vat.calculated_egp ?? 0,
     data?.vat.recognised_egp ?? 0,
-    data?.vat.held_egp ?? 0,
+    data?.vat.within_held_funds_egp ?? 0,
     data?.vat.reversed_egp ?? 0,
     data?.vat.payable_egp ?? 0
   );
@@ -251,6 +251,10 @@ export default function ManagementReportPage() {
                   value={egp(data.kpis.vat_payable_egp)}
                 />
                 <KpiCard
+                  label={t("kpi.hostFundsHeld")}
+                  value={egp(data.kpis.host_funds_held_egp)}
+                />
+                <KpiCard
                   label={t("kpi.hostPayable")}
                   value={egp(data.kpis.host_payable_egp)}
                 />
@@ -271,24 +275,21 @@ export default function ManagementReportPage() {
                     [
                       ["flow.guestPayments", data.kpis.collected_egp],
                       ["flow.fundsHeld", data.kpis.funds_held_egp],
+                      ["flow.hostFundsHeld", data.kpis.host_funds_held_egp],
                       ["flow.hostPayable", data.kpis.host_payable_egp],
                       ["flow.stayosVat", data.kpis.vat_payable_egp],
                     ] as const
-                  ).map(([label, value], i) => (
-                    <div key={label} className="flex items-center gap-2">
-                      {i > 0 && (
-                        <span className="hidden text-neutral-300 sm:inline">
-                          →
-                        </span>
-                      )}
-                      <div className="flex-1 rounded-lg bg-neutral-50 p-3 text-center print:border print:border-neutral-200">
-                        <p className="text-base font-bold text-brand-900">
-                          {egp(value)}
-                        </p>
-                        <p className="mt-0.5 text-[10px] uppercase tracking-wider text-neutral-500">
-                          {t(label)}
-                        </p>
-                      </div>
+                  ).map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="rounded-lg bg-neutral-50 p-3 text-center print:border print:border-neutral-200"
+                    >
+                      <p className="text-base font-bold text-brand-900">
+                        {egp(value)}
+                      </p>
+                      <p className="mt-0.5 text-[10px] uppercase tracking-wider text-neutral-500">
+                        {t(label)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -316,8 +317,8 @@ export default function ManagementReportPage() {
                     value={egp(data.revenue.net_egp)}
                   />
                   <KpiCard
-                    label={t("revenue.pending")}
-                    value={egp(data.revenue.pending_in_escrow_egp)}
+                    label={t("revenue.withinHeldFunds")}
+                    value={egp(data.revenue.within_held_funds_egp)}
                   />
                 </div>
                 <div className="mt-4">
@@ -339,7 +340,7 @@ export default function ManagementReportPage() {
                   )}
                 </div>
                 <p className="mt-2 text-xs text-neutral-500">
-                  {t("revenue.pendingNote")}
+                  {t("revenue.recognitionNote")}
                 </p>
               </Section>
 
@@ -352,7 +353,7 @@ export default function ManagementReportPage() {
                   [
                     ["vat.calculated", data.vat.calculated_egp],
                     ["vat.recognised", data.vat.recognised_egp],
-                    ["vat.held", data.vat.held_egp],
+                    ["vat.withinHeldFunds", data.vat.within_held_funds_egp],
                     ["vat.reversed", -data.vat.reversed_egp],
                     ["vat.payable", data.vat.payable_egp],
                   ] as const
@@ -424,10 +425,14 @@ export default function ManagementReportPage() {
 
               {/* ---- Settlement ---- */}
               <Section title={t("sections.settlement")}>
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-4">
                   <KpiCard
-                    label={t("settlement.hostNetPending")}
-                    value={egp(data.settlement.host_net_pending_egp)}
+                    label={t("settlement.hostFundsHeld")}
+                    value={egp(data.settlement.host_funds_held_egp)}
+                  />
+                  <KpiCard
+                    label={t("settlement.hostPayable")}
+                    value={egp(data.settlement.host_payable_egp)}
                   />
                   <KpiCard
                     label={t("settlement.payoutsPending")}

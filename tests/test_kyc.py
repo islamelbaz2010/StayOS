@@ -454,3 +454,57 @@ async def test_get_pending_kyc_documents(fake_session: AsyncMock) -> None:
     fake_session.execute = AsyncMock(return_value=mock_result)
     result = await kyc_repository.get_pending_kyc_documents(fake_session)
     assert len(result) == 1
+
+
+async def _capture_stmt(fn) -> str:
+    captured: dict = {}
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+
+    async def _execute(stmt):
+        captured["stmt"] = stmt
+        return mock_result
+
+    session = AsyncMock()
+    session.execute = _execute
+    await fn(session)
+    return str(
+        captured["stmt"].compile(compile_kwargs={"literal_binds": True})
+    )
+
+
+@pytest.mark.asyncio
+async def test_pending_queue_excludes_provider_inflight_docs() -> None:
+    """Provider-owned in-flight verifications resolve via webhook — they
+    must never appear in the manual Approve/Reject queue as if staff own
+    the decision."""
+    sql = await _capture_stmt(kyc_repository.get_pending_kyc_documents)
+    # Actionable = (provider IS NULL AND status pending) OR manual_review
+    assert "provider IS NULL" in sql
+    assert "'pending'" in sql
+    assert "manual_review" in sql
+
+
+@pytest.mark.asyncio
+async def test_provider_inflight_lists_only_open_provider_docs() -> None:
+    """The read-only provider-activity list covers in-flight and
+    user-retry provider docs only — terminal decisions are not listed."""
+    sql = await _capture_stmt(
+        kyc_repository.get_provider_inflight_kyc_documents
+    )
+    assert "provider IS NOT NULL" in sql
+    assert "'pending'" in sql
+    assert "'retry_required'" in sql
+    assert "'verified'" not in sql
+    assert "'rejected'" not in sql
+
+
+@pytest.mark.asyncio
+async def test_user_documents_returned_newest_first() -> None:
+    """documents[0] must be the latest attempt — the web UI renders
+    user-facing state from the first document."""
+    sql = await _capture_stmt(
+        lambda s: kyc_repository.get_kyc_documents_by_user_id(s, "u1")
+    )
+    assert "ORDER BY" in sql
+    assert "created_at DESC" in sql

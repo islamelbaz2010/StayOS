@@ -69,7 +69,8 @@ export default function AdminKycPage() {
                   />
                 ))}
               </div>
-            ) : data?.data.length === 0 ? (
+            ) : data?.data.length === 0 &&
+              (data?.inflight?.length ?? 0) === 0 ? (
               <div className="card p-12 text-center">
                 <p className="text-lg font-medium text-neutral-700">
                   {t("noPending")}
@@ -77,6 +78,41 @@ export default function AdminKycPage() {
               </div>
             ) : (
               <div className="space-y-4">
+                {(data?.inflight?.length ?? 0) > 0 && (
+                  <div className="space-y-2">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-500">
+                      {t("inflightTitle")}
+                    </h2>
+                    {data?.inflight?.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="card border-dashed p-4 opacity-90"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold text-brand-900">
+                              {t("documentId")}:{" "}
+                              <span className="font-normal text-neutral-600">
+                                {doc.id.slice(0, 8)}...
+                              </span>
+                            </p>
+                            <p className="text-sm text-neutral-600">
+                              {t("provider")}: {doc.provider}
+                              {doc.provider_applicant_id
+                                ? ` · ${doc.provider_applicant_id.slice(0, 10)}…`
+                                : ""}
+                            </p>
+                          </div>
+                          <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
+                            {doc.status === "retry_required"
+                              ? t("providerAwaitingUser")
+                              : t("providerInProgress")}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {data?.data.map((doc) => (
                   <div key={doc.id} className="card p-5 sm:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">

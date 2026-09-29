@@ -142,14 +142,27 @@ async def list_pending_kyc(
     user: User = Depends(auth_dependencies.require_staff_permission("kyc")),
     session: AsyncSession = Depends(get_session),
 ) -> kyc_schemas.KycPendingListResponse:
+    """Manual review queue plus read-only provider activity.
+
+    ``data`` holds only actionable items — manual upload submissions and
+    provider escalations (``manual_review``). ``inflight`` lists
+    provider-managed verifications still owned by the provider so staff
+    can see in-progress automated activity without being offered fake
+    Approve/Reject controls on decisions the provider owns."""
     from app.kyc import repository as kyc_repository
 
     documents = await kyc_repository.get_pending_kyc_documents(
         session, limit=limit, offset=offset
     )
+    inflight = await kyc_repository.get_provider_inflight_kyc_documents(
+        session, limit=limit
+    )
     return kyc_schemas.KycPendingListResponse(
         data=[kyc_schemas.KycDocumentResponse.model_validate(d) for d in documents],
         total=len(documents),
+        inflight=[
+            kyc_schemas.KycDocumentResponse.model_validate(d) for d in inflight
+        ],
     )
 
 

@@ -312,6 +312,7 @@ describe("Account menu information architecture", () => {
       "/en/notifications",
       "/en/account-settings",
       "/en/become-a-host",
+      "/en/account-settings/language",
       `SECTION:${t.helpSupport}`,
       "/en/help",
       "/en/support",
@@ -339,8 +340,11 @@ describe("Account menu information architecture", () => {
     );
     // dashboard comes first inside Hosting
     expect(entries.indexOf("/en/host")).toBeLessThan(entries.indexOf("/en/host/guide"));
-    // language is at top level for hosts; payments stays inside settings
-    expect(entries).toContain("/en/account-settings/language");
+    // language sits at top level before the Hosting section
+    const langIdx = entries.indexOf("/en/account-settings/language");
+    expect(langIdx).toBeGreaterThan(-1);
+    expect(langIdx).toBeLessThan(hostingIdx);
+    // payments stays inside account settings — no top-level duplicate
     expect(entries).not.toContain("/en/payments");
     expect(entries).not.toContain("/en/admin");
   });
@@ -422,11 +426,17 @@ describe("Account menu information architecture", () => {
     );
     expect(entries).toContain("/en/bookings");
     expect(entries).toContain(`SECTION:${t.helpSupport}`);
-    // click a menu link → the mobile drawer unmounts
+    // viewport-constrained scrollable drawer — Sign out must stay reachable
+    expect(mobileNav.className).toContain("overflow-y-auto");
+    expect(mobileNav.className).toContain("max-h-");
+    // body scroll locks while the drawer is open
+    expect(document.body.style.overflow).toBe("hidden");
+    // click a menu link → the mobile drawer unmounts and scroll unlocks
     const link = Array.from(mobileNav.querySelectorAll("a")).find(
       (a) => a.getAttribute("href") === "/en/bookings"
     );
     fireEvent.click(link!);
     expect(container.querySelector("nav")).not.toBe(mobileNav);
+    expect(document.body.style.overflow).toBe("");
   });
 });

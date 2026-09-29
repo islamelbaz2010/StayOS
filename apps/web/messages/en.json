@@ -1433,6 +1433,9 @@
     "viewBack": "Back",
     "viewSelfie": "Selfie",
     "provider": "Provider",
+    "inflightTitle": "Automated verifications in progress",
+    "providerInProgress": "Provider verification in progress",
+    "providerAwaitingUser": "Awaiting user retry",
     "docTypes": {
       "passport": "Passport",
       "national_id": "National ID",

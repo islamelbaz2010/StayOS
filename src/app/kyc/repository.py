@@ -13,8 +13,12 @@ async def get_kyc_document_by_id(
 async def get_kyc_documents_by_user_id(
     session: AsyncSession, user_id: str
 ) -> list[KycDocument]:
+    """Newest first — callers rely on ``documents[0]`` being the latest
+    attempt when rendering user-facing KYC state."""
     result = await session.execute(
-        select(KycDocument).where(KycDocument.user_id == user_id)
+        select(KycDocument)
+        .where(KycDocument.user_id == user_id)
+        .order_by(KycDocument.created_at.desc())
     )
     return list(result.scalars().all())
 
@@ -24,10 +28,38 @@ async def get_pending_kyc_documents(
 ) -> list[KycDocument]:
     """Admin exception queue: manual upload submissions (``pending``) plus
     provider escalations (``manual_review``). Automated in-flight
-    verifications are excluded — they resolve via webhook."""
+    provider verifications (``pending`` with a provider) are excluded —
+    they resolve via webhook, not by admin action."""
+    from sqlalchemy import or_
+
     result = await session.execute(
         select(KycDocument)
-        .where(KycDocument.status.in_(("pending", "manual_review")))
+        .where(
+            or_(
+                KycDocument.provider.is_(None) & KycDocument.status.in_(("pending",)),
+                KycDocument.status == "manual_review",
+            )
+        )
+        .order_by(KycDocument.updated_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(result.scalars().all())
+
+
+async def get_provider_inflight_kyc_documents(
+    session: AsyncSession, limit: int = 50, offset: int = 0
+) -> list[KycDocument]:
+    """Read-only provider activity for the admin KYC screen: automated
+    verifications still owned by the provider (in-flight ``pending`` or
+    awaiting user ``retry_required``). Terminal provider decisions are
+    never listed — they are not admin work."""
+    result = await session.execute(
+        select(KycDocument)
+        .where(
+            KycDocument.provider.is_not(None),
+            KycDocument.status.in_(("pending", "retry_required")),
+        )
         .order_by(KycDocument.updated_at.desc())
         .limit(limit)
         .offset(offset)

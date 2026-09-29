@@ -23,6 +23,7 @@ export interface KycDocument {
   status: string;
   legal_name: string | null;
   provider: string | null;
+  provider_applicant_id: string | null;
   front_image_key: string | null;
   back_image_key: string | null;
   selfie_image_key: string | null;
@@ -71,6 +72,9 @@ export function useKycVerificationSession() {
 export interface KycPendingListResponse {
   data: KycDocument[];
   total: number;
+  // Provider-managed verifications still owned by the provider — shown
+  // read-only; the provider owns the decision, not staff.
+  inflight: KycDocument[];
 }
 
 export interface KycImageDownload {

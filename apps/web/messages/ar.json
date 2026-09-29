@@ -1433,6 +1433,9 @@
     "viewBack": "الوجه الخلفي",
     "viewSelfie": "صورة شخصية",
     "provider": "الموفر",
+    "inflightTitle": "تحققات آلية قيد التنفيذ",
+    "providerInProgress": "التحقق لدى الموفر قيد التنفيذ",
+    "providerAwaitingUser": "بانتظار إعادة المحاولة من المستخدم",
     "docTypes": {
       "passport": "جواز سفر",
       "national_id": "بطاقة هوية وطنية",

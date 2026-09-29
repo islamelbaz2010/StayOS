@@ -214,6 +214,43 @@ describe("KycUpload — status branches", () => {
     expect(screen.getByText(t.manualReviewMessage)).toBeInTheDocument();
   });
 
+  it("pending user never sees the upload form — even when an older doc precedes the live one", () => {
+    // Regression: a stale first document (rejected draft) must not mask an
+    // in-flight verification and bounce the user back to the upload form.
+    mockUser = { role: "guest", kyc_status: "pending" };
+    mockKycStatus = {
+      kyc_status: "pending",
+      documents: [
+        { status: "rejected", rejection_reason: "old attempt" },
+        { status: "pending" },
+      ],
+      verification_mode: "manual",
+      automated_available: false,
+      required_sides: REQUIRED_SIDES,
+    };
+    renderWith(<KycUpload />);
+    expect(screen.getByText(t.pendingTitle)).toBeInTheDocument();
+    expect(screen.queryByLabelText(t.documentType)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: t.submit })).not.toBeInTheDocument();
+  });
+
+  it("pending user in automated mode sees in-progress, not the provider start CTA", () => {
+    mockUser = { role: "guest", kyc_status: "pending" };
+    mockKycStatus = {
+      kyc_status: "pending",
+      documents: [{ status: "pending", provider: "sumsub" }],
+      verification_mode: "automated_fallback",
+      automated_available: true,
+      required_sides: REQUIRED_SIDES,
+    };
+    renderWith(<KycUpload />);
+    expect(screen.getByText(t.pendingTitle)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: t.startVerification })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(t.submitFailed)).not.toBeInTheDocument();
+  });
+
   it("verified with a verified document shows the success state", () => {
     mockUser = { role: "host", kyc_status: "verified" };
     mockKycStatus = {

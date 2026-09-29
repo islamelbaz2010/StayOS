@@ -125,6 +125,17 @@ export function Header() {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Lock body scroll while the mobile drawer is open so the menu — not the
+  // page behind it — scrolls on small viewports.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [mobileOpen]);
+
   // Close the account menu on outside click / Escape.
   useEffect(() => {
     if (!accountOpen) return;
@@ -205,6 +216,21 @@ export function Header() {
           label: t("accountSettings"),
         })
       );
+      if (user?.role === "guest") {
+        accountItems.push(
+          link({
+            href: `/${locale}/become-a-host`,
+            label: t("becomeHost"),
+            accent: true,
+          })
+        );
+      }
+      accountItems.push(
+        link({
+          href: `/${locale}/account-settings/language`,
+          label: t("language"),
+        })
+      );
       if (user?.role === "host") {
         accountItems.push(
           { kind: "section", label: t("hosting") },
@@ -218,24 +244,7 @@ export function Header() {
           link({ href: `/${locale}/host/guide`, label: t("hostGuide") })
         );
       }
-      if (user?.role === "guest") {
-        accountItems.push(
-          link({
-            href: `/${locale}/become-a-host`,
-            label: t("becomeHost"),
-            accent: true,
-          })
-        );
-      }
       accountItems.push(...helpSupport);
-      if (user?.role === "host") {
-        accountItems.push(
-          link({
-            href: `/${locale}/account-settings/language`,
-            label: t("language"),
-          })
-        );
-      }
     }
   }
 
@@ -349,7 +358,7 @@ export function Header() {
 
               <div
                 role="menu"
-                className={`absolute end-0 top-full z-50 mt-2 w-60 rounded-xl border border-neutral-200 bg-white py-1.5 shadow-lg ${
+                className={`absolute end-0 top-full z-50 mt-2 w-60 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-xl border border-neutral-200 bg-white py-1.5 shadow-lg ${
                   accountOpen ? "" : "hidden"
                 }`}
               >
@@ -419,7 +428,7 @@ export function Header() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <nav className="border-t border-neutral-200 bg-white px-4 pb-4 pt-2 md:hidden">
+        <nav className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-neutral-200 bg-white px-4 pb-4 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
             <Link
               href={`/${locale}/search`}

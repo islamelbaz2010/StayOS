@@ -68,7 +68,16 @@ export function KycUpload() {
     Boolean(kycStatus?.automated_available) &&
     kycStatus?.verification_mode !== "manual" &&
     !manualFallback;
-  const latestDoc = kycStatus?.documents?.[0];
+  // The status endpoint returns documents newest-first, but a stale
+  // record can still precede the live one — an open verification (pending
+  // / manual_review) anywhere in the list means the user must never see
+  // the upload form again until it resolves.
+  const openDoc = kycStatus?.documents?.find(
+    (d) => d.status === "pending" || d.status === "manual_review"
+  );
+  const latestDoc =
+    openDoc ??
+    kycStatus?.documents?.[0];
   // Host onboarding requires a document that completed review — a verified
   // flag without one (e.g. a seeded account) must still submit documents.
   const hasVerifiedDoc =
@@ -267,10 +276,7 @@ export function KycUpload() {
     );
   }
 
-  if (
-    (currentStatus === "pending" && latestDoc?.status === "pending") ||
-    currentStatus === "manual_review"
-  ) {
+  if (currentStatus === "pending" || currentStatus === "manual_review") {
     return (
       <div className="rounded-xl bg-warning-50 p-6 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-warning-100">

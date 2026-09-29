@@ -42,6 +42,7 @@ class KycDocumentResponse(BaseModel):
     status: KycStatus
     legal_name: str | None
     provider: str | None = None
+    provider_applicant_id: str | None = None
     front_image_key: str | None
     back_image_key: str | None
     selfie_image_key: str | None
@@ -102,3 +103,6 @@ class KycImageDownloadResponse(BaseModel):
 class KycPendingListResponse(BaseModel):
     data: list[KycDocumentResponse]
     total: int
+    # Provider-managed verifications still owned by the provider — shown
+    # to staff read-only; never offered Approve/Reject.
+    inflight: list[KycDocumentResponse] = []

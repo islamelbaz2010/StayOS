@@ -138,3 +138,55 @@ delivery tests.
 3. For repeatable live delivery: point the Dashboard receiver at a
    stable URL (named tunnel or a dedicated staging deployment) — the
    POC used an ephemeral quick tunnel.
+
+## 8. Closure update — 2026-09-29 (final batch)
+
+**Live Sandbox E2E — all three provider outcomes, real webhooks:**
+three fresh StayOS users were driven through the real chain (register →
+`POST /kyc/verification/session` → real `_act-sbx-…` SDK token → Sumsub
+applicant with `externalUserId=user.id` → `status/testCompleted` → real
+`applicantReviewed` webhook via the cloudflared tunnel → DB):
+
+| Outcome | Result |
+|---|---|
+| GREEN | doc→`verified`, `provider_applicant_id` backfilled, user→`verified` |
+| RED + RETRY | doc+user→`retry_required`; repeat `POST /verification/session` resumes the same applicant/doc (no duplicate chain) |
+| RED + FINAL | doc+user→`rejected` |
+
+**Admin queue split (this batch):** `GET /kyc/pending` now returns
+`data` (actionable: manual `pending` uploads + provider `manual_review`
+escalations) and `inflight` (read-only provider-owned `pending` /
+`retry_required` rows). In-flight automated verifications no longer
+appear with Approve/Reject controls; the admin UI renders them in a
+dashed, read-only section. `documents` are ordered newest-first, and
+the web upload UI treats *any* open document — not only `documents[0]`
+— as a pending state (a stale doc can no longer re-expose the upload
+form while verification is in progress).
+
+**Production env state (verified via Railway variables):** the
+production service carries **no** `SUMSUB_*` variables — automated KYC
+is off and manual review is the only path. `ENVIRONMENT=staging` there,
+so even a future `prd:` token will not activate until `ENVIRONMENT` is
+corrected to `production` — a deliberate second safety net per the
+`_environment_compatible()` gate.
+
+**Sumsub Basic pricing (public, observed 2026-09):** $1.35 per
+successful verification, $149 monthly minimum, 14-day trial / 50 free
+checks; incomplete attempts are not charged (per Sumsub FAQ).
+Effective cost per successful verification at volume:
+
+| Verifications/month | Effective cost/check |
+|---|---|
+| 10 | $14.90 (minimum binds) |
+| 25 | $5.96 |
+| 50 | $2.98 |
+| 75 | $1.99 |
+| 100 | $1.49 |
+| 111 | $1.34 (break-even ≈110.4) |
+| 200 | $1.35 |
+| 500 | $1.35 |
+
+Production activation remains an external commercial decision: requires
+`prd:` token pair + `SUMSUB_WEBHOOK_SECRET` (production receiver) +
+`ENVIRONMENT=production` + `KYC_VERIFICATION_MODE=automated_fallback`
+(or `automated`) on Railway.

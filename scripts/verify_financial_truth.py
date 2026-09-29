@@ -95,18 +95,34 @@ async def main() -> None:
             "LEFT JOIN pms.unit_listings ul ON ul.unit_id = u.id "
             "WHERE e.status IN ('created','held','disputed') ORDER BY e.amount_egp DESC"
         ))
+        # Posted ledger facts per reservation — the authoritative check:
+        # escrow debits reduce the liability; revenue/vat credits are the
+        # recognition postings actually on the books (generation-aware).
+        posted = {}
+        rows2 = await s.execute(text(
+            "SELECT ft.reservation_id, le.ledger_account, "
+            "coalesce(sum(CASE WHEN le.entry_type='credit' THEN le.amount_egp "
+            "ELSE -le.amount_egp END),0) "
+            "FROM finance.ledger_entries le "
+            "JOIN finance.financial_transactions ft ON ft.id = le.transaction_id "
+            "GROUP BY ft.reservation_id, le.ledger_account"
+        ))
+        for rid, acct, net in rows2:
+            posted.setdefault(str(rid), {})[acct] = D(net)
         print("== HELD ESCROWS DECOMPOSITION ==")
         vat_held = Decimal(0)
         rev_pending = Decimal(0)
         host_pending = Decimal(0)
         for r in rows:
-            # indices: 3=escrow amount, 10=accommodation, 11=cleaning,
-            # 13=vat, 14=title, 15=res_host, 16=res_fee — Model B rule.
+            # indices: 3=escrow amount, 10=accommodation (host GROSS —
+            # already includes cleaning), 11=cleaning, 13=vat, 14=title,
+            # 15=res_host, 16=res_fee — canonical Model B rule:
+            # fee base = gross − cleaning; host net = gross − 6% fee base.
             total = D(r[3])
-            accom_cleaning = D(r[10]) + D(r[11]) if r[10] is not None else None
+            accom_cleaning = D(r[10]) if r[10] is not None else None
             vat = D(r[13])
             if accom_cleaning is not None:
-                fee_base = D(r[10])
+                fee_base = accom_cleaning - D(r[11])
                 host_commission = (fee_base * Decimal("0.06")).quantize(Decimal("0.01"))
                 host_net = accom_cleaning - host_commission
             elif r[15] is not None:  # reservation-path row
@@ -115,6 +131,12 @@ async def main() -> None:
             else:
                 host_net = Decimal(0)
             stayos = total - host_net - vat
+            p = posted.get(str(r[1]), {})
+            p_rev = p.get("platform_revenue", Decimal(0))
+            p_vat = p.get("vat_payable", Decimal(0))
+            p_host = p.get("host_payable", Decimal(0))
+            # Remaining escrow liability = credit net on the escrow acct.
+            esc_net = p.get("escrow", Decimal(0))
             recon = host_net + stayos + vat
             ok = abs(recon - total) < Decimal("0.01")
             vat_held += vat
@@ -124,6 +146,16 @@ async def main() -> None:
                 f"  {str(r[1])[:8]} {str(r[14] or '')[:32]:32} escrow={r[2]} amt={total} "
                 f"bstat={r[5]} pstat={r[9]} host_net={host_net} stayos={stayos} vat={vat} "
                 f"recon={'OK' if ok else 'MISMATCH ' + str(recon)}"
+            )
+            recognised = bool(p_rev or p_vat)
+            # Invariant: escrow_net = total − recognised(rev+vat) − released_host.
+            implied_host = total - p_rev - p_vat
+            esc_ok = abs(esc_net - implied_host) < Decimal("0.01")
+            print(
+                f"      ledger: esc_net={esc_net} (implied host net {implied_host}) "
+                f"rev={p_rev} vat={p_vat} host_pay={p_host} "
+                f"recognised={'YES' if recognised else 'no'} "
+                f"escrow_invariant={'OK' if esc_ok else 'CHECK'}"
             )
         print(f"  SUM held: vat={vat_held} stayos_pending={rev_pending} host_pending={host_pending}")
 

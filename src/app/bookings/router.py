@@ -135,7 +135,7 @@ async def get_guest_bookings(
     status: str | None = None,
     limit: int = 50,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("guest")),
+    user: User = Depends(auth_dependencies.require_active_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[BookingResponse]:
     try:

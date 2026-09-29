@@ -49,7 +49,7 @@ function mapFavorite(item: FavoriteListingRow): Listing {
 }
 
 export function useFavorites() {
-  const { isAuthenticated, isGuest } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   return useQuery({
     queryKey: ["favorites"],
@@ -57,7 +57,7 @@ export function useFavorites() {
       const { data } = await api.get<FavoriteListResponse>("/favorites");
       return { listings: data.data.map(mapFavorite), total: data.total };
     },
-    enabled: isAuthenticated && isGuest,
+    enabled: isAuthenticated,
   });
 }
 

@@ -2,7 +2,7 @@ from datetime import date
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -154,6 +154,23 @@ async def update_payment_intent(
     return intent
 
 
+def _user_reservation_scope(
+    unit_ids: list[str] | None, guest_id: str | None
+):
+    # Hosts book too: when both filters are present the scope is the union —
+    # reservations on units they own OR reservations they made as a guest.
+    if unit_ids and guest_id:
+        return or_(
+            Reservation.unit_id.in_(unit_ids),
+            Reservation.guest_id == guest_id,
+        )
+    if unit_ids:
+        return Reservation.unit_id.in_(unit_ids)
+    if guest_id:
+        return Reservation.guest_id == guest_id
+    return None
+
+
 async def count_user_reservations(
     session: AsyncSession,
     unit_ids: list[str] | None,
@@ -161,10 +178,9 @@ async def count_user_reservations(
     status: ReservationStatus | None,
 ) -> int:
     stmt = select(func.count(Reservation.id))
-    if unit_ids:
-        stmt = stmt.where(Reservation.unit_id.in_(unit_ids))
-    if guest_id:
-        stmt = stmt.where(Reservation.guest_id == guest_id)
+    scope = _user_reservation_scope(unit_ids, guest_id)
+    if scope is not None:
+        stmt = stmt.where(scope)
     if status:
         stmt = stmt.where(Reservation.status == status)
     result = await session.scalar(stmt)
@@ -185,10 +201,9 @@ async def list_user_reservations(
         .offset(offset)
         .limit(limit)
     )
-    if unit_ids:
-        stmt = stmt.where(Reservation.unit_id.in_(unit_ids))
-    if guest_id:
-        stmt = stmt.where(Reservation.guest_id == guest_id)
+    scope = _user_reservation_scope(unit_ids, guest_id)
+    if scope is not None:
+        stmt = stmt.where(scope)
     if status:
         stmt = stmt.where(Reservation.status == status)
     result = await session.execute(stmt)

@@ -931,7 +931,7 @@
     "submitError": "Failed to submit the booking request. Please try again.",
     "signInTitle": "Sign in to request a booking.",
     "signInButton": "Sign in",
-    "guestsOnly": "Only guests can request bookings.",
+    "ownListing": "This is your own listing — manage it from your host dashboard.",
     "kycRequired": "Identity verification is required before you can request a booking.",
     "kycRequiredCta": "Verify your identity",
     "available": "Available",
@@ -1365,6 +1365,35 @@
       "created": "Created",
       "skipped": "Skipped",
       "failed": "Failed"
+    }
+  },
+  "adminUsers": {
+    "title": "Marketplace users",
+    "count": "{count} matching users",
+    "overview": "Marketplace overview",
+    "loading": "Loading…",
+    "loadError": "Could not load users.",
+    "empty": "No matching users.",
+    "actionError": "The action could not be completed.",
+    "colUser": "User",
+    "colContact": "Contact",
+    "colRole": "Role",
+    "colKyc": "KYC",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "active": "Active",
+    "suspended": "Suspended",
+    "actions": {
+      "suspend": "Suspend",
+      "reactivate": "Reactivate",
+      "deactivate-hosting": "Stop hosting",
+      "restore-hosting": "Restore hosting"
+    },
+    "confirm": {
+      "suspend": "Suspend this account? The user will be blocked from all authenticated actions until reactivated. Their data is preserved.",
+      "reactivate": "Reactivate this account?",
+      "deactivate-hosting": "Remove hosting from this user? The account becomes a guest account; listings, bookings, earnings and history are preserved. Blocked if active listings or upcoming bookings exist.",
+      "restore-hosting": "Restore hosting for this user? Requires a verified identity document."
     }
   },
   "adminKyc": {
@@ -2201,7 +2230,13 @@
       },
       "hosting": {
         "title": "Hosting",
-        "body": "Host dashboard, listings, calendar, earnings, and hosting tools."
+        "body": "Host dashboard, listings, calendar, earnings, and hosting tools.",
+        "deactivate": "Stop hosting",
+        "deactivateConfirm": "Stop hosting? Your listings stay saved but hidden, your account continues as a guest account, and your history is kept. You can become a host again later.",
+        "deactivating": "Stopping…",
+        "deactivated": "Hosting is off — your account continues as a guest account.",
+        "deactivateError": "Could not stop hosting. Resolve active listings or upcoming bookings first.",
+        "deactivateBlocked": "Hosting can't be turned off while you have active listings or upcoming bookings. Unlist them or wait for bookings to conclude first."
       },
       "becomeHost": {
         "title": "Become a host",

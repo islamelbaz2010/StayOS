@@ -20,16 +20,21 @@ from .schemas import (
     AdjustmentResponse,
     AdminListingListItem,
     AdminOverviewResponse,
+    AdminUserActionRequest,
     AdminUserListItem,
     BookingFinancialContextResponse,
     DisputeContextResponse,
 )
 from .services import (
+    admin_deactivate_hosting,
+    admin_restore_hosting,
     get_admin_overview,
     get_booking_financial_context,
     get_dispute_context,
     list_admin_listings,
     list_admin_users,
+    reactivate_user,
+    suspend_user,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -75,6 +80,78 @@ async def get_users(
     session: AsyncSession = Depends(get_session),
 ) -> list[AdminUserListItem]:
     return await list_admin_users(session, role=role, kyc_status=kyc_status)
+
+
+@router.post("/users/{user_id}/suspend", response_model=AdminUserListItem)
+async def suspend_user_endpoint(
+    user_id: str,
+    body: AdminUserActionRequest | None = None,
+    admin: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> AdminUserListItem:
+    try:
+        result = await suspend_user(
+            session, admin, user_id, body.reason if body else None
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    await session.commit()
+    return result
+
+
+@router.post("/users/{user_id}/reactivate", response_model=AdminUserListItem)
+async def reactivate_user_endpoint(
+    user_id: str,
+    body: AdminUserActionRequest | None = None,
+    admin: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> AdminUserListItem:
+    try:
+        result = await reactivate_user(
+            session, admin, user_id, body.reason if body else None
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    await session.commit()
+    return result
+
+
+@router.post(
+    "/users/{user_id}/deactivate-hosting", response_model=AdminUserListItem
+)
+async def deactivate_hosting_endpoint(
+    user_id: str,
+    body: AdminUserActionRequest | None = None,
+    admin: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> AdminUserListItem:
+    try:
+        result = await admin_deactivate_hosting(
+            session, admin, user_id, body.reason if body else None
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    await session.commit()
+    return result
+
+
+@router.post(
+    "/users/{user_id}/restore-hosting", response_model=AdminUserListItem
+)
+async def restore_hosting_endpoint(
+    user_id: str,
+    body: AdminUserActionRequest | None = None,
+    admin: User = Depends(auth_dependencies.require_role("admin")),
+    session: AsyncSession = Depends(get_session),
+) -> AdminUserListItem:
+    try:
+        result = await admin_restore_hosting(
+            session, admin, user_id, body.reason if body else None
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    await session.commit()
+    return result
 
 
 @router.get("/listings", response_model=list[AdminListingListItem])

@@ -279,3 +279,29 @@ export function useCancelAdjustment() {
       qc.invalidateQueries({ queryKey: ["admin-adjustments"] }),
   });
 }
+
+type AdminUserAction = "suspend" | "reactivate" | "deactivate-hosting" | "restore-hosting";
+
+export function useAdminUserAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      action,
+      reason,
+    }: {
+      userId: string;
+      action: AdminUserAction;
+      reason?: string;
+    }) => {
+      const { data } = await api.post<AdminUserListItem>(
+        `/admin/users/${userId}/${action}`,
+        reason ? { reason } : {}
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
+}

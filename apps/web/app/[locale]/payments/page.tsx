@@ -99,7 +99,7 @@ export default function PaymentsPage() {
   );
 
   return (
-    <ProtectedRoute allowedRoles={["guest"]}>
+    <ProtectedRoute>
       <GuestLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <h1 className="text-2xl font-bold text-neutral-900">{t("title")}</h1>

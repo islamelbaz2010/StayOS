@@ -150,12 +150,12 @@ export function Header() {
   const accountItems: MenuItemDef[] = [];
   if (isAuthenticated) {
     accountItems.push({ href: `/${locale}/profile`, label: t("profile") });
-    if (user?.role === "guest") {
-      accountItems.push(
-        { href: `/${locale}/favorites`, label: t("favorites") },
-        { href: `/${locale}/bookings`, label: t("trips") }
-      );
-    }
+    // Trips/favorites are account-scoped, not guest-role-scoped — hosts,
+    // staff and admins can book as marketplace users too.
+    accountItems.push(
+      { href: `/${locale}/favorites`, label: t("favorites") },
+      { href: `/${locale}/bookings`, label: t("trips") }
+    );
     accountItems.push(
       {
         href: `/${locale}/messages`,
@@ -173,7 +173,7 @@ export function Header() {
         label: t("language"),
       }
     );
-    if (user?.role === "guest") {
+    if (user?.role !== "admin") {
       accountItems.push({ href: `/${locale}/payments`, label: t("payments") });
     }
     if (user?.role === "host") {

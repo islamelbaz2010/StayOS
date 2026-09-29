@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth import repository as auth_repository
-from app.auth.constants import UserRole
 from app.auth.models import User
 from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
@@ -166,10 +165,9 @@ async def contact_host(
 
     Allows a guest to message a host before booking, mirroring Airbnb's
     "Contact host" feature. The conversation is not tied to a booking.
+    Any authenticated marketplace role can contact a host — the sender is
+    recorded as the guest-side participant of that conversation.
     """
-    if user.role != UserRole.GUEST:
-        raise AuthorizationError("Only guests can contact hosts")
-
     result = await session.execute(
         select(Unit).where(Unit.id == request.unit_id)
     )

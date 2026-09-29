@@ -94,4 +94,7 @@ def fake_session() -> AsyncMock:
     session.execute = AsyncMock(
         return_value=MagicMock(all=MagicMock(return_value=[]))
     )
+    # Session.add() is synchronous in SQLAlchemy — keep it a plain mock so
+    # services calling it don't emit "coroutine never awaited" warnings.
+    session.add = MagicMock()
     return session

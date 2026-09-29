@@ -15,7 +15,7 @@ export default function FavoritesPage() {
   const tc = useTranslations("common");
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
-  const { isAuthenticated, isGuest, isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { data, isPending, isError, refetch } = useFavorites();
 
   return (
@@ -33,10 +33,6 @@ export default function FavoritesPage() {
             >
               {t("signInTitle")}
             </Link>
-          </div>
-        ) : !isAuthLoading && !isGuest ? (
-          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
-            <p className="text-lg font-medium text-neutral-700">{t("guestsOnly")}</p>
           </div>
         ) : isError ? (
           <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">

@@ -112,7 +112,7 @@ async def get_payment_detail(
 async def list_my_payments(
     limit: int = 50,
     offset: int = 0,
-    user: User = Depends(auth_dependencies.require_role("guest")),
+    user: User = Depends(auth_dependencies.require_active_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[PaymentListItem]:
     try:

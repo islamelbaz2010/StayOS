@@ -68,6 +68,10 @@ vi.mock("@/lib/auth/useAuth", () => ({
 vi.mock("@/lib/queries/account", () => ({
   useAccount: () => ({ data: mockAccount }),
   useUpdateAccount: () => ({ mutateAsync: vi.fn(async () => ({})) }),
+  useDeactivateHosting: () => ({
+    mutateAsync: vi.fn(async () => ({})),
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/lib/queries/kyc", () => ({

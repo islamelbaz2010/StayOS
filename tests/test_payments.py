@@ -523,10 +523,19 @@ async def test_list_pending_payments_admin_only(fake_session: AsyncMock, monkeyp
 
 
 @pytest.mark.asyncio
-async def test_list_guest_payments_guest_only(fake_session: AsyncMock, monkeypatch) -> None:
+async def test_list_guest_payments_any_role(fake_session: AsyncMock, monkeypatch) -> None:
+    """Payment lists are scoped by guest_id — every role can book, so every
+    role can list their own payments."""
     host = _make_user(role=UserRole.HOST)
-    with pytest.raises(AuthorizationError):
-        await payment_services.list_guest_payments(fake_session, host)
+    monkeypatch.setattr(
+        payments_repository, "list_guest_payments", AsyncMock(return_value=[])
+    )
+    result = await payment_services.list_guest_payments(fake_session, host)
+    assert result == []
+    payments_repository.list_guest_payments.assert_awaited_once()
+    assert (
+        payments_repository.list_guest_payments.await_args.args[1] == host.id
+    )
 
 
 @pytest.mark.asyncio

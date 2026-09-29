@@ -183,9 +183,15 @@ async def test_create_reservation(fake_session: AsyncMock, monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_reservation_rejects_non_guest(
+async def test_create_reservation_rejects_own_listing(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
+    """A host cannot book their own unit — the only role-related rule left."""
+    repo = _mock_repository(monkeypatch)
+    host = _make_user(role=UserRole.HOST)
+    repo.get_unit_with_listing = AsyncMock(
+        return_value=_make_unit(host_id=host.id)
+    )
     request = ReservationCreate(
         unit_id="unit-1",
         check_in=date(2026, 8, 1),
@@ -193,8 +199,8 @@ async def test_create_reservation_rejects_non_guest(
         adults=2,
         payment_method="fawry",
     )
-    with pytest.raises(AuthorizationError):
-        await create_reservation(fake_session, _make_user(role=UserRole.HOST), request)
+    with pytest.raises(ValidationError, match="own listing"):
+        await create_reservation(fake_session, host, request)
 
 
 @pytest.mark.asyncio

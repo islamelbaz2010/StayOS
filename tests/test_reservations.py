@@ -125,11 +125,17 @@ def test_create_reservation(
     assert data["id"] == response_model.id
 
 
-def test_create_reservation_rejects_non_guest(
+def test_create_reservation_allows_host_role(
     reservations_client: TestClient, monkeypatch
 ) -> None:
+    """Hosts can create reservations too — the router no longer blocks roles."""
     host = _make_user(role=UserRole.HOST, kyc_status=KycStatus.VERIFIED)
     _patch_auth_user(monkeypatch, host)
+    response_model = _make_reservation_response(user_id=host.id)
+    monkeypatch.setattr(
+        "app.reservations.router.create_reservation",
+        AsyncMock(return_value=response_model),
+    )
 
     token = auth_services.create_access_token(host)
     response = reservations_client.post(
@@ -143,7 +149,7 @@ def test_create_reservation_rejects_non_guest(
         },
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert response.status_code == 403
+    assert response.status_code == 200
 
 
 def test_get_reservation(

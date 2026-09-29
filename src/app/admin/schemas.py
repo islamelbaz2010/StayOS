@@ -64,6 +64,10 @@ class AdminUserListItem(BaseModel):
     created_at: datetime
 
 
+class AdminUserActionRequest(BaseModel):
+    reason: str | None = None
+
+
 class AdminListingListItem(BaseModel):
     id: str
     title: str

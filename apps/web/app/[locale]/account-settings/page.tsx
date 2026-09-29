@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
-import { useAccount } from "@/lib/queries/account";
+import { useAccount, useDeactivateHosting } from "@/lib/queries/account";
 
 function Card({
   title,
@@ -45,10 +46,33 @@ export default function AccountSettingsPage() {
   const { locale = "ar" } = useParams<{ locale: string }>();
   const t = useTranslations("settings");
   const tp = useTranslations("profile");
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { data: account } = useAccount();
+  const deactivateHosting = useDeactivateHosting();
+  const [hostingError, setHostingError] = useState<string | null>(null);
+  const [hostingDeactivated, setHostingDeactivated] = useState(false);
 
   const isHost = user?.role === "host";
+
+  async function handleDeactivateHosting() {
+    if (!window.confirm(t("cards.hosting.deactivateConfirm"))) {
+      return;
+    }
+    setHostingError(null);
+    try {
+      await deactivateHosting.mutateAsync();
+      await refreshUser();
+      setHostingDeactivated(true);
+    } catch (error) {
+      const status = (error as { response?: { status?: number } }).response
+        ?.status;
+      setHostingError(
+        status === 409
+          ? t("cards.hosting.deactivateBlocked")
+          : t("cards.hosting.deactivateError")
+      );
+    }
+  }
 
   return (
     <ProtectedRoute>
@@ -131,7 +155,31 @@ export default function AccountSettingsPage() {
                 body={t("cards.hosting.body")}
                 href={`/${locale}/host`}
                 action={t("open")}
-              />
+              >
+                {hostingDeactivated ? (
+                  <p className="mt-3 text-sm font-medium text-success-700" role="status">
+                    {t("cards.hosting.deactivated")}
+                  </p>
+                ) : (
+                  <div className="mt-4 border-t border-neutral-100 pt-3">
+                    <button
+                      type="button"
+                      onClick={handleDeactivateHosting}
+                      disabled={deactivateHosting.isPending}
+                      className="text-sm font-semibold text-danger-600 hover:text-danger-700 disabled:opacity-50"
+                    >
+                      {deactivateHosting.isPending
+                        ? t("cards.hosting.deactivating")
+                        : t("cards.hosting.deactivate")}
+                    </button>
+                    {hostingError && (
+                      <p className="mt-2 text-sm text-danger-600" role="alert">
+                        {hostingError}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </Card>
             ) : (
               <Card
                 title={t("cards.becomeHost.title")}

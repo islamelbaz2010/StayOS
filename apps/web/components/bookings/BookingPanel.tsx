@@ -42,8 +42,9 @@ function isValidIsoDate(value: string | undefined): value is string {
 export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initialGuests }: BookingPanelProps) {
   const t = useTranslations("booking");
   const locale = useLocale();
-  const { isAuthenticated, isGuest, isLoading: isAuthLoading, user } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth();
   const isKycVerified = user?.kyc_status === "verified";
+  const isOwnListing = Boolean(user?.id && listing.hostId === user.id);
   const isUnauthenticated = !isAuthLoading && !isAuthenticated;
   const moneyLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const createBooking = useCreateBooking();
@@ -208,7 +209,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
       return;
     }
 
-    if (!isAuthenticated || !isGuest) {
+    if (!isAuthenticated || isOwnListing) {
       return;
     }
 
@@ -269,7 +270,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
 
   const canSubmit =
     isAuthenticated &&
-    isGuest &&
+    !isOwnListing &&
     isKycVerified &&
     !createBooking.isPending &&
     blockedDatesInRange.length === 0 &&
@@ -306,13 +307,13 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
         </div>
       )}
 
-      {!isAuthLoading && isAuthenticated && !isGuest && (
-        <p className="mt-4 text-sm text-danger-600" role="alert">
-          {t("guestsOnly")}
+      {!isAuthLoading && isAuthenticated && isOwnListing && (
+        <p className="mt-4 text-sm text-neutral-600" role="note">
+          {t("ownListing")}
         </p>
       )}
 
-      {!isAuthLoading && isAuthenticated && isGuest && !isKycVerified && (
+      {!isAuthLoading && isAuthenticated && !isOwnListing && !isKycVerified && (
         <div className="mt-4 rounded-lg bg-warning-50 p-4">
           <p className="text-sm text-warning-800">{t("kycRequired")}</p>
           <Link

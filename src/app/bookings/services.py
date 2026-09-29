@@ -173,9 +173,12 @@ def _to_response(
     )
 
 
-def _assert_guest(user: User) -> None:
-    if user.role != UserRole.GUEST:
-        raise AuthorizationError("Only guests can create bookings")
+def _assert_can_book(user: User, unit: Unit) -> None:
+    # Every authenticated role can book — hosting is a capability layered on
+    # the same account, not a different identity. The only role-related rule
+    # left is that a user cannot book their own listing.
+    if unit.host_id == user.id:
+        raise ValidationError("You cannot book your own listing")
 
 
 def _assert_booking_dates(check_in: date, check_out: date) -> None:
@@ -964,7 +967,6 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
 async def create_booking(
     session: AsyncSession, user: User, request: BookingCreate
 ) -> BookingResponse:
-    _assert_guest(user)
     await auth_dependencies.require_kyc_verified(user)
     _assert_booking_dates(request.check_in, request.check_out)
 
@@ -973,6 +975,7 @@ async def create_booking(
         raise NotFoundError("Unit not found")
     if unit.status != UnitStatus.LISTED:
         raise ValidationError("Unit is not available for booking")
+    _assert_can_book(user, unit)
 
     _assert_booking_nights(request.check_in, request.check_out, unit.listing)
     _assert_guest_capacity(unit, request)
@@ -1226,8 +1229,8 @@ async def list_guest_bookings(
     limit: int = 50,
     offset: int = 0,
 ) -> list[BookingResponse]:
-    if user.role != UserRole.GUEST:
-        raise AuthorizationError("Only guests can view their bookings")
+    # "My bookings" is scoped by guest_id, not by role — any authenticated
+    # user (guest, host, staff, admin) can book and see their own trips.
 
     bookings = await bookings_repository.list_guest_bookings(
         session, user.id, status=status, limit=limit, offset=offset

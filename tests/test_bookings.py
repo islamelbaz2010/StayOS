@@ -228,14 +228,67 @@ async def test_create_booking_success(fake_session: AsyncMock, monkeypatch) -> N
 
 
 @pytest.mark.asyncio
-async def test_create_booking_rejects_non_guest(fake_session: AsyncMock) -> None:
+async def test_create_booking_allows_host_booking_other_listing(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Hosts can book other hosts' listings — the role is not the blocker."""
     host = _make_user(role=UserRole.HOST)
+    other_host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=other_host.id)
+    booking = _make_booking(unit, host)
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "list_overlapping_bookings",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        bookings_repository,
+        "create_booking",
+        AsyncMock(return_value=booking),
+    )
+
+    conversation_result = MagicMock()
+    conversation_result.scalar_one_or_none.return_value = MagicMock()
+    fake_session.execute = AsyncMock(return_value=conversation_result)
+
+    request = BookingCreate(
+        unit_id=unit.id,
+        check_in=_FUTURE_3,
+        check_out=_FUTURE_4,
+        adults=2,
+        children=0,
+        infants=0,
+    )
+    response = await booking_services.create_booking(fake_session, host, request)
+    assert response.guest_id == host.id
+
+
+@pytest.mark.asyncio
+async def test_create_booking_rejects_own_listing(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A user cannot book their own listing regardless of role."""
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+
     request = BookingCreate(
         unit_id="unit-1",
         check_in=_FUTURE_1,
         check_out=_FUTURE_2,
     )
-    with pytest.raises(AuthorizationError):
+    with pytest.raises(ValidationError, match="own listing"):
         await booking_services.create_booking(fake_session, host, request)
 
 

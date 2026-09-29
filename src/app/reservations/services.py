@@ -126,9 +126,12 @@ def _calculate_amounts(subtotal_egp, discount_pct: float = 0.0) -> dict:
     }
 
 
-def _assert_guest(user: User) -> None:
-    if user.role != UserRole.GUEST:
-        raise AuthorizationError("Only guests can create reservations")
+def _assert_can_book(user: User, unit: Any) -> None:
+    # Every authenticated role can book — hosting is a capability layered on
+    # the same account, not a different identity. The only role-related rule
+    # left is that a user cannot book their own listing.
+    if unit.host_id == user.id:
+        raise ValidationError("You cannot book your own listing")
 
 
 def _assert_kyc_verified(user: User) -> None:
@@ -208,7 +211,6 @@ async def _create_provider_payment(
 async def create_reservation(
     session: AsyncSession, user: User, request: ReservationCreate
 ) -> ReservationResponse:
-    _assert_guest(user)
     _assert_kyc_verified(user)
 
     unit = await listings_repository.get_unit_with_listing(
@@ -216,6 +218,7 @@ async def create_reservation(
     )
     if unit is None or unit.status != UnitStatus.LISTED:
         raise NotFoundError("Listing not available")
+    _assert_can_book(user, unit)
 
     listing = unit.listing
     if listing is None:
@@ -362,6 +365,7 @@ async def list_reservations(
     guest_id: str | None = None
     if user.role == UserRole.HOST:
         unit_ids = await listings_repository.get_host_unit_ids(session, user.id)
+        guest_id = user.id  # hosts also book — include their own trips
     elif user.role in (UserRole.GUEST,):
         guest_id = user.id
     elif user.role == UserRole.STAFF:

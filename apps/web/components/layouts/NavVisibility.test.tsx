@@ -108,12 +108,14 @@ describe("Header role visibility", () => {
     expect(screen.queryByText(t.admin)).toBeNull();
   });
 
-  it("host sees host workspace + earnings but no admin link", () => {
+  it("host sees host workspace + earnings + trips but no admin link", () => {
     as("host");
     renderWith(<Header />);
     expect(screen.getAllByText(t.hostDashboard).length).toBeGreaterThan(0);
     expect(screen.queryByText(t.admin)).toBeNull();
-    expect(screen.queryByText(t.trips)).toBeNull();
+    // Hosts book as marketplace users too — trips/favorites stay visible.
+    expect(screen.getAllByText(t.trips).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t.favorites).length).toBeGreaterThan(0);
   });
 
   it("host nav labels match their destinations (dashboard/earnings)", () => {

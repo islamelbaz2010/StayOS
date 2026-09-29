@@ -8,11 +8,13 @@ payout and refund policy remain founder decisions (FD-01/FD-12).
 
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import services as auth_services
 from app.auth.constants import KycStatus, StaffPermission, UserRole
 from app.auth.models import User
 from app.bookings.constants import BookingStatus
@@ -32,6 +34,7 @@ from app.finance.models import (
     LedgerEntry,
     PayoutRequest,
 )
+from app.kyc import repository as kyc_repository
 from app.kyc.models import KycDocument
 from app.listings import configuration as listing_configuration
 from app.listings.constants import UnitStatus
@@ -41,7 +44,8 @@ from app.operations.models import MaintenanceRequest, OperationTask
 from app.payments.constants import PaymentStatus
 from app.payments.models import Payment
 from app.reservations.models import Reservation
-from app.shared.exceptions import NotFoundError
+from app.shared.exceptions import NotFoundError, ValidationError
+from app.shared.outbox import write_event
 
 from .schemas import (
     AdminListingListItem,
@@ -657,3 +661,135 @@ async def get_dispute_context(
         ),
         booking=booking_context,
     )
+
+
+# --- Account lifecycle controls ---------------------------------------------
+# Every mutation is admin-only at the router layer and writes an outbox audit
+# event carrying actor, target, previous state, new state and optional reason.
+
+
+async def _get_target_user(session: AsyncSession, user_id: str) -> User:
+    user = await session.get(User, user_id)
+    if user is None:
+        raise NotFoundError("User not found")
+    return user
+
+
+async def suspend_user(
+    session: AsyncSession, admin: User, user_id: str, reason: str | None
+) -> AdminUserListItem:
+    target = await _get_target_user(session, user_id)
+    if target.id == admin.id:
+        raise ValidationError("You cannot suspend your own account")
+    if target.role == UserRole.ADMIN:
+        raise ValidationError("Admin accounts cannot be suspended here")
+    if not target.is_active:
+        raise ValidationError("Account is already suspended")
+
+    target.is_active = False
+    session.add(target)
+    await session.flush()
+    await write_event(
+        session,
+        aggregate_type="User",
+        aggregate_id=UUID(target.id),
+        event_type="admin.user_suspended",
+        payload={
+            "actor_id": admin.id,
+            "target_user_id": target.id,
+            "previous_is_active": True,
+            "new_is_active": False,
+            "reason": reason,
+        },
+    )
+    return AdminUserListItem.model_validate(target, from_attributes=True)
+
+
+async def reactivate_user(
+    session: AsyncSession, admin: User, user_id: str, reason: str | None
+) -> AdminUserListItem:
+    target = await _get_target_user(session, user_id)
+    if target.is_active:
+        raise ValidationError("Account is already active")
+
+    target.is_active = True
+    session.add(target)
+    await session.flush()
+    await write_event(
+        session,
+        aggregate_type="User",
+        aggregate_id=UUID(target.id),
+        event_type="admin.user_reactivated",
+        payload={
+            "actor_id": admin.id,
+            "target_user_id": target.id,
+            "previous_is_active": False,
+            "new_is_active": True,
+            "reason": reason,
+        },
+    )
+    return AdminUserListItem.model_validate(target, from_attributes=True)
+
+
+async def admin_deactivate_hosting(
+    session: AsyncSession, admin: User, user_id: str, reason: str | None
+) -> AdminUserListItem:
+    """Admin-forced Host → Guest. Same obligation checks as the self-service
+    path — nothing is silently cancelled; the caller gets a 409 listing the
+    obligations when they exist."""
+    target = await _get_target_user(session, user_id)
+    await auth_services.deactivate_hosting(session, target, actor_id=admin.id)
+    if reason:
+        await write_event(
+            session,
+            aggregate_type="User",
+            aggregate_id=UUID(target.id),
+            event_type="admin.hosting_deactivated",
+            payload={
+                "actor_id": admin.id,
+                "target_user_id": target.id,
+                "reason": reason,
+            },
+        )
+    return AdminUserListItem.model_validate(target, from_attributes=True)
+
+
+async def admin_restore_hosting(
+    session: AsyncSession, admin: User, user_id: str, reason: str | None
+) -> AdminUserListItem:
+    """Re-grant the host role to a user whose hosting was deactivated. KYC is
+    NOT bypassed — restore requires a verified identity document, the same
+    gate the self-serve upgrade path enforces."""
+    target = await _get_target_user(session, user_id)
+    if target.role == UserRole.HOST:
+        raise ValidationError("User is already a host")
+    if target.role in (UserRole.ADMIN, UserRole.STAFF, UserRole.FIELD_STAFF):
+        raise ValidationError(
+            "Operational accounts cannot be granted hosting here"
+        )
+
+    documents = await kyc_repository.get_kyc_documents_by_user_id(
+        session, target.id
+    )
+    if not any(d.status == "verified" for d in documents):
+        raise ValidationError(
+            "Restoring hosting requires a verified identity document"
+        )
+
+    target.role = UserRole.HOST
+    session.add(target)
+    await session.flush()
+    await write_event(
+        session,
+        aggregate_type="User",
+        aggregate_id=UUID(target.id),
+        event_type="admin.hosting_restored",
+        payload={
+            "actor_id": admin.id,
+            "target_user_id": target.id,
+            "previous_role": str(UserRole.GUEST),
+            "new_role": str(UserRole.HOST),
+            "reason": reason,
+        },
+    )
+    return AdminUserListItem.model_validate(target, from_attributes=True)

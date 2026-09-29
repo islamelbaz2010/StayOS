@@ -28,3 +28,16 @@ export function useUpdateAccount() {
     },
   });
 }
+
+export function useDeactivateHosting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post("/auth/me/hosting/deactivate");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    },
+  });
+}

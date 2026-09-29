@@ -8,6 +8,7 @@ import messages from "@/messages/en.json";
 const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
   usePathname: () => "/en/listings/unit-1",
+  useParams: () => ({ locale: "en" }),
   useRouter: () => ({ push: pushMock }),
 }));
 
@@ -321,5 +322,61 @@ describe("BookingPanel instant book", () => {
     expect(pushMock).toHaveBeenCalledWith("/en/checkout/booking-9");
     // The "request sent" success view must NOT render on this path.
     expect(screen.queryByText(/view trips/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("BookingPanel role eligibility", () => {
+  beforeEach(() => {
+    mockDays = [];
+    createBookingMock.mutateAsync.mockReset();
+  });
+
+  it.each(["host", "staff", "admin"])(
+    "lets a verified %s request a booking",
+    async (role) => {
+      mockAuth = {
+        isAuthenticated: true,
+        isGuest: role === "guest",
+        isLoading: false,
+        user: { id: "user-9", role, kyc_status: "verified" },
+      };
+      createBookingMock.mutateAsync.mockResolvedValue({ id: "b-1" });
+      renderPanel();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Request booking" })
+      );
+      await screen.findByText("Booking requested");
+      expect(createBookingMock.mutateAsync).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it("blocks booking your own listing", () => {
+    mockAuth = {
+      isAuthenticated: true,
+      isGuest: false,
+      isLoading: false,
+      user: { id: "host-1", role: "host", kyc_status: "verified" },
+    };
+    const ownListing = { ...listing, hostId: "host-1" } as ListingDetail;
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <NextIntlClientProvider locale="en" messages={messages}>
+          <BookingPanel
+            listing={ownListing}
+            initialCheckIn="2030-01-10"
+            initialCheckOut="2030-01-14"
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>
+    );
+    expect(
+      screen.getByText(/your own listing/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Request booking" })
+    ).toBeDisabled();
   });
 });

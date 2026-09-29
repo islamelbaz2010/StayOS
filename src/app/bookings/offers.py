@@ -198,9 +198,8 @@ async def accept_booking_offer(
     session: AsyncSession, user: User, offer_id: str
 ) -> BookingResponse:
     """Guest accepts → creates an ACCEPTED booking priced at the offer and
-    issues the payment request immediately (host pre-committed)."""
-    if user.role != UserRole.GUEST:
-        raise AuthorizationError("Only guests can accept offers")
+    issues the payment request immediately (host pre-committed). Any role
+    can accept — the offer's guest_id is the authoritative check."""
     offer = await _pending_offer_or_raise(session, offer_id)
     if offer.guest_id != user.id:
         raise AuthorizationError("This offer is not addressed to you")
@@ -280,8 +279,6 @@ async def accept_booking_offer(
 async def decline_booking_offer(
     session: AsyncSession, user: User, offer_id: str
 ) -> BookingOfferResponse:
-    if user.role != UserRole.GUEST:
-        raise AuthorizationError("Only guests can decline offers")
     offer = await _pending_offer_or_raise(session, offer_id)
     if offer.guest_id != user.id:
         raise AuthorizationError("This offer is not addressed to you")

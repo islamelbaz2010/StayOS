@@ -423,6 +423,23 @@ async def upgrade_role(
     return auth_schemas.RoleUpgradeResponse.model_validate(updated)
 
 
+@router.post(
+    "/me/hosting/deactivate", response_model=auth_schemas.RoleUpgradeResponse
+)
+async def deactivate_hosting_endpoint(
+    user: User = Depends(auth_dependencies.require_role("host")),
+    session: AsyncSession = Depends(get_session),
+) -> auth_schemas.RoleUpgradeResponse:
+    """Host → Guest. Blocked while host-side obligations (listed units,
+    upcoming bookings) still exist — the account and its history survive."""
+    try:
+        updated = await auth_services.deactivate_hosting(session, user)
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+    await session.commit()
+    return auth_schemas.RoleUpgradeResponse.model_validate(updated)
+
+
 @router.post("/device-token", response_model=auth_schemas.DeviceTokenResponse)
 async def register_device_token(
     request: auth_schemas.DeviceTokenRegisterRequest,

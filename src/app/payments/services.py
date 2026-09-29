@@ -216,11 +216,6 @@ def _to_list_item(payment: Payment) -> PaymentListItem:
     )
 
 
-def _assert_guest(user: User) -> None:
-    if user.role != UserRole.GUEST:
-        raise AuthorizationError("Only guests can manage payments")
-
-
 def _assert_admin(user: User) -> None:
     if user.role not in (UserRole.ADMIN, UserRole.STAFF):
         raise AuthorizationError("Only admins can verify payments")
@@ -1058,7 +1053,8 @@ async def list_guest_payments(
     limit: int = 50,
     offset: int = 0,
 ) -> list[PaymentListItem]:
-    _assert_guest(user)
+    # "My payments" is scoped by guest_id, not by role — hosts, staff and
+    # admins can book as marketplace users and need their own list.
     payments = await payments_repository.list_guest_payments(
         session, user.id, limit=limit, offset=offset
     )

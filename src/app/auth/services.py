@@ -12,7 +12,7 @@ from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 from jose import JWTError
 from jose import jwt as jose_jwt
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import repository as auth_repository
@@ -49,6 +49,7 @@ from app.shared.exceptions import (
     StayOSError,
     ValidationError,
 )
+from app.shared.outbox import write_event
 
 logger = logging.getLogger(__name__)
 
@@ -1293,3 +1294,77 @@ async def create_user_manual(session: AsyncSession, data: UserCreate) -> User:
         role=data.role,
         kyc_status=KycStatus.UNVERIFIED,
     )
+
+
+async def deactivate_hosting(
+    session: AsyncSession, user: User, *, actor_id: str | None = None
+) -> User:
+    """Host → Guest. The account itself is untouched — the user simply stops
+    operating as a host. Historical listings, bookings, earnings, reviews,
+    and messages are all preserved.
+
+    Deactivation is blocked while the user still has obligations that only a
+    host can discharge: units that are publicly listed or under review, and
+    bookings (as host) in a non-terminal state. Unlist/archive the units and
+    let the bookings conclude first — nothing is silently cancelled.
+    """
+    if user.role != UserRole.HOST:
+        raise ValidationError("Only hosts can deactivate hosting")
+
+    active_units = (
+        await session.execute(
+            select(func.count(Unit.id)).where(
+                Unit.host_id == user.id,
+                Unit.status.in_(
+                    [UnitStatus.LISTED, UnitStatus.PENDING_VERIFICATION]
+                ),
+            )
+        )
+    ).scalar() or 0
+
+    active_bookings = (
+        await session.execute(
+            select(func.count(Booking.id))
+            .join(Unit, Booking.unit_id == Unit.id)
+            .where(
+                Unit.host_id == user.id,
+                Booking.status.in_(
+                    [
+                        BookingStatus.REQUESTED,
+                        BookingStatus.ACCEPTED,
+                        BookingStatus.CONFIRMED,
+                    ]
+                ),
+            )
+        )
+    ).scalar() or 0
+
+    if active_units or active_bookings:
+        parts = []
+        if active_units:
+            parts.append(f"{active_units} active listing(s)")
+        if active_bookings:
+            parts.append(f"{active_bookings} upcoming booking(s)")
+        raise ConflictError(
+            "Cannot deactivate hosting while you have "
+            + " and ".join(parts)
+            + ". Unlist your listings and wait for active bookings to "
+            "conclude, or cancel them first."
+        )
+
+    previous_role = user.role
+    updated = await auth_repository.update_user(session, user, role=UserRole.GUEST)
+    await write_event(
+        session,
+        aggregate_type="User",
+        aggregate_id=uuid.UUID(user.id),
+        event_type="user.hosting_deactivated",
+        payload={
+            "user_id": user.id,
+            "actor_id": actor_id or user.id,
+            "previous_role": previous_role,
+            "new_role": str(UserRole.GUEST),
+            "via": "self_service" if actor_id is None else "admin",
+        },
+    )
+    return updated

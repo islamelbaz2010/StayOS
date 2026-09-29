@@ -102,6 +102,8 @@ async def get_catalog(
                 money_columns=list(r.money_columns),
                 implemented=r.implemented,
                 unavailable_reason=r.unavailable_reason,
+                note=r.note,
+                total_labels=dict(r.total_labels),
             )
             for r in CATALOG
         ]
@@ -213,7 +215,9 @@ async def export_report(
             ws.append([row.get(c) for c in result.columns])
         if result.totals:
             ws.append([])
-            ws.append(["totals"] + [result.totals.get(c) for c in result.columns[1:]])
+            ws.append(["totals"])
+            for c, v in result.totals.items():
+                ws.append(["", result.total_labels.get(c, c), v])
         buf = io.BytesIO()
         wb.save(buf)
         return Response(
@@ -238,7 +242,9 @@ async def export_report(
         writer.writerow([row.get(c) for c in result.columns])
     if result.totals:
         writer.writerow([])
-        writer.writerow(["totals"] + [result.totals.get(c) for c in result.columns[1:]])
+        writer.writerow(["totals"])
+        for c, v in result.totals.items():
+            writer.writerow(["", result.total_labels.get(c, c), v])
     return Response(
         content="﻿" + out.getvalue(),
         media_type="text/csv; charset=utf-8",

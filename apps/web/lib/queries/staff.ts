@@ -10,6 +10,7 @@ export const STAFF_PERMISSIONS = [
   "disputes",
   "discovery",
   "content",
+  "reports",
 ] as const;
 
 export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];

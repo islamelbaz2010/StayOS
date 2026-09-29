@@ -26,6 +26,13 @@ class ReportDef:
     implemented: bool = True
     unavailable_reason: str | None = None
     fixed: dict = field(default_factory=dict)
+    # i18n keys under ``adminReports.notes.*`` — semantic disclaimer shown
+    # under the report title (e.g. "booking economics ≠ collected revenue").
+    note: str | None = None
+    # money_column → i18n key under ``adminReports.totals.*``; overrides
+    # the column label so totals say what they actually sum (e.g.
+    # "gross credits" / "net recognised").
+    total_labels: dict = field(default_factory=dict)
 
 
 _COMMON = ("date_from", "date_to")
@@ -99,17 +106,38 @@ CATALOG: tuple[ReportDef, ...] = (
     ReportDef(
         "revenue_summary",
         "overview",
-        "revenue_by_month",
-        ("month", "stayos_revenue_egp", "vat_egp", "host_net_egp", "guest_total_egp", "bookings"),
-        date_basis="payment_created",
+        "recognition_by_month",
+        (
+            "month",
+            "stayos_revenue_egp",
+            "vat_payable_egp",
+            "host_payable_egp",
+            "collected_egp",
+            "refunded_egp",
+            "net_activity_egp",
+            "bookings_count",
+        ),
+        date_basis="ledger_recognised",
         filters=_COMMON,
+        note="recognition_semantics",
         money_columns=(
             "stayos_revenue_egp",
-            "vat_egp",
-            "host_net_egp",
-            "guest_total_egp",
-            "bookings",
+            "vat_payable_egp",
+            "host_payable_egp",
+            "collected_egp",
+            "refunded_egp",
+            "net_activity_egp",
+            "bookings_count",
         ),
+        total_labels={
+            "stayos_revenue_egp": "net_recognised_revenue",
+            "vat_payable_egp": "vat_payable",
+            "host_payable_egp": "host_payable",
+            "collected_egp": "collected",
+            "refunded_egp": "refunded",
+            "net_activity_egp": "net_activity",
+            "bookings_count": "recognised_bookings",
+        },
     ),
     ReportDef(
         "payment_summary",
@@ -129,10 +157,10 @@ CATALOG: tuple[ReportDef, ...] = (
         filters=_COMMON,
         money_columns=("count", "amount_egp"),
     ),
-    # ---- B. Users --------------------------------------------------------
+    # ---- B. Users & Trust -------------------------------------------------
     ReportDef(
         "users",
-        "users",
+        "users_trust",
         "users_list",
         ("user_id", "display_name", "role", "kyc_status", "is_active", "created_at"),
         date_basis="user_created",
@@ -141,7 +169,7 @@ CATALOG: tuple[ReportDef, ...] = (
     ),
     ReportDef(
         "guests",
-        "users",
+        "users_trust",
         "users_list",
         ("user_id", "display_name", "kyc_status", "is_active", "created_at", "bookings_count"),
         date_basis="user_created",
@@ -151,7 +179,7 @@ CATALOG: tuple[ReportDef, ...] = (
     ),
     ReportDef(
         "hosts",
-        "users",
+        "users_trust",
         "users_list",
         ("user_id", "display_name", "kyc_status", "is_active", "created_at", "listings_count"),
         date_basis="user_created",
@@ -161,7 +189,7 @@ CATALOG: tuple[ReportDef, ...] = (
     ),
     ReportDef(
         "kyc_status",
-        "users",
+        "users_trust",
         "kyc_grouped",
         ("kyc_status", "count"),
         date_basis="snapshot",
@@ -268,15 +296,17 @@ CATALOG: tuple[ReportDef, ...] = (
         implemented=False,
         unavailable_reason="no_rebooking_linkage",
     ),
-    # ---- E. Financial ----------------------------------------------------
     ReportDef(
         "booking_financials",
-        "financial",
+        "bookings",
         "booking_financials",
         _FINANCIAL_COLS,
         date_basis="booking_created",
         filters=_FIN_FILTERS,
         sortable=("created_at", "check_in"),
+        # Totals here are *gross booking economics* for the selected set —
+        # unpaid/cancelled/future bookings included; not collected revenue.
+        note="economics_not_revenue",
         money_columns=(
             "accommodation_egp",
             "cleaning_fee_egp",
@@ -291,16 +321,75 @@ CATALOG: tuple[ReportDef, ...] = (
             "refund_amount_egp",
             "adjustment_amount_egp",
         ),
+        total_labels={
+            "vat_egp": "vat_calculated",
+            "guest_total_egp": "gross_booking_value",
+            "host_net_egp": "host_net",
+            "stayos_revenue_egp": "stayos_economics",
+            "payment_collected_egp": "collected",
+            "refund_amount_egp": "refunded",
+        },
     ),
+    ReportDef(
+        "booking_economics_summary",
+        "bookings",
+        "economics_by_month",
+        (
+            "month",
+            "bookings_count",
+            "accommodation_egp",
+            "cleaning_fee_egp",
+            "host_commission_egp",
+            "guest_commission_egp",
+            "taxable_amount_egp",
+            "vat_calculated_egp",
+            "guest_total_egp",
+            "host_net_egp",
+            "stayos_revenue_egp",
+        ),
+        date_basis="booking_created",
+        filters=_BOOKING_FILTERS,
+        note="economics_not_revenue",
+        money_columns=(
+            "bookings_count",
+            "accommodation_egp",
+            "cleaning_fee_egp",
+            "host_commission_egp",
+            "guest_commission_egp",
+            "taxable_amount_egp",
+            "vat_calculated_egp",
+            "guest_total_egp",
+            "host_net_egp",
+            "stayos_revenue_egp",
+        ),
+        total_labels={
+            "bookings_count": "bookings_in_period",
+            "vat_calculated_egp": "vat_calculated",
+            "guest_total_egp": "gross_booking_value",
+            "host_net_egp": "host_net",
+            "stayos_revenue_egp": "stayos_economics",
+        },
+    ),
+    # ---- E. Financial ----------------------------------------------------
     ReportDef(
         "stayos_revenue",
         "financial",
-        "revenue_ledger",
+        "ledger_account_report",
         ("created_at", "booking_id", "entry_type", "amount_egp", "transaction_type"),
         date_basis="ledger_recognised",
         filters=_COMMON + ("entry_type",),
         sortable=("created_at", "amount_egp"),
-        money_columns=("amount_egp",),
+        note="signed_ledger",
+        # credit_egp/debit_egp are row-level helper keys (not displayed
+        # columns) so totals expose gross credits, gross debits and the
+        # signed net — debits subtract, they do not add.
+        money_columns=("credit_egp", "debit_egp", "amount_egp"),
+        total_labels={
+            "credit_egp": "gross_credits",
+            "debit_egp": "gross_debits",
+            "amount_egp": "net_recognised_revenue",
+        },
+        fixed={"ledger_account": "platform_revenue"},
     ),
     ReportDef(
         "host_commission",
@@ -309,7 +398,9 @@ CATALOG: tuple[ReportDef, ...] = (
         _BOOKING_COLS + ("accommodation_egp", "host_commission_egp", "host_net_egp"),
         date_basis="booking_created",
         filters=_FIN_FILTERS,
+        note="economics_not_revenue",
         money_columns=("accommodation_egp", "host_commission_egp", "host_net_egp"),
+        total_labels={"host_net_egp": "host_net"},
         fixed={"share": "host"},
     ),
     ReportDef(
@@ -319,17 +410,43 @@ CATALOG: tuple[ReportDef, ...] = (
         _BOOKING_COLS + ("accommodation_egp", "guest_commission_egp", "guest_total_egp"),
         date_basis="booking_created",
         filters=_FIN_FILTERS,
+        note="economics_not_revenue",
         money_columns=("accommodation_egp", "guest_commission_egp", "guest_total_egp"),
         fixed={"share": "guest"},
     ),
     ReportDef(
-        "vat",
+        "vat_payable",
+        "financial",
+        "vat_by_booking",
+        _BOOKING_COLS[:1]
+        + ("created_at", "guest_name", "host_name", "listing_title", "payment_status", "funds_status")
+        + ("taxable_amount_egp", "vat_calculated_egp", "vat_reversed_egp", "vat_payable_egp"),
+        date_basis="payment_created",
+        filters=_FIN_FILTERS,
+        sortable=("created_at",),
+        note="vat_payable_semantics",
+        money_columns=(
+            "taxable_amount_egp",
+            "vat_calculated_egp",
+            "vat_reversed_egp",
+            "vat_payable_egp",
+        ),
+        total_labels={
+            "vat_calculated_egp": "vat_calculated",
+            "vat_reversed_egp": "vat_reversed",
+            "vat_payable_egp": "vat_payable",
+        },
+    ),
+    ReportDef(
+        "vat_calculated",
         "financial",
         "booking_financials",
         _BOOKING_COLS + ("taxable_amount_egp", "vat_egp", "guest_total_egp", "funds_status"),
         date_basis="booking_created",
         filters=_FIN_FILTERS,
+        note="vat_calculated_semantics",
         money_columns=("taxable_amount_egp", "vat_egp", "guest_total_egp"),
+        total_labels={"vat_egp": "vat_calculated"},
         fixed={"share": "vat"},
     ),
     ReportDef(
@@ -570,17 +687,10 @@ CATALOG: tuple[ReportDef, ...] = (
         date_basis="booking_created",
         filters=_BOOKING_FILTERS,
     ),
-    # ---- I. Trust ----------------------------------------------------------
-    ReportDef(
-        "kyc_status_report",
-        "trust",
-        "kyc_grouped",
-        ("kyc_status", "count"),
-        date_basis="snapshot",
-    ),
+    # ---- I. Trust (under Users & Trust) ------------------------------------
     ReportDef(
         "automated_verification",
-        "trust",
+        "users_trust",
         "provider_docs",
         (
             "document_id",
@@ -595,7 +705,7 @@ CATALOG: tuple[ReportDef, ...] = (
     ),
     ReportDef(
         "manual_review_cases",
-        "trust",
+        "users_trust",
         "manual_review_docs",
         (
             "document_id",

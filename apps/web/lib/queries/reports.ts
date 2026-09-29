@@ -12,6 +12,8 @@ export interface ReportCatalogEntry {
   money_columns: string[];
   implemented: boolean;
   unavailable_reason: string | null;
+  note: string | null;
+  total_labels: Record<string, string>;
 }
 
 export interface ReportResult {
@@ -24,6 +26,8 @@ export interface ReportResult {
   page: number;
   page_size: number;
   totals: Record<string, number>;
+  total_labels: Record<string, string>;
+  note: string | null;
   generated_at: string;
   filters_applied: Record<string, string>;
 }

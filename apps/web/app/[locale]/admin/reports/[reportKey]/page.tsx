@@ -233,6 +233,13 @@ export default function AdminReportPage() {
                   {t("dateBasisLabel")}: {t(`dateBasis.${meta.date_basis}`)}
                 </p>
               )}
+              {meta?.note && (
+                <p className="mt-1 max-w-2xl text-xs text-neutral-500">
+                  {t.has(`notes.${meta.note}`)
+                    ? t(`notes.${meta.note}`)
+                    : meta.note}
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <button
@@ -438,6 +445,39 @@ export default function AdminReportPage() {
                   </tfoot>
                 )}
               </table>
+            </div>
+          )}
+
+          {/* Semantically labeled totals — covers money totals that are
+              not display columns (gross credits / debits / net). */}
+          {report.data && Object.keys(report.data.totals).length > 0 && (
+            <div className="card mt-3 p-4">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-500">
+                {t("totals")}
+              </p>
+              <dl className="flex flex-wrap gap-x-8 gap-y-2">
+                {Object.entries(report.data.totals).map(([c, v]) => {
+                  const labelKey = (report.data!.total_labels ?? {})[c];
+                  const label =
+                    labelKey && t.has(`totalLabels.${labelKey}`)
+                      ? t(`totalLabels.${labelKey}`)
+                      : t.has(`columns.${c}`)
+                        ? t(`columns.${c}`)
+                        : c;
+                  const money =
+                    typeof v === "number" && MONEY_RE.test(c) && c !== "count";
+                  return (
+                    <div key={c} className="min-w-36">
+                      <dt className="text-xs text-neutral-500">{label}</dt>
+                      <dd className="text-sm font-semibold text-brand-900">
+                        {money
+                          ? formatMoney(v, "EGP", intlLocale)
+                          : v.toLocaleString(intlLocale)}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
             </div>
           )}
 

@@ -2057,7 +2057,8 @@
       "operations": "Operations",
       "disputes": "Disputes",
       "discovery": "Discovery",
-      "content": "Content"
+      "content": "Content",
+      "reports": "Reports"
     },
     "signInHint": "Staff sign in with their phone number (OTP). They can then set an email password under Account → Set password.",
     "passwordSet": "Password set",
@@ -2186,7 +2187,7 @@
     "payoutStatus": "Payout status",
     "paidAt": "Paid at",
     "providerPayout": "Provider payout",
-    "vat": "VAT (14%)",
+    "vat": "VAT calculated (14%)",
     "taxableAmount": "Taxable booking amount",
     "emptyDrill": "No records in this category.",
     "loading": "Loading…",
@@ -2755,7 +2756,8 @@
       "operations": "Operations",
       "trust": "Trust & KYC",
       "disputes": "Disputes",
-      "reviews": "Reviews"
+      "reviews": "Reviews",
+      "users_trust": "Users & Trust"
     },
     "reports": {
       "marketplace_overview": "Marketplace Overview",
@@ -2781,7 +2783,6 @@
       "stayos_revenue": "StayOS Revenue",
       "host_commission": "Host Commission",
       "guest_commission": "Guest Commission",
-      "vat": "VAT",
       "host_earnings": "Host Earnings",
       "guest_payments": "Guest Payments",
       "refunds": "Refunds",
@@ -2798,14 +2799,16 @@
       "check_in": "Check-in Report",
       "check_out": "Check-out Report",
       "operational_exceptions": "Operational Exceptions",
-      "kyc_status_report": "KYC Status",
       "automated_verification": "Automated Verification",
       "manual_review_cases": "Manual Review Cases",
       "disputes": "Disputes",
       "dispute_resolution": "Resolution Status",
       "reviews": "Reviews",
       "ratings": "Ratings",
-      "moderation_status": "Moderation Status"
+      "moderation_status": "Moderation Status",
+      "booking_economics_summary": "Booking Economics Summary",
+      "vat_payable": "VAT Payable",
+      "vat_calculated": "VAT Calculated"
     },
     "columns": {
       "accommodation_egp": "Accommodation (EGP)",
@@ -2886,8 +2889,19 @@
       "user_id": "User",
       "user_name": "User",
       "value": "Value",
-      "vat_egp": "VAT (EGP)",
-      "verified_at": "Verified"
+      "vat_egp": "VAT Calculated (EGP)",
+      "verified_at": "Verified",
+      "collected_egp": "Collected (EGP)",
+      "credit_egp": "Credit (EGP)",
+      "debit_egp": "Debit (EGP)",
+      "host_payable_egp": "Host Payable (EGP)",
+      "net_activity_egp": "Net Activity (EGP)",
+      "refunded_egp": "Refunded (EGP)",
+      "vat_calculated_egp": "VAT Calculated (EGP)",
+      "vat_held_egp": "VAT Held (EGP)",
+      "vat_payable_egp": "VAT Payable (EGP)",
+      "vat_recognised_egp": "VAT Recognised (EGP)",
+      "vat_reversed_egp": "VAT Reversed (EGP)"
     },
     "filter": {
       "date_from": "From",
@@ -3007,6 +3021,30 @@
     },
     "reasons": {
       "no_rebooking_linkage": "Booking rebooking linkage is not yet modelled — bookings have no replaced_by/rebooked_from field."
+    },
+    "totalLabels": {
+      "bookings_in_period": "Bookings in period",
+      "collected": "Collected (verified payments)",
+      "gross_booking_value": "Gross booking value (selected bookings)",
+      "gross_credits": "Gross credits",
+      "gross_debits": "Debits / reversals",
+      "host_net": "Host net (booking economics)",
+      "host_payable": "Host payable (ledger balance)",
+      "net_activity": "Net financial activity (collected − refunded)",
+      "net_recognised_revenue": "Net recognised StayOS revenue",
+      "recognised_bookings": "Recognised bookings",
+      "refunded": "Refunded",
+      "stayos_economics": "StayOS economics (booking-level share)",
+      "vat_calculated": "VAT calculated on bookings",
+      "vat_payable": "VAT payable (calculated − reversed)",
+      "vat_reversed": "VAT reversed on refunds"
+    },
+    "notes": {
+      "economics_not_revenue": "Booking economics for the selected bookings — includes unpaid, cancelled and refunded bookings. Totals are gross booking value, not collected revenue.",
+      "recognition_semantics": "Ledger recognition basis: revenue, VAT and host payable are net signed ledger balances; collected/refunded come from capture and refund transactions. VAT payable = ledger-recognised VAT + VAT still held inside open escrows.",
+      "signed_ledger": "Signed ledger entries — credits are positive, debits/reversals are negative. Net total reconciles with Admin Earnings.",
+      "vat_calculated_semantics": "VAT calculated on booking economics for the selected bookings — includes refunded bookings whose VAT is later reversed. Not the payable balance.",
+      "vat_payable_semantics": "VAT payable per booking = VAT calculated − VAT reversed on refunds. A fully refunded booking contributes zero payable VAT."
     }
   }
 }

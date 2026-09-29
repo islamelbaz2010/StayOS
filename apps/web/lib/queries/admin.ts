@@ -70,6 +70,7 @@ export interface AdjustmentInfo {
   amount_egp: number | null;
   reason: string | null;
   status: string | null;
+  actor: string | null;
   created_at: string | null;
 }
 

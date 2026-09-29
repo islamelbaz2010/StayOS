@@ -252,3 +252,28 @@ generated timestamp, date basis, applied filters, row counts).
   computed columns (stay_phase, payout status) filter in memory after the
   SQL window. No N+1: joins/subqueries carry names, titles, escrow and
   per-booking adjustment sums.
+
+### Semantics — one truth, explicit terms
+
+- **Signed ledger.** Ledger reports (`stayos_revenue`) sign rows by entry
+  type — credit = +amount, debit = −amount — and expose gross credits,
+  gross debits and net as labeled totals. The signed net reconciles with
+  the Admin Earnings `platform_revenue` ledger balance.
+- **VAT is three different numbers, labelled as such.** `vat_calculated`
+  is booking-economics VAT (`booking_economics`, includes bookings whose
+  VAT is later reversed). `vat_reversed` is the refunded share — the VAT
+  portion returned to the guest on refund. `vat_payable` =
+  calculated − reversed, which equals Admin Earnings' VAT payable
+  (VAT_PAYABLE ledger net + VAT still held inside open escrows — the
+  ledger only credits VAT at escrow release/refund).
+- **Booking economics ≠ recognised financials.** `booking_financials`
+  and `booking_economics_summary` report gross booking economics for the
+  selected set (unpaid/cancelled/refunded included) — their totals are
+  gross booking value, never collected revenue. `revenue_summary` is the
+  recognition report: net signed ledger balances for `platform_revenue` /
+  `vat_payable` (+ held VAT) / `host_payable`, plus collected captures,
+  refunds and net activity, on the ledger-recognition date basis.
+- **Host net vs host payable.** `host_net_egp` is booking economics;
+  `host_payable` is the recognised ledger liability — never conflated.
+- **Every total is labelled.** `ReportDef.total_labels` maps each money
+  total to an explicit i18n label; exports emit labeled totals rows.

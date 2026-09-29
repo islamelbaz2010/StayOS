@@ -12,14 +12,13 @@ import { useReportCatalog } from "@/lib/queries/reports";
 
 const CATEGORY_ORDER = [
   "overview",
-  "users",
-  "listings",
   "bookings",
   "financial",
   "payments",
   "payouts",
   "operations",
-  "trust",
+  "users_trust",
+  "listings",
   "disputes",
   "reviews",
 ];

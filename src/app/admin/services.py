@@ -488,7 +488,8 @@ async def get_booking_financial_context(
         ledger = list(ledger_rows.scalars().all())
 
     adj_rows = await session.execute(
-        select(CommercialAdjustment)
+        select(CommercialAdjustment, User.display_name)
+        .outerjoin(User, User.id == CommercialAdjustment.created_by_id)
         .where(CommercialAdjustment.booking_id == booking.id)
         .order_by(CommercialAdjustment.created_at.desc())
     )
@@ -500,10 +501,11 @@ async def get_booking_financial_context(
             "amount_egp": a.amount_egp,
             "status": a.status,
             "reason": a.reason,
+            "actor": actor_name,
             "created_at": a.created_at.isoformat() if a.created_at else None,
             "applied_at": a.applied_at.isoformat() if a.applied_at else None,
         }
-        for a in adj_rows.scalars().all()
+        for a, actor_name in adj_rows.all()
     ]
 
     dispute_rows = await session.execute(

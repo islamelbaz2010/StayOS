@@ -194,6 +194,58 @@ describe("Admin Report viewer", () => {
     expect(screen.getByText("Not yet implemented")).toBeInTheDocument();
   });
 
+  it("renders labeled totals for non-column money keys (signed ledger)", () => {
+    mockReport = {
+      data: {
+        ...reportFixture,
+        key: "stayos_revenue",
+        columns: ["created_at", "entry_type", "amount_egp"],
+        rows: [
+          { created_at: "2026-01-01T00:00:00Z", entry_type: "credit", amount_egp: 90 },
+          { created_at: "2026-01-02T00:00:00Z", entry_type: "debit", amount_egp: -90 },
+        ],
+        totals: { credit_egp: 90, debit_egp: 90, amount_egp: 0 },
+        total_labels: {
+          credit_egp: "gross_credits",
+          debit_egp: "gross_debits",
+          amount_egp: "net_recognised_revenue",
+        },
+      },
+      isPending: false,
+      isError: false,
+      refetch: vi.fn(),
+    };
+    renderWith(<ViewerPage />);
+    const tTotals = (messages.adminReports as Record<string, unknown>)
+      .totalLabels as Record<string, string>;
+    expect(screen.getByText(tTotals.gross_credits)).toBeInTheDocument();
+    expect(screen.getByText(tTotals.gross_debits)).toBeInTheDocument();
+    expect(
+      screen.getByText(tTotals.net_recognised_revenue)
+    ).toBeInTheDocument();
+  });
+
+  it("renders the report semantics note when present", () => {
+    mockCatalog = {
+      data: [
+        {
+          ...catalogFixture[0],
+          note: "economics_not_revenue",
+          total_labels: {},
+        },
+      ],
+      isPending: false,
+      isError: false,
+      refetch: vi.fn(),
+    };
+    renderWith(<ViewerPage />);
+    const notes = (messages.adminReports as Record<string, unknown>)
+      .notes as Record<string, string>;
+    expect(
+      screen.getByText(new RegExp(notes.economics_not_revenue.slice(0, 30)))
+    ).toBeInTheDocument();
+  });
+
   it("export buttons call the export helper", async () => {
     renderWith(<ViewerPage />);
     fireEvent.click(screen.getByText(t.exportCsv as string));

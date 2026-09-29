@@ -27,11 +27,14 @@ from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.bookings.services import _compute_stay_phase
 from app.disputes.models import Dispute
+from app.finance import commercial
 from app.finance import services as finance_services
 from app.finance.constants import (
     EscrowStatus,
     LedgerAccount,
+    LedgerEntryType,
     PayoutStatus,
+    TransactionType,
 )
 from app.finance.models import (
     CommercialAdjustment,
@@ -44,6 +47,7 @@ from app.kyc.models import KycDocument
 from app.listings.models import Unit, UnitListing
 from app.payments.models import Payment
 from app.reports.registry import BY_KEY, ReportDef
+from app.reservations.models import Reservation
 from app.reports.schemas import ReportResult
 from app.reviews.models import Review, ReviewReport
 
@@ -144,6 +148,8 @@ async def _finalize(
         totals=totals,
         generated_at=datetime.now(UTC),
         filters_applied=params.applied(),
+        total_labels=dict(report.total_labels),
+        note=report.note,
     )
 
 
@@ -416,11 +422,14 @@ async def booking_financials(
     return await _finalize(report, params, rows)
 
 
-async def revenue_ledger(
+async def ledger_account_report(
     session: AsyncSession, report: ReportDef, params: ReportParams
 ) -> ReportResult:
-    """Recognised StayOS revenue straight from the ledger — the same
-    account the Admin Earnings surface reads."""
+    """Signed ledger rows for one account — credit = +amount, debit =
+    −amount. ``credit_egp``/``debit_egp`` are hidden helper keys so the
+    totals row carries gross credits, gross debits and the signed net,
+    reconciling exactly with the Admin Earnings ledger sums."""
+    account = LedgerAccount(report.fixed["ledger_account"])
     q = (
         select(
             LedgerEntry.created_at,
@@ -434,7 +443,7 @@ async def revenue_ledger(
             FinancialTransaction.id == LedgerEntry.transaction_id,
         )
         .where(
-            LedgerEntry.ledger_account == LedgerAccount.PLATFORM_REVENUE,
+            LedgerEntry.ledger_account == account,
             *_window(LedgerEntry.created_at, params),
         )
     )
@@ -446,65 +455,291 @@ async def revenue_ledger(
     q = q.order_by(
         sort_col.desc() if params.order == "desc" else sort_col.asc()
     ).limit(MAX_SCAN)
-    rows = [
-        {
-            "created_at": _iso(r.created_at),
-            "booking_id": r.reservation_id,
-            "entry_type": r.entry_type,
-            "amount_egp": _num(r.amount_egp),
-            "transaction_type": r.transaction_type,
-        }
-        for r in (await session.execute(q)).all()
-    ]
+    rows = []
+    for r in (await session.execute(q)).all():
+        amount = Decimal(str(r.amount_egp))
+        is_credit = r.entry_type == LedgerEntryType.CREDIT
+        rows.append(
+            {
+                "created_at": _iso(r.created_at),
+                "booking_id": r.reservation_id,
+                "entry_type": r.entry_type,
+                "amount_egp": float(amount if is_credit else -amount),
+                "credit_egp": float(amount) if is_credit else 0.0,
+                "debit_egp": 0.0 if is_credit else float(amount),
+                "transaction_type": r.transaction_type,
+            }
+        )
     return await _finalize(report, params, rows)
 
 
-async def revenue_by_month(
+_HELD_ESCROW_STATUSES = (
+    EscrowStatus.CREATED,
+    EscrowStatus.HELD,
+    EscrowStatus.DISPUTED,
+)
+
+
+async def _vat_held_by_month(
+    session: AsyncSession, params: ReportParams
+) -> dict[str, Decimal]:
+    """VAT still inside open escrows, bucketed by escrow creation month —
+    the same held-VAT component Admin Earnings adds on top of the
+    VAT_PAYABLE ledger (the ledger only credits VAT at release/refund)."""
+    month = func.date_trunc("month", EscrowAccount.created_at)
+    vat_expr = case(
+        (Payment.vat_egp.isnot(None), Payment.vat_egp),
+        else_=func.greatest(
+            EscrowAccount.amount_egp
+            - Reservation.host_amount_egp
+            - Reservation.platform_fee_egp,
+            0,
+        ),
+    )
+    q = (
+        select(month.label("m"), func.coalesce(func.sum(vat_expr), 0))
+        .select_from(EscrowAccount)
+        .outerjoin(Payment, Payment.booking_id == EscrowAccount.reservation_id)
+        .outerjoin(Reservation, Reservation.id == EscrowAccount.reservation_id)
+        .where(
+            EscrowAccount.status.in_(_HELD_ESCROW_STATUSES),
+            *_window(EscrowAccount.created_at, params),
+        )
+        .group_by(month)
+    )
+    out: dict[str, Decimal] = {}
+    for m, v in (await session.execute(q)).all():
+        out[m.strftime("%Y-%m")] = Decimal(str(v))
+    return out
+
+
+async def recognition_by_month(
     session: AsyncSession, report: ReportDef, params: ReportParams
 ) -> ReportResult:
-    """Monthly revenue/VAT/host-net from canonical per-payment economics
-    (collected payments only — pending proofs are not recognised)."""
-    q = (
-        select(Payment)
-        .where(
-            Payment.status.in_(
-                ("verified", "refund_pending", "refunded")
-            ),
-            *_window(Payment.created_at, params),
+    """Revenue Summary — true financial-recognition report.
+
+    Date basis: ledger/transaction recognition date. Per month:
+    recognised StayOS revenue, VAT payable (ledger-recognised + VAT still
+    held inside open escrows, matching Admin Earnings), host payable,
+    collected captures, refunds, net financial activity and the count of
+    bookings whose payment was recognised that month.
+    """
+    month = func.date_trunc("month", LedgerEntry.created_at).label("m")
+    signed = case(
+        (LedgerEntry.entry_type == LedgerEntryType.CREDIT, LedgerEntry.amount_egp),
+        else_=-LedgerEntry.amount_egp,
+    )
+    ledger_q = (
+        select(
+            month,
+            LedgerEntry.ledger_account,
+            func.coalesce(func.sum(signed), 0),
         )
-        .order_by(Payment.created_at.desc())
-        .limit(MAX_SCAN)
+        .where(
+            LedgerEntry.ledger_account.in_(
+                (
+                    LedgerAccount.PLATFORM_REVENUE,
+                    LedgerAccount.VAT_PAYABLE,
+                    LedgerAccount.HOST_PAYABLE,
+                )
+            ),
+            *_window(LedgerEntry.created_at, params),
+        )
+        .group_by(month, LedgerEntry.ledger_account)
+    )
+    txn_month = func.date_trunc("month", FinancialTransaction.created_at)
+    txn_q = (
+        select(
+            txn_month.label("m"),
+            FinancialTransaction.transaction_type,
+            func.coalesce(func.sum(FinancialTransaction.amount_egp), 0),
+            func.count(func.distinct(FinancialTransaction.reservation_id)),
+        )
+        .where(
+            FinancialTransaction.transaction_type.in_(
+                (
+                    TransactionType.PAYMENT_CAPTURE,
+                    TransactionType.REFUND,
+                    TransactionType.ESCROW_REFUND,
+                )
+            ),
+            *_window(FinancialTransaction.created_at, params),
+        )
+        .group_by(txn_month, FinancialTransaction.transaction_type)
     )
     months: dict[str, dict[str, Any]] = {}
-    for payment in (await session.execute(q)).scalars().all():
-        eco = await finance_services.booking_economics(session, payment)
-        m = payment.created_at.strftime("%Y-%m")
-        bucket = months.setdefault(
+
+    def bucket(m: str) -> dict[str, Any]:
+        return months.setdefault(
             m,
             {
                 "month": m,
                 "stayos_revenue_egp": Decimal("0"),
-                "vat_egp": Decimal("0"),
-                "host_net_egp": Decimal("0"),
-                "guest_total_egp": Decimal("0"),
-                "bookings": 0,
+                "vat_recognised_egp": Decimal("0"),
+                "vat_held_egp": Decimal("0"),
+                "vat_payable_egp": Decimal("0"),
+                "host_payable_egp": Decimal("0"),
+                "collected_egp": Decimal("0"),
+                "refunded_egp": Decimal("0"),
+                "net_activity_egp": Decimal("0"),
+                "bookings_count": 0,
             },
         )
-        bucket["stayos_revenue_egp"] += eco.platform_share_egp
-        bucket["vat_egp"] += eco.vat_egp
-        bucket["host_net_egp"] += eco.host_net_egp
+
+    for m, account, net in (await session.execute(ledger_q)).all():
+        b = bucket(m.strftime("%Y-%m"))
+        key = {
+            LedgerAccount.PLATFORM_REVENUE: "stayos_revenue_egp",
+            LedgerAccount.VAT_PAYABLE: "vat_recognised_egp",
+            LedgerAccount.HOST_PAYABLE: "host_payable_egp",
+        }[LedgerAccount(account)]
+        b[key] += Decimal(str(net))
+    for m, ttype, amount, bookings in (await session.execute(txn_q)).all():
+        b = bucket(m.strftime("%Y-%m"))
+        if ttype == TransactionType.PAYMENT_CAPTURE:
+            b["collected_egp"] += Decimal(str(amount))
+            b["bookings_count"] += int(bookings or 0)
+        else:
+            b["refunded_egp"] += Decimal(str(amount))
+    for m, held in (await _vat_held_by_month(session, params)).items():
+        bucket(m)["vat_held_egp"] += held
+    rows = []
+    for _, b in sorted(months.items(), reverse=True):
+        b["vat_payable_egp"] = b["vat_recognised_egp"] + b["vat_held_egp"]
+        b["net_activity_egp"] = b["collected_egp"] - b["refunded_egp"]
+        rows.append({k: (_num(v) if isinstance(v, Decimal) else v) for k, v in b.items()})
+    return await _finalize(report, params, rows)
+
+
+async def economics_by_month(
+    session: AsyncSession, report: ReportDef, params: ReportParams
+) -> ReportResult:
+    """Booking Economics Summary — booking-economics aggregates grouped by
+    booking creation month. Calculated VAT / guest total / host net here
+    are booking economics, NOT ledger-recognised amounts; unpaid and
+    cancelled bookings count in ``bookings_count`` but contribute zero
+    economics."""
+    q = (
+        _apply_booking_filters(_booking_base(), params, report.fixed)
+        .outerjoin(Payment, Payment.booking_id == Booking.id)
+        .add_columns(Payment)
+        .order_by(Booking.created_at.desc(), Payment.created_at.desc().nullslast())
+        .limit(MAX_SCAN)
+    )
+    months: dict[str, dict[str, Any]] = {}
+    seen: set[str] = set()
+    for r in (await session.execute(q)).all():
+        b: Booking = r[0]
+        payment: Payment | None = r.Payment
+        if b.id in seen:
+            continue  # one row per booking — latest payment wins
+        seen.add(b.id)
+        m = b.created_at.strftime("%Y-%m")
+        bucket = months.setdefault(
+            m,
+            {
+                "month": m,
+                "bookings_count": 0,
+                "accommodation_egp": Decimal("0"),
+                "cleaning_fee_egp": Decimal("0"),
+                "host_commission_egp": Decimal("0"),
+                "guest_commission_egp": Decimal("0"),
+                "taxable_amount_egp": Decimal("0"),
+                "vat_calculated_egp": Decimal("0"),
+                "guest_total_egp": Decimal("0"),
+                "host_net_egp": Decimal("0"),
+                "stayos_revenue_egp": Decimal("0"),
+            },
+        )
+        bucket["bookings_count"] += 1
+        if payment is None:
+            continue
+        eco = await finance_services.booking_economics(session, payment)
+        bucket["accommodation_egp"] += eco.accommodation_egp
+        bucket["cleaning_fee_egp"] += eco.cleaning_fee_egp
+        bucket["host_commission_egp"] += eco.host_side_share_egp
+        bucket["guest_commission_egp"] += eco.guest_side_share_egp
+        bucket["taxable_amount_egp"] += eco.taxable_amount_egp
+        bucket["vat_calculated_egp"] += eco.vat_egp
         bucket["guest_total_egp"] += eco.guest_total_egp
-        bucket["bookings"] += 1
+        bucket["host_net_egp"] += eco.host_net_egp
+        bucket["stayos_revenue_egp"] += eco.platform_share_egp
     rows = [
-        {
-            **b,
-            "stayos_revenue_egp": _num(b["stayos_revenue_egp"]),
-            "vat_egp": _num(b["vat_egp"]),
-            "host_net_egp": _num(b["host_net_egp"]),
-            "guest_total_egp": _num(b["guest_total_egp"]),
-        }
+        {k: (_num(v) if isinstance(v, Decimal) else v) for k, v in b.items()}
         for _, b in sorted(months.items(), reverse=True)
     ]
+    return await _finalize(report, params, rows)
+
+
+async def vat_by_booking(
+    session: AsyncSession, report: ReportDef, params: ReportParams
+) -> ReportResult:
+    """VAT Payable — per-booking VAT decomposition that reconciles with
+    Admin Earnings: ``vat_payable = vat_calculated − vat_reversed`` where
+    reversal follows the canonical refund rule (the refunded share of VAT
+    returns to the guest; only the retained share stays payable)."""
+    q = (
+        _apply_booking_filters(_booking_base(), params, report.fixed)
+        .join(Payment, Payment.booking_id == Booking.id)
+        .outerjoin(EscrowAccount, EscrowAccount.reservation_id == Booking.id)
+        .add_columns(Payment, EscrowAccount)
+        .order_by(
+            Booking.created_at.desc(), Payment.created_at.desc().nullslast()
+        )
+        .limit(MAX_SCAN)
+    )
+    if params.payment_status:
+        q = q.where(Payment.status == params.payment_status)
+    rows: list[dict] = []
+    seen: set[str] = set()
+    for r in (await session.execute(q)).all():
+        b: Booking = r[0]
+        if b.id in seen:
+            continue
+        seen.add(b.id)
+        payment: Payment = r.Payment
+        escrow: EscrowAccount | None = r.EscrowAccount
+        eco = await finance_services.booking_economics(session, payment)
+        vat = eco.vat_egp
+        reversed_vat = Decimal("0")
+        refunded = (
+            escrow is not None and escrow.status == EscrowStatus.REFUNDED
+        ) or payment.status == "refunded"
+        if refunded:
+            refund_amount = Decimal(
+                str(payment.refund_amount_egp or 0)
+            )
+            base = Decimal(
+                str(escrow.amount_egp if escrow is not None else eco.guest_total_egp)
+            )
+            if base > 0 and refund_amount >= base:
+                reversed_vat = vat
+            elif base > 0 and refund_amount > 0:
+                reversed_vat = commercial.money(vat * refund_amount / base)
+            else:
+                reversed_vat = vat
+        payout_state = (
+            finance_services.derive_payout_state(escrow) if escrow else None
+        )
+        if params.payout_status and (
+            not payout_state or payout_state["payout_status"] != params.payout_status
+        ):
+            continue
+        rows.append(
+            {
+                "booking_id": b.id,
+                "created_at": _iso(b.created_at),
+                "guest_name": r.guest_name,
+                "host_name": r.host_name,
+                "listing_title": r.title_en or r.title_ar,
+                "payment_status": payment.status,
+                "funds_status": payout_state["funds_status"] if payout_state else None,
+                "taxable_amount_egp": _num(eco.taxable_amount_egp),
+                "vat_calculated_egp": _num(vat),
+                "vat_reversed_egp": _num(reversed_vat),
+                "vat_payable_egp": _num(vat - reversed_vat),
+            }
+        )
     return await _finalize(report, params, rows)
 
 
@@ -1229,11 +1464,40 @@ async def marketplace_overview(
             ),
         },
         {
+            # VAT payable = ledger-recognised VAT + VAT still held inside
+            # open escrows — identical to Admin Earnings.
             "metric": "vat_payable_egp",
             "value": await _scalar(
                 select(ledger_net).where(
                     LedgerEntry.ledger_account == LedgerAccount.VAT_PAYABLE
                 )
+            )
+            + await _scalar(
+                select(
+                    func.coalesce(
+                        func.sum(
+                            case(
+                                (Payment.vat_egp.isnot(None), Payment.vat_egp),
+                                else_=func.greatest(
+                                    EscrowAccount.amount_egp
+                                    - Reservation.host_amount_egp
+                                    - Reservation.platform_fee_egp,
+                                    0,
+                                ),
+                            )
+                        ),
+                        0,
+                    )
+                )
+                .select_from(EscrowAccount)
+                .outerjoin(
+                    Payment, Payment.booking_id == EscrowAccount.reservation_id
+                )
+                .outerjoin(
+                    Reservation,
+                    Reservation.id == EscrowAccount.reservation_id,
+                )
+                .where(EscrowAccount.status.in_(_HELD_ESCROW_STATUSES))
             ),
         },
         {
@@ -1281,7 +1545,10 @@ async def marketplace_overview(
 _BUILDERS = {
     "marketplace_overview": marketplace_overview,
     "grouped_booking_status": grouped_booking_status,
-    "revenue_by_month": revenue_by_month,
+    "recognition_by_month": recognition_by_month,
+    "economics_by_month": economics_by_month,
+    "vat_by_booking": vat_by_booking,
+    "ledger_account_report": ledger_account_report,
     "payments_grouped": payments_grouped,
     "payouts_grouped": payouts_grouped,
     "users_list": users_list,
@@ -1292,7 +1559,6 @@ _BUILDERS = {
     "listings_by_month": listings_by_month,
     "bookings_list": bookings_list,
     "booking_financials": booking_financials,
-    "revenue_ledger": revenue_ledger,
     "host_earnings": host_earnings,
     "payments_list": payments_list,
     "adjustments_list": adjustments_list,

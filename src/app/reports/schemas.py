@@ -15,6 +15,8 @@ class ReportCatalogEntry(BaseModel):
     money_columns: list[str]
     implemented: bool
     unavailable_reason: str | None = None
+    note: str | None = None
+    total_labels: dict[str, str] = {}
 
 
 class ReportCatalogResponse(BaseModel):
@@ -35,5 +37,10 @@ class ReportResult(BaseModel):
     page: int
     page_size: int
     totals: dict[str, float] = {}
+    # money_column → i18n key describing what that total actually sums
+    # (e.g. "gross_credits" / "net_recognised_revenue" / "vat_payable").
+    total_labels: dict[str, str] = {}
+    # semantic disclaimer i18n key (e.g. "economics_not_revenue").
+    note: str | None = None
     generated_at: datetime
     filters_applied: dict[str, str] = {}

@@ -10,9 +10,9 @@
 
 **Deployed web (Vercel preview)**: `https://stayos-git-product-completion-review-islam-elbaz-s-projects.vercel.app` (302 → `/en`; switch to `/ar` for Arabic). **Vercel SSO protection is ON — sign in to Vercel as the project owner first.**
 **API**: `https://stayos-demo-production.up.railway.app` (`/docs` for Swagger)
-**Login**: Dev Login on `/en/auth/login` — Guest `seed-accept-gues-0000-000000000001`, Host `seed-host-0000-0000-000000000002` (Omar Hassan, KYC-verified), Admin `seed-admin-0000-0000-000000000001`, Staff fixture available. **New**: "Email" tab supports real email+password register/login; phone OTP via Akedly is live-verified. Google/Apple buttons are disabled until Firebase is configured (RB-19).
+**Canonical browser URLs — required for upload acceptance**: browser storage acceptance (KYC, avatar, listing photos, payment proof) must run ONLY on the two stable aliases: Preview `stayos-git-product-completion-review-islam-elbaz-s-projects.vercel.app` (`product-completion-review` branch) and Production `web-amber-pi-98.vercel.app` (`main` branch). Per-deployment Vercel hostnames (e.g. `stayos-<hash>-islam-elbaz-s-projects.vercel.app`) are NOT whitelisted in bucket CORS — preflights there return 403 by design. Do not open upload acceptance defects from random deployment URLs.
+**Login**: Dev Login on `/en/auth/login` — Guest `seed-accept-gues-0000-0000-000000000001`, Host `seed-host-0000-0000-000000000002` (Omar Hassan, KYC-verified), Admin `seed-admin-0000-0000-000000000001`, Staff fixture available. **New**: "Email" tab supports real email+password register/login; phone OTP via Akedly is live-verified. Google/Apple buttons are disabled until Firebase is configured (RB-19).
 **Seed listings**: Zamalek `seed-unit-…0001` (request-to-book), Maadi `seed-unit-…0002` (instant book).
-**Known cosmetic note**: presign uploads return 503 until AWS storage vars are set — photo/proof/KYC-document uploads cannot complete on the deployed env yet (release blocker RB-02, not a product defect).
 
 ## Founder retest — defect closure pass 2 (2026-09-20, `d37fa6d`)
 

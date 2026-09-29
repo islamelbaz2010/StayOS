@@ -72,6 +72,10 @@ type MenuItemDef = {
   accent?: boolean;
 };
 
+type MenuEntry =
+  | ({ kind: "link" } & MenuItemDef)
+  | { kind: "section"; label: string };
+
 export function Header() {
   const t = useTranslations("nav");
   const { user, isLoading, isAuthenticated, logout } = useAuth();
@@ -143,79 +147,121 @@ export function Header() {
     };
   }, [accountOpen]);
 
-  const showBecomeHost = !isAuthenticated || user?.role === "guest";
+  // Anonymous visitors get the standalone Become-a-host CTA; authenticated
+  // guests get it inside the account menu items instead.
+  const showBecomeHost = !isAuthenticated;
 
   // FD-17: profile and all account-scoped destinations live in the account
   // menu — the top-level header stays compact for every role.
-  const accountItems: MenuItemDef[] = [];
+  const accountItems: MenuEntry[] = [];
   if (isAuthenticated) {
-    accountItems.push({ href: `/${locale}/profile`, label: t("profile") });
-    // Trips/favorites are account-scoped, not guest-role-scoped — hosts,
-    // staff and admins can book as marketplace users too.
-    accountItems.push(
-      { href: `/${locale}/favorites`, label: t("favorites") },
-      { href: `/${locale}/bookings`, label: t("trips") }
-    );
-    accountItems.push(
-      {
-        href: `/${locale}/messages`,
-        label: t("messages"),
-        count: unreadCount,
-      },
-      {
-        href: `/${locale}/notifications`,
-        label: t("notifications"),
-        count: notificationsUnread,
-      },
-      { href: `/${locale}/account-settings`, label: t("accountSettings") },
-      {
-        href: `/${locale}/account-settings/language`,
-        label: t("language"),
-      }
-    );
-    if (user?.role !== "admin") {
-      accountItems.push({ href: `/${locale}/payments`, label: t("payments") });
-    }
-    if (user?.role === "host") {
+    const link = (item: MenuItemDef): MenuEntry => ({ kind: "link", ...item });
+    const helpSupport: MenuEntry[] = [
+      { kind: "section", label: t("helpSupport") },
+      link({ href: `/${locale}/help`, label: t("helpCenter") }),
+      link({ href: `/${locale}/support`, label: t("support") }),
+    ];
+
+    if (user?.role === "admin" || (user?.role === "staff" && hasAdminAccess)) {
+      // Operational accounts get a lean menu — admin surfaces live behind
+      // one entry; consumer booking links stay off the ops menu.
       accountItems.push(
-        {
-          href: `/${locale}/host`,
-          label: t("hostDashboard"),
-          count: hostPendingCount,
-        },
-        { href: `/${locale}/host/listings`, label: t("myListings") },
-        { href: `/${locale}/host/guide`, label: t("hostGuide") },
-        { href: `/${locale}/host/earnings`, label: t("earnings") }
+        link({ href: `/${locale}/profile`, label: t("profile") }),
+        link({
+          href: `/${locale}/admin`,
+          label: t("adminConsole"),
+          count: adminPendingCount,
+          accent: true,
+        }),
+        link({
+          href: `/${locale}/account-settings`,
+          label: t("accountSettings"),
+        }),
+        link({
+          href: `/${locale}/account-settings/language`,
+          label: t("language"),
+        }),
+        ...helpSupport
       );
+    } else {
+      // Marketplace users (guest, host, staff w/o console, field staff):
+      // trips/favorites are account-scoped — hosts book as users too.
+      accountItems.push(
+        link({ href: `/${locale}/profile`, label: t("profile") }),
+        link({ href: `/${locale}/bookings`, label: t("trips") }),
+        link({ href: `/${locale}/favorites`, label: t("favorites") }),
+        link({
+          href: `/${locale}/messages`,
+          label: t("messages"),
+          count: unreadCount,
+        }),
+        link({
+          href: `/${locale}/notifications`,
+          label: t("notifications"),
+          count: notificationsUnread,
+        }),
+        link({
+          href: `/${locale}/account-settings`,
+          label: t("accountSettings"),
+        })
+      );
+      if (user?.role === "host") {
+        accountItems.push(
+          { kind: "section", label: t("hosting") },
+          link({
+            href: `/${locale}/host`,
+            label: t("hostDashboard"),
+            count: hostPendingCount,
+          }),
+          link({ href: `/${locale}/host/listings`, label: t("myListings") }),
+          link({ href: `/${locale}/host/earnings`, label: t("earnings") }),
+          link({ href: `/${locale}/host/guide`, label: t("hostGuide") })
+        );
+      }
+      if (user?.role === "guest") {
+        accountItems.push(
+          link({
+            href: `/${locale}/become-a-host`,
+            label: t("becomeHost"),
+            accent: true,
+          })
+        );
+      }
+      accountItems.push(...helpSupport);
+      if (user?.role === "host") {
+        accountItems.push(
+          link({
+            href: `/${locale}/account-settings/language`,
+            label: t("language"),
+          })
+        );
+      }
     }
-    if (hasAdminAccess) {
-      accountItems.push({
-        href: `/${locale}/admin`,
-        label: t("admin"),
-        count: adminPendingCount,
-        accent: true,
-      });
-    }
-    accountItems.push(
-      { href: `/${locale}/help`, label: t("helpCenter") },
-      { href: `/${locale}/support`, label: t("support") }
-    );
   }
 
   const accountMenuItems = (onNavigate: () => void) =>
-    accountItems.map((item) => (
-      <Link
-        key={item.href + item.label}
-        href={item.href}
-        onClick={onNavigate}
-        className={`flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium hover:bg-neutral-100 ${
-          item.accent ? "text-accent-600" : "text-neutral-700"
-        }`}
-      >
-        {item.label}
-        {item.count ? <CountBadge count={item.count} /> : null}
-      </Link>
-    ));
+    accountItems.map((item) =>
+      item.kind === "section" ? (
+        <p
+          key={`section-${item.label}`}
+          className="px-3 pb-0.5 pt-3 text-[11px] font-bold uppercase tracking-wider text-neutral-400"
+        >
+          {item.label}
+        </p>
+      ) : (
+        <Link
+          key={item.href + item.label}
+          href={item.href}
+          onClick={onNavigate}
+          className={`flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium hover:bg-neutral-100 ${
+            item.accent ? "text-accent-600" : "text-neutral-700"
+          }`}
+        >
+          {item.label}
+          {item.count ? <CountBadge count={item.count} /> : null}
+        </Link>
+      )
+    );
 
   const signOutButton = (extraClass: string, onNavigate: () => void) => (
     <button

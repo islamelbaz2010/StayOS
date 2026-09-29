@@ -31,6 +31,9 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "admin": "Admin",
+    "adminConsole": "Admin Console",
+    "hosting": "Hosting",
+    "helpSupport": "Help & Support",
     "becomeHost": "Become a host",
     "hostGuide": "Hosting guide",
     "myListings": "My listings",
@@ -1947,7 +1950,17 @@
     "staff": "Staff",
     "overview": "Overview",
     "earnings": "Earnings",
-    "content": "Content"
+    "content": "Content",
+    "users": "Users",
+    "groups": {
+      "overview": "Overview",
+      "marketplace": "Marketplace & Supply",
+      "usersTrust": "Users & Trust",
+      "money": "Money",
+      "operations": "Operations",
+      "content": "Content",
+      "admin": "Admin"
+    }
   },
   "adminDisputes": {
     "title": "Disputes",

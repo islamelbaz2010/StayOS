@@ -17,6 +17,10 @@ Usage:
     # check-only (exit 1 on drift)
     python scripts/sync_bucket_cors.py --check
 
+    # guard: is this browser URL a valid storage-acceptance origin?
+    python scripts/sync_bucket_cors.py --check-origin \
+        https://stayos-abc123-islam-elbaz-s-projects.vercel.app
+
 Env required: S3_ENDPOINT_URL, S3_LISTINGS_BUCKET, S3_KYC_BUCKET,
 S3_PAYMENT_PROOF_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
 S3_KYC_ACCESS_KEY_ID, S3_KYC_SECRET_ACCESS_KEY,
@@ -121,7 +125,32 @@ def main() -> int:
     parser.add_argument("--apply", action="store_true", help="write canonical CORS rules")
     parser.add_argument("--check", action="store_true", help="verify only; exit 1 on drift")
     parser.add_argument("--stdin-env", action="store_true", help="read KEY=value env from stdin")
+    parser.add_argument(
+        "--check-origin",
+        metavar="URL",
+        help="verify a browser URL is a supported storage-acceptance origin "
+        "(exit 1 for per-deployment Vercel hostnames or unknown origins)",
+    )
     args = parser.parse_args()
+
+    if args.check_origin:
+        origin = args.check_origin.rstrip("/")
+        host = origin.split("//")[-1].split("/")[0]
+        if origin in ALLOWED_ORIGINS:
+            print(f"{origin}: canonical acceptance origin — OK")
+            return 0
+        if host.endswith(".vercel.app"):
+            print(
+                f"{origin}: UNSUPPORTED — per-deployment Vercel hostname; bucket "
+                "CORS whitelists stable aliases only. Run browser storage "
+                "acceptance on:\n  Preview:    "
+                + ALLOWED_ORIGINS[3]
+                + "\n  Production: "
+                + ALLOWED_ORIGINS[0]
+            )
+        else:
+            print(f"{origin}: not in ALLOWED_ORIGINS")
+        return 1
 
     if args.stdin_env:
         _load_stdin_env()

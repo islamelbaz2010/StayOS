@@ -31,6 +31,9 @@
     "signIn": "تسجيل الدخول",
     "signOut": "تسجيل الخروج",
     "admin": "الإدارة",
+    "adminConsole": "لوحة الإدارة",
+    "hosting": "الاستضافة",
+    "helpSupport": "المساعدة والدعم",
     "becomeHost": "أصبح مضيفاً",
     "hostGuide": "دليل الاستضافة",
     "myListings": "إعلاناتي",
@@ -1947,7 +1950,17 @@
     "staff": "الموظفون",
     "overview": "نظرة عامة",
     "earnings": "الإيرادات",
-    "content": "المحتوى"
+    "content": "المحتوى",
+    "users": "المستخدمون",
+    "groups": {
+      "overview": "نظرة عامة",
+      "marketplace": "السوق والمعروض",
+      "usersTrust": "المستخدمون والثقة",
+      "money": "الأموال",
+      "operations": "العمليات",
+      "content": "المحتوى",
+      "admin": "الإدارة"
+    }
   },
   "adminDisputes": {
     "title": "النزاعات",

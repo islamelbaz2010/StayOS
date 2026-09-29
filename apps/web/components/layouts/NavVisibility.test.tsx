@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 
 import messages from "@/messages/en.json";
+
+let mockLocale = "en";
+let mockUnread = { total_unread: 0 };
+let mockNotificationsUnread = { unread_count: 0 };
+let mockHostBookings: unknown[] = [];
 
 let mockAuth: {
   user: { role: string; staff_permissions?: string[] } | null;
@@ -18,8 +23,8 @@ let mockAuth: {
 };
 
 vi.mock("next/navigation", () => ({
-  useParams: () => ({ locale: "en" }),
-  usePathname: () => "/en",
+  useParams: () => ({ locale: mockLocale }),
+  usePathname: () => `/${mockLocale}`,
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
 }));
 
@@ -28,11 +33,17 @@ vi.mock("@/lib/auth/useAuth", () => ({
 }));
 
 vi.mock("@/lib/queries/messages", () => ({
-  useUnreadCount: () => ({ data: { total_unread: 0 } }),
+  useUnreadCount: () => ({ data: mockUnread }),
+}));
+
+vi.mock("@/lib/queries/notifications", () => ({
+  useNotifications: () => ({
+    data: { unread_count: mockNotificationsUnread.unread_count },
+  }),
 }));
 
 vi.mock("@/lib/queries/bookings", () => ({
-  useHostBookings: () => ({ data: [] }),
+  useHostBookings: () => ({ data: mockHostBookings }),
 }));
 
 vi.mock("@/lib/queries/hostListings", () => ({
@@ -42,13 +53,23 @@ vi.mock("@/lib/queries/hostListings", () => ({
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 
-function renderWith(ui: React.ReactNode) {
+import arMessages from "@/messages/ar.json";
+
+function renderWith(
+  ui: React.ReactNode,
+  opts: { locale?: string } = {}
+) {
+  const locale = opts.locale ?? "en";
+  mockLocale = locale;
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <NextIntlClientProvider locale="en" messages={messages}>
+      <NextIntlClientProvider
+        locale={locale}
+        messages={locale === "ar" ? arMessages : messages}
+      >
         {ui}
       </NextIntlClientProvider>
     </QueryClientProvider>
@@ -65,6 +86,7 @@ function as(role: string | null, staffPermissions: string[] = []) {
 }
 
 const t = messages.nav as Record<string, string>;
+const tAr = arMessages.nav as Record<string, string>;
 
 describe("Header role visibility", () => {
   beforeEach(() => as(null));
@@ -73,7 +95,7 @@ describe("Header role visibility", () => {
     renderWith(<Header />);
     expect(screen.getAllByText(t.search).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.signIn).length).toBeGreaterThan(0);
-    expect(screen.queryByText(t.admin)).toBeNull();
+    expect(screen.queryByText(t.adminConsole)).toBeNull();
     expect(screen.queryByText(t.account)).toBeNull();
     expect(screen.queryByText(t.messages)).toBeNull();
   });
@@ -87,32 +109,32 @@ describe("Header role visibility", () => {
     expect(screen.getByRole("link", { name: t.profile })).toHaveAttribute("href", "/en/profile");
     expect(screen.getByRole("link", { name: t.accountSettings })).toHaveAttribute("href", "/en/account-settings");
     expect(screen.getByRole("link", { name: t.notifications })).toHaveAttribute("href", "/en/notifications");
-    expect(screen.queryByText(t.admin)).toBeNull();
+    expect(screen.queryByText(t.adminConsole)).toBeNull();
   });
 
   it("staff without permissions gets NO admin link (dead-end 403)", () => {
     as("staff", []);
     renderWith(<Header />);
-    expect(screen.queryByText(t.admin)).toBeNull();
+    expect(screen.queryByText(t.adminConsole)).toBeNull();
   });
 
   it("staff with a permission gets the admin link", () => {
     as("staff", ["listings"]);
     renderWith(<Header />);
-    expect(screen.getAllByText(t.admin).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t.adminConsole).length).toBeGreaterThan(0);
   });
 
   it("field_staff never gets an admin link", () => {
     as("field_staff");
     renderWith(<Header />);
-    expect(screen.queryByText(t.admin)).toBeNull();
+    expect(screen.queryByText(t.adminConsole)).toBeNull();
   });
 
   it("host sees host workspace + earnings + trips but no admin link", () => {
     as("host");
     renderWith(<Header />);
     expect(screen.getAllByText(t.hostDashboard).length).toBeGreaterThan(0);
-    expect(screen.queryByText(t.admin)).toBeNull();
+    expect(screen.queryByText(t.adminConsole)).toBeNull();
     // Hosts book as marketplace users too — trips/favorites stay visible.
     expect(screen.getAllByText(t.trips).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.favorites).length).toBeGreaterThan(0);
@@ -138,7 +160,7 @@ describe("Header role visibility", () => {
   it("admin sees the admin link", () => {
     as("admin");
     renderWith(<Header />);
-    expect(screen.getAllByText(t.admin).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t.adminConsole).length).toBeGreaterThan(0);
   });
 });
 
@@ -255,5 +277,156 @@ describe("Footer role visibility", () => {
       expect(hrefs).toContain("/en/search");
       unmount();
     }
+  });
+});
+
+/** Ordered hrefs + section labels inside the desktop account dropdown. */
+function accountMenuEntries(container: HTMLElement): string[] {
+  const menu = container.querySelector('[role="menu"]');
+  expect(menu).not.toBeNull();
+  return Array.from(menu!.querySelectorAll("a, p"))
+    .filter((el) => el.tagName === "A" || el.className.includes("uppercase"))
+    .map((el) =>
+      el.tagName === "A" ? (el.getAttribute("href") ?? "") : `SECTION:${el.textContent}`
+    );
+}
+
+describe("Account menu information architecture", () => {
+  beforeEach(() => {
+    as(null);
+    mockLocale = "en";
+    mockUnread = { total_unread: 0 };
+    mockNotificationsUnread = { unread_count: 0 };
+    mockHostBookings = [];
+  });
+
+  it("guest menu: profile → trips → favorites → comms → settings → support sections", () => {
+    as("guest");
+    const { container } = renderWith(<Header />);
+    const entries = accountMenuEntries(container);
+    const order = [
+      "/en/profile",
+      "/en/bookings",
+      "/en/favorites",
+      "/en/messages",
+      "/en/notifications",
+      "/en/account-settings",
+      "/en/become-a-host",
+      `SECTION:${t.helpSupport}`,
+      "/en/help",
+      "/en/support",
+    ];
+    expect(entries).toEqual(order);
+    // payments/language are consolidated under Account Settings, not duplicated
+    expect(entries).not.toContain("/en/payments");
+    expect(entries.filter((e) => e === "/en/support")).toHaveLength(1);
+  });
+
+  it("host menu adds a Hosting section with dashboard/listings/earnings/guide", () => {
+    as("host");
+    const { container } = renderWith(<Header />);
+    const entries = accountMenuEntries(container);
+    const hostingIdx = entries.indexOf(`SECTION:${t.hosting}`);
+    expect(hostingIdx).toBeGreaterThan(-1);
+    const afterHosting = entries.slice(hostingIdx);
+    expect(afterHosting).toEqual(
+      expect.arrayContaining([
+        "/en/host",
+        "/en/host/listings",
+        "/en/host/earnings",
+        "/en/host/guide",
+      ])
+    );
+    // dashboard comes first inside Hosting
+    expect(entries.indexOf("/en/host")).toBeLessThan(entries.indexOf("/en/host/guide"));
+    // language is at top level for hosts; payments stays inside settings
+    expect(entries).toContain("/en/account-settings/language");
+    expect(entries).not.toContain("/en/payments");
+    expect(entries).not.toContain("/en/admin");
+  });
+
+  it("host unread + pending badges render inside the menu", () => {
+    as("host");
+    mockUnread = { total_unread: 3 };
+    mockNotificationsUnread = { unread_count: 2 };
+    mockHostBookings = [{ id: "b1" }];
+    const { container } = renderWith(<Header />);
+    const menu = container.querySelector('[role="menu"]')!;
+    const messagesLink = Array.from(menu.querySelectorAll("a")).find(
+      (a) => a.getAttribute("href") === "/en/messages"
+    );
+    const hostLink = Array.from(menu.querySelectorAll("a")).find(
+      (a) => a.getAttribute("href") === "/en/host"
+    );
+    expect(messagesLink?.textContent).toContain("3");
+    expect(hostLink?.textContent).toContain("1");
+  });
+
+  it("admin gets a lean ops menu: no trips/favorites/messages duplicates", () => {
+    as("admin");
+    const { container } = renderWith(<Header />);
+    const entries = accountMenuEntries(container);
+    expect(entries).toContain("/en/admin");
+    expect(entries).toContain("/en/profile");
+    expect(entries).toContain("/en/account-settings");
+    expect(entries).toContain("/en/account-settings/language");
+    expect(entries).toContain("/en/help");
+    expect(entries).toContain("/en/support");
+    // consumer marketplace links stay out of the ops menu
+    expect(entries).not.toContain("/en/bookings");
+    expect(entries).not.toContain("/en/favorites");
+    expect(entries).not.toContain("/en/messages");
+    expect(entries).not.toContain("/en/payments");
+    expect(entries).not.toContain("/en/host");
+  });
+
+  it("staff with console access gets the admin-style menu", () => {
+    as("staff", ["kyc"]);
+    const { container } = renderWith(<Header />);
+    const entries = accountMenuEntries(container);
+    expect(entries).toContain("/en/admin");
+    expect(entries).not.toContain("/en/bookings");
+  });
+
+  it("staff without console access gets the marketplace menu without admin", () => {
+    as("staff", []);
+    const { container } = renderWith(<Header />);
+    const entries = accountMenuEntries(container);
+    expect(entries).toContain("/en/bookings");
+    expect(entries).toContain("/en/messages");
+    expect(entries).not.toContain("/en/admin");
+  });
+
+  it("Arabic labels render in the menu including Hosting guide", () => {
+    as("host");
+    const { container } = renderWith(<Header />, { locale: "ar" });
+    const entries = accountMenuEntries(container);
+    expect(entries).toContain(`SECTION:${tAr.hosting}`);
+    expect(entries).toContain(`SECTION:${tAr.helpSupport}`);
+    expect(entries).toContain("/ar/host/guide");
+    const guideLink = Array.from(container.querySelectorAll("a")).find(
+      (a) => a.getAttribute("href") === "/ar/host/guide"
+    );
+    expect(guideLink?.textContent).toContain("دليل الاستضافة");
+  });
+
+  it("mobile menu mirrors the same IA and closes on navigation", () => {
+    as("guest");
+    const { container } = renderWith(<Header />);
+    const toggle = screen.getByRole("button", { name: t.toggleMenu });
+    fireEvent.click(toggle);
+    const mobileNavs = container.querySelectorAll("nav");
+    const mobileNav = mobileNavs[mobileNavs.length - 1];
+    const entries = Array.from(mobileNav.querySelectorAll("a, p")).map((el) =>
+      el.tagName === "A" ? (el.getAttribute("href") ?? "") : `SECTION:${el.textContent}`
+    );
+    expect(entries).toContain("/en/bookings");
+    expect(entries).toContain(`SECTION:${t.helpSupport}`);
+    // click a menu link → the mobile drawer unmounts
+    const link = Array.from(mobileNav.querySelectorAll("a")).find(
+      (a) => a.getAttribute("href") === "/en/bookings"
+    );
+    fireEvent.click(link!);
+    expect(container.querySelector("nav")).not.toBe(mobileNav);
   });
 });

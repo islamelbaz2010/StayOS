@@ -4,9 +4,17 @@
 Each case lists actor, preconditions, steps, expected result, evidence, and status
 (`PENDING` / `PASS` / `FAIL` / `BLOCKED-EXTERNAL`).
 
-**Environment:** API `https://stayos-demo-production.up.railway.app` · Web Vercel
-preview (SSO-gated) · TEST payment credentials · seed accounts via
-`POST /auth/dev-token` (dev env only).
+**Environment:** API `https://stayos-demo-production.up.railway.app` · TEST payment
+credentials · seed accounts via `POST /auth/dev-token` (dev env only).
+
+**Canonical browser URLs (required for upload/storage acceptance):**
+- Preview: `https://stayos-git-product-completion-review-islam-elbaz-s-projects.vercel.app`
+  (SSO-gated; `product-completion-review` branch)
+- Production: `https://web-amber-pi-98.vercel.app` (`main` branch)
+
+Per-deployment Vercel hostnames (`stayos-<hash>-…vercel.app`) are intentionally
+NOT in bucket CORS — preflights there return 403. Storage-related acceptance on a
+random deployment URL is invalid; always run it on a canonical alias.
 
 Repeat columns: mark each case **Web** now; **iOS**/**Android** when the mobile
 builds exist (section 5).
@@ -41,9 +49,9 @@ builds exist (section 5).
 | ID | Scenario | Steps | Expected | Status |
 |----|----------|-------|----------|--------|
 | MA-H-001 | Become host | Guest → Become a host → KYC initiate | KYC flow starts | |
-| MA-H-002 | KYC submit | Upload docs | Pending state (manual review per FD-02) | BLOCKED-EXTERNAL for upload (S3); manual-review path testable |
+| MA-H-002 | KYC submit | Upload docs (canonical URL only) | Pending state (manual review per FD-02) | |
 | MA-H-003 | Listing create | New listing → details | Draft created | |
-| MA-H-004 | Photos | Upload ≥1 photo, set cover, reorder | Stored + ordered | BLOCKED-EXTERNAL (S3) |
+| MA-H-004 | Photos | Upload ≥1 photo, set cover, reorder (canonical URL only) | Stored + ordered | |
 | MA-H-005 | Pricing & discounts | Base price + weekly/monthly/listing discount | Saved; quote reflects one applicable discount (FD-08/20) | |
 | MA-H-006 | Availability rules | Block dates; bulk price/availability | Calendar enforced on guest side | |
 | MA-H-007 | Readiness | Open readiness check | Missing items listed; publish gated (FD-22) | |
@@ -69,7 +77,7 @@ builds exist (section 5).
 | MA-A-003 | KYC review | Pending queue → approve/reject | User status updated | |
 | MA-A-004 | Listing moderation | Pending queue → approve/reject | Host notified; listing state correct | |
 | MA-A-005 | Booking oversight | Open reservation | Read-only operational detail | |
-| MA-A-006 | Payment verify/reject | Manual proof queue | Verification applied | BLOCKED-EXTERNAL (S3 proof upload) |
+| MA-A-006 | Payment verify/reject | Manual proof queue (canonical URL only) | Verification applied | |
 | MA-A-007 | Refund | Issue refund on cancelled booking | Provider refund or `refund_pending` | |
 | MA-A-008 | Finance | Wallet/ledger/escrow views | Balanced entries | |
 | MA-A-009 | Payout process | Process eligible payout | Fail-closed without provider creds (expected) | |

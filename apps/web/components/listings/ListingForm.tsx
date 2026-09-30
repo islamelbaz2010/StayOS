@@ -13,7 +13,22 @@ import {
   type ListingCreateInput,
   type ListingUpdateInput,
 } from "@/lib/queries/hostListings";
-import { LocationPicker } from "@/components/listings/LocationPicker";
+import dynamic from "next/dynamic";
+
+// Leaflet touches `window` at import time — LocationPicker must never be
+// in the SSR bundle (same pattern as ListingMap/SearchMap).
+const LocationPicker = dynamic(
+  () =>
+    import("@/components/listings/LocationPicker").then(
+      (m) => m.LocationPicker,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 w-full animate-pulse rounded-xl bg-neutral-100" />
+    ),
+  },
+);
 import { useLocationTree } from "@/lib/queries/locations";
 
 const PROPERTY_TYPES = [

@@ -182,6 +182,8 @@
     "rejectionReason": "Rejection reason",
     "readinessTitle": "Listing readiness",
     "readinessMissing": "Missing before review: {items}",
+    "payoutRequiredHint": "Payout preference is required before submitting this listing for review.",
+    "setPayoutCta": "Set payout preferences",
     "readOnlyScope": "You can view this listing but your co-host scope does not allow editing it.",
     "notEditable": "This listing is read-only for your role.",
     "instantBook": "Instant Book",
@@ -220,6 +222,7 @@
     "saveDraft": "Save Draft",
     "saveChanges": "Save Changes",
     "submitForReview": "Submit for review",
+    "setPayoutCta": "Set payout preferences",
     "autosaving": "Saving...",
     "autosaved": "Saved",
     "unsavedChanges": "You have unsaved changes",
@@ -892,7 +895,13 @@
       "completed": "Completed"
     },
     "hostSpeaks": "Speaks: {languages}",
-    "nights": "{count, plural, =1 {# night} other {# nights}}"
+    "nights": "{count, plural, =1 {# night} other {# nights}}",
+    "guestInfo": "Guest",
+    "guestInfoUnavailable": "Guest details are not available for this booking.",
+    "memberSince": "Member since {date}",
+    "guestReviewsCount": "{count, plural, =0 {No reviews} one {# review} other {# reviews}}",
+    "guestRating": "Rating {rating}",
+    "messageGuest": "Message guest"
   },
   "booking": {
     "title": "Request to book",

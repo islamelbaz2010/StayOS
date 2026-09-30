@@ -11,19 +11,23 @@ import { getApiErrorMessage } from "@/lib/utils";
 interface ContactHostButtonProps {
   unitId: string;
   locale: string;
+  hostId?: string;
   className?: string;
 }
 
-export function ContactHostButton({ unitId, locale, className }: ContactHostButtonProps) {
+export function ContactHostButton({ unitId, locale, hostId, className }: ContactHostButtonProps) {
   const t = useTranslations("listing");
   const router = useRouter();
-  const { isAuthenticated, isGuest } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const contactHost = useContactHost();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  if (!isAuthenticated || !isGuest) return null;
+  // Any authenticated marketplace account may contact a host — capability,
+  // not role — but never on their own listing.
+  if (!isAuthenticated || (hostId != null && user?.id === hostId))
+    return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

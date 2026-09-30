@@ -33,9 +33,11 @@ export default function EditListingPage({
 
   const scope = detail?.permission_scope;
   const canEdit = scope == null || EDIT_SCOPES.has(scope);
+  const missingKeys = detail?.readiness?.missing_items ?? [];
   const missingItems = detail?.readiness?.missing_item_labels
     ? Object.values(detail.readiness.missing_item_labels)
     : [];
+  const payoutMissing = missingKeys.includes("payout_info");
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
@@ -107,6 +109,17 @@ export default function EditListingPage({
                         items: missingItems.join(", "),
                       })}
                     </p>
+                    {payoutMissing && (
+                      <p className="mt-2 text-sm text-neutral-600">
+                        {th("payoutRequiredHint")}{" "}
+                        <Link
+                          href={`/${locale}/host/profile`}
+                          className="font-semibold text-accent-600 hover:text-accent-700"
+                        >
+                          {th("setPayoutCta")}
+                        </Link>
+                      </p>
+                    )}
                   </div>
                 )}
                 <ListingForm existingListing={listing} unitId={unitId} />

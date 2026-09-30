@@ -175,7 +175,8 @@ export function Header() {
 
     if (user?.role === "admin" || (user?.role === "staff" && hasAdminAccess)) {
       // Operational accounts get a lean menu — admin surfaces live behind
-      // one entry; consumer booking links stay off the ops menu.
+      // one entry. Trips stays reachable: any account can book under the
+      // capability model, so booking/payment access must not dead-end here.
       accountItems.push(
         link({ href: `/${locale}/profile`, label: t("profile") }),
         link({
@@ -184,6 +185,7 @@ export function Header() {
           count: adminPendingCount,
           accent: true,
         }),
+        link({ href: `/${locale}/bookings`, label: t("trips") }),
         link({
           href: `/${locale}/account-settings`,
           label: t("accountSettings"),

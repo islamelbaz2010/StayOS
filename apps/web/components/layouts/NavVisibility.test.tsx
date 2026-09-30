@@ -366,7 +366,7 @@ describe("Account menu information architecture", () => {
     expect(hostLink?.textContent).toContain("1");
   });
 
-  it("admin gets a lean ops menu: no trips/favorites/messages duplicates", () => {
+  it("admin gets a lean ops menu: no favorites/messages duplicates", () => {
     as("admin");
     const { container } = renderWith(<Header />);
     const entries = accountMenuEntries(container);
@@ -376,8 +376,9 @@ describe("Account menu information architecture", () => {
     expect(entries).toContain("/en/account-settings/language");
     expect(entries).toContain("/en/help");
     expect(entries).toContain("/en/support");
+    // Trips stays reachable — admins can book under the capability model.
+    expect(entries).toContain("/en/bookings");
     // consumer marketplace links stay out of the ops menu
-    expect(entries).not.toContain("/en/bookings");
     expect(entries).not.toContain("/en/favorites");
     expect(entries).not.toContain("/en/messages");
     expect(entries).not.toContain("/en/payments");
@@ -389,7 +390,7 @@ describe("Account menu information architecture", () => {
     const { container } = renderWith(<Header />);
     const entries = accountMenuEntries(container);
     expect(entries).toContain("/en/admin");
-    expect(entries).not.toContain("/en/bookings");
+    expect(entries).toContain("/en/bookings");
   });
 
   it("staff without console access gets the marketplace menu without admin", () => {

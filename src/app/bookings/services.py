@@ -934,7 +934,9 @@ async def get_stay_info(session: AsyncSession, user: User, booking_id: str) -> S
     cover_image = _unit_cover_image(unit)
 
     return StayInfoResponse(
-        booking=_to_response(booking),
+        booking=_to_response(
+            booking, **await _host_viewer_context(session, booking, user)
+        ),
         property=StayPropertyInfo(
             unit_id=booking.unit_id,
             title=(listing.title_en or listing.title_ar) if listing is not None else None,
@@ -1068,18 +1070,21 @@ async def create_booking(
     return _to_response(booking)
 
 
-async def get_booking(
-    session: AsyncSession, user: User, booking_id: str
-) -> BookingResponse:
-    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    await _assert_authorized_to_view(session, booking, user)
+async def _host_viewer_context(
+    session: AsyncSession, booking: Booking, user: User
+) -> dict:
+    """Host-facing viewer context for a booking response.
+
+    When the viewer is an authorized host/co-host/admin for the booking's
+    unit (rather than the booking guest), populate the guest trust context
+    (name, verification status, member-since, review activity). All fields
+    stay null when the guest views their own booking — the data is
+    host-facing only. Shared by ``get_booking`` and ``get_stay_info`` so
+    every booking detail surface honors the same capability model.
+    """
     scope: str | None = None
     if user.role in (UserRole.HOST, UserRole.ADMIN, UserRole.STAFF) and booking.guest_id != user.id:
         scope = await _unit_permission_scope(session, booking, user)
-    # When the viewer is an authorized host/co-host, populate the
-    # guest trust context (name, verification status, member-since,
-    # review activity). These fields stay null when the guest views
-    # their own booking — the data is host-facing only.
     guest_name: str | None = None
     guest_kyc_status: str | None = None
     guest_member_since: datetime | None = None
@@ -1104,14 +1109,23 @@ async def get_booking(
                 session, booking.guest_id
             )
         )
+    return {
+        "permission_scope": scope,
+        "guest_name": guest_name,
+        "guest_kyc_status": guest_kyc_status,
+        "guest_member_since": guest_member_since,
+        "guest_reviews_count": guest_reviews_count,
+        "guest_average_rating": guest_average_rating,
+    }
+
+
+async def get_booking(
+    session: AsyncSession, user: User, booking_id: str
+) -> BookingResponse:
+    booking = await bookings_repository.get_booking_or_raise(session, booking_id)
+    await _assert_authorized_to_view(session, booking, user)
     return _to_response(
-        booking,
-        permission_scope=scope,
-        guest_name=guest_name,
-        guest_kyc_status=guest_kyc_status,
-        guest_member_since=guest_member_since,
-        guest_reviews_count=guest_reviews_count,
-        guest_average_rating=guest_average_rating,
+        booking, **await _host_viewer_context(session, booking, user)
     )
 
 

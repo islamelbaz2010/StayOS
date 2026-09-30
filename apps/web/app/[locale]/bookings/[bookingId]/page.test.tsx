@@ -7,6 +7,18 @@ import en from "@/messages/en.json";
 import ar from "@/messages/ar.json";
 
 let mockStay: Record<string, unknown> | null = null;
+let mockPayment: Record<string, unknown> | null = null;
+let mockUser: { id: string; role: string } | null = null;
+
+vi.mock("@/lib/auth/useAuth", () => ({
+  useAuth: () => ({
+    user: mockUser,
+    isAuthenticated: mockUser !== null,
+    isGuest: mockUser?.role === "guest",
+    isHost: mockUser?.role === "host",
+    isLoading: false,
+  }),
+}));
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ locale: "en", bookingId: "b1" }),
@@ -27,7 +39,7 @@ vi.mock("@/lib/queries/bookings", () => ({
 }));
 
 vi.mock("@/lib/queries/payments", () => ({
-  usePaymentByBooking: () => ({ data: null }),
+  usePaymentByBooking: () => ({ data: mockPayment }),
 }));
 
 vi.mock("@/lib/queries/messages", () => ({
@@ -67,6 +79,7 @@ function makeStay(cancelReason: string | null) {
     booking: {
       id: "b1",
       unit_id: "u1",
+      guest_id: "guest-1",
       status: "cancelled",
       stay_phase: "cancelled",
       cancel_reason: cancelReason,
@@ -127,4 +140,102 @@ describe("Trip detail — cancellation reason", () => {
       expect(screen.queryByText("host_cancelled")).toBeNull();
     }
   );
+});
+
+function makeAcceptedStay() {
+  const stay = makeStay(null);
+  return {
+    ...stay,
+    booking: {
+      ...stay.booking,
+      status: "accepted",
+      stay_phase: "upcoming",
+      cancel_reason: null,
+    },
+    host: {
+      name: "Host Person",
+      phone: "+201000000000",
+      kyc_status: "verified",
+      languages: ["Arabic"],
+    },
+    arrival: {
+      eligible: false,
+      check_in_instructions: null,
+      default_check_in_time: "15:00",
+      default_check_out_time: "11:00",
+    },
+  };
+}
+
+function makeHostViewerStay() {
+  const stay = makeStay(null);
+  return {
+    ...stay,
+    booking: {
+      ...stay.booking,
+      status: "confirmed",
+      stay_phase: "check_in_ready",
+      cancel_reason: null,
+      permission_scope: "owner",
+      guest_name: "Guest Person",
+      guest_kyc_status: "verified",
+      guest_member_since: "2025-01-15T00:00:00Z",
+      guest_reviews_count: 3,
+      guest_average_rating: 4.5,
+    },
+    host: {
+      name: "Host Person",
+      phone: "+201000000000",
+      kyc_status: "verified",
+      languages: [],
+    },
+    arrival: {
+      eligible: false,
+      check_in_instructions: null,
+      default_check_in_time: "15:00",
+      default_check_out_time: "11:00",
+    },
+  };
+}
+
+describe("Trip detail — capability-based access", () => {
+  it("booking owner sees checkout CTA and payment card", () => {
+    mockUser = { id: "guest-1", role: "host" }; // host CAN be a booking owner
+    mockStay = makeAcceptedStay();
+    mockPayment = { status: "pending", amount_egp: 1200 };
+    renderPage(en as never, "en");
+
+    expect(screen.getByText("Complete payment")).toBeInTheDocument();
+    expect(screen.getByText("Payment status")).toBeInTheDocument();
+  });
+
+  it("non-owner host viewer sees payment + guest context, not guest actions", () => {
+    mockUser = { id: "host-1", role: "host" };
+    mockStay = makeHostViewerStay();
+    mockPayment = { status: "verified", amount_egp: 1200 };
+    renderPage(en as never, "en");
+
+    // Payment surface is visible to the authorized host viewer.
+    expect(screen.getByText("Payment status")).toBeInTheDocument();
+    // Guest trust context replaces the guest's "Your stay" host card.
+    expect(screen.getByText("Guest")).toBeInTheDocument();
+    expect(screen.getByText("Guest Person")).toBeInTheDocument();
+    expect(screen.queryByText("Your stay")).toBeNull();
+    // Guest-only actions are never rendered for non-owners.
+    expect(screen.queryByText("Complete payment")).toBeNull();
+    // Back link goes to host bookings, not the guest trips list.
+    const back = screen.getByText("My trips").closest("a");
+    expect(back?.getAttribute("href")).toContain("/host/bookings");
+  });
+
+  it("non-owner admin viewer without scope stays on the page", () => {
+    mockUser = { id: "admin-1", role: "admin" };
+    mockStay = makeHostViewerStay();
+    (mockStay.booking as Record<string, unknown>).permission_scope = null;
+    mockPayment = { status: "verified", amount_egp: 1200 };
+    renderPage(en as never, "en");
+
+    expect(screen.getByText("Payment status")).toBeInTheDocument();
+    expect(screen.queryByText("Complete payment")).toBeNull();
+  });
 });

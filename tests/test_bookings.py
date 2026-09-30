@@ -2573,6 +2573,62 @@ async def test_get_stay_info_includes_host_kyc_status(
 
 
 @pytest.mark.asyncio
+async def test_get_stay_info_host_viewer_receives_guest_trust_fields(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Authorized host viewing trip detail gets scope + guest trust context.
+
+    The booking/trip detail surface is capability-based — hosts, co-hosts,
+    and staff view bookings they don't own. The stay response must carry
+    the same host-facing context as get_booking so the frontend can render
+    the guest trust card instead of the guest's "your stay" card.
+    """
+    guest = _make_user(role=UserRole.GUEST, kyc_status=KycStatus.VERIFIED)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    unit.listing = _make_listing(unit.id)
+    booking = _make_booking(
+        unit, guest, status=BookingStatus.CONFIRMED, check_in=_TODAY + timedelta(days=10)
+    )
+
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+    monkeypatch.setattr(
+        listings_repository, "get_unit_with_listing", AsyncMock(return_value=unit)
+    )
+    monkeypatch.setattr(
+        "app.bookings.services.host_permissions.get_unit_permission_scope",
+        AsyncMock(return_value="owner"),
+    )
+    coord_result = MagicMock()
+    coord_result.one.return_value = MagicMock(lat=30.0, lng=31.0)
+    host_result = MagicMock()
+    host_result.scalar_one_or_none.return_value = host
+    guest_result = MagicMock()
+    guest_result.scalar_one_or_none.return_value = guest
+    fake_session.execute = AsyncMock(
+        side_effect=[coord_result, host_result, guest_result]
+    )
+    monkeypatch.setattr(
+        "app.reviews.repository.count_reviews_by_guest",
+        AsyncMock(return_value=2),
+    )
+    monkeypatch.setattr(
+        "app.reviews.repository.get_guest_rating_aggregate",
+        AsyncMock(return_value=(4.0, 2)),
+    )
+
+    result = await booking_services.get_stay_info(fake_session, host, booking.id)
+
+    assert result.booking.permission_scope == "owner"
+    assert result.booking.guest_name == "Test User"
+    assert result.booking.guest_kyc_status == "verified"
+    assert result.booking.guest_reviews_count == 2
+    assert result.booking.guest_average_rating == 4.0
+
+
+@pytest.mark.asyncio
 async def test_get_stay_info_host_kyc_null_when_unverified(
     fake_session: AsyncMock, monkeypatch
 ) -> None:

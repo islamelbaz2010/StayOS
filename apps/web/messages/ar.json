@@ -182,6 +182,8 @@
     "rejectionReason": "سبب الرفض",
     "readinessTitle": "جاهزية الإعلان",
     "readinessMissing": "ناقص قبل المراجعة: {items}",
+    "payoutRequiredHint": "تفضيل الدفع مطلوب قبل إرسال هذا الإعلان للمراجعة.",
+    "setPayoutCta": "تحديد تفضيلات الدفع",
     "readOnlyScope": "يمكنك عرض هذا الإعلان لكن صلاحياتك كمضيف مشارك لا تسمح بتعديله.",
     "notEditable": "هذا الإعلان للقراءة فقط لدورك.",
     "instantBook": "حجز فوري",
@@ -220,6 +222,7 @@
     "saveDraft": "حفظ المسودة",
     "saveChanges": "حفظ التغييرات",
     "submitForReview": "إرسال للمراجعة",
+    "setPayoutCta": "تحديد تفضيلات الدفع",
     "autosaving": "جاري الحفظ...",
     "autosaved": "تم الحفظ",
     "unsavedChanges": "لديك تغييرات غير محفوظة",
@@ -892,7 +895,13 @@
       "completed": "مكتمل"
     },
     "hostSpeaks": "يتحدث: {languages}",
-    "nights": "{count, plural, =1 {# ليلة} =2 {ليلتان} few {# ليالٍ} other {# ليلة}}"
+    "nights": "{count, plural, =1 {# ليلة} =2 {ليلتان} few {# ليالٍ} other {# ليلة}}",
+    "guestInfo": "الضيف",
+    "guestInfoUnavailable": "تفاصيل الضيف غير متاحة لهذا الحجز.",
+    "memberSince": "عضو منذ {date}",
+    "guestReviewsCount": "{count, plural, =0 {لا توجد تقييمات} one {# تقييم} two {# تقييمان} few {# تقييمات} other {# تقييم}}",
+    "guestRating": "التقييم {rating}",
+    "messageGuest": "مراسلة الضيف"
   },
   "booking": {
     "title": "طلب حجز",

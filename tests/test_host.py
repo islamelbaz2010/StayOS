@@ -421,6 +421,33 @@ async def test_listing_readiness_complete(
 
 
 @pytest.mark.asyncio
+async def test_listing_readiness_draft_reaches_ready(
+    fake_session: AsyncMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: a fully-provisioned DRAFT must reach READY.
+
+    The DRAFT status itself used to be counted as a missing
+    "authorization" check ("Submit listing for review"), so no draft
+    could ever be READY while submit_for_review required READY — every
+    listing was deadlocked before review. Submission is a state
+    transition, not a readiness prerequisite.
+    """
+    unit = _make_unit(host_id="host-1", unit_id="unit-1", status=UnitStatus.DRAFT)
+    listing = _make_listing("unit-1")
+    _mock_host_level_checks(monkeypatch, fake_session)
+
+    photo_result = MagicMock()
+    photo_result.scalar.return_value = 3
+    fake_session.execute = AsyncMock(return_value=photo_result)
+
+    result = await host_services.compute_listing_readiness(fake_session, unit, listing)
+    assert result.status == host_constants.ListingReadinessStatus.READY
+    assert result.missing_items == []
+    assert "authorization" not in result.missing_item_labels
+    assert result.readiness_pct == 100
+
+
+@pytest.mark.asyncio
 async def test_listing_readiness_missing_photos(
     fake_session: AsyncMock, monkeypatch: pytest.MonkeyPatch
 ) -> None:

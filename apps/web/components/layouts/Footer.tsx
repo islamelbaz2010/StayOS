@@ -73,7 +73,7 @@ export function Footer() {
                   {t("search")}
                 </Link>
               </li>
-              {!isInternal && user?.role === "guest" && (
+              {!isInternal && user && (
                 <li>
                   <Link
                     href={`/${locale}/bookings`}

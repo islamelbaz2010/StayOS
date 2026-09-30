@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
+import { useAuth } from "@/lib/auth/useAuth";
 import { CancelBookingButton } from "@/components/bookings/CancelBookingButton";
 import { LeaveReviewForm } from "@/components/bookings/LeaveReviewForm";
 import { StayTimeline } from "@/components/bookings/StayTimeline";
@@ -78,6 +79,7 @@ function TripContent({
   const t = useTranslations("trips");
   const tp = useTranslations("payment");
   const tc = useTranslations("common");
+  const { user } = useAuth();
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
 
   const [actionError, setActionError] = useState<string | null>(null);
@@ -128,9 +130,41 @@ function TripContent({
     phase === "checkout_ready" ||
     phase === "check_in_ready" ||
     phase === "upcoming";
+  // Capability model, not role model: the booking owner sees guest
+  // actions (checkout, review); authorized host/co-host/staff viewers see
+  // the guest trust context instead. Backend authorization is enforced
+  // per endpoint regardless of what is rendered here.
+  const isOwner = user?.id != null && booking.guest_id === user.id;
+  const hostScope = booking.permission_scope;
+  const backHref = isOwner
+    ? `/${locale}/bookings`
+    : user?.role === "admin"
+      ? `/${locale}/admin/bookings`
+      : hostScope && user?.role === "host"
+        ? `/${locale}/host/bookings?bookingId=${booking.id}`
+        : `/${locale}/bookings`;
 
   return (
     <div className="space-y-6">
+      <Link
+        href={backHref}
+        className="inline-flex items-center text-sm text-neutral-500 hover:text-neutral-700"
+      >
+        <svg
+          className="h-4 w-4 rtl:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15.75 19.5L8.25 12l7.5-7.5"
+          />
+        </svg>
+        <span className="ms-2">{t("title")}</span>
+      </Link>
       <div className="card p-5 sm:p-6">
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-neutral-100">
           <Image
@@ -254,12 +288,14 @@ function TripContent({
                   })}
                 </p>
               )}
-              <Link
-                href={`/${locale}/checkout/${booking.id}`}
-                className="mt-3 inline-block font-semibold text-accent-600 hover:text-accent-700"
-              >
-                {tp("reuploadCta")}
-              </Link>
+              {isOwner && (
+                <Link
+                  href={`/${locale}/checkout/${booking.id}`}
+                  className="mt-3 inline-block font-semibold text-accent-600 hover:text-accent-700"
+                >
+                  {tp("reuploadCta")}
+                </Link>
+              )}
             </div>
           )}
 
@@ -387,7 +423,7 @@ function TripContent({
         </div>
       )}
 
-      {showStayInfo && (
+      {showStayInfo && isOwner && (
         <div className="card p-5 sm:p-6">
           <h3 className="mb-3 text-lg font-bold text-brand-900">
             {t("stayInfo")}
@@ -450,8 +486,86 @@ function TripContent({
         </div>
       )}
 
+      {!isOwner && (
+        <div className="card p-5 sm:p-6">
+          <h3 className="mb-3 text-lg font-bold text-brand-900">
+            {t("guestInfo")}
+          </h3>
+          {booking.guest_name ? (
+            <>
+              <p className="font-medium text-brand-900">{booking.guest_name}</p>
+              {booking.guest_kyc_status === "verified" && (
+                <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-success-700">
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {t("hostVerified")}
+                </span>
+              )}
+              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
+                {booking.guest_member_since && (
+                  <p>
+                    {t("memberSince", {
+                      date: formatDate(
+                        new Date(booking.guest_member_since),
+                        dateLocale
+                      ),
+                    })}
+                  </p>
+                )}
+                {booking.guest_reviews_count != null && (
+                  <p>
+                    {t("guestReviewsCount", {
+                      count: booking.guest_reviews_count,
+                    })}
+                  </p>
+                )}
+                {booking.guest_average_rating != null && (
+                  <p>
+                    {t("guestRating", {
+                      rating: booking.guest_average_rating.toFixed(1),
+                    })}
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-neutral-500">{t("guestInfoUnavailable")}</p>
+          )}
+          {conversation.data && (
+            <Link
+              href={`/${locale}/messages/${conversation.data.id}`}
+              className="mt-2 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
+            >
+              {t("messageGuest")}
+            </Link>
+          )}
+          {property.house_rules && (
+            <div className="mt-4 rounded-md bg-neutral-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                {t("houseRules")}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">
+                {property.house_rules}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-3">
-        {booking.status === "accepted" && (
+        {isOwner && booking.status === "accepted" && (
           <Link
             href={`/${locale}/checkout/${booking.id}`}
             className="btn-primary w-full text-center"
@@ -531,34 +645,17 @@ function TripContent({
 }
 
 export default function TripDetailPage() {
-  const t = useTranslations("trips");
   const params = useParams<{ locale: string; bookingId: string }>();
   const locale = params?.locale ?? "ar";
   const bookingId = params?.bookingId ?? "";
 
+  // Any authenticated user may reach this route — backend authorization
+  // (booking owner / unit host / co-host scope / staff permission) is the
+  // source of truth, and the page renders relationship-aware content.
   return (
-    <ProtectedRoute allowedRoles={["guest"]}>
+    <ProtectedRoute>
       <GuestLayout>
         <section className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-          <Link
-            href={`/${locale}/bookings`}
-            className="mb-4 inline-flex items-center text-sm text-neutral-500 hover:text-neutral-700"
-          >
-            <svg
-              className="h-4 w-4 rtl:rotate-180"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.75 19.5L8.25 12l7.5-7.5"
-              />
-            </svg>
-            <span className="ms-2">{t("title")}</span>
-          </Link>
           <TripContent bookingId={bookingId} locale={locale} />
         </section>
       </GuestLayout>

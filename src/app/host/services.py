@@ -777,8 +777,10 @@ async def compute_listing_readiness(
     missing_labels: dict[str, str] = {}
 
     # Total checks = listing field checks + host/account-level checks
-    # (identity, authorization, availability, payout).
-    _EXTRA_CHECKS = 4
+    # (identity, availability, payout). Submission itself is NOT a
+    # readiness check — counting it here deadlocked every draft behind
+    # "Submit listing for review" while submit required READY.
+    _EXTRA_CHECKS = 3
 
     if listing is None:
         missing_items.append("listing_details")
@@ -823,16 +825,12 @@ async def compute_listing_readiness(
         missing_items.append("address")
         missing_labels["address"] = "Property address"
 
-    # Host/account-level checks (identity, authorization, availability,
-    # payout info) — FD-22. These gate activation, not drafting.
+    # Host/account-level checks (identity, availability, payout info) —
+    # FD-22. These gate submission/review, not drafting.
     host_user = await auth_repository.get_user_by_id(session, unit.host_id)
     if host_user is None or host_user.kyc_status != "verified":
         missing_items.append("identity_verified")
         missing_labels["identity_verified"] = "Host identity verified"
-
-    if unit.status == UnitStatus.DRAFT:
-        missing_items.append("authorization")
-        missing_labels["authorization"] = "Submit listing for review"
 
     # Availability: listing is "available" unless the next 30 days are
     # fully blocked by calendar rules.

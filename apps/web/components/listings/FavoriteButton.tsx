@@ -16,7 +16,7 @@ interface FavoriteButtonProps {
 export function FavoriteButton({ unitId, className, size = "sm" }: FavoriteButtonProps) {
   const t = useTranslations("listing");
   const locale = useLocale();
-  const { isAuthenticated, isGuest } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { data } = useFavorites();
   const toggleFavorite = useToggleFavorite();
 
@@ -42,7 +42,7 @@ export function FavoriteButton({ unitId, className, size = "sm" }: FavoriteButto
     </svg>
   );
 
-  if (!isAuthenticated || !isGuest) {
+  if (!isAuthenticated) {
     return (
       <Link
         href={`/${locale}/login`}

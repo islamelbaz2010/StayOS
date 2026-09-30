@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -1207,7 +1208,20 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             <span className="text-warning-600">{t("unsavedChanges")}</span>
           )}
           {errors.submit && (
-            <span className="text-danger-600">{errors.submit}</span>
+            <span className="text-danger-600">
+              {errors.submit}
+              {errors.submit.toLowerCase().includes("payout") && (
+                <>
+                  {" "}
+                  <Link
+                    href={`/${locale}/host/profile`}
+                    className="font-semibold underline hover:no-underline"
+                  >
+                    {t("setPayoutCta")}
+                  </Link>
+                </>
+              )}
+            </span>
           )}
         </div>
         <div className="flex gap-3">

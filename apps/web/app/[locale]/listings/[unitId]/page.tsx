@@ -325,7 +325,7 @@ export default function ListingDetailPage() {
                       </p>
                     )}
                     <div className="mt-4">
-                      <ContactHostButton unitId={unitId} locale={locale} />
+                      <ContactHostButton unitId={unitId} locale={locale} hostId={listing.hostId} />
                     </div>
                   </section>
                 )}

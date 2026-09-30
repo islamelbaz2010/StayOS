@@ -605,6 +605,74 @@ async def test_submit_for_review_succeeds_when_ready(
     set_status.assert_awaited_once()
 
 
+@pytest.mark.asyncio
+async def test_submit_for_review_draft_with_real_readiness(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: a fully-provisioned DRAFT can actually be submitted.
+
+    compute_listing_readiness previously counted the submission action
+    itself ("authorization" / "Submit listing for review") as a missing
+    check for DRAFT units while submit_for_review required READY — every
+    draft was deadlocked before review. This test runs the real
+    readiness computation (only its external dependencies are mocked).
+    """
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _submit_ready_unit()  # DRAFT by default
+
+    monkeypatch.setattr(
+        listings_repository,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        listings_services, "assert_owner_or_admin", AsyncMock()
+    )
+
+    # Satisfy the real readiness prerequisites:
+    # - photos: photo count query returns >= 1
+    # - identity: verified host user
+    # - availability: no blocked calendar rules
+    # - payout preference: account with payout_method
+    from app.auth import repository as auth_repository
+    from app.host import repository as host_repository
+
+    monkeypatch.setattr(
+        auth_repository,
+        "get_user_by_id",
+        AsyncMock(return_value=_make_user(user_id="host-1", role=UserRole.HOST)),
+    )
+    monkeypatch.setattr(
+        listings_repository,
+        "get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        host_repository, "upsert_readiness_check", AsyncMock()
+    )
+
+    photo_result = MagicMock()
+    photo_result.scalar.return_value = 3
+    account = MagicMock()
+    account.payout_method = "bank"
+
+    set_status = AsyncMock(side_effect=lambda _s, u, _st: u)
+    monkeypatch.setattr(listings_repository, "set_unit_status", set_status)
+    monkeypatch.setattr(listings_services, "_emit_listing_event", AsyncMock())
+    monkeypatch.setattr(
+        listings_services, "_fetch_coordinates", AsyncMock(return_value=(30.0, 31.0))
+    )
+    monkeypatch.setattr(
+        listings_services, "_to_listing_response", MagicMock(return_value=MagicMock())
+    )
+
+    fake_session.execute = AsyncMock(return_value=photo_result)
+    fake_session.scalar = AsyncMock(return_value=account)
+
+    await listings_services.submit_for_review(fake_session, host, unit.id)
+    set_status.assert_awaited_once()
+
+
 # ============================================================
 # AVAILABILITY — co-host calendar authorization
 # ============================================================

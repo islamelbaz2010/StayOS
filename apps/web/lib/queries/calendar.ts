@@ -9,7 +9,12 @@ export type CalendarRuleCreate = components["schemas"]["CalendarRuleCreate"];
 export type CalendarRuleResponse = components["schemas"]["app__listings__schemas__CalendarRuleResponse"];
 
 function toISODate(d: Date): string {
-  return d.toISOString().split("T")[0];
+  // Local calendar date — never toISOString() (UTC shifts the day for
+  // users east of UTC, e.g. EET/EEST).
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export function useHostCalendar(unitId: string | undefined, checkIn: string, checkOut: string) {

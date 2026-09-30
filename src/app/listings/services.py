@@ -264,7 +264,9 @@ def _to_listing_response(
         pending_photos=[
             PendingPhotoRef(
                 id=p.id,
-                url=p.url,
+                url=resolve_object_url(
+                    settings.S3_LISTINGS_BUCKET, p.s3_key, p.url
+                ),
                 moderation_state=getattr(p, "moderation_state", "live"),
                 is_cover=bool(p.is_cover),
             )

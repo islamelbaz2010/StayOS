@@ -68,9 +68,10 @@ export default function ListingAvailabilityPage() {
     listing?.permission_scope === "calendar_only";
 
   const days = calendar?.days ?? [];
-  const bookedDays = days.filter((d) => d.status === "booked");
-  const blockedDays = days.filter((d) => d.status === "blocked");
-  const availableDays = days.filter((d) => d.status === "available");
+  const statusOf = (d: (typeof days)[number]) => d.status.toLowerCase();
+  const bookedDays = days.filter((d) => statusOf(d) === "booked");
+  const blockedDays = days.filter((d) => statusOf(d) === "blocked");
+  const availableDays = days.filter((d) => statusOf(d) === "available");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,8 +81,8 @@ export default function ListingAvailabilityPage() {
       payload: {
         date_from: dateFrom,
         date_to: dateTo,
-        status: "blocked",
-        block_type: blockType,
+        status: "BLOCKED",
+        block_type: blockType.toUpperCase(),
         price_override: priceOverride ? Number(priceOverride) : null,
       },
     });
@@ -290,14 +291,14 @@ export default function ListingAvailabilityPage() {
                 <h2 className="mb-4 text-lg font-semibold text-brand-900">
                   {t("calendarDays")}
                 </h2>
-                {days.filter((d) => d.status !== "available").length === 0 ? (
+                {days.filter((d) => d.status.toLowerCase() !== "available").length === 0 ? (
                   <p className="text-center text-neutral-500">
                     {t("noBlockedDays")}
                   </p>
                 ) : (
                   <div className="divide-y divide-neutral-100">
                     {days
-                      .filter((d) => d.status !== "available")
+                      .filter((d) => d.status.toLowerCase() !== "available")
                       .map((day) => (
                         <DayRow key={day.date} day={day} t={t} />
                       ))}
@@ -336,15 +337,16 @@ function DayRow({
   day: components["schemas"]["HostCalendarDay"];
   t: (key: string) => string;
 }) {
+  const status = day.status.toLowerCase();
   const statusStyle =
-    DAY_STATUS_STYLES[day.status] ?? DAY_STATUS_STYLES.available;
+    DAY_STATUS_STYLES[status] ?? DAY_STATUS_STYLES.available;
   return (
     <div className="flex items-center justify-between py-3">
       <div className="flex items-center gap-3">
         <span
           className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle}`}
         >
-          {day.status === "booked" ? t("calendarBooked") : t("calendarBlocked")}
+          {status === "booked" ? t("calendarBooked") : t("calendarBlocked")}
         </span>
         <span className="text-sm font-medium text-brand-900">{day.date}</span>
       </div>
@@ -361,5 +363,9 @@ function DayRow({
 }
 
 function toISODate(d: Date): string {
-  return d.toISOString().split("T")[0];
+  // Local calendar date — toISOString() is UTC and can shift the day.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }

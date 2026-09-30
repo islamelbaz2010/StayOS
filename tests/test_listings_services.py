@@ -949,3 +949,107 @@ async def test_get_availability_shows_active_request_as_booked(
     assert result.days[1].status == str(CalendarStatus.BOOKED)
     assert result.days[2].status == str(CalendarStatus.BOOKED)
     assert result.days[3].status == str(CalendarStatus.AVAILABLE)
+
+
+# ============================================================
+# COVER IMAGE RESOLUTION — private storage refs
+# ============================================================
+
+def _make_cover_photo(
+    photo_id: str = "photo-1",
+    url: str = "https://cdn.example.com/covers/test.jpg",
+    is_cover: bool = True,
+    moderation_state: str = "live",
+) -> UnitPhoto:
+    return UnitPhoto(
+        id=photo_id,
+        unit_id="unit-1",
+        s3_key="covers/test.jpg",
+        url=url,
+        display_order=0,
+        is_cover=is_cover,
+        moderation_state=moderation_state,
+    )
+
+
+def test_cover_resolves_s3_ref_even_when_host_not_allowlisted(monkeypatch) -> None:
+    """Regression: production signed GETs live on the storage host
+    (t3.storageapi.dev), which was not in IMAGE_HOST_ALLOWLIST — the
+    allowlist must only guard externally-stored URLs, never our own
+    private s3:// object references."""
+    from app.listings import configuration as listing_config
+
+    monkeypatch.setattr(
+        listing_config.settings, "IMAGE_HOST_ALLOWLIST", "example.com"
+    )
+    presigned = MagicMock(
+        generate_presigned_url=MagicMock(
+            return_value="https://storage.example.com/test-listings/covers/test.jpg?sig=x"
+        )
+    )
+    monkeypatch.setattr(
+        "app.shared.storage.s3_client", MagicMock(return_value=presigned)
+    )
+    unit = _make_unit()
+    unit.photos = [
+        _make_cover_photo(url="s3://test-listings/covers/test.jpg")
+    ]
+
+    url = listing_config.resolve_cover_image_url(unit, unit.listing)
+
+    assert url is not None
+    assert url.startswith("https://")
+    assert "s3://" not in url
+
+
+def test_cover_rejects_external_url_not_on_allowlist(monkeypatch) -> None:
+    """Externally-stored image URLs remain allowlist-guarded."""
+    from app.listings import configuration as listing_config
+
+    monkeypatch.setattr(listing_config.settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(
+        listing_config.settings, "IMAGE_HOST_ALLOWLIST", "example.com"
+    )
+    unit = _make_unit()
+    unit.photos = [
+        _make_cover_photo(url="https://evil-tracker.example.net/pixel.jpg")
+    ]
+
+    assert listing_config.resolve_cover_image_url(unit, unit.listing) is None
+
+
+def test_cover_accepts_external_url_on_allowlist(monkeypatch) -> None:
+    from app.listings import configuration as listing_config
+
+    monkeypatch.setattr(listing_config.settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(
+        listing_config.settings,
+        "IMAGE_HOST_ALLOWLIST",
+        ".amazonaws.com,images.unsplash.com",
+    )
+    unit = _make_unit()
+    unit.photos = [
+        _make_cover_photo(url="https://images.unsplash.com/photo-1")
+    ]
+
+    assert (
+        listing_config.resolve_cover_image_url(unit, unit.listing)
+        == "https://images.unsplash.com/photo-1"
+    )
+
+
+def test_cover_pending_add_never_public(monkeypatch) -> None:
+    from app.listings import configuration as listing_config
+
+    monkeypatch.setattr(
+        listing_config.settings, "IMAGE_HOST_ALLOWLIST", "example.com"
+    )
+    unit = _make_unit()
+    unit.photos = [
+        _make_cover_photo(
+            url="s3://test-listings/covers/pending.jpg",
+            moderation_state="pending_add",
+        )
+    ]
+
+    assert listing_config.resolve_cover_image_url(unit, unit.listing) is None

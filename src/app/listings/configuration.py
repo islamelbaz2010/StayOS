@@ -50,23 +50,31 @@ def resolve_cover_image_url(unit: Unit, listing: UnitListing) -> str | None:
         if getattr(p, "moderation_state", "live") != "pending_add"
     ]
 
-    def resolved(photo: UnitPhoto) -> str:
-        return resolve_object_url(settings.S3_LISTINGS_BUCKET, photo.s3_key, photo.url)
+    def resolved(photo: UnitPhoto) -> str | None:
+        # Private objects (s3:// refs) are resolved by us into signed GETs —
+        # they are inherently trusted. Only externally-stored URLs (legacy
+        # seeds, http(s) strings persisted before private storage) need the
+        # IMAGE_HOST_ALLOWLIST check.
+        if photo.url.startswith("s3://"):
+            return resolve_object_url(
+                settings.S3_LISTINGS_BUCKET, photo.s3_key, photo.url
+            )
+        return photo.url if validate_image_url(photo.url) else None
 
     if listing.cover_photo_id:
         for photo in photos:
             url = resolved(photo)
-            if photo.id == listing.cover_photo_id and validate_image_url(url):
+            if url and photo.id == listing.cover_photo_id:
                 return url
 
     for photo in photos:
         url = resolved(photo)
-        if getattr(photo, "is_cover", False) and validate_image_url(url):
+        if url and getattr(photo, "is_cover", False):
             return url
 
     for photo in photos:
         url = resolved(photo)
-        if validate_image_url(url):
+        if url:
             return url
 
     return None

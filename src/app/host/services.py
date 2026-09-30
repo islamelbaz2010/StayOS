@@ -19,6 +19,7 @@ from app.bookings import repository as bookings_repository
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.bookings.services import _compute_stay_phase, _to_response
+from app.config import settings
 from app.finance.commercial import money
 from app.listings.constants import CalendarStatus, UnitStatus
 from app.listings.models import Unit, UnitListing
@@ -31,6 +32,7 @@ from app.shared.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from app.shared.storage import resolve_object_url
 
 from . import permissions as host_permissions
 from . import repository as host_repository
@@ -666,6 +668,7 @@ async def get_host_calendar(
 
     # Get calendar rules in range
     from app.listings import pricing as pricing_module
+    from app.listings import repository as listings_repository
     from app.listings.constants import CalendarStatus
     from app.listings.models import CalendarRule
 
@@ -1085,12 +1088,16 @@ async def get_host_listing_detail(
     lat = float(coord_row.lat)
     lng = float(coord_row.lng)
 
-    # Photos
+    # Photos — resolve private s3:// refs into signed GET URLs
     photos = await listings_repository.get_photos_by_unit(session, unit.id)
+    resolved_urls = {
+        p.id: resolve_object_url(settings.S3_LISTINGS_BUCKET, p.s3_key, p.url)
+        for p in photos
+    }
     photo_list = [
         host_schemas.HostListingPhoto(
             id=p.id,
-            url=p.url,
+            url=resolved_urls[p.id],
             display_order=p.display_order,
             is_cover=p.is_cover,
             caption=p.caption_ar,
@@ -1103,15 +1110,15 @@ async def get_host_listing_detail(
     if listing is not None and listing.cover_photo_id:
         for p in photos:
             if p.id == listing.cover_photo_id:
-                cover_url = p.url
+                cover_url = resolved_urls[p.id]
                 break
     if cover_url is None:
         for p in photos:
             if p.is_cover:
-                cover_url = p.url
+                cover_url = resolved_urls[p.id]
                 break
     if cover_url is None and photos:
-        cover_url = photos[0].url
+        cover_url = resolved_urls[photos[0].id]
 
     # Readiness
     readiness = await compute_listing_readiness(session, unit, listing)

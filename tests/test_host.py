@@ -817,6 +817,136 @@ async def test_host_calendar_unauthorized_unit(fake_session: AsyncMock, monkeypa
         )
 
 
+@pytest.mark.asyncio
+async def test_host_calendar_returns_days_for_unit(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Regression: get_host_calendar used to crash with NameError —
+    `listings_repository` was referenced but never imported in scope."""
+    from app.listings import repository as listings_repo
+
+    host = _make_user(user_id="host-1")
+    unit = _make_unit(host_id="host-1", unit_id="unit-1")
+    unit.listing = _make_listing("unit-1")
+
+    monkeypatch.setattr(
+        host_services,
+        "get_managed_unit_ids",
+        AsyncMock(return_value=["unit-1"]),
+    )
+    monkeypatch.setattr(
+        listings_repo,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        listings_repo,
+        "get_calendar_rules_in_range",
+        AsyncMock(return_value=[]),
+    )
+
+    booking_result = MagicMock()
+    booking_result.scalars.return_value.all.return_value = []
+    fake_session.execute = AsyncMock(return_value=booking_result)
+
+    check_in = date.today()
+    check_out = check_in + timedelta(days=5)
+    result = await host_services.get_host_calendar(
+        fake_session, host, "unit-1", check_in, check_out
+    )
+
+    assert result.unit_id == "unit-1"
+    assert len(result.days) == 5
+    assert all(d.status == "AVAILABLE" for d in result.days)
+    assert all(d.price_egp == 500 for d in result.days)
+
+
+@pytest.mark.asyncio
+async def test_host_listing_detail_resolves_private_photo_urls(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Host detail photos must carry usable signed GET URLs, not raw
+    private `s3://` object references."""
+    from app.listings import repository as listings_repo
+
+    host = _make_user(user_id="host-1")
+    unit = _make_unit(host_id="host-1", unit_id="unit-1")
+    unit.district = None
+    unit.listing = _make_listing("unit-1")
+    unit.listing.description_en = "Desc"
+    unit.listing.country = "Egypt"
+    unit.listing.category = "ENTIRE_PLACE"
+    unit.listing.currency = "EGP"
+    unit.listing.cleaning_fee_egp = 0
+    unit.listing.cancellation_policy = "FLEXIBLE"
+    unit.listing.peak_mult = 1.0
+    unit.listing.min_nights = 1
+    unit.listing.max_nights = 30
+    unit.listing.allows_pets = False
+    unit.listing.self_check_in = False
+    unit.listing.self_check_in_methods = []
+    unit.listing.accessibility_features = []
+    unit.listing.check_in_time = None
+    unit.listing.check_out_time = None
+    unit.listing.pre_arrival_info_release_hours = None
+    unit.listing.policies = None
+    unit.listing.cover_photo_id = None
+
+    photo = MagicMock()
+    photo.id = "photo-1"
+    photo.unit_id = "unit-1"
+    photo.s3_key = "listings/unit-1/a.jpg"
+    photo.url = "s3://test-listings/listings/unit-1/a.jpg"
+    photo.display_order = 0
+    photo.is_cover = True
+    photo.caption_ar = None
+
+    monkeypatch.setattr(
+        host_services,
+        "assert_can_access_unit",
+        AsyncMock(return_value="owner"),
+    )
+    monkeypatch.setattr(
+        listings_repo,
+        "get_unit_with_listing",
+        AsyncMock(return_value=unit),
+    )
+    monkeypatch.setattr(
+        listings_repo,
+        "get_photos_by_unit",
+        AsyncMock(return_value=[photo]),
+    )
+    monkeypatch.setattr(
+        host_services,
+        "compute_listing_readiness",
+        AsyncMock(return_value=None),
+    )
+    # Stub presigning — boto's DEBUG-level endpoint logging crashes under
+    # the test suite's DEBUG log level; the URL shape is what matters here.
+    presigned = MagicMock(
+        generate_presigned_url=MagicMock(
+            return_value="https://storage.example.com/test-listings/listings/unit-1/a.jpg?sig=x"
+        )
+    )
+    monkeypatch.setattr(
+        "app.shared.storage.s3_client", MagicMock(return_value=presigned)
+    )
+
+    coord_row = MagicMock(lat=30.0, lng=31.0)
+    coord_result = MagicMock()
+    coord_result.one.return_value = coord_row
+    fake_session.execute = AsyncMock(return_value=coord_result)
+
+    result = await host_services.get_host_listing_detail(
+        fake_session, host, "unit-1"
+    )
+
+    assert len(result.photos) == 1
+    assert result.photos[0].url.startswith("https://")
+    assert "s3://" not in result.photos[0].url
+    assert result.cover_image == result.photos[0].url
+
+
 # ============================================================
 # CO-HOST PERMISSIONS ON LISTING OPERATIONS
 # ============================================================

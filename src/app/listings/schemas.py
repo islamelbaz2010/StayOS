@@ -606,9 +606,27 @@ class CalendarRuleCreate(BaseModel):
     def validate_block(self) -> "CalendarRuleCreate":
         from app.listings.constants import CalendarBlockType, CalendarStatus
 
-        if self.status == CalendarStatus.BLOCKED and not self.block_type:
+        if self.status:
+            self.status = self.status.upper()
+        if self.block_type:
+            self.block_type = self.block_type.upper()
+        try:
+            status = CalendarStatus(self.status)
+        except ValueError:
+            raise ValueError(
+                f"status must be one of {[s.value for s in CalendarStatus]}"
+            ) from None
+        if self.block_type:
+            try:
+                CalendarBlockType(self.block_type)
+            except ValueError:
+                raise ValueError(
+                    "block_type must be one of "
+                    f"{[b.value for b in CalendarBlockType]}"
+                ) from None
+        if status == CalendarStatus.BLOCKED and not self.block_type:
             self.block_type = CalendarBlockType.MANUAL
-        if self.block_type and self.status != CalendarStatus.BLOCKED:
+        if self.block_type and status != CalendarStatus.BLOCKED:
             raise ValueError("block_type is only valid for BLOCKED status")
         return self
 
@@ -622,8 +640,25 @@ class CalendarRuleUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_block(self) -> "CalendarRuleUpdate":
-        from app.listings.constants import CalendarStatus
+        from app.listings.constants import CalendarBlockType, CalendarStatus
 
+        if self.status:
+            self.status = self.status.upper()
+            try:
+                CalendarStatus(self.status)
+            except ValueError:
+                raise ValueError(
+                    f"status must be one of {[s.value for s in CalendarStatus]}"
+                ) from None
+        if self.block_type:
+            self.block_type = self.block_type.upper()
+            try:
+                CalendarBlockType(self.block_type)
+            except ValueError:
+                raise ValueError(
+                    "block_type must be one of "
+                    f"{[b.value for b in CalendarBlockType]}"
+                ) from None
         if self.block_type and self.status != CalendarStatus.BLOCKED:
             raise ValueError("block_type is only valid for BLOCKED status")
         return self

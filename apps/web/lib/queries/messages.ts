@@ -23,6 +23,9 @@ export interface ConversationListItem {
   unit_id: string | null;
   type: string;
   status: string;
+  subject: string | null;
+  support_status: string | null;
+  context_booking_id: string | null;
   unread_count: number;
   counterparty_name: string | null;
   unit_title: string | null;
@@ -113,6 +116,69 @@ export function useBookingConversation(bookingId: string | null) {
       return data;
     },
     enabled: Boolean(bookingId),
+  });
+}
+
+export function useStartSupportConversation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      subject?: string;
+      bookingId?: string;
+      content: string;
+    }) => {
+      const { data } = await api.post<ConversationResponse>(
+        "/messages/support",
+        {
+          subject: params.subject ?? null,
+          booking_id: params.bookingId ?? null,
+          content: params.content,
+        }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+}
+
+export function useSetSupportStatus(conversationId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (status: string) => {
+      const { data } = await api.post<ConversationResponse>(
+        `/messages/support/${conversationId}/status`,
+        { status }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["conversation", conversationId],
+      });
+    },
+  });
+}
+
+export function useSupportQueue(
+  supportStatus?: string | null,
+  options: { enabled?: boolean } = {}
+) {
+  return useQuery({
+    queryKey: ["support-queue", supportStatus ?? "all"],
+    queryFn: async () => {
+      const { data } = await api.get<ConversationListItem[]>(
+        "/messages/support/queue",
+        {
+          params: supportStatus ? { support_status: supportStatus } : {},
+        }
+      );
+      return data;
+    },
+    refetchInterval: 15000,
+    enabled: options.enabled ?? true,
   });
 }
 

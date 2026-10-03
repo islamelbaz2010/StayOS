@@ -38,14 +38,6 @@ const FILTERS: { key: string; status: string | undefined }[] = [
   { key: "cancelled", status: "cancelled" },
 ];
 
-interface PerUnitItem {
-  unit_id: string;
-  unit_title: string | null;
-  unit_cover_image: string | null;
-  booking_count: number;
-  revenue_egp: number;
-}
-
 export default function HostEarningsPage() {
   const t = useTranslations("hostEarnings");
   const tc = useTranslations("common");
@@ -173,45 +165,6 @@ export default function HostEarningsPage() {
                   />
                 </div>
               </div>
-
-              {data.per_unit && data.per_unit.length > 0 && (
-                <div className="card p-5 sm:p-6">
-                  <h2 className="mb-4 text-lg font-semibold text-brand-900">
-                    {t("perListing")}
-                  </h2>
-                  <div className="divide-y divide-neutral-100">
-                    {((data.per_unit as unknown) as PerUnitItem[]).map((unit) => (
-                      <div
-                        key={unit.unit_id}
-                        className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-neutral-100">
-                            <Image
-                              src={unit.unit_cover_image || PLACEHOLDER_IMAGE}
-                              alt={unit.unit_title || t("untitledListing")}
-                              fill
-                              sizes="80px"
-                              className="object-cover"
-                            />
-                          </div>
-                          <p className="font-medium text-brand-900">
-                            {unit.unit_title || unit.unit_id.slice(0, 8)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-neutral-600">
-                          <span>
-                            {unit.booking_count} {t("bookings")}
-                          </span>
-                          <span className="font-semibold text-brand-900">
-                            {formatMoney(unit.revenue_egp, "EGP", moneyLocale)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div ref={activityRef} id={ACTIVITY_SECTION_ID} className="scroll-mt-24">
                 <PaymentActivity locale={moneyLocale} />

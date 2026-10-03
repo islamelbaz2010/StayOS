@@ -37,6 +37,9 @@ class ConversationResponse(BaseModel):
     unit_id: str | None
     type: str
     status: str
+    subject: str | None = None
+    support_status: str | None = None
+    context_booking_id: str | None = None
     participants: list[ParticipantResponse]
     created_at: datetime
     updated_at: datetime
@@ -54,6 +57,9 @@ class ConversationListItem(BaseModel):
     unit_id: str | None
     type: str
     status: str
+    subject: str | None = None
+    support_status: str | None = None
+    context_booking_id: str | None = None
     unread_count: int
     counterparty_name: str | None
     unit_title: str | None
@@ -98,3 +104,21 @@ class AdminContactCreate(BaseModel):
     booking_id: str
     target: str = Field(..., pattern="^(guest|host)$")
     content: str = Field(..., min_length=1, max_length=4000)
+
+
+class SupportConversationCreate(BaseModel):
+    """User-initiated StayOS Support thread.
+
+    `booking_id` is optional context (e.g. opened from a booking detail
+    page) — it is stored as `context_booking_id`, never as the
+    reservation conversation's booking link."""
+
+    subject: str | None = Field(default=None, max_length=200)
+    booking_id: str | None = None
+    content: str = Field(..., min_length=1, max_length=4000)
+
+
+class SupportStatusUpdate(BaseModel):
+    status: str = Field(
+        ..., pattern="^(open|waiting_for_support|waiting_for_user|resolved)$"
+    )

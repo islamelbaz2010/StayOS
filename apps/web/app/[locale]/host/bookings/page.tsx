@@ -35,6 +35,7 @@ export default function HostBookingsPage() {
 
   const status = searchParams?.get("status") ?? "all";
   const unitId = searchParams?.get("unitId") ?? null;
+  const governorate = searchParams?.get("governorate") ?? null;
   const area = searchParams?.get("area") ?? null;
   const q = searchParams?.get("q") ?? "";
   const page = Math.max(1, parseInt(searchParams?.get("page") ?? "1", 10) || 1);
@@ -52,11 +53,12 @@ export default function HostBookingsPage() {
       status: status === "all" ? null : status,
       unitId,
       area,
+      governorate,
       search: q || null,
       page,
       limit: PAGE_SIZE,
     }),
-    [status, unitId, area, q, page]
+    [status, unitId, area, governorate, q, page]
   );
 
   const {
@@ -79,6 +81,46 @@ export default function HostBookingsPage() {
     [selectedBooking, paginated, selectedId]
   );
 
+  const { data: listings } = useHostListings();
+
+  // Stale-selection guard: when filters change so the selected booking
+  // can no longer match, clear the selection — never show details that
+  // contradict the visible filter set.
+  useEffect(() => {
+    if (!selectedId || !listings) return;
+    const booking =
+      selectedBooking ??
+      paginated?.items.find((b) => b.id === selectedId) ??
+      null;
+    if (!booking) return;
+
+    let invalid = false;
+    if (status !== "all" && booking.status !== status) invalid = true;
+    if (unitId && booking.unit_id !== unitId) invalid = true;
+    const listing = listings.find((l) => l.id === booking.unit_id);
+    if (listing) {
+      if (area && listing.city !== area) invalid = true;
+      if (governorate && listing.governorate !== governorate) invalid = true;
+    }
+    if (invalid) {
+      const next = new URLSearchParams(searchParams?.toString() ?? "");
+      next.delete("bookingId");
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    }
+  }, [
+    selectedId,
+    selectedBooking,
+    paginated,
+    listings,
+    status,
+    unitId,
+    area,
+    governorate,
+    searchParams,
+    pathname,
+    router,
+  ]);
+
   function updateParams(updates: Record<string, string | null>, resetPage = true) {
     const next = new URLSearchParams(searchParams?.toString() ?? "");
     for (const [key, value] of Object.entries(updates)) {
@@ -100,6 +142,29 @@ export default function HostBookingsPage() {
 
   function handleUnitChange(next: string) {
     updateParams({ unitId: next === "all" ? null : next }, true);
+  }
+
+  function handleGovernorateChange(next: string) {
+    const value = next === "all" ? null : next;
+    const updates: Record<string, string | null> = { governorate: value };
+    // Keep the cascade coherent: an area or listing outside the chosen
+    // governorate can never match — reset it instead of yielding empty
+    // results.
+    if (
+      value &&
+      area &&
+      !listings?.some((l) => l.governorate === value && l.city === area)
+    ) {
+      updates.area = null;
+    }
+    if (
+      value &&
+      unitId &&
+      !listings?.some((l) => l.id === unitId && l.governorate === value)
+    ) {
+      updates.unitId = null;
+    }
+    updateParams(updates, true);
   }
 
   function handleAreaChange(next: string) {
@@ -138,23 +203,44 @@ export default function HostBookingsPage() {
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
   }
 
-  const { data: listings } = useHostListings();
-
-  // Area options are generated from the host's own listing locations —
-  // the persisted `city` field is the canonical area level.
-  const areas = useMemo(() => {
-    const cities = new Set(
-      (listings ?? []).map((l) => l.city).filter((c): c is string => !!c)
+  // Location options derive from the host's own listings — governorate
+  // → city (area) → listing, all canonical stored values.
+  const governorates = useMemo(() => {
+    const values = new Set(
+      (listings ?? [])
+        .map((l) => l.governorate)
+        .filter((g): g is string => !!g)
     );
-    return [...cities].sort((a, b) => a.localeCompare(b));
+    return [...values].sort((a, b) => a.localeCompare(b));
   }, [listings]);
 
+  const areas = useMemo(() => {
+    const cities = new Set(
+      (listings ?? [])
+        .filter((l) => !governorate || l.governorate === governorate)
+        .map((l) => l.city)
+        .filter((c): c is string => !!c)
+    );
+    return [...cities].sort((a, b) => a.localeCompare(b));
+  }, [listings, governorate]);
+
   const listingOptions = useMemo(
-    () => (area ? (listings ?? []).filter((l) => l.city === area) : (listings ?? [])),
-    [listings, area]
+    () =>
+      (listings ?? []).filter(
+        (l) =>
+          (!governorate || l.governorate === governorate) &&
+          (!area || l.city === area)
+      ),
+    [listings, governorate, area]
   );
 
-  const hasFilters = !!(q || unitId || area || status !== "all");
+  const hasFilters = !!(
+    q ||
+    unitId ||
+    area ||
+    governorate ||
+    status !== "all"
+  );
   const emptyMessage = hasFilters ? t("noSearchResults") : t("noBookings");
 
   return (
@@ -175,10 +261,26 @@ export default function HostBookingsPage() {
                   placeholder={t("searchPlaceholder")}
                   className="input w-full sm:w-64"
                 />
+                {governorates.length > 0 && (
+                  <select
+                    value={governorate ?? "all"}
+                    onChange={(e) => handleGovernorateChange(e.target.value)}
+                    aria-label={t("allGovernorates")}
+                    className="input w-full sm:w-40"
+                  >
+                    <option value="all">{t("allGovernorates")}</option>
+                    {governorates.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 {areas.length > 0 && (
                   <select
                     value={area ?? "all"}
                     onChange={(e) => handleAreaChange(e.target.value)}
+                    aria-label={t("allAreas")}
                     className="input w-full sm:w-40"
                   >
                     <option value="all">{t("allAreas")}</option>

@@ -472,6 +472,12 @@ function TripContent({
                 {t("messageHost")}
               </Link>
             )}
+            <Link
+              href={`/${locale}/support?bookingId=${booking.id}`}
+              className="text-sm font-semibold text-neutral-600 hover:text-accent-600"
+            >
+              {t("getHelpWithBooking")}
+            </Link>
           </div>
           {property.house_rules && (
             <div className="mt-4 rounded-md bg-neutral-50 p-4">
@@ -551,6 +557,12 @@ function TripContent({
               {t("messageGuest")}
             </Link>
           )}
+          <Link
+            href={`/${locale}/support?bookingId=${booking.id}`}
+            className="ms-4 inline-block text-sm font-semibold text-neutral-600 hover:text-accent-600"
+          >
+            {t("getHelpWithBooking")}
+          </Link>
           {property.house_rules && (
             <div className="mt-4 rounded-md bg-neutral-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">

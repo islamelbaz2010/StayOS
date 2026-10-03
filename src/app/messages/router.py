@@ -18,6 +18,8 @@ from .schemas import (
     MessageCreate,
     MessageResponse,
     MessageTemplateResponse,
+    SupportConversationCreate,
+    SupportStatusUpdate,
     UnreadCountResponse,
 )
 
@@ -141,6 +143,59 @@ async def admin_contact_endpoint(
     try:
         return await messages_services.admin_contact_participant(
             session, user, request.booking_id, request.target, request.content
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/support", response_model=ConversationResponse, status_code=201)
+async def start_support_conversation(
+    request: SupportConversationCreate,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ConversationResponse:
+    """User starts a StayOS Support thread from the Support page.
+
+    Reuses the canonical conversation model — separate from guest↔host
+    threads. Optional `booking_id` attaches read-only booking context.
+    """
+    try:
+        return await messages_services.start_support_conversation(
+            session, user, request
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.get("/support/queue", response_model=list[ConversationListItem])
+async def get_support_queue(
+    support_status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+    user: User = Depends(
+        auth_dependencies.require_staff_permission("operations")
+    ),
+    session: AsyncSession = Depends(get_session),
+) -> list[ConversationListItem]:
+    """Staff triage list of every SUPPORT conversation."""
+    try:
+        return await messages_services.list_support_queue(
+            session, user, support_status=support_status, limit=limit, offset=offset
+        )
+    except StayOSError as exc:
+        raise to_http_exception(exc) from exc
+
+
+@router.post("/support/{conversation_id}/status", response_model=ConversationResponse)
+async def update_support_status(
+    conversation_id: str,
+    request: SupportStatusUpdate,
+    user: User = Depends(auth_dependencies.get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ConversationResponse:
+    try:
+        return await messages_services.set_support_status(
+            session, user, conversation_id, request.status
         )
     except StayOSError as exc:
         raise to_http_exception(exc) from exc

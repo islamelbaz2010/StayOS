@@ -87,6 +87,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       label: t("groups.operations"),
       items: [
         { label: t("bookings"), href: `/${locale}/admin/bookings`, perm: "operations", badgeKey: null },
+        { label: t("support"), href: `/${locale}/admin/support`, perm: "operations", badgeKey: null },
         { label: t("disputes"), href: `/${locale}/admin/disputes`, perm: "disputes", badgeKey: "disputes" },
       ],
     },

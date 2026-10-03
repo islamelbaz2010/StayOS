@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -63,12 +64,44 @@ const SUMMARY_KEYS = [
   "incomplete_listings",
 ] as const;
 
+const DISMISS_KEY = "stayos.host.today.dismissed";
+
+/**
+ * Signature of the current actionable set — dismissal is tied to this
+ * exact set, so a *changed* workload re-surfaces the block instead of
+ * staying hidden forever.
+ */
+function itemsSignature(items: HostTodayItem[]): string {
+  return items
+    .map((i) => `${i.item_type}:${i.booking_id ?? i.title ?? ""}`)
+    .sort()
+    .join("|");
+}
+
 export default function HostPage() {
   const t = useTranslations("hostToday");
   const tc = useTranslations("common");
   const { data, isLoading, isError, refetch } = useHostToday();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
+
+  const items = data?.items ?? [];
+  const signature = items.length > 0 ? itemsSignature(items) : null;
+  const [dismissedSig, setDismissedSig] = useState<string | null>(null);
+  useEffect(() => {
+    setDismissedSig(localStorage.getItem(DISMISS_KEY));
+  }, []);
+  const isDismissed = signature !== null && dismissedSig === signature;
+
+  const dismiss = () => {
+    if (!signature) return;
+    localStorage.setItem(DISMISS_KEY, signature);
+    setDismissedSig(signature);
+  };
+  const reopen = () => {
+    localStorage.removeItem(DISMISS_KEY);
+    setDismissedSig(null);
+  };
 
   const summary = data?.summary ?? {};
 
@@ -100,23 +133,50 @@ export default function HostPage() {
                 ))}
               </div>
 
-              <div className="card p-5 sm:p-6">
-                <h2 className="mb-4 text-lg font-semibold text-brand-900">
-                  {t("actionItems")}
-                </h2>
-
-                {data?.items && data.items.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.items.map((item, idx) => (
-                      <TodayItem key={idx} item={item} locale={locale} t={t} />
-                    ))}
-                  </div>
+              {items.length > 0 &&
+                (isDismissed ? (
+                  <button
+                    type="button"
+                    onClick={reopen}
+                    className="flex w-full items-center justify-between rounded-card border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-700 shadow-card transition hover:bg-neutral-50"
+                  >
+                    <span>{t("attentionCollapsed", { count: items.length })}</span>
+                    <span className="text-accent-600">{t("show")}</span>
+                  </button>
                 ) : (
-                  <div className="py-8 text-center text-neutral-500">
-                    {t("empty")}
+                  <div className="card p-5 sm:p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-lg font-semibold text-brand-900">
+                        {t("actionItems")}
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={dismiss}
+                        aria-label={t("dismiss")}
+                        className="rounded-md p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {items.map((item, idx) => (
+                        <TodayItem key={idx} item={item} locale={locale} t={t} />
+                      ))}
+                    </div>
                   </div>
-                )}
-              </div>
+                ))}
             </div>
           )}
         </section>

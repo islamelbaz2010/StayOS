@@ -71,6 +71,9 @@ def _make_conversation(
     conversation.unit_id = "unit-1"
     conversation.type = message_constants.ConversationType.RESERVATION
     conversation.status = status
+    conversation.subject = None
+    conversation.support_status = None
+    conversation.context_booking_id = None
     conversation.created_at = datetime.now(UTC)
     conversation.updated_at = datetime.now(UTC)
     if participants is None:
@@ -1798,5 +1801,459 @@ def test_post_automated_message_route_not_found(messages_client, monkeypatch) ->
         "post",
         "/api/v1/messages/conversations/conv-1/automated",
         json={"template_key": "welcome", "variables": {}},
+        role=UserRole.ADMIN,
+    )
+
+
+# ============================================================
+# SUPPORT CONVERSATIONS
+# ============================================================
+
+
+def _make_support_conversation(
+    user_id: str = "guest-1",
+    context_booking_id: str | None = None,
+    support_status: str = message_constants.SupportStatus.WAITING_FOR_SUPPORT,
+):
+    conversation = _make_conversation()
+    conversation.booking_id = None
+    conversation.type = message_constants.ConversationType.SUPPORT
+    conversation.context_booking_id = context_booking_id
+    conversation.subject = "Help with my booking"
+    conversation.support_status = support_status
+    user_p = MagicMock()
+    user_p.user_id = user_id
+    user_p.role = message_constants.ParticipantRole.GUEST
+    user_p.last_read_at = None
+    conversation.participants = [user_p]
+    conversation.messages = []
+    return conversation
+
+
+@pytest.mark.asyncio
+async def test_start_support_conversation(fake_session: AsyncMock, monkeypatch) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_support_conversation(user_id="guest-1")
+
+    monkeypatch.setattr(
+        messages_repository,
+        "get_or_create_user_support_conversation",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "create_message",
+        AsyncMock(return_value=_make_message(sender_id="guest-1")),
+    )
+    monkeypatch.setattr(
+        messages_services, "_operations_staff_recipients", AsyncMock(return_value=[])
+    )
+    monkeypatch.setattr("app.messages.services.write_event", AsyncMock())
+
+    request = message_schemas.SupportConversationCreate(
+        subject="Help with my booking", content="I need help"
+    )
+    response = await messages_services.start_support_conversation(
+        fake_session, user, request
+    )
+
+    assert response.type == message_constants.ConversationType.SUPPORT
+    assert conversation.support_status == message_constants.SupportStatus.WAITING_FOR_SUPPORT
+    messages_repository.get_or_create_user_support_conversation.assert_awaited_once()
+    messages_repository.create_message.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_start_support_conversation_with_own_booking_context(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    booking = _make_booking(guest_id="guest-1", host_id="host-1")
+    conversation = _make_support_conversation(
+        user_id="guest-1", context_booking_id=booking.id
+    )
+    captured: dict = {}
+
+    async def _get_or_create(session, **kwargs):
+        captured.update(kwargs)
+        return conversation
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "get_or_create_user_support_conversation",
+        _get_or_create,
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "create_message",
+        AsyncMock(return_value=_make_message(sender_id="guest-1")),
+    )
+    monkeypatch.setattr(
+        messages_services, "_operations_staff_recipients", AsyncMock(return_value=[])
+    )
+    monkeypatch.setattr("app.messages.services.write_event", AsyncMock())
+
+    request = message_schemas.SupportConversationCreate(
+        booking_id=booking.id, content="Question about this stay"
+    )
+    response = await messages_services.start_support_conversation(
+        fake_session, user, request
+    )
+
+    assert response.context_booking_id == booking.id
+    assert response.booking_id is None
+    assert captured["context_booking_id"] == booking.id
+    assert captured["unit_id"] == booking.unit_id
+
+
+@pytest.mark.asyncio
+async def test_start_support_conversation_foreign_booking_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A user cannot attach a reservation they have no relationship to."""
+    user = _make_user(user_id="stranger", role=UserRole.GUEST)
+    booking = _make_booking(guest_id="guest-1", host_id="host-1")
+
+    monkeypatch.setattr(
+        bookings_repository,
+        "get_booking_or_raise",
+        AsyncMock(return_value=booking),
+    )
+
+    request = message_schemas.SupportConversationCreate(
+        booking_id=booking.id, content="Not my booking"
+    )
+    with pytest.raises(AuthorizationError):
+        await messages_services.start_support_conversation(
+            fake_session, user, request
+        )
+
+
+@pytest.mark.asyncio
+async def test_support_queue_requires_permission(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    plain_staff = _make_user(user_id="staff-1", role=UserRole.STAFF)
+    monkeypatch.setattr(
+        messages_services, "_can_handle_support", AsyncMock(return_value=False)
+    )
+    with pytest.raises(AuthorizationError):
+        await messages_services.list_support_queue(fake_session, plain_staff)
+
+
+@pytest.mark.asyncio
+async def test_support_queue_admin_allowed(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    conversation = _make_support_conversation()
+    monkeypatch.setattr(
+        messages_services, "_can_handle_support", AsyncMock(return_value=True)
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "list_support_queue",
+        AsyncMock(return_value=[conversation]),
+    )
+    result = MagicMock()
+    result.all.return_value = []
+    fake_session.execute = AsyncMock(return_value=result)
+
+    items = await messages_services.list_support_queue(fake_session, admin)
+    assert len(items) == 1
+    assert items[0].type == message_constants.ConversationType.SUPPORT
+    assert items[0].support_status == message_constants.SupportStatus.WAITING_FOR_SUPPORT
+
+
+@pytest.mark.asyncio
+async def test_support_status_staff_transition(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    staff = _make_user(user_id="staff-1", role=UserRole.ADMIN)
+    conversation = _make_support_conversation()
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=False)
+    )
+    monkeypatch.setattr(
+        messages_services, "_can_handle_support", AsyncMock(return_value=True)
+    )
+
+    response = await messages_services.set_support_status(
+        fake_session, staff, conversation.id, "waiting_for_user"
+    )
+    assert response.support_status == "waiting_for_user"
+
+
+@pytest.mark.asyncio
+async def test_support_status_user_can_resolve_not_triage(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """The thread's user may reopen/resolve but cannot set staff-facing states."""
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_support_conversation(user_id="guest-1")
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=True)
+    )
+    monkeypatch.setattr(
+        messages_services, "_can_handle_support", AsyncMock(return_value=False)
+    )
+
+    response = await messages_services.set_support_status(
+        fake_session, user, conversation.id, "resolved"
+    )
+    assert response.support_status == "resolved"
+
+    with pytest.raises(AuthorizationError):
+        await messages_services.set_support_status(
+            fake_session, user, conversation.id, "waiting_for_user"
+        )
+
+
+@pytest.mark.asyncio
+async def test_support_status_on_non_support_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_conversation()  # reservation type
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    with pytest.raises(ValidationError):
+        await messages_services.set_support_status(
+            fake_session, user, conversation.id, "resolved"
+        )
+
+
+@pytest.mark.asyncio
+async def test_staff_reads_support_thread_without_joining(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Ops staff can read a support thread before becoming a participant."""
+    staff = _make_user(user_id="staff-1", role=UserRole.ADMIN)
+    conversation = _make_support_conversation()
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=False)
+    )
+    monkeypatch.setattr(
+        messages_services, "_can_handle_support", AsyncMock(return_value=True)
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "list_messages_for_conversation",
+        AsyncMock(return_value=[]),
+    )
+    detail = await messages_services.get_conversation_detail(
+        fake_session, staff, conversation.id
+    )
+    assert detail.type == message_constants.ConversationType.SUPPORT
+
+
+@pytest.mark.asyncio
+async def test_guest_cannot_read_other_support_thread(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A different guest cannot open another user's support thread."""
+    other = _make_user(user_id="guest-2", role=UserRole.GUEST)
+    conversation = _make_support_conversation(user_id="guest-1")
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=False)
+    )
+    monkeypatch.setattr(
+        messages_services, "_can_handle_support", AsyncMock(return_value=False)
+    )
+    with pytest.raises(AuthorizationError):
+        await messages_services.get_conversation_detail(
+            fake_session, other, conversation.id
+        )
+
+
+@pytest.mark.asyncio
+async def test_staff_reply_auto_joins_support_thread(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """First staff reply joins them as a SUPPORT participant and moves
+    the thread to waiting_for_user."""
+    staff = _make_user(user_id="staff-1", role=UserRole.ADMIN)
+    conversation = _make_support_conversation()
+    new_participant = MagicMock()
+    new_participant.user_id = "staff-1"
+    new_participant.role = message_constants.ParticipantRole.SUPPORT
+    new_participant.last_read_at = None
+
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=False)
+    )
+    monkeypatch.setattr(
+        messages_services, "_can_handle_support", AsyncMock(return_value=True)
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "add_support_participant",
+        AsyncMock(return_value=new_participant),
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "create_message",
+        AsyncMock(
+            return_value=_make_message(
+                sender_id="staff-1",
+                sender_role=message_constants.ParticipantRole.SUPPORT,
+            )
+        ),
+    )
+    monkeypatch.setattr("app.messages.services.write_event", AsyncMock())
+
+    request = message_schemas.MessageCreate(content="Hi, how can we help?")
+    response = await messages_services.send_message(
+        fake_session, staff, conversation.id, request
+    )
+    assert response.content == "Hello"
+    messages_repository.add_support_participant.assert_awaited_once()
+    assert (
+        conversation.support_status
+        == message_constants.SupportStatus.WAITING_FOR_USER
+    )
+
+
+@pytest.mark.asyncio
+async def test_user_reply_reopens_support_thread(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A user reply on a support thread sets waiting_for_support."""
+    user = _make_user(user_id="guest-1", role=UserRole.GUEST)
+    conversation = _make_support_conversation(
+        user_id="guest-1",
+        support_status=message_constants.SupportStatus.WAITING_FOR_USER,
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=True)
+    )
+    monkeypatch.setattr(
+        messages_repository,
+        "create_message",
+        AsyncMock(return_value=_make_message(sender_id="guest-1")),
+    )
+    monkeypatch.setattr(
+        messages_services, "_operations_staff_recipients", AsyncMock(return_value=[])
+    )
+    monkeypatch.setattr("app.messages.services.write_event", AsyncMock())
+
+    request = message_schemas.MessageCreate(content="Thanks, one more thing")
+    await messages_services.send_message(
+        fake_session, user, conversation.id, request
+    )
+    assert (
+        conversation.support_status
+        == message_constants.SupportStatus.WAITING_FOR_SUPPORT
+    )
+
+
+@pytest.mark.asyncio
+async def test_support_mark_read_staff_no_join(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Staff mark-read before joining is a no-op — never claims thread."""
+    staff = _make_user(user_id="staff-1", role=UserRole.ADMIN)
+    conversation = _make_support_conversation()
+    monkeypatch.setattr(
+        messages_repository,
+        "get_conversation_by_id_or_raise",
+        AsyncMock(return_value=conversation),
+    )
+    monkeypatch.setattr(
+        messages_repository, "is_conversation_participant", AsyncMock(return_value=False)
+    )
+    monkeypatch.setattr(
+        messages_services, "_can_handle_support", AsyncMock(return_value=True)
+    )
+    mark = AsyncMock()
+    monkeypatch.setattr(messages_repository, "mark_conversation_read", mark)
+    join = AsyncMock()
+    monkeypatch.setattr(messages_repository, "add_support_participant", join)
+
+    await messages_services.mark_conversation_read(
+        fake_session, staff, conversation.id
+    )
+    mark.assert_not_awaited()
+    join.assert_not_awaited()
+
+
+# route-level: support endpoints
+
+def test_start_support_route(messages_client, monkeypatch) -> None:
+    user = _make_user(role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    conversation_response = _make_conversation_response()
+    conversation_response.type = "support"
+    conversation_response.booking_id = None
+    monkeypatch.setattr(
+        messages_router.messages_services,
+        "start_support_conversation",
+        AsyncMock(return_value=conversation_response),
+    )
+    response = messages_client.post(
+        "/api/v1/messages/support",
+        json={"subject": "Help", "content": "I need help"},
+        headers={"Authorization": f"Bearer {_token_for(user)}"},
+    )
+    assert response.status_code == 201
+    assert response.json()["type"] == "support"
+
+
+def test_support_queue_route_forbidden_for_guest(messages_client, monkeypatch) -> None:
+    user = _make_user(role=UserRole.GUEST)
+    _patch_auth_user(monkeypatch, user)
+    response = messages_client.get(
+        "/api/v1/messages/support/queue",
+        headers={"Authorization": f"Bearer {_token_for(user)}"},
+    )
+    assert response.status_code == 403
+
+
+def test_support_status_route_not_found(messages_client, monkeypatch) -> None:
+    _assert_route_returns_404(
+        messages_client,
+        monkeypatch,
+        "set_support_status",
+        "post",
+        "/api/v1/messages/support/conv-1/status",
+        json={"status": "resolved"},
         role=UserRole.ADMIN,
     )

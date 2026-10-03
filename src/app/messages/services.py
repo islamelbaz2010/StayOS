@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -21,9 +21,11 @@ from app.shared.outbox import write_event
 from . import repository as messages_repository
 from .constants import (
     ConversationStatus,
+    ConversationType,
     MessageAutomationType,
     MessageStatus,
     ParticipantRole,
+    SupportStatus,
 )
 from .models import Conversation, ConversationParticipant
 from .schemas import (
@@ -35,6 +37,7 @@ from .schemas import (
     MessageResponse,
     MessageTemplateResponse,
     ParticipantResponse,
+    SupportConversationCreate,
     UnreadCountResponse,
 )
 from .templates import list_quick_reply_templates, render_automated
@@ -100,6 +103,23 @@ async def _notify_message_recipients(
             }
         )
 
+    if conversation.type == ConversationType.SUPPORT:
+        # A new/updated support thread has no staff participant yet —
+        # notify the operations inbox (admins + staff with the
+        # operations grant) so the queue sees it. Once a support agent
+        # has joined, only actual participants are notified.
+        sender_role = next(
+            (p.role for p in conversation.participants if p.user_id == sender.id),
+            None,
+        )
+        has_support_recipient = any(
+            r["role"] == ParticipantRole.SUPPORT for r in recipients
+        )
+        if sender_role != ParticipantRole.SUPPORT and not has_support_recipient:
+            recipients.extend(
+                await _operations_staff_recipients(session, exclude_ids={sender.id})
+            )
+
     if not recipients:
         return
 
@@ -134,7 +154,17 @@ async def send_message(
         raise ValidationError("Conversation is not active")
 
     if not await messages_repository.is_conversation_participant(session, conversation_id, user.id):
-        raise AuthorizationError("Not authorized to send messages in this conversation")
+        # Staff replying to a support thread join it on first reply —
+        # same auto-join pattern as co-hosts on reservation threads.
+        if conversation.type == ConversationType.SUPPORT and await _can_handle_support(
+            session, user
+        ):
+            participant = await messages_repository.add_support_participant(
+                session, conversation.id, user.id
+            )
+            conversation.participants.append(participant)
+        else:
+            raise AuthorizationError("Not authorized to send messages in this conversation")
 
     role = _participant_role_for_user(user, conversation)
 
@@ -147,6 +177,12 @@ async def send_message(
         status=MessageStatus.SENT,
     )
 
+    if conversation.type == ConversationType.SUPPORT:
+        conversation.support_status = (
+            SupportStatus.WAITING_FOR_USER
+            if role == ParticipantRole.SUPPORT
+            else SupportStatus.WAITING_FOR_SUPPORT
+        )
     conversation.updated_at = datetime.now(UTC)
     session.add(conversation)
     await session.flush()
@@ -154,6 +190,247 @@ async def send_message(
     await _notify_message_recipients(session, conversation, user, message)
 
     return MessageResponse.model_validate(message)
+
+
+async def _operations_staff_recipients(
+    session: AsyncSession, exclude_ids: set[str] | None = None
+) -> list[dict[str, Any]]:
+    """Active admins + staff holding the `operations` grant — the shared
+    support inbox used to fan out new SUPPORT thread notifications."""
+    from app.auth.constants import StaffPermission, UserRole
+    from app.auth.models import StaffPermission as StaffPermissionRow
+
+    excluded = exclude_ids or set()
+    rows = await session.execute(
+        select(
+            User.id, User.email, User.phone_number, User.locale, User.display_name
+        )
+        .outerjoin(StaffPermissionRow, StaffPermissionRow.user_id == User.id)
+        .where(
+            User.is_active.is_(True),
+            User.id.notin_(excluded) if excluded else True,
+            or_(
+                User.role == UserRole.ADMIN,
+                and_(
+                    User.role == UserRole.STAFF,
+                    StaffPermissionRow.permission == StaffPermission.OPERATIONS,
+                    StaffPermissionRow.is_active.is_(True),
+                ),
+            ),
+        )
+        .distinct()
+    )
+    return [
+        {
+            "user_id": row[0],
+            "email": row[1],
+            "phone_number": row[2],
+            "locale": row[3] or "ar",
+            "name": row[4] or "StayOS Support",
+            "role": ParticipantRole.SUPPORT,
+        }
+        for row in rows.all()
+    ]
+
+
+async def _can_handle_support(session: AsyncSession, user: User) -> bool:
+    """Admins always; staff need an active `operations` grant."""
+    from app.auth.constants import UserRole
+    from app.auth.models import StaffPermission
+
+    if user.role == UserRole.ADMIN:
+        return True
+    if user.role != UserRole.STAFF:
+        return False
+    result = await session.execute(
+        select(StaffPermission.id).where(
+            StaffPermission.user_id == user.id,
+            StaffPermission.permission == "operations",
+            StaffPermission.is_active.is_(True),
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
+def _user_participant_role(user: User) -> str:
+    """The role a marketplace user takes inside a support thread."""
+    if user.role == "host":
+        return ParticipantRole.HOST
+    if user.role == "admin" or user.role == "staff":
+        return ParticipantRole.SUPPORT
+    return ParticipantRole.GUEST
+
+
+async def start_support_conversation(
+    session: AsyncSession,
+    user: User,
+    request: SupportConversationCreate,
+) -> ConversationResponse:
+    """User-initiated StayOS Support thread.
+
+    Optional `booking_id` is stored as context only — support threads
+    never claim the reservation conversation's booking link. Booking
+    context is validated so a user cannot attach a reservation they have
+    no relationship to.
+    """
+    context_booking_id = None
+    unit_id = None
+    if request.booking_id:
+        booking = await bookings_repository.get_booking_or_raise(
+            session, request.booking_id
+        )
+        is_guest = booking.guest_id == user.id
+        is_unit_host = booking.unit is not None and booking.unit.host_id == user.id
+        if not (is_guest or is_unit_host or user.role == "admin"):
+            raise AuthorizationError(
+                "Not authorized to reference this booking"
+            )
+        context_booking_id = booking.id
+        unit_id = booking.unit_id
+
+    conversation = await messages_repository.get_or_create_user_support_conversation(
+        session,
+        user_id=user.id,
+        user_role=_user_participant_role(user),
+        context_booking_id=context_booking_id,
+        unit_id=unit_id,
+        subject=request.subject,
+    )
+    # A fresh subject only sticks to a brand-new thread; keep the
+    # original subject on reuse so history stays coherent.
+    if not conversation.subject and request.subject:
+        conversation.subject = request.subject
+        session.add(conversation)
+
+    message = await messages_repository.create_message(
+        session,
+        conversation_id=conversation.id,
+        sender_id=user.id,
+        sender_role=_user_participant_role(user),
+        content=request.content,
+        status=MessageStatus.SENT,
+    )
+
+    conversation.support_status = SupportStatus.WAITING_FOR_SUPPORT
+    conversation.updated_at = datetime.now(UTC)
+    session.add(conversation)
+    await session.flush()
+
+    await _notify_message_recipients(session, conversation, user, message)
+    return ConversationResponse.model_validate(conversation)
+
+
+async def list_support_queue(
+    session: AsyncSession,
+    user: User,
+    support_status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[ConversationListItem]:
+    """Staff triage view over every SUPPORT conversation."""
+    if not await _can_handle_support(session, user):
+        raise AuthorizationError("Insufficient permissions")
+
+    conversations = await messages_repository.list_support_queue(
+        session, support_status=support_status, limit=limit, offset=offset
+    )
+
+    user_ids = {
+        p.user_id for c in conversations for p in c.participants
+    }
+    names: dict[str, str | None] = {}
+    if user_ids:
+        rows = await session.execute(
+            select(User.id, User.display_name).where(User.id.in_(user_ids))
+        )
+        names = {row[0]: row[1] for row in rows.all()}
+
+    unit_ids = {c.unit_id for c in conversations if c.unit_id}
+    titles: dict[str, str] = {}
+    if unit_ids:
+        title_rows = await session.execute(
+            select(
+                UnitListing.unit_id,
+                UnitListing.title_ar,
+                UnitListing.title_en,
+            ).where(UnitListing.unit_id.in_(unit_ids))
+        )
+        titles = {
+            row[0]: (row[1] or row[2])
+            for row in title_rows.all()
+            if row[1] or row[2]
+        }
+
+    items: list[ConversationListItem] = []
+    for conversation in conversations:
+        requester = next(
+            (p for p in conversation.participants if p.role != ParticipantRole.SUPPORT),
+            None,
+        )
+        last_message = (
+            MessageResponse.model_validate(conversation.messages[-1])
+            if conversation.messages
+            else None
+        )
+        items.append(
+            ConversationListItem(
+                id=conversation.id,
+                booking_id=conversation.booking_id,
+                unit_id=conversation.unit_id,
+                type=conversation.type,
+                status=conversation.status,
+                subject=conversation.subject,
+                support_status=conversation.support_status,
+                context_booking_id=conversation.context_booking_id,
+                unread_count=0,
+                counterparty_name=names.get(requester.user_id) if requester else None,
+                unit_title=titles.get(conversation.unit_id) if conversation.unit_id else None,
+                last_message=last_message,
+                created_at=conversation.created_at,
+                updated_at=conversation.updated_at,
+            )
+        )
+    return items
+
+
+async def set_support_status(
+    session: AsyncSession,
+    user: User,
+    conversation_id: str,
+    status: str,
+) -> ConversationResponse:
+    """Transition a support thread's workflow state.
+
+    Staff resolve/reopen threads; the thread's own user may also mark a
+    thread resolved or reopen it (new messages always reopen it too).
+    """
+    conversation = await messages_repository.get_conversation_by_id_or_raise(
+        session, conversation_id
+    )
+    if conversation.type != ConversationType.SUPPORT:
+        raise ValidationError("Not a support conversation")
+
+    is_participant = await messages_repository.is_conversation_participant(
+        session, conversation_id, user.id
+    )
+    can_handle = await _can_handle_support(session, user)
+    if not is_participant and not can_handle:
+        raise AuthorizationError("Not authorized to update this conversation")
+
+    if not can_handle and status not in (
+        SupportStatus.OPEN,
+        SupportStatus.WAITING_FOR_SUPPORT,
+        SupportStatus.RESOLVED,
+    ):
+        # The thread's own user may reopen or resolve — staff-facing
+        # triage states (e.g. waiting_for_user) belong to staff only.
+        raise AuthorizationError("Not authorized to set this status")
+
+    conversation.support_status = SupportStatus(status)
+    conversation.updated_at = datetime.now(UTC)
+    session.add(conversation)
+    await session.flush()
+    return ConversationResponse.model_validate(conversation)
 
 
 async def contact_host(
@@ -205,7 +482,13 @@ async def get_conversation_detail(
 ) -> ConversationDetailResponse:
     conversation = await messages_repository.get_conversation_by_id_or_raise(session, conversation_id)
     if not await messages_repository.is_conversation_participant(session, conversation_id, user.id):
-        raise AuthorizationError("Not authorized to view this conversation")
+        # Operations staff can read support threads before joining them.
+        if conversation.type == ConversationType.SUPPORT and await _can_handle_support(
+            session, user
+        ):
+            pass
+        else:
+            raise AuthorizationError("Not authorized to view this conversation")
 
     messages = await messages_repository.list_messages_for_conversation(session, conversation_id)
     return ConversationDetailResponse(
@@ -214,6 +497,9 @@ async def get_conversation_detail(
         unit_id=conversation.unit_id,
         type=conversation.type,
         status=conversation.status,
+        subject=conversation.subject,
+        support_status=conversation.support_status,
+        context_booking_id=conversation.context_booking_id,
         participants=await _participant_responses(session, conversation, user),
         created_at=conversation.created_at,
         updated_at=conversation.updated_at,
@@ -229,9 +515,14 @@ async def list_messages(
     offset: int = 0,
 ) -> list[MessageResponse]:
     # Fetch conversation to verify it exists (raises NotFoundError)
-    await messages_repository.get_conversation_by_id_or_raise(session, conversation_id)
+    conversation = await messages_repository.get_conversation_by_id_or_raise(session, conversation_id)
     if not await messages_repository.is_conversation_participant(session, conversation_id, user.id):
-        raise AuthorizationError("Not authorized to view this conversation")
+        if conversation.type == ConversationType.SUPPORT and await _can_handle_support(
+            session, user
+        ):
+            pass
+        else:
+            raise AuthorizationError("Not authorized to view this conversation")
 
     messages = await messages_repository.list_messages_for_conversation(
         session, conversation_id, limit, offset
@@ -243,8 +534,17 @@ async def mark_conversation_read(
     session: AsyncSession, user: User, conversation_id: str
 ) -> None:
     # Fetch conversation to verify it exists (raises NotFoundError)
-    await messages_repository.get_conversation_by_id_or_raise(session, conversation_id)
+    conversation = await messages_repository.get_conversation_by_id_or_raise(
+        session, conversation_id
+    )
     if not await messages_repository.is_conversation_participant(session, conversation_id, user.id):
+        # Staff may read a thread before joining it (first reply joins).
+        # Reading alone must not claim the thread, so the mark is a no-op
+        # for staff who are not participants yet.
+        if conversation.type == ConversationType.SUPPORT and await _can_handle_support(
+            session, user
+        ):
+            return
         raise AuthorizationError("Not authorized to view this conversation")
 
     await messages_repository.mark_conversation_read(
@@ -304,6 +604,10 @@ async def list_conversations(
         other = next(
             (p for p in conversation.participants if p.user_id != user.id), None
         )
+        counterparty = names.get(other.user_id) if other else None
+        if conversation.type == ConversationType.SUPPORT:
+            # The support counterparty is the team, not one staff user.
+            counterparty = "StayOS Support"
         items.append(
             ConversationListItem(
                 id=conversation.id,
@@ -311,8 +615,11 @@ async def list_conversations(
                 unit_id=conversation.unit_id,
                 type=conversation.type,
                 status=conversation.status,
+                subject=conversation.subject,
+                support_status=conversation.support_status,
+                context_booking_id=conversation.context_booking_id,
                 unread_count=unread_count,
-                counterparty_name=names.get(other.user_id) if other else None,
+                counterparty_name=counterparty,
                 unit_title=titles.get(conversation.unit_id) if conversation.unit_id else None,
                 last_message=last_message,
                 created_at=conversation.created_at,

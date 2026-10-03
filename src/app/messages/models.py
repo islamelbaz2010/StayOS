@@ -15,7 +15,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.models import Base, TimestampMixin, UUIDMixin
 
-from .constants import ConversationStatus, ConversationType, MessageStatus, ParticipantRole
+from .constants import (
+    ConversationStatus,
+    ConversationType,
+    MessageStatus,
+    ParticipantRole,
+)
 
 
 class Conversation(UUIDMixin, TimestampMixin, Base):
@@ -24,6 +29,7 @@ class Conversation(UUIDMixin, TimestampMixin, Base):
         UniqueConstraint("booking_id", name="uq_conversations_booking_id"),
         Index("idx_conversations_booking_id", "booking_id"),
         Index("idx_conversations_unit_id", "unit_id"),
+        Index("ix_conversations_support_queue", "type", "support_status"),
         {"schema": "messaging"},
     )
 
@@ -42,6 +48,12 @@ class Conversation(UUIDMixin, TimestampMixin, Base):
     type: Mapped[str] = mapped_column(String(50), nullable=False, default=ConversationType.RESERVATION)
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=ConversationStatus.ACTIVE
+    )
+    # SUPPORT conversations: user-facing subject line + lightweight
+    # workflow state (open / waiting_* / resolved). NULL elsewhere.
+    subject: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    support_status: Mapped[str | None] = mapped_column(
+        String(30), nullable=True, default=None
     )
 
     participants: Mapped[list["ConversationParticipant"]] = relationship(

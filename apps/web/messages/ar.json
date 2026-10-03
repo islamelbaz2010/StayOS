@@ -903,7 +903,8 @@
     "memberSince": "عضو منذ {date}",
     "guestReviewsCount": "{count, plural, =0 {لا توجد تقييمات} one {# تقييم} two {# تقييمان} few {# تقييمات} other {# تقييم}}",
     "guestRating": "التقييم {rating}",
-    "messageGuest": "مراسلة الضيف"
+    "messageGuest": "مراسلة الضيف",
+    "getHelpWithBooking": "احصل على مساعدة بشأن هذا الحجز"
   },
   "booking": {
     "title": "طلب حجز",
@@ -1074,7 +1075,8 @@
     "submitReview": "إرسال التقييم",
     "reviewError": "فشل إرسال التقييم. يرجى المحاولة مرة أخرى.",
     "viewGuestReviews": "عرض {count} مراجعة للضيف",
-    "hideGuestReviews": "إخفاء المراجعات"
+    "hideGuestReviews": "إخفاء المراجعات",
+    "allGovernorates": "كل المحافظات"
   },
   "availability": {
     "title": "التوفر",
@@ -1701,7 +1703,10 @@
       "unread_message": "لديك رسائل غير مقروءة",
       "incomplete_listing": "الإعلان غير مكتمل",
       "incompleteListingSubtitle": "بعض العناصر تحتاج إلى اهتمام قبل المراجعة."
-    }
+    },
+    "attentionCollapsed": "{count} عناصر تحتاج اهتمامك",
+    "show": "عرض",
+    "dismiss": "إخفاء"
   },
   "hostProfile": {
     "title": "ملف المضيف",
@@ -1786,13 +1791,42 @@
   },
   "support": {
     "title": "الدعم",
-    "description": "هل تحتاج إلى مساعدة في الحجز أو العقار أو الدفع؟ تواصل مع فريق دعم StayOS عبر واتساب.",
-    "openWhatsApp": "الدردشة على واتساب",
-    "notConfigured": "تفاصيل التواصل مع الدعم ستكون متاحة قريباً.",
-    "backToHome": "العودة للرئيسية",
-    "whatsappMessage": "مرحباً فريق دعم StayOS، أحتاج مساعدة في حجزي.",
-    "contactTitle": "تواصل معنا",
-    "browseFaq": "تصفح الأسئلة الشائعة"
+    "subtitle": "كيف يمكننا مساعدتك؟",
+    "searchHelpPlaceholder": "ابحث في مقالات المساعدة",
+    "searchHelp": "ابحث في المساعدة",
+    "startConversation": "ابدأ محادثة",
+    "newConversation": "محادثة جديدة",
+    "subjectLabel": "الموضوع",
+    "subjectOptional": "اختياري",
+    "subjectPlaceholder": "مثال: سؤال عن حجز",
+    "messageLabel": "الرسالة",
+    "messagePlaceholder": "صف ما تحتاج المساعدة فيه…",
+    "send": "إرسال",
+    "sending": "جارٍ الإرسال…",
+    "yourConversations": "محادثاتك",
+    "noConversations": "لا توجد محادثات دعم بعد. ابدأ واحدة وسنرد عليك.",
+    "popularTopics": "مواضيع شائعة",
+    "faqTitle": "الأسئلة الشائعة",
+    "browseFaq": "تصفح الأسئلة الشائعة",
+    "reportSafety": "الإبلاغ عن مشكلة أمنية",
+    "supportTeam": "دعم StayOS",
+    "you": "أنت",
+    "typeMessage": "اكتب رسالة…",
+    "statusOpen": "مفتوحة",
+    "statusWaiting_support": "بانتظار الدعم",
+    "statusWaiting_user": "بانتظارك",
+    "statusResolved": "محلولة",
+    "resolvedBanner": "تم حل هذه المحادثة.",
+    "markResolved": "وضع كمحلولة",
+    "reopen": "إعادة فتح المحادثة",
+    "linkedBooking": "الحجز المرتبط",
+    "signInTitle": "تواصل مع دعم StayOS",
+    "signInHint": "سجّل الدخول لبدء محادثة خاصة مع فريق الدعم.",
+    "signIn": "تسجيل الدخول",
+    "loadError": "تعذّر تحميل محادثاتك.",
+    "sendError": "تعذّر إرسال رسالتك. حاول مرة أخرى.",
+    "backToList": "كل المحادثات",
+    "empty": "لا توجد رسائل بعد."
   },
   "footer": {
     "support": "الدعم"
@@ -2006,7 +2040,8 @@
       "operations": "العمليات",
       "content": "المحتوى",
       "admin": "الإدارة"
-    }
+    },
+    "support": "بريد الدعم"
   },
   "adminDisputes": {
     "title": "النزاعات",
@@ -3200,5 +3235,48 @@
       "payment_created": "أساس التاريخ: إنشاء الدفع",
       "ledger_recognised_at_capture": "أساس التاريخ: الاعتراف في الدفتر (عند تأكيد الدفع)"
     }
+  },
+  "helpCenter": {
+    "title": "مركز المساعدة",
+    "subtitle": "كيف يمكننا مساعدتك؟",
+    "searchPlaceholder": "ابحث في مقالات المساعدة",
+    "searchButton": "بحث",
+    "recommended": "مقترح لك",
+    "browseTopics": "تصفح حسب الموضوع",
+    "articles": "{count} مقالات",
+    "faqTitle": "الأسئلة الشائعة",
+    "browseFaq": "تصفح الأسئلة الشائعة",
+    "contactTitle": "تواصل مع دعم StayOS",
+    "contactHint": "لم تجد ما تحتاجه؟ ابدأ محادثة خاصة مع فريق الدعم.",
+    "startConversation": "ابدأ محادثة",
+    "searchResultsFor": "نتائج البحث عن \"{q}\"",
+    "noResults": "لا توجد مقالات تطابق بحثك.",
+    "noResultsHint": "جرّب كلمات مختلفة، أو اسأل دعم StayOS مباشرة.",
+    "clearSearch": "مسح البحث",
+    "relatedArticles": "مقالات ذات صلة",
+    "backToHelp": "العودة إلى مركز المساعدة",
+    "stillNeedHelp": "ما زلت بحاجة إلى مساعدة؟",
+    "stillNeedHelpHint": "يمكن لفريق الدعم مساعدتك في أي شيء لا تغطيه المقالات.",
+    "articleNotFound": "تعذّر العثور على مقال المساعدة هذا.",
+    "inTopic": "الموضوع"
+  },
+  "adminSupport": {
+    "title": "بريد الدعم",
+    "queueAll": "الكل",
+    "statusOpen": "مفتوحة",
+    "statusWaiting_support": "بانتظار الدعم",
+    "statusWaiting_user": "بانتظار المستخدم",
+    "statusResolved": "محلولة",
+    "empty": "لا توجد محادثات دعم.",
+    "select": "اختر محادثة لفتحها.",
+    "requester": "مقدم الطلب",
+    "linkedBooking": "الحجز المرتبط",
+    "setStatus": "تعيين الحالة",
+    "replyPlaceholder": "الرد على المستخدم…",
+    "send": "إرسال",
+    "sending": "جارٍ الإرسال…",
+    "sendError": "تعذّر إرسال الرد. حاول مرة أخرى.",
+    "loadError": "تعذّر تحميل بريد الدعم.",
+    "noMessages": "لا توجد رسائل بعد."
   }
 }

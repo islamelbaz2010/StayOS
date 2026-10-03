@@ -8,7 +8,13 @@ from sqlalchemy.orm import selectinload
 
 from app.shared.exceptions import NotFoundError
 
-from .constants import ConversationStatus, ConversationType, MessageStatus, ParticipantRole
+from .constants import (
+    ConversationStatus,
+    ConversationType,
+    MessageStatus,
+    ParticipantRole,
+    SupportStatus,
+)
 from .models import Conversation, ConversationParticipant, Message, MessageTemplate
 
 
@@ -228,6 +234,104 @@ async def get_or_create_support_conversation(
     await session.flush()
     await session.refresh(conversation, attribute_names=["participants"])
     return conversation
+
+
+async def get_or_create_user_support_conversation(
+    session: AsyncSession,
+    user_id: str,
+    user_role: str,
+    context_booking_id: str | None,
+    unit_id: str | None,
+    subject: str | None,
+) -> Conversation:
+    """User ↔ StayOS Support thread started from the Support page.
+
+    Reuses an unresolved thread for the same user + booking context so a
+    refresh or repeat visit does not spawn duplicates; a resolved thread
+    is left closed and a fresh one is created.
+    """
+    result = await session.execute(
+        select(Conversation)
+        .options(
+            selectinload(Conversation.participants),
+            selectinload(Conversation.messages),
+        )
+        .where(
+            Conversation.type == ConversationType.SUPPORT,
+            Conversation.context_booking_id.is_(None)
+            if context_booking_id is None
+            else Conversation.context_booking_id == context_booking_id,
+            Conversation.support_status != SupportStatus.RESOLVED,
+        )
+        .order_by(Conversation.updated_at.desc())
+    )
+    for conv in result.scalars().all():
+        if any(p.user_id == user_id for p in conv.participants):
+            return conv
+
+    conversation = Conversation(
+        id=str(uuid4()),
+        booking_id=None,
+        context_booking_id=context_booking_id,
+        unit_id=unit_id,
+        type=ConversationType.SUPPORT,
+        status=ConversationStatus.ACTIVE,
+        subject=subject,
+        support_status=SupportStatus.OPEN,
+    )
+    session.add(conversation)
+    await session.flush()
+
+    session.add(
+        ConversationParticipant(
+            conversation_id=conversation.id,
+            user_id=user_id,
+            role=user_role,
+        )
+    )
+    await session.flush()
+    await session.refresh(conversation, attribute_names=["participants"])
+    return conversation
+
+
+async def list_support_queue(
+    session: AsyncSession,
+    support_status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[Conversation]:
+    """Staff support queue — all SUPPORT conversations, newest activity
+    first. Access is gated at the router by staff permission; the query
+    itself returns every support thread for triage."""
+    stmt = (
+        select(Conversation)
+        .options(
+            selectinload(Conversation.participants),
+            selectinload(Conversation.messages),
+        )
+        .where(Conversation.type == ConversationType.SUPPORT)
+        .order_by(Conversation.updated_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    if support_status:
+        stmt = stmt.where(Conversation.support_status == support_status)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def add_support_participant(
+    session: AsyncSession, conversation_id: str, user_id: str
+) -> ConversationParticipant:
+    """A staff member joins a support thread when they first reply."""
+    participant = ConversationParticipant(
+        conversation_id=conversation_id,
+        user_id=user_id,
+        role=ParticipantRole.SUPPORT,
+    )
+    session.add(participant)
+    await session.flush()
+    return participant
 
 
 async def is_conversation_participant(

@@ -77,6 +77,7 @@ async def list_paginated_host_bookings(
     unit_id: str | None = None,
     search: str | None = None,
     area: str | None = None,
+    governorate: str | None = None,
     limit: int = 50,
     offset: int = 0,
 ) -> host_schemas.PaginatedHostBookings:
@@ -98,6 +99,7 @@ async def list_paginated_host_bookings(
         unit_id=unit_id,
         search=search,
         area=area,
+        governorate=governorate,
         limit=limit,
         offset=offset,
     )

@@ -344,15 +344,34 @@ export function Header() {
                     d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
                   />
                 </svg>
-                <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
-                  {(user.display_name || user.phone_number || user.email || "?")
-                    .charAt(0)
-                    .toUpperCase()}
+                <span className="relative inline-flex shrink-0">
+                  <span className="inline-flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                    {user.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={user.avatar_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      (
+                        user.display_name ||
+                        user.phone_number ||
+                        user.email ||
+                        "?"
+                      )
+                        .charAt(0)
+                        .toUpperCase()
+                    )}
+                  </span>
                   {badgeTotal > 0 && (
                     <span className="absolute -end-1 -top-1">
                       <CountBadge count={badgeTotal} />
                     </span>
                   )}
+                </span>
+                <span className="hidden max-w-28 truncate text-sm font-medium text-neutral-700 lg:inline">
+                  {user.display_name || user.phone_number || user.email}
                 </span>
               </button>
 

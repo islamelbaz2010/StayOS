@@ -69,7 +69,7 @@ export default function LanguageCurrencyPage() {
                     aria-pressed={active === lang}
                     className={`rounded-lg border px-6 py-3 text-sm font-semibold transition-colors disabled:opacity-50 ${
                       active === lang
-                        ? "border-primary-700 bg-primary-700 text-white"
+                        ? "border-brand-900 bg-brand-900 text-white"
                         : "border-neutral-300 text-neutral-700 hover:border-neutral-400"
                     }`}
                   >

@@ -315,6 +315,20 @@ describe("Language & currency page", () => {
     expect(screen.getByText(/EGP/)).toBeInTheDocument();
   });
 
+  it("renders the active language with a visible fill — never white-on-transparent", () => {
+    renderPage(LanguageCurrencyPage);
+    const pressed = [screen.getByText("العربية"), screen.getByText("English")].find(
+      (el) => el.closest("button")?.getAttribute("aria-pressed") === "true"
+    );
+    expect(pressed).toBeTruthy();
+    const cls = pressed!.closest("button")!.className;
+    // bg-primary-* is a dead token in this palette — it left the active
+    // button white-on-white (founder-reported blank button).
+    expect(cls).not.toContain("primary-");
+    expect(cls).toContain("bg-brand-900");
+    expect(cls).toContain("text-white");
+  });
+
   it("persists the locale on the user profile", async () => {
     renderPage(LanguageCurrencyPage);
     fireEvent.click(screen.getByText("English"));

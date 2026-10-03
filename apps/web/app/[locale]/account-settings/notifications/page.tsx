@@ -114,7 +114,7 @@ export default function NotificationPreferencesPage() {
                           disabled={update.isPending}
                           onClick={() => toggle(category, !checked)}
                           className={`relative mt-1 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-                            checked ? "bg-primary-700" : "bg-neutral-300"
+                            checked ? "bg-brand-900" : "bg-neutral-300"
                           }`}
                         >
                           <span

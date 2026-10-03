@@ -247,80 +247,84 @@ export default function HostBookingsPage() {
     <ProtectedRoute allowedRoles={["host", "admin"]}>
       <HostLayout>
         <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-4">
             <h1 className="text-2xl font-bold text-brand-900 sm:text-3xl">
               {t("title")}
             </h1>
+          </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder={t("searchPlaceholder")}
-                  className="input w-full sm:w-64"
-                />
-                {governorates.length > 0 && (
-                  <select
-                    value={governorate ?? "all"}
-                    onChange={(e) => handleGovernorateChange(e.target.value)}
-                    aria-label={t("allGovernorates")}
-                    className="input w-full sm:w-40"
-                  >
-                    <option value="all">{t("allGovernorates")}</option>
-                    {governorates.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {areas.length > 0 && (
-                  <select
-                    value={area ?? "all"}
-                    onChange={(e) => handleAreaChange(e.target.value)}
-                    aria-label={t("allAreas")}
-                    className="input w-full sm:w-40"
-                  >
-                    <option value="all">{t("allAreas")}</option>
-                    {areas.map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
-                )}
+          {/* Filters live in their own responsive grid — row 1 holds the
+              search + location/listing selects (wrap to 1/2/4 columns),
+              row 2 holds the status pills whose scroll stays inside the
+              pill strip so the page never scrolls horizontally. */}
+          <div className="mb-6 grid gap-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder={t("searchPlaceholder")}
+                className="input w-full"
+              />
+              {governorates.length > 0 && (
                 <select
-                  value={unitId ?? "all"}
-                  onChange={(e) => handleUnitChange(e.target.value)}
-                  className="input w-full sm:w-48"
+                  value={governorate ?? "all"}
+                  onChange={(e) => handleGovernorateChange(e.target.value)}
+                  aria-label={t("allGovernorates")}
+                  className="input w-full"
                 >
-                  <option value="all">{t("allUnits")}</option>
-                  {listingOptions.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.title}
+                  <option value="all">{t("allGovernorates")}</option>
+                  {governorates.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
                     </option>
                   ))}
                 </select>
-              </div>
-
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {FILTERS.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => handleStatusChange(f)}
-                    className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition ${
-                      status === f
-                        ? "bg-brand-900 text-white"
-                        : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
-                    }`}
-                  >
-                    {t(`filter.${f}`)}
-                  </button>
+              )}
+              {areas.length > 0 && (
+                <select
+                  value={area ?? "all"}
+                  onChange={(e) => handleAreaChange(e.target.value)}
+                  aria-label={t("allAreas")}
+                  className="input w-full"
+                >
+                  <option value="all">{t("allAreas")}</option>
+                  {areas.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <select
+                value={unitId ?? "all"}
+                onChange={(e) => handleUnitChange(e.target.value)}
+                className="input w-full"
+              >
+                <option value="all">{t("allUnits")}</option>
+                {listingOptions.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.title}
+                  </option>
                 ))}
-              </div>
+              </select>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {FILTERS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => handleStatusChange(f)}
+                  className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition ${
+                    status === f
+                      ? "bg-brand-900 text-white"
+                      : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                  }`}
+                >
+                  {t(`filter.${f}`)}
+                </button>
+              ))}
             </div>
           </div>
 

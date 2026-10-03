@@ -58,7 +58,8 @@
     "reservations": "Reservations",
     "privacy": "Privacy",
     "terms": "Terms of service",
-    "activity": "Account activity"
+    "activity": "Account activity",
+    "back": "Back"
   },
   "auth": {
     "signIn": "Sign in",

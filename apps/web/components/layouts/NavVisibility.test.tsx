@@ -100,16 +100,18 @@ describe("Header role visibility", () => {
     expect(screen.queryByText(t.messages)).toBeNull();
   });
 
-  it("guest sees trips/favorites/payments but no admin link", () => {
+  it("guest sees account categories with trips/favorites inside, no admin link", () => {
     as("guest");
-    renderWith(<Header />);
+    const { container } = renderWith(<Header />);
+    expect(screen.getAllByText(t.account).length).toBeGreaterThan(0);
+    openGroup(container, t.account);
     expect(screen.getAllByText(t.trips).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.favorites).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(t.account).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: t.profile })).toHaveAttribute("href", "/en/profile");
-    expect(screen.getByRole("link", { name: t.accountSettings })).toHaveAttribute("href", "/en/account-settings");
     expect(screen.getByRole("link", { name: t.notifications })).toHaveAttribute("href", "/en/notifications");
     expect(screen.queryByText(t.adminConsole)).toBeNull();
+    openGroup(container, t.preferences);
+    expect(screen.getByRole("link", { name: t.accountSettings })).toHaveAttribute("href", "/en/account-settings");
   });
 
   it("staff without permissions gets NO admin link (dead-end 403)", () => {
@@ -132,10 +134,12 @@ describe("Header role visibility", () => {
 
   it("host sees host workspace + earnings + trips but no admin link", () => {
     as("host");
-    renderWith(<Header />);
+    const { container } = renderWith(<Header />);
+    openGroup(container, t.hosting);
     expect(screen.getAllByText(t.hostDashboard).length).toBeGreaterThan(0);
     expect(screen.queryByText(t.adminConsole)).toBeNull();
     // Hosts book as marketplace users too — trips/favorites stay visible.
+    openGroup(container, t.account);
     expect(screen.getAllByText(t.trips).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.favorites).length).toBeGreaterThan(0);
   });
@@ -143,6 +147,7 @@ describe("Header role visibility", () => {
   it("host nav labels match their destinations (dashboard/earnings)", () => {
     as("host");
     const { container } = renderWith(<Header />);
+    openGroup(container, t.hosting);
     const links = Array.from(container.querySelectorAll("a"));
     const byHref = (href: string) =>
       links.filter((a) => a.getAttribute("href") === href);
@@ -280,15 +285,47 @@ describe("Footer role visibility", () => {
   });
 });
 
-/** Ordered hrefs + section labels inside the desktop account dropdown. */
-function accountMenuEntries(container: HTMLElement): string[] {
+/** Ordered root-level entries of the desktop account dropdown —
+ *  `GROUP:label` for category buttons, hrefs for direct links. */
+function menuRootEntries(container: HTMLElement): string[] {
   const menu = container.querySelector('[role="menu"]');
   expect(menu).not.toBeNull();
-  return Array.from(menu!.querySelectorAll("a, p"))
-    .filter((el) => el.tagName === "A" || el.className.includes("uppercase"))
-    .map((el) =>
-      el.tagName === "A" ? (el.getAttribute("href") ?? "") : `SECTION:${el.textContent}`
-    );
+  const rows = Array.from(menu!.querySelectorAll("button, a"))
+    .filter((el) => !el.closest(".sm\\:hidden") || true) // keep all; dedupe below
+    .filter((el) => {
+      // Only direct nav rows — exclude the Sign out button and the
+      // language switcher buttons.
+      const text = el.textContent ?? "";
+      return text !== messages.nav.signOut && text !== "English" && text !== "العربية";
+    });
+  return rows.map((el) =>
+    el.tagName === "A"
+      ? (el.getAttribute("href") ?? "")
+      : `GROUP:${(el.textContent ?? "").replace(/\d+\+?/g, "").trim()}`
+  );
+}
+
+/** Click a root category button inside the desktop account dropdown —
+ *  navigates Back to the root first when a submenu is open. */
+function openGroup(container: HTMLElement, label: string) {
+  const menu = container.querySelector('[role="menu"]')!;
+  const backBtn = Array.from(menu.querySelectorAll("button")).find((b) =>
+    (b.textContent ?? "").includes(messages.nav.back)
+  );
+  if (backBtn) fireEvent.click(backBtn);
+  const btn = Array.from(menu.querySelectorAll("button")).find((b) =>
+    (b.textContent ?? "").includes(label)
+  );
+  expect(btn, `group button "${label}"`).toBeTruthy();
+  fireEvent.click(btn!);
+}
+
+/** Hrefs of the links currently visible inside the dropdown (submenu). */
+function submenuHrefs(container: HTMLElement): string[] {
+  const menu = container.querySelector('[role="menu"]')!;
+  return Array.from(menu.querySelectorAll("a")).map(
+    (a) => a.getAttribute("href") ?? ""
+  );
 }
 
 describe("Account menu information architecture", () => {
@@ -300,121 +337,155 @@ describe("Account menu information architecture", () => {
     mockHostBookings = [];
   });
 
-  it("guest menu: Account → Become a host → Preferences → Help sections", () => {
+  it("guest root shows only categories; destinations live in submenus", () => {
     as("guest");
     const { container } = renderWith(<Header />);
-    const entries = accountMenuEntries(container);
-    const order = [
-      `SECTION:${t.account}`,
+    const entries = menuRootEntries(container);
+    expect(entries).toEqual([
+      `GROUP:${t.account}`,
+      "/en/become-a-host",
+      `GROUP:${t.preferences}`,
+      `GROUP:${t.helpSupport}`,
+    ]);
+    // The root level renders no deep destinations — that's the point of
+    // the hierarchical redesign.
+    for (const deep of [
+      "/en/profile",
+      "/en/bookings",
+      "/en/messages",
+      "/en/account-settings",
+      "/en/help",
+      "/en/support",
+    ]) {
+      expect(entries).not.toContain(deep);
+    }
+  });
+
+  it("guest Account submenu holds profile/trips/favorites/messages/notifications", () => {
+    as("guest");
+    const { container } = renderWith(<Header />);
+    openGroup(container, t.account);
+    expect(submenuHrefs(container)).toEqual([
       "/en/profile",
       "/en/bookings",
       "/en/favorites",
       "/en/messages",
       "/en/notifications",
-      "/en/become-a-host",
-      `SECTION:${t.preferences}`,
+    ]);
+  });
+
+  it("guest Preferences + Help submenus; Back returns to root", () => {
+    as("guest");
+    const { container } = renderWith(<Header />);
+    openGroup(container, t.preferences);
+    expect(submenuHrefs(container)).toEqual([
       "/en/account-settings",
       "/en/account-settings/language",
-      `SECTION:${t.helpSupport}`,
-      "/en/help",
-      "/en/support",
-    ];
-    expect(entries).toEqual(order);
-    // payments/language are consolidated under Account Settings, not duplicated
-    expect(entries).not.toContain("/en/payments");
-    expect(entries.filter((e) => e === "/en/support")).toHaveLength(1);
+    ]);
+    // Back restores the root level
+    const menu = container.querySelector('[role="menu"]')!;
+    fireEvent.click(
+      Array.from(menu.querySelectorAll("button")).find((b) =>
+        (b.textContent ?? "").includes(t.back)
+      )!
+    );
+    expect(menuRootEntries(container)).toContain(`GROUP:${t.helpSupport}`);
+    openGroup(container, t.helpSupport);
+    expect(submenuHrefs(container)).toEqual(["/en/help", "/en/support"]);
   });
 
-  it("host menu adds a Hosting section with dashboard/listings/reservations/earnings/guide", () => {
+  it("host menu adds a Hosting submenu with dashboard/listings/reservations/earnings/guide", () => {
     as("host");
     const { container } = renderWith(<Header />);
-    const entries = accountMenuEntries(container);
-    const hostingIdx = entries.indexOf(`SECTION:${t.hosting}`);
-    expect(hostingIdx).toBeGreaterThan(-1);
-    const afterHosting = entries.slice(hostingIdx);
-    expect(afterHosting).toEqual(
-      expect.arrayContaining([
-        "/en/host",
-        "/en/host/listings",
-        "/en/host/bookings",
-        "/en/host/earnings",
-        "/en/host/guide",
-      ])
-    );
-    // dashboard comes first inside Hosting
-    expect(entries.indexOf("/en/host")).toBeLessThan(entries.indexOf("/en/host/guide"));
-    // language lives in the Preferences group after Hosting
-    const langIdx = entries.indexOf("/en/account-settings/language");
-    const prefIdx = entries.indexOf(`SECTION:${t.preferences}`);
-    expect(langIdx).toBeGreaterThan(-1);
-    expect(prefIdx).toBeGreaterThan(hostingIdx);
-    expect(langIdx).toBeGreaterThan(prefIdx);
-    // payments stays inside account settings — no top-level duplicate
-    expect(entries).not.toContain("/en/payments");
-    expect(entries).not.toContain("/en/admin");
+    const entries = menuRootEntries(container);
+    expect(entries).toEqual([
+      `GROUP:${t.account}`,
+      `GROUP:${t.hosting}`,
+      `GROUP:${t.preferences}`,
+      `GROUP:${t.helpSupport}`,
+    ]);
+    openGroup(container, t.hosting);
+    expect(submenuHrefs(container)).toEqual([
+      "/en/host",
+      "/en/host/listings",
+      "/en/host/bookings",
+      "/en/host/earnings",
+      "/en/host/guide",
+    ]);
   });
 
-  it("host unread + pending badges render inside the menu", () => {
+  it("host unread + pending badges render on groups and inside submenus", () => {
     as("host");
     mockUnread = { total_unread: 3 };
     mockNotificationsUnread = { unread_count: 2 };
     mockHostBookings = [{ id: "b1" }];
     const { container } = renderWith(<Header />);
     const menu = container.querySelector('[role="menu"]')!;
+    // Root rows surface the aggregate badge (3 unread + 2 notifs = 5).
+    const accountRow = Array.from(menu.querySelectorAll("button")).find(
+      (b) => (b.textContent ?? "").includes(t.account)
+    )!;
+    expect(accountRow.textContent).toContain("5");
+    openGroup(container, t.account);
     const messagesLink = Array.from(menu.querySelectorAll("a")).find(
       (a) => a.getAttribute("href") === "/en/messages"
     );
+    expect(messagesLink?.textContent).toContain("3");
+    openGroup(container, t.hosting);
     const reservationsLink = Array.from(menu.querySelectorAll("a")).find(
       (a) => a.getAttribute("href") === "/en/host/bookings"
     );
-    expect(messagesLink?.textContent).toContain("3");
-    // Pending reservation badge lives on the Reservations entry (G).
     expect(reservationsLink?.textContent).toContain("1");
   });
 
-  it("admin gets a lean ops menu: no favorites/messages duplicates", () => {
+  it("admin gets a lean ops menu: console at root, no consumer duplicates", () => {
     as("admin");
     const { container } = renderWith(<Header />);
-    const entries = accountMenuEntries(container);
-    expect(entries).toContain("/en/admin");
-    expect(entries).toContain("/en/profile");
-    expect(entries).toContain("/en/account-settings");
-    expect(entries).toContain("/en/account-settings/language");
-    expect(entries).toContain("/en/help");
-    expect(entries).toContain("/en/support");
-    // Trips stays reachable — admins can book under the capability model.
-    expect(entries).toContain("/en/bookings");
-    // consumer marketplace links stay out of the ops menu
+    const entries = menuRootEntries(container);
+    expect(entries).toEqual([
+      `GROUP:${t.account}`,
+      "/en/admin",
+      `GROUP:${t.preferences}`,
+      `GROUP:${t.helpSupport}`,
+    ]);
+    // consumer marketplace surfaces stay out of the ops root
     expect(entries).not.toContain("/en/favorites");
     expect(entries).not.toContain("/en/messages");
-    expect(entries).not.toContain("/en/payments");
     expect(entries).not.toContain("/en/host");
+    openGroup(container, t.account);
+    const hrefs = submenuHrefs(container);
+    expect(hrefs).toContain("/en/profile");
+    // Trips stays reachable — admins can book under the capability model.
+    expect(hrefs).toContain("/en/bookings");
+    expect(hrefs).not.toContain("/en/favorites");
+    expect(hrefs).not.toContain("/en/messages");
   });
 
   it("staff with console access gets the admin-style menu", () => {
     as("staff", ["kyc"]);
     const { container } = renderWith(<Header />);
-    const entries = accountMenuEntries(container);
-    expect(entries).toContain("/en/admin");
-    expect(entries).toContain("/en/bookings");
+    expect(menuRootEntries(container)).toContain("/en/admin");
+    openGroup(container, t.account);
+    expect(submenuHrefs(container)).toContain("/en/bookings");
   });
 
   it("staff without console access gets the marketplace menu without admin", () => {
     as("staff", []);
     const { container } = renderWith(<Header />);
-    const entries = accountMenuEntries(container);
-    expect(entries).toContain("/en/bookings");
-    expect(entries).toContain("/en/messages");
-    expect(entries).not.toContain("/en/admin");
+    expect(menuRootEntries(container)).not.toContain("/en/admin");
+    openGroup(container, t.account);
+    const hrefs = submenuHrefs(container);
+    expect(hrefs).toContain("/en/bookings");
+    expect(hrefs).toContain("/en/messages");
   });
 
   it("Arabic labels render in the menu including Hosting guide", () => {
     as("host");
     const { container } = renderWith(<Header />, { locale: "ar" });
-    const entries = accountMenuEntries(container);
-    expect(entries).toContain(`SECTION:${tAr.hosting}`);
-    expect(entries).toContain(`SECTION:${tAr.helpSupport}`);
-    expect(entries).toContain("/ar/host/guide");
+    const entries = menuRootEntries(container);
+    expect(entries).toContain(`GROUP:${tAr.hosting}`);
+    expect(entries).toContain(`GROUP:${tAr.helpSupport}`);
+    openGroup(container, tAr.hosting);
     const guideLink = Array.from(container.querySelectorAll("a")).find(
       (a) => a.getAttribute("href") === "/ar/host/guide"
     );
@@ -428,11 +499,23 @@ describe("Account menu information architecture", () => {
     fireEvent.click(toggle);
     const mobileNavs = container.querySelectorAll("nav");
     const mobileNav = mobileNavs[mobileNavs.length - 1];
-    const entries = Array.from(mobileNav.querySelectorAll("a, p")).map((el) =>
-      el.tagName === "A" ? (el.getAttribute("href") ?? "") : `SECTION:${el.textContent}`
+    // Root shows categories, not deep destinations.
+    const rootTexts = Array.from(
+      mobileNav.querySelectorAll("button, a")
+    ).map((el) => el.textContent ?? "");
+    expect(rootTexts.some((x) => x.includes(t.account))).toBe(true);
+    expect(rootTexts.some((x) => x.includes(t.helpSupport))).toBe(true);
+    expect(
+      Array.from(mobileNav.querySelectorAll("a")).some(
+        (a) => a.getAttribute("href") === "/en/bookings"
+      )
+    ).toBe(false);
+    // Drill into Account → destinations appear.
+    fireEvent.click(
+      Array.from(mobileNav.querySelectorAll("button")).find((b) =>
+        (b.textContent ?? "").includes(t.account)
+      )!
     );
-    expect(entries).toContain("/en/bookings");
-    expect(entries).toContain(`SECTION:${t.helpSupport}`);
     // viewport-constrained scrollable drawer — Sign out must stay reachable
     expect(mobileNav.className).toContain("overflow-y-auto");
     expect(mobileNav.className).toContain("max-h-");

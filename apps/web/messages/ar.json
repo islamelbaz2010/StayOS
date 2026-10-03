@@ -58,7 +58,8 @@
     "reservations": "الحجوزات",
     "privacy": "الخصوصية",
     "terms": "شروط الخدمة",
-    "activity": "نشاط الحساب"
+    "activity": "نشاط الحساب",
+    "back": "رجوع"
   },
   "auth": {
     "signIn": "تسجيل الدخول",

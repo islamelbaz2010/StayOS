@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams, useRouter, usePathname } from "next/navigation";
@@ -72,9 +72,150 @@ type MenuItemDef = {
   accent?: boolean;
 };
 
-type MenuEntry =
-  | ({ kind: "link" } & MenuItemDef)
-  | { kind: "section"; label: string };
+type NavGroup = {
+  id: string;
+  label: string;
+  badge: number;
+  items: MenuItemDef[];
+};
+
+type RootRow =
+  | { kind: "group"; group: NavGroup }
+  | { kind: "link"; item: MenuItemDef };
+
+/** Chevron that points "forward" in both LTR and RTL layouts. */
+function ForwardChevron() {
+  return (
+    <svg
+      className="h-4 w-4 shrink-0 text-neutral-400 rtl:-scale-x-100"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+/** Arrow that points "back" in both LTR and RTL layouts. */
+function BackChevron() {
+  return (
+    <svg
+      className="h-4 w-4 shrink-0 text-neutral-500 rtl:-scale-x-100"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function MenuLink({
+  item,
+  onNavigate,
+}: {
+  item: MenuItemDef;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      className={`flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-neutral-100 ${
+        item.accent ? "text-accent-600" : "text-neutral-700"
+      }`}
+    >
+      <span className="truncate">{item.label}</span>
+      {item.count ? <CountBadge count={item.count} /> : null}
+    </Link>
+  );
+}
+
+/**
+ * Two-level account menu: a compact root of navigation categories that
+ * each open a smaller submenu of destinations, with a Back row. Keeps
+ * the dropdown inside the viewport instead of one long scrolling list.
+ */
+function AccountMenuLevels({
+  open,
+  rows,
+  backLabel,
+  onNavigate,
+  footer,
+}: {
+  open: boolean;
+  rows: RootRow[];
+  backLabel: string;
+  onNavigate: () => void;
+  footer?: ReactNode;
+}) {
+  const [level, setLevel] = useState<string | null>(null);
+
+  // Return to the root level whenever the menu is closed and reopened.
+  useEffect(() => {
+    if (!open) setLevel(null);
+  }, [open]);
+
+  const active = level ? rows.find(
+    (r) => r.kind === "group" && r.group.id === level
+  ) : null;
+  const activeGroup = active?.kind === "group" ? active.group : null;
+
+  if (activeGroup) {
+    return (
+      <div className="py-1">
+        <button
+          type="button"
+          onClick={() => setLevel(null)}
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-semibold text-neutral-700 hover:bg-neutral-100"
+        >
+          <BackChevron />
+          {backLabel}
+        </button>
+        <p className="px-3 pb-1 pt-1.5 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+          {activeGroup.label}
+        </p>
+        <div className="border-t border-neutral-100 pt-1">
+          {activeGroup.items.map((item) => (
+            <MenuLink key={item.href} item={item} onNavigate={onNavigate} />
+          ))}
+        </div>
+        {footer}
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-1">
+      {rows.map((row) =>
+        row.kind === "group" ? (
+          <button
+            key={row.group.id}
+            type="button"
+            onClick={() => setLevel(row.group.id)}
+            className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-start text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+          >
+            <span className="truncate">{row.group.label}</span>
+            <span className="flex items-center gap-1.5">
+              {row.group.badge > 0 && <CountBadge count={row.group.badge} />}
+              <ForwardChevron />
+            </span>
+          </button>
+        ) : (
+          <MenuLink
+            key={row.item.href}
+            item={row.item}
+            onNavigate={onNavigate}
+          />
+        )
+      )}
+      {footer}
+    </div>
+  );
+}
 
 export function Header() {
   const t = useTranslations("nav");
@@ -162,81 +303,107 @@ export function Header() {
   // guests get it inside the account menu items instead.
   const showBecomeHost = !isAuthenticated;
 
-  // FD-17: profile and all account-scoped destinations live in the account
-  // menu — the top-level header stays compact for every role.
-  const accountItems: MenuEntry[] = [];
+  // FD-17 + hierarchical redesign: the root level shows only navigation
+  // categories (Account / Hosting / Preferences / Help & Support); each
+  // opens a compact submenu of its destinations — the menu stays inside
+  // the viewport for every role instead of one long scrolling list.
+  const accountMenuRows: RootRow[] = [];
   if (isAuthenticated) {
-    const link = (item: MenuItemDef): MenuEntry => ({ kind: "link", ...item });
-    const helpSupport: MenuEntry[] = [
-      { kind: "section", label: t("helpSupport") },
-      link({ href: `/${locale}/help`, label: t("helpCenter") }),
-      link({ href: `/${locale}/support`, label: t("support") }),
-    ];
+    const group = (
+      id: string,
+      label: string,
+      items: MenuItemDef[]
+    ): RootRow => ({
+      kind: "group",
+      group: {
+        id,
+        label,
+        items,
+        badge: items.reduce((sum, i) => sum + (i.count ?? 0), 0),
+      },
+    });
+    const link = (item: MenuItemDef): RootRow => ({ kind: "link", item });
 
-    const preferencesGroup: MenuEntry[] = [
-      { kind: "section", label: t("preferences") },
-      link({
+    const accountGroup = (marketplace: boolean): RootRow =>
+      group(
+        "account",
+        t("account"),
+        marketplace
+          ? [
+              { href: `/${locale}/profile`, label: t("profile") },
+              { href: `/${locale}/bookings`, label: t("trips") },
+              { href: `/${locale}/favorites`, label: t("favorites") },
+              {
+                href: `/${locale}/messages`,
+                label: t("messages"),
+                count: unreadCount,
+              },
+              {
+                href: `/${locale}/notifications`,
+                label: t("notifications"),
+                count: notificationsUnread,
+              },
+            ]
+          : // Ops accounts get the lean pair — admin surfaces live behind
+            // the Admin Console entry instead.
+            [
+              { href: `/${locale}/profile`, label: t("profile") },
+              { href: `/${locale}/bookings`, label: t("trips") },
+            ]
+      );
+
+    const preferencesGroup = group("preferences", t("preferences"), [
+      {
         href: `/${locale}/account-settings`,
         label: t("accountSettings"),
-      }),
-      link({
+      },
+      {
         href: `/${locale}/account-settings/language`,
         label: t("language"),
-      }),
-    ];
+      },
+    ]);
+
+    const helpSupportGroup = group("help", t("helpSupport"), [
+      { href: `/${locale}/help`, label: t("helpCenter") },
+      { href: `/${locale}/support`, label: t("support") },
+    ]);
 
     if (user?.role === "admin" || (user?.role === "staff" && hasAdminAccess)) {
-      // Operational accounts get a lean menu — admin surfaces live behind
-      // one entry. Trips stays reachable: any account can book under the
-      // capability model, so booking/payment access must not dead-end here.
-      accountItems.push(
-        { kind: "section", label: t("account") },
-        link({ href: `/${locale}/profile`, label: t("profile") }),
-        link({ href: `/${locale}/bookings`, label: t("trips") }),
+      // Operational accounts: lean menu — admin surfaces behind one entry.
+      // Trips stays reachable: any account can book under the capability
+      // model, so booking/payment access must not dead-end here.
+      accountMenuRows.push(
+        accountGroup(false),
         link({
           href: `/${locale}/admin`,
           label: t("adminConsole"),
           count: adminPendingCount,
           accent: true,
         }),
-        ...preferencesGroup,
-        ...helpSupport
+        preferencesGroup,
+        helpSupportGroup
       );
     } else {
       // Marketplace users (guest, host, staff w/o console, field staff):
       // trips/favorites are account-scoped — hosts book as users too.
-      accountItems.push(
-        { kind: "section", label: t("account") },
-        link({ href: `/${locale}/profile`, label: t("profile") }),
-        link({ href: `/${locale}/bookings`, label: t("trips") }),
-        link({ href: `/${locale}/favorites`, label: t("favorites") }),
-        link({
-          href: `/${locale}/messages`,
-          label: t("messages"),
-          count: unreadCount,
-        }),
-        link({
-          href: `/${locale}/notifications`,
-          label: t("notifications"),
-          count: notificationsUnread,
-        })
-      );
+      accountMenuRows.push(accountGroup(true));
       if (user?.role === "host") {
-        accountItems.push(
-          { kind: "section", label: t("hosting") },
-          link({ href: `/${locale}/host`, label: t("hostDashboard") }),
-          link({ href: `/${locale}/host/listings`, label: t("myListings") }),
-          link({
-            href: `/${locale}/host/bookings`,
-            label: t("reservations"),
-            count: hostPendingCount,
-          }),
-          link({ href: `/${locale}/host/earnings`, label: t("earnings") }),
-          link({ href: `/${locale}/host/guide`, label: t("hostGuide") })
+        accountMenuRows.push(
+          group("hosting", t("hosting"), [
+            { href: `/${locale}/host`, label: t("hostDashboard") },
+            { href: `/${locale}/host/listings`, label: t("myListings") },
+            {
+              href: `/${locale}/host/bookings`,
+              label: t("reservations"),
+              count: hostPendingCount,
+            },
+            { href: `/${locale}/host/earnings`, label: t("earnings") },
+            { href: `/${locale}/host/guide`, label: t("hostGuide") },
+          ])
         );
       }
       if (user?.role === "guest") {
-        accountItems.push(
+        accountMenuRows.push(
           link({
             href: `/${locale}/become-a-host`,
             label: t("becomeHost"),
@@ -244,33 +411,9 @@ export function Header() {
           })
         );
       }
-      accountItems.push(...preferencesGroup, ...helpSupport);
+      accountMenuRows.push(preferencesGroup, helpSupportGroup);
     }
   }
-
-  const accountMenuItems = (onNavigate: () => void) =>
-    accountItems.map((item) =>
-      item.kind === "section" ? (
-        <p
-          key={`section-${item.label}`}
-          className="px-3 pb-0.5 pt-3 text-[11px] font-bold uppercase tracking-wider text-neutral-400"
-        >
-          {item.label}
-        </p>
-      ) : (
-        <Link
-          key={item.href + item.label}
-          href={item.href}
-          onClick={onNavigate}
-          className={`flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium hover:bg-neutral-100 ${
-            item.accent ? "text-accent-600" : "text-neutral-700"
-          }`}
-        >
-          {item.label}
-          {item.count ? <CountBadge count={item.count} /> : null}
-        </Link>
-      )
-    );
 
   const signOutButton = (extraClass: string, onNavigate: () => void) => (
     <button
@@ -389,30 +532,26 @@ export function Header() {
                       t("account")}
                   </p>
                 </div>
-                <div className="py-1">
-                  {accountMenuItems(() => setAccountOpen(false))}
-                </div>
-                {showBecomeHost && (
-                  <div className="border-t border-neutral-100 py-1">
-                    <Link
-                      href={`/${locale}/become-a-host`}
-                      onClick={() => setAccountOpen(false)}
-                      className="block rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
-                    >
-                      {t("becomeHost")}
-                    </Link>
-                  </div>
-                )}
-                <div className="border-t border-neutral-100 py-1 sm:hidden">
-                  <div className="px-3 py-1.5">
-                    <LanguageSwitcher />
-                  </div>
-                </div>
-                <div className="border-t border-neutral-100 py-1">
-                  {signOutButton("w-full px-3 py-2.5", () =>
-                    setAccountOpen(false)
-                  )}
-                </div>
+                <AccountMenuLevels
+                  open={accountOpen}
+                  rows={accountMenuRows}
+                  backLabel={t("back")}
+                  onNavigate={() => setAccountOpen(false)}
+                  footer={
+                    <>
+                      <div className="border-t border-neutral-100 py-1 sm:hidden">
+                        <div className="px-3 py-1.5">
+                          <LanguageSwitcher />
+                        </div>
+                      </div>
+                      <div className="border-t border-neutral-100 py-1">
+                        {signOutButton("w-full rounded-md px-3 py-2.5", () =>
+                          setAccountOpen(false)
+                        )}
+                      </div>
+                    </>
+                  }
+                />
               </div>
             </div>
           ) : (
@@ -456,32 +595,41 @@ export function Header() {
             >
               {t("search")}
             </Link>
-            {accountMenuItems(() => setMobileOpen(false))}
-            {showBecomeHost && (
-              <Link
-                href={`/${locale}/become-a-host`}
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
-                onClick={() => setMobileOpen(false)}
-              >
-                {t("becomeHost")}
-              </Link>
-            )}
-            {!isAuthenticated && (
-              <Link
-                href={`/${locale}/support`}
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-                onClick={() => setMobileOpen(false)}
-              >
-                {t("support")}
-              </Link>
-            )}
-            <div className="px-3 py-2.5">
-              <LanguageSwitcher />
-            </div>
-            {isAuthenticated &&
-              signOutButton("mt-2 rounded-md px-3 py-2.5", () =>
-                setMobileOpen(false)
-              )}
+            <AccountMenuLevels
+              open={mobileOpen}
+              rows={accountMenuRows}
+              backLabel={t("back")}
+              onNavigate={() => setMobileOpen(false)}
+              footer={
+                <>
+                  {showBecomeHost && (
+                    <Link
+                      href={`/${locale}/become-a-host`}
+                      className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {t("becomeHost")}
+                    </Link>
+                  )}
+                  {!isAuthenticated && (
+                    <Link
+                      href={`/${locale}/support`}
+                      className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {t("support")}
+                    </Link>
+                  )}
+                  <div className="px-3 py-2.5">
+                    <LanguageSwitcher />
+                  </div>
+                  {isAuthenticated &&
+                    signOutButton("mt-2 rounded-md px-3 py-2.5", () =>
+                      setMobileOpen(false)
+                    )}
+                </>
+              }
+            />
           </div>
         </nav>
       )}

@@ -78,7 +78,7 @@ export default function AccountActivityPage() {
                   aria-pressed={filter === "all"}
                   className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
                     filter === "all"
-                      ? "border-primary-700 bg-primary-700 text-white"
+                      ? "border-brand-900 bg-brand-900 text-white"
                       : "border-neutral-300 text-neutral-700"
                   }`}
                 >
@@ -92,7 +92,7 @@ export default function AccountActivityPage() {
                     aria-pressed={filter === category}
                     className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
                       filter === category
-                        ? "border-primary-700 bg-primary-700 text-white"
+                        ? "border-brand-900 bg-brand-900 text-white"
                         : "border-neutral-300 text-neutral-700"
                     }`}
                   >

@@ -224,10 +224,14 @@ async def list_paginated_host_bookings(
     status: str | None = None,
     unit_id: str | None = None,
     search: str | None = None,
+    area: str | None = None,
     limit: int = 50,
     offset: int = 0,
 ) -> tuple[list[Booking], int]:
     """List bookings for the given managed unit IDs with optional filters.
+
+    ``area`` matches the unit's ``city`` — the host-side location grouping
+    level (Maadi, New Cairo, Hurghada, …) sourced from real listing data.
 
     Returns the page of bookings and the total matching count.
     """
@@ -246,6 +250,8 @@ async def list_paginated_host_bookings(
         base_stmt = base_stmt.where(Booking.status == status)
     if unit_id is not None:
         base_stmt = base_stmt.where(Booking.unit_id == unit_id)
+    if area is not None and area.strip():
+        base_stmt = base_stmt.where(Booking.unit.has(Unit.city == area.strip()))
     if search is not None and search.strip():
         search = search.strip()
         base_stmt = base_stmt.where(
@@ -260,6 +266,8 @@ async def list_paginated_host_bookings(
         count_stmt = count_stmt.where(Booking.status == status)
     if unit_id is not None:
         count_stmt = count_stmt.where(Booking.unit_id == unit_id)
+    if area is not None and area.strip():
+        count_stmt = count_stmt.where(Booking.unit.has(Unit.city == area.strip()))
     if search is not None and search.strip():
         count_stmt = count_stmt.where(
             or_(

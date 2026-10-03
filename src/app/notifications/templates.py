@@ -182,25 +182,25 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "تم إلغاء الحجز",
-                "body": "تم إلغاء الحجز {{reservation_id}}. سيتم معالجة استرداد الأموال خلال {{refund_days}} أيام عمل.",
+                "body": "تم إلغاء حجزك في {{listing_title}}. سيتم معالجة استرداد الأموال خلال {{refund_days}} أيام عمل.",
             },
             "whatsapp": {
-                "body": "تم إلغاء الحجز {{reservation_id}}. سيتم معالجة استرداد الأموال خلال {{refund_days}} أيام عمل.",
+                "body": "تم إلغاء حجزك في {{listing_title}}. سيتم معالجة استرداد الأموال خلال {{refund_days}} أيام عمل.",
             },
             "sms": {
-                "body": "تم إلغاء الحجز {{reservation_id}}.",
+                "body": "تم إلغاء حجزك في {{listing_title}}.",
             },
         },
         "en": {
             "email": {
                 "subject": "Booking cancelled",
-                "body": "Booking {{reservation_id}} cancelled. Refund will be processed within {{refund_days}} business days.",
+                "body": "Your booking at {{listing_title}} was cancelled. Refund will be processed within {{refund_days}} business days.",
             },
             "whatsapp": {
-                "body": "Booking {{reservation_id}} cancelled. Refund will be processed within {{refund_days}} business days.",
+                "body": "Your booking at {{listing_title}} was cancelled. Refund will be processed within {{refund_days}} business days.",
             },
             "sms": {
-                "body": "Booking {{reservation_id}} cancelled.",
+                "body": "Your booking at {{listing_title}} was cancelled.",
             },
         },
     },

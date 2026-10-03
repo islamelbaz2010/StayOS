@@ -16,7 +16,7 @@ from app.auth.models import User
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.listings.cohost_models import ListingReadinessCheck, UnitCoHost
-from app.listings.models import Unit, UnitListing, UnitPhoto
+from app.listings.models import Unit
 from app.payments.constants import PaymentStatus
 from app.payments.models import Payment
 from app.reservations.constants import (
@@ -418,32 +418,43 @@ async def get_host_earnings(
         bucket["revenue"] += int(row.revenue)
 
     per_unit: list[dict[str, Any]] = []
-    for unit_id, totals in per_unit_totals.items():
-        # Get unit title
-        unit_result = await session.execute(
-            select(UnitListing.title_ar, UnitListing.title_en)
-            .join(Unit, Unit.id == UnitListing.unit_id)
-            .where(Unit.id == unit_id)
-        )
-        title_row = unit_result.one_or_none()
-        title = (title_row.title_ar if title_row else None) or (title_row.title_en if title_row else None)
+    if per_unit_totals:
+        from app.listings.configuration import resolve_cover_image_url
 
-        # Get cover image for the unit
-        cover_result = await session.execute(
-            select(UnitPhoto.url)
-            .where(UnitPhoto.unit_id == unit_id, UnitPhoto.is_cover)
-            .order_by(UnitPhoto.display_order.asc())
-            .limit(1)
+        # Load the units once so the canonical cover resolver can pick the
+        # listing-configured cover, skip pending_add photos, and turn
+        # private s3:// refs into signed GET URLs — same path used by
+        # search, listing detail, and booking surfaces.
+        units_result = await session.execute(
+            select(Unit)
+            .options(
+                selectinload(Unit.photos),
+                selectinload(Unit.listing),
+            )
+            .where(Unit.id.in_(list(per_unit_totals)))
         )
-        cover_url = cover_result.scalar_one_or_none()
+        units_by_id = {u.id: u for u in units_result.scalars().all()}
+        for unit_id, totals in per_unit_totals.items():
+            unit = units_by_id.get(unit_id)
+            listing = unit.listing if unit is not None else None
+            title = (
+                (listing.title_ar or listing.title_en)
+                if listing is not None
+                else None
+            )
+            cover_url = (
+                resolve_cover_image_url(unit, listing)
+                if unit is not None and listing is not None
+                else None
+            )
 
-        per_unit.append({
-            "unit_id": unit_id,
-            "unit_title": title,
-            "unit_cover_image": cover_url,
-            "booking_count": totals["booking_count"],
-            "revenue_egp": totals["revenue"],
-        })
+            per_unit.append({
+                "unit_id": unit_id,
+                "unit_title": title,
+                "unit_cover_image": cover_url,
+                "booking_count": totals["booking_count"],
+                "revenue_egp": totals["revenue"],
+            })
 
     # Completed refunds: provider/admin-confirmed money returned to guests
     # (booking-path payments plus card-path intents).

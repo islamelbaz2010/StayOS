@@ -61,7 +61,7 @@ vi.mock("@/components/bookings/StayTimeline", () => ({
 }));
 
 vi.mock("@/components/bookings/CancelBookingButton", () => ({
-  CancelBookingButton: () => null,
+  CancelBookingButton: () => <div data-testid="cancel-booking" />,
 }));
 
 vi.mock("@/components/bookings/LeaveReviewForm", () => ({
@@ -223,9 +223,23 @@ describe("Trip detail — capability-based access", () => {
     expect(screen.queryByText("Your stay")).toBeNull();
     // Guest-only actions are never rendered for non-owners.
     expect(screen.queryByText("Complete payment")).toBeNull();
+    // Check-in and cancellation are guest actions — the host viewer must
+    // never see them even in a check_in_ready phase.
+    expect(screen.queryByText("Check in")).toBeNull();
+    expect(screen.queryByTestId("cancel-booking")).toBeNull();
     // Back link goes to host bookings, not the guest trips list.
     const back = screen.getByText("My trips").closest("a");
     expect(back?.getAttribute("href")).toContain("/host/bookings");
+  });
+
+  it("booking owner sees Check in + Cancel during check_in_ready", () => {
+    mockUser = { id: "guest-1", role: "guest" };
+    mockStay = makeHostViewerStay();
+    mockPayment = { status: "verified", amount_egp: 1200 };
+    renderPage(en as never, "en");
+
+    expect(screen.getByText("Check in")).toBeInTheDocument();
+    expect(screen.getByTestId("cancel-booking")).toBeInTheDocument();
   });
 
   it("non-owner admin viewer without scope stays on the page", () => {

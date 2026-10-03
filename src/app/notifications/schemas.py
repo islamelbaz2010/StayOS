@@ -32,6 +32,9 @@ class InAppNotificationItem(BaseModel):
     locale: str
     read_at: datetime | None
     created_at: datetime
+    # Related booking id when the source event's aggregate is a Booking —
+    # lets the UI deep-link the notification to the booking detail.
+    booking_id: str | None = None
 
 
 class InAppNotificationList(BaseModel):

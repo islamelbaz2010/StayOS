@@ -300,18 +300,20 @@ describe("Account menu information architecture", () => {
     mockHostBookings = [];
   });
 
-  it("guest menu: profile → trips → favorites → comms → settings → support sections", () => {
+  it("guest menu: Account → Become a host → Preferences → Help sections", () => {
     as("guest");
     const { container } = renderWith(<Header />);
     const entries = accountMenuEntries(container);
     const order = [
+      `SECTION:${t.account}`,
       "/en/profile",
       "/en/bookings",
       "/en/favorites",
       "/en/messages",
       "/en/notifications",
-      "/en/account-settings",
       "/en/become-a-host",
+      `SECTION:${t.preferences}`,
+      "/en/account-settings",
       "/en/account-settings/language",
       `SECTION:${t.helpSupport}`,
       "/en/help",
@@ -323,7 +325,7 @@ describe("Account menu information architecture", () => {
     expect(entries.filter((e) => e === "/en/support")).toHaveLength(1);
   });
 
-  it("host menu adds a Hosting section with dashboard/listings/earnings/guide", () => {
+  it("host menu adds a Hosting section with dashboard/listings/reservations/earnings/guide", () => {
     as("host");
     const { container } = renderWith(<Header />);
     const entries = accountMenuEntries(container);
@@ -334,16 +336,19 @@ describe("Account menu information architecture", () => {
       expect.arrayContaining([
         "/en/host",
         "/en/host/listings",
+        "/en/host/bookings",
         "/en/host/earnings",
         "/en/host/guide",
       ])
     );
     // dashboard comes first inside Hosting
     expect(entries.indexOf("/en/host")).toBeLessThan(entries.indexOf("/en/host/guide"));
-    // language sits at top level before the Hosting section
+    // language lives in the Preferences group after Hosting
     const langIdx = entries.indexOf("/en/account-settings/language");
+    const prefIdx = entries.indexOf(`SECTION:${t.preferences}`);
     expect(langIdx).toBeGreaterThan(-1);
-    expect(langIdx).toBeLessThan(hostingIdx);
+    expect(prefIdx).toBeGreaterThan(hostingIdx);
+    expect(langIdx).toBeGreaterThan(prefIdx);
     // payments stays inside account settings — no top-level duplicate
     expect(entries).not.toContain("/en/payments");
     expect(entries).not.toContain("/en/admin");
@@ -359,11 +364,12 @@ describe("Account menu information architecture", () => {
     const messagesLink = Array.from(menu.querySelectorAll("a")).find(
       (a) => a.getAttribute("href") === "/en/messages"
     );
-    const hostLink = Array.from(menu.querySelectorAll("a")).find(
-      (a) => a.getAttribute("href") === "/en/host"
+    const reservationsLink = Array.from(menu.querySelectorAll("a")).find(
+      (a) => a.getAttribute("href") === "/en/host/bookings"
     );
     expect(messagesLink?.textContent).toContain("3");
-    expect(hostLink?.textContent).toContain("1");
+    // Pending reservation badge lives on the Reservations entry (G).
+    expect(reservationsLink?.textContent).toContain("1");
   });
 
   it("admin gets a lean ops menu: no favorites/messages duplicates", () => {

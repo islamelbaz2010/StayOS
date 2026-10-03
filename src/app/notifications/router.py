@@ -17,7 +17,9 @@ from .schemas import (
 router = APIRouter(tags=["notifications"])
 
 
-def _to_item(notification: Notification) -> InAppNotificationItem:
+def _to_item(
+    notification: Notification, booking_id: str | None = None
+) -> InAppNotificationItem:
     return InAppNotificationItem(
         id=notification.id,
         event_type=notification.event_type,
@@ -27,6 +29,7 @@ def _to_item(notification: Notification) -> InAppNotificationItem:
         locale=notification.locale,
         read_at=notification.read_at,
         created_at=notification.created_at,
+        booking_id=booking_id,
     )
 
 
@@ -40,8 +43,11 @@ async def list_notifications(
         session, str(user.id), limit=limit
     )
     unread = await repository.count_unread_in_app(session, str(user.id))
+    booking_map = await repository.get_booking_aggregate_ids(
+        session, [item.event_id for item in items]
+    )
     return InAppNotificationList(
-        items=[_to_item(item) for item in items],
+        items=[_to_item(item, booking_map.get(item.event_id)) for item in items],
         unread_count=unread,
     )
 

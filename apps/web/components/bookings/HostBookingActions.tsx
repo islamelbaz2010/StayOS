@@ -7,9 +7,6 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { useAuth } from "@/lib/auth/useAuth";
 import {
-  useCancelBooking,
-  useCancellationPreview,
-  useCheckIn,
   useCheckOut,
   useCompleteBooking,
   useUpdateBooking,
@@ -65,26 +62,20 @@ export function HostBookingActions({
   onSuccess,
 }: HostBookingActionsProps) {
   const t = useTranslations("hostBookings");
-  const tc = useTranslations("common");
-  const tp = useTranslations("trips");
   const locale = useLocale();
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const { user } = useAuth();
   const updateBooking = useUpdateBooking();
-  const checkIn = useCheckIn();
   const checkOut = useCheckOut();
   const completeBooking = useCompleteBooking();
-  const cancelBooking = useCancelBooking();
 
   const [rejectReason, setRejectReason] = useState("");
-  const [cancelReason, setCancelReason] = useState("");
-  const [action, setAction] = useState<"accept" | "reject" | "cancel" | null>(null);
+  const [action, setAction] = useState<"reject" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const preview = useCancellationPreview(booking.id, action === "cancel");
-
-  // Accept/reject/cancel/check-in/check-out are restricted server-side to
-  // owner/admin/full_access; hide them for limited co-host scopes.
+  // Accept/reject/check-out are restricted server-side to owner or
+  // full-access co-host; hide them for limited co-host scopes.
+  // Cancellation and check-in are guest actions — hosts never see them.
   const canManageBookings =
     booking.permission_scope == null ||
     ["owner", "admin", "full_access"].includes(booking.permission_scope);
@@ -98,8 +89,6 @@ export function HostBookingActions({
   const isAdmin = user?.role === "admin";
   const canAcceptReject = canManageBookings && !isAdmin;
 
-  const canCancel = !booking.checked_in_at && !booking.checked_out_at;
-
   if (!canManageBookings) {
     return (
       <p className="text-sm text-neutral-500">{t("readOnlyScope")}</p>
@@ -110,30 +99,12 @@ export function HostBookingActions({
     setError(getApiErrorMessage(err, t("updateError")));
   };
 
-  async function handleCancel() {
-    setError(null);
-    try {
-      await cancelBooking.mutateAsync({
-        bookingId: booking.id,
-        payload: cancelReason ? { reason: cancelReason } : {},
-      });
-      setAction(null);
-      setCancelReason("");
-      onSuccess();
-    } catch (err) {
-      setError(getApiErrorMessage(err, t("cancelError")));
-    }
-  }
-
-  async function handleAction(
-    newStatus: "accepted" | "rejected" | "cancelled"
-  ) {
+  async function handleAction(newStatus: "accepted" | "rejected") {
     setError(null);
 
     const payload: {
       status: typeof newStatus;
       reject_reason?: string;
-      cancel_reason?: string;
     } = {
       status: newStatus,
     };
@@ -141,15 +112,11 @@ export function HostBookingActions({
     if (newStatus === "rejected" && rejectReason) {
       payload.reject_reason = rejectReason;
     }
-    if (newStatus === "cancelled" && cancelReason) {
-      payload.cancel_reason = cancelReason;
-    }
 
     try {
       await updateBooking.mutateAsync({ bookingId: booking.id, payload });
       setAction(null);
       setRejectReason("");
-      setCancelReason("");
       onSuccess();
     } catch (err) {
       setError(getApiErrorMessage(err, t("updateError")));
@@ -175,147 +142,58 @@ export function HostBookingActions({
         <p className="text-sm font-medium text-success-700">
           {t("confirmedMessage")}
         </p>
-        <div className="flex flex-wrap gap-3">
-          {error && (
-            <p
-              className="rounded-md bg-danger-50 p-3 text-sm text-danger-700"
-              role="alert"
-            >
-              {error}
-            </p>
-          )}
-          {!booking.checked_in_at && (
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                checkIn.mutate(booking.id, {
-                  onSuccess,
-                  onError: onActionError,
-                });
-              }}
-              disabled={checkIn.isPending}
-              className={cn(
-                "btn-primary text-sm",
-                checkIn.isPending && "opacity-60"
-              )}
-            >
-              {checkIn.isPending ? t("processing") : t("checkIn")}
-            </button>
-          )}
-          {booking.checked_in_at && !booking.checked_out_at && (
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                checkOut.mutate(booking.id, {
-                  onSuccess,
-                  onError: onActionError,
-                });
-              }}
-              disabled={checkOut.isPending}
-              className={cn(
-                "btn-primary text-sm",
-                checkOut.isPending && "opacity-60"
-              )}
-            >
-              {checkOut.isPending ? t("processing") : t("checkOut")}
-            </button>
-          )}
-          {booking.checked_in_at && booking.checked_out_at && (
-            user?.role === "admin" ? (
+        {error && (
+          <p
+            className="rounded-md bg-danger-50 p-3 text-sm text-danger-700"
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
+        {(booking.checked_in_at || booking.checked_out_at) && (
+          <div className="flex flex-wrap gap-3">
+            {booking.checked_in_at && !booking.checked_out_at && (
               <button
                 type="button"
                 onClick={() => {
                   setError(null);
-                  completeBooking.mutate(booking.id, {
+                  checkOut.mutate(booking.id, {
                     onSuccess,
                     onError: onActionError,
                   });
                 }}
-                disabled={completeBooking.isPending}
+                disabled={checkOut.isPending}
                 className={cn(
                   "btn-primary text-sm",
-                  completeBooking.isPending && "opacity-60"
+                  checkOut.isPending && "opacity-60"
                 )}
               >
-                {completeBooking.isPending ? t("processing") : t("complete")}
+                {checkOut.isPending ? t("processing") : t("checkOut")}
               </button>
-            ) : (
-              <p className="text-sm text-neutral-600">{t("stayCompleted")}</p>
-            )
-          )}
-          {canCancel && (
-            <button
-              type="button"
-              onClick={() => setAction("cancel")}
-              disabled={updateBooking.isPending || action === "cancel"}
-              className="btn-secondary text-sm"
-            >
-              {t("cancel")}
-            </button>
-          )}
-        </div>
-
-        {action === "cancel" && (
-          <div className="rounded-card border border-neutral-200 bg-neutral-50 p-4">
-            <PropertySummary booking={booking} dateLocale={dateLocale} t={t} />
-
-            {preview.isLoading && (
-              <p className="mt-2 text-sm text-neutral-500">{tc("loading")}</p>
             )}
-
-            {preview.data && (
-              <p className="mt-2 text-sm text-neutral-700">
-                {preview.data.total_paid_egp === 0
-                  ? tp("cancelNoPayment")
-                  : preview.data.refund_amount_egp === preview.data.total_paid_egp
-                    ? tp("cancelRefundFull", {
-                        amount: preview.data.refund_amount_egp,
-                      })
-                    : preview.data.refund_amount_egp === 0
-                      ? tp("cancelRefundNone")
-                      : tp("cancelRefundPartial", {
-                          amount: preview.data.refund_amount_egp,
-                          total: preview.data.total_paid_egp,
-                        })}
-              </p>
+            {booking.checked_in_at && booking.checked_out_at && (
+              user?.role === "admin" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    completeBooking.mutate(booking.id, {
+                      onSuccess,
+                      onError: onActionError,
+                    });
+                  }}
+                  disabled={completeBooking.isPending}
+                  className={cn(
+                    "btn-primary text-sm",
+                    completeBooking.isPending && "opacity-60"
+                  )}
+                >
+                  {completeBooking.isPending ? t("processing") : t("complete")}
+                </button>
+              ) : (
+                <p className="text-sm text-neutral-600">{t("stayCompleted")}</p>
+              )
             )}
-
-            <label
-              htmlFor="cancel-reason"
-              className="mt-3 block text-sm font-medium text-brand-900"
-            >
-              {t("cancelReason")}
-            </label>
-            <textarea
-              id="cancel-reason"
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              className="input mt-2 min-h-[5rem]"
-              rows={3}
-            />
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={cancelBooking.isPending || preview.isLoading}
-                className="btn-primary text-sm"
-              >
-                {cancelBooking.isPending ? t("processing") : t("confirmCancel")}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAction(null);
-                  setCancelReason("");
-                }}
-                disabled={cancelBooking.isPending}
-                className="btn-secondary text-sm"
-              >
-                {t("back")}
-              </button>
-            </div>
           </div>
         )}
       </div>
@@ -351,16 +229,6 @@ export function HostBookingActions({
           >
             {t("reject")}
           </button>
-          {canCancel && (
-            <button
-              type="button"
-              onClick={() => setAction("cancel")}
-              disabled={updateBooking.isPending || action === "cancel"}
-              className="btn-secondary text-sm"
-            >
-              {t("cancel")}
-            </button>
-          )}
         </div>
       )}
 
@@ -368,19 +236,6 @@ export function HostBookingActions({
         <p className="text-sm text-neutral-500">
           {t("finalStatus", { status: booking.status })}
         </p>
-      )}
-
-      {booking.status === "accepted" && canCancel && (
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => setAction("cancel")}
-            disabled={updateBooking.isPending || action === "cancel"}
-            className="btn-secondary text-sm"
-          >
-            {t("cancel")}
-          </button>
-        </div>
       )}
 
       {action === "reject" && (
@@ -413,45 +268,6 @@ export function HostBookingActions({
               onClick={() => {
                 setAction(null);
                 setRejectReason("");
-              }}
-              className="btn-secondary text-sm"
-            >
-              {t("back")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {action === "cancel" && (
-        <div className="rounded-card border border-neutral-200 bg-neutral-50 p-4">
-          <PropertySummary booking={booking} dateLocale={dateLocale} t={t} />
-          <label
-            htmlFor="cancel-reason"
-            className="block text-sm font-medium text-brand-900"
-          >
-            {t("cancelReason")}
-          </label>
-          <textarea
-            id="cancel-reason"
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-            className="input mt-2 min-h-[5rem]"
-            rows={3}
-          />
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleAction("cancelled")}
-              disabled={updateBooking.isPending}
-              className="btn-primary text-sm"
-            >
-              {t("confirmCancel")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAction(null);
-                setCancelReason("");
               }}
               className="btn-secondary text-sm"
             >

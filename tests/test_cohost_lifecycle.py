@@ -192,11 +192,22 @@ async def test_cancellation_actor_guest(fake_session: AsyncMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_cancellation_actor_owner(fake_session: AsyncMock) -> None:
+async def test_cancellation_actor_owner_rejected(fake_session: AsyncMock) -> None:
+    """Cancellation is a guest action — the unit owner is not a valid
+    cancellation actor in the user-facing flow."""
+    owner = _make_user(user_id="host-1", role=UserRole.HOST)
+    booking = _make_booking(_make_unit(host_id="host-1"), _make_user())
+    with pytest.raises(AuthorizationError):
+        await booking_services._cancellation_actor(fake_session, booking, owner)
+
+
+@pytest.mark.asyncio
+async def test_stay_actor_owner(fake_session: AsyncMock) -> None:
+    """Check-out stays host-capable: the owner is a valid stay actor."""
     owner = _make_user(user_id="host-1", role=UserRole.HOST)
     booking = _make_booking(_make_unit(host_id="host-1"), _make_user())
     assert (
-        await booking_services._cancellation_actor(fake_session, booking, owner)
+        await booking_services._stay_actor(fake_session, booking, owner)
         == "host"
     )
 
@@ -213,7 +224,24 @@ async def test_cancellation_actor_admin(fake_session: AsyncMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_cancellation_actor_full_access_cohost(
+async def test_cancellation_actor_full_access_cohost_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """A full-access co-host manages bookings but cannot cancel the
+    guest's booking — cancellation is a guest/admin action only."""
+    cohost = _make_user(user_id="cohost-1", role=UserRole.HOST)
+    booking = _make_booking(_make_unit(host_id="host-1"), _make_user())
+    monkeypatch.setattr(
+        host_permissions,
+        "get_unit_permission_scope",
+        AsyncMock(return_value=CoHostPermissionScope.FULL_ACCESS),
+    )
+    with pytest.raises(AuthorizationError):
+        await booking_services._cancellation_actor(fake_session, booking, cohost)
+
+
+@pytest.mark.asyncio
+async def test_stay_actor_full_access_cohost(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
     cohost = _make_user(user_id="cohost-1", role=UserRole.HOST)
@@ -224,7 +252,7 @@ async def test_cancellation_actor_full_access_cohost(
         AsyncMock(return_value=CoHostPermissionScope.FULL_ACCESS),
     )
     assert (
-        await booking_services._cancellation_actor(fake_session, booking, cohost)
+        await booking_services._stay_actor(fake_session, booking, cohost)
         == "host"
     )
 
@@ -312,9 +340,11 @@ async def test_update_booking_reject_by_calendar_only_cohost_rejected(
 
 
 @pytest.mark.asyncio
-async def test_check_in_by_full_access_cohost(
+async def test_check_in_by_full_access_cohost_rejected(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
+    """Check-in is the guest's own action — even a full-access co-host
+    cannot start the guest's stay through this workflow."""
     guest = _make_user(user_id="guest-1")
     cohost = _make_user(user_id="cohost-1", role=UserRole.HOST)
     booking = _make_booking(
@@ -329,20 +359,12 @@ async def test_check_in_by_full_access_cohost(
         "get_booking_or_raise",
         AsyncMock(return_value=booking),
     )
-    monkeypatch.setattr(
-        host_permissions,
-        "get_unit_permission_scope",
-        AsyncMock(return_value=CoHostPermissionScope.FULL_ACCESS),
-    )
     update = AsyncMock(side_effect=lambda s, b, **kw: b)
     monkeypatch.setattr(bookings_repository, "update_booking", update)
-    monkeypatch.setattr(booking_services, "write_event", AsyncMock())
 
-    result = await booking_services.check_in_booking(
-        fake_session, cohost, booking.id
-    )
-    update.assert_awaited_once()
-    assert result.id == booking.id
+    with pytest.raises(AuthorizationError):
+        await booking_services.check_in_booking(fake_session, cohost, booking.id)
+    update.assert_not_awaited()
 
 
 @pytest.mark.asyncio

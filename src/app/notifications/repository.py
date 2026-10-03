@@ -91,6 +91,23 @@ async def list_in_app_notifications(
     return list(result.scalars().all())
 
 
+async def get_booking_aggregate_ids(
+    session: AsyncSession, event_ids: list[str]
+) -> dict[str, str]:
+    """Map outbox event ids → booking ids for Booking-aggregate events."""
+    if not event_ids:
+        return {}
+    from app.shared.models import OutboxEvent
+
+    result = await session.execute(
+        select(OutboxEvent.id, OutboxEvent.aggregate_id).where(
+            OutboxEvent.id.in_(event_ids),
+            OutboxEvent.aggregate_type == "Booking",
+        )
+    )
+    return {row.id: row.aggregate_id for row in result.all()}
+
+
 async def count_unread_in_app(session: AsyncSession, user_id: str) -> int:
     result = await session.execute(
         select(func.count())

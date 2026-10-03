@@ -100,6 +100,7 @@ export async function getHostBookingsPaginated(
     status?: string | null;
     unitId?: string | null;
     search?: string | null;
+    area?: string | null;
     page?: number;
     limit?: number;
   } = {}
@@ -112,6 +113,7 @@ export async function getHostBookingsPaginated(
       ...(params.status ? { status: params.status } : {}),
       ...(params.unitId ? { unit_id: params.unitId } : {}),
       ...(params.search ? { search: params.search } : {}),
+      ...(params.area ? { area: params.area } : {}),
       limit,
       offset,
     },
@@ -124,6 +126,7 @@ export function useHostBookingsPaginated(
     status?: string | null;
     unitId?: string | null;
     search?: string | null;
+    area?: string | null;
     page?: number;
     limit?: number;
   } = {}

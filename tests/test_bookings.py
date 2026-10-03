@@ -843,14 +843,15 @@ async def test_cancel_booking_guest_late_cancellation_forfeits_payment(
 
 
 @pytest.mark.asyncio
-async def test_cancel_booking_host_initiated_always_fully_refunds_guest(
+async def test_cancel_booking_admin_initiated_always_fully_refunds_guest(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
     guest = _make_user(role=UserRole.GUEST)
     host = _make_user(user_id="host-1", role=UserRole.HOST)
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
     unit = _make_unit(host_id=host.id)
     # Same "should be zero refund" window as the test above, but this time
-    # the HOST cancels — the guest must never be charged for a cancellation
+    # an ADMIN cancels — the guest must never be charged for a cancellation
     # they didn't choose.
     booking = _make_booking(
         unit,
@@ -875,15 +876,58 @@ async def test_cancel_booking_host_initiated_always_fully_refunds_guest(
     monkeypatch.setattr("app.bookings.services.write_event", write_event_mock)
     _stub_user_lookup(fake_session, guest)
 
-    result = await booking_services.cancel_booking(fake_session, host, booking.id, "double booked")
+    result = await booking_services.cancel_booking(fake_session, admin, booking.id, "double booked")
 
     assert result.status == BookingStatus.CANCELLED
-    assert result.cancelled_by == host.id
+    assert result.cancelled_by == admin.id
     assert payment.status == PaymentStatus.REFUND_PENDING
     assert payment.refund_amount_egp == 3000
     payload = write_event_mock.call_args.kwargs["payload"]
-    assert payload["cancelled_by"] == "host"
+    assert payload["cancelled_by"] == "admin"
     assert payload["refund_amount_egp"] == 3000
+
+
+@pytest.mark.asyncio
+async def test_cancel_booking_host_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Cancellation is a guest action — the unit owner cannot cancel the
+    guest's booking through the user-facing workflow (product policy)."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(
+        unit,
+        guest,
+        status=BookingStatus.CONFIRMED,
+        check_in=_TODAY,
+        check_out=_TODAY + timedelta(days=3),
+    )
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(AuthorizationError):
+        await booking_services.cancel_booking(fake_session, host, booking.id, "double booked")
+
+
+@pytest.mark.asyncio
+async def test_preview_booking_cancellation_host_rejected(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """The cancellation preview shares the guest/admin actor policy."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.CONFIRMED, check_in=_TODAY)
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(AuthorizationError):
+        await booking_services.preview_booking_cancellation(
+            fake_session, host, booking.id
+        )
 
 
 @pytest.mark.asyncio
@@ -1518,6 +1562,39 @@ async def test_check_in_booking_unauthorized(fake_session: AsyncMock, monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_check_in_booking_host_rejected(fake_session: AsyncMock, monkeypatch) -> None:
+    """Check-in is the guest's own action — the unit owner cannot check in
+    on the guest's behalf through the user-facing workflow."""
+    guest = _make_user(role=UserRole.GUEST)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.CONFIRMED, check_in=_TODAY)
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(AuthorizationError):
+        await booking_services.check_in_booking(fake_session, host, booking.id)
+
+
+@pytest.mark.asyncio
+async def test_check_in_booking_admin_rejected(fake_session: AsyncMock, monkeypatch) -> None:
+    """Admin has no guest check-in contract — ops handle arrivals via the
+    no-show/support path instead."""
+    guest = _make_user(role=UserRole.GUEST)
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
+    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    unit = _make_unit(host_id=host.id)
+    booking = _make_booking(unit, guest, status=BookingStatus.CONFIRMED, check_in=_TODAY)
+    monkeypatch.setattr(
+        bookings_repository, "get_booking_or_raise", AsyncMock(return_value=booking)
+    )
+
+    with pytest.raises(AuthorizationError):
+        await booking_services.check_in_booking(fake_session, admin, booking.id)
+
+
+@pytest.mark.asyncio
 async def test_check_out_booking_success(fake_session: AsyncMock, monkeypatch) -> None:
     guest = _make_user(role=UserRole.GUEST)
     host = _make_user(user_id="host-1", role=UserRole.HOST)
@@ -1890,13 +1967,15 @@ async def test_cancel_booking_guest_strict_tier_half_refund(
 
 
 @pytest.mark.asyncio
-async def test_cancel_booking_host_cancellation_refunds_service_fee(
+async def test_cancel_booking_admin_cancellation_refunds_service_fee(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
-    """Host-initiated cancellation refunds 100% including the service fee
-    (V1 policy §4 exception to §3)."""
+    """Admin-initiated cancellation refunds 100% including the service fee
+    (V1 policy §4 exception to §3 — non-guest actor never penalizes the
+    guest)."""
     guest = _make_user(role=UserRole.GUEST)
     host = _make_user(user_id="host-1", role=UserRole.HOST)
+    admin = _make_user(user_id="admin-1", role=UserRole.ADMIN)
     unit = _make_unit(host_id=host.id)
     booking = _make_booking(
         unit,
@@ -1913,13 +1992,16 @@ async def test_cancel_booking_host_cancellation_refunds_service_fee(
     _patch_listing_lookup(monkeypatch, _listing_for_policy(unit, "STRICT"))
     write_event_mock = _patch_cancel_infra(fake_session, monkeypatch, booking, payment, guest)
 
-    await booking_services.cancel_booking(fake_session, host, booking.id, "double booked")
+    await booking_services.cancel_booking(fake_session, admin, booking.id, "double booked")
 
     assert payment.status == PaymentStatus.REFUND_PENDING
     assert payment.refund_amount_egp == 3120
     payload = write_event_mock.call_args.kwargs["payload"]
     assert payload["refund_amount_egp"] == 3120
     assert payload["service_fee_retained_egp"] == 0
+    # Notifications consume listing_title for human-readable copy —
+    # the internal booking UUID is never the user-facing label.
+    assert payload["listing_title"] == "Test Apartment"
 
 
 @pytest.mark.asyncio

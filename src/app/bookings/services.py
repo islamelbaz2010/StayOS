@@ -292,7 +292,6 @@ async def _assert_authorized_to_update(
     session: AsyncSession, booking: Booking, user: User, new_status: BookingStatus
 ) -> None:
     scope = await _unit_permission_scope(session, booking, user)
-    can_manage = scope in _BOOKING_MANAGE_SCOPES
     is_guest = booking.guest_id == user.id
 
     if new_status in (BookingStatus.ACCEPTED, BookingStatus.REJECTED):
@@ -308,9 +307,12 @@ async def _assert_authorized_to_update(
             )
 
     if new_status == BookingStatus.CANCELLED:
-        if not (is_guest or can_manage):
+        # Cancellation is a Guest action in the product flow; admin/ops
+        # staff retain dispute/operations cancellation. Hosts and co-hosts
+        # cannot cancel a guest's booking.
+        if not (is_guest or scope == "admin"):
             raise AuthorizationError(
-                "Only the guest, host, or an admin can cancel a booking"
+                "Only the guest or an admin can cancel a booking"
             )
 
 
@@ -320,8 +322,27 @@ async def _cancellation_actor(
     """Determine who is cancelling, from the booking's point of view.
 
     Also doubles as the authorization check: raises if `user` has no
-    standing to touch this booking at all. A full-access co-host acts on
-    the host's behalf, so the actor is recorded as ``host``.
+    standing to cancel this booking. Cancellation is a Guest action in
+    the product flow — hosts and co-hosts cannot cancel a guest's
+    booking; admin/ops staff (``scope == "admin"``) retain the
+    dispute/operations cancellation capability.
+    """
+    if booking.guest_id == user.id:
+        return "guest"
+    scope = await _unit_permission_scope(session, booking, user)
+    if scope == "admin":
+        return "admin"
+    raise AuthorizationError("Only the guest or an admin can cancel a booking")
+
+
+async def _stay_actor(
+    session: AsyncSession, booking: Booking, user: User
+) -> str:
+    """Relationship check for stay-lifecycle markers (check-out).
+
+    Guest, unit owner, full-access co-host, or admin/ops may record
+    check-out. A full-access co-host acts on the host's behalf, so the
+    actor is recorded as ``host``.
     """
     if booking.guest_id == user.id:
         return "guest"
@@ -330,7 +351,7 @@ async def _cancellation_actor(
         return "host"
     if scope == "admin":
         return "admin"
-    raise AuthorizationError("Only the guest, host, or an admin can cancel a booking")
+    raise AuthorizationError("Not authorized to update this booking's stay")
 
 
 def _check_in_datetime(booking: Booking, listing: Any | None) -> datetime:
@@ -620,6 +641,13 @@ async def _apply_cancellation(
             "booking_id": booking.id,
             "unit_id": booking.unit_id,
             "host_id": host_id,
+            # Human-readable property identity for notification copy —
+            # never surface the internal UUID as the primary label.
+            "listing_title": (
+                (listing.title_en or listing.title_ar)
+                if listing is not None
+                else f"#{booking.id[:8]}"
+            ),
             "cancelled_by": cancelled_by,
             "cancellation_reason": reason,
             "cancellation_policy": _policy_name(listing),
@@ -737,14 +765,17 @@ async def mark_guest_no_show(
 
 
 async def check_in_booking(session: AsyncSession, user: User, booking_id: str) -> BookingResponse:
-    """Self-reported (guest or host) check-in.
+    """Self-reported guest check-in.
 
     Deliberately does not touch `status` — the booking stays CONFIRMED.
     This only records that the stay has operationally started, which
     drives the Mobile stay-phase UI and unlocks nothing financial.
     """
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    await _cancellation_actor(session, booking, user)  # authorization only; raises if unrelated
+    if booking.guest_id != user.id:
+        # Check-in is the guest's own action — hosts/co-hosts cannot
+        # start a guest's stay through this workflow.
+        raise AuthorizationError("Only the guest can check in")
 
     if BookingStatus(booking.status) != BookingStatus.CONFIRMED:
         raise ValidationError("Booking must be confirmed before check-in")
@@ -825,7 +856,7 @@ async def check_out_booking(session: AsyncSession, user: User, booking_id: str) 
     checked-out Trip UI state; finances are handled by the escrow lifecycle.
     """
     booking = await bookings_repository.get_booking_or_raise(session, booking_id)
-    await _cancellation_actor(session, booking, user)
+    await _stay_actor(session, booking, user)
 
     if BookingStatus(booking.status) != BookingStatus.CONFIRMED:
         raise ValidationError("Booking must be confirmed to check out")

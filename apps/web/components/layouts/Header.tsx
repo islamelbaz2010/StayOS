@@ -47,7 +47,7 @@ function LanguageSwitcher({ className }: { className?: string }) {
             : "text-neutral-500 hover:text-neutral-800"
         }`}
       >
-        EN
+        English
       </button>
       <span className="text-neutral-300">|</span>
       <button
@@ -59,7 +59,7 @@ function LanguageSwitcher({ className }: { className?: string }) {
             : "text-neutral-500 hover:text-neutral-800"
         }`}
       >
-        ع
+        العربية
       </button>
     </div>
   );
@@ -173,33 +173,40 @@ export function Header() {
       link({ href: `/${locale}/support`, label: t("support") }),
     ];
 
+    const preferencesGroup: MenuEntry[] = [
+      { kind: "section", label: t("preferences") },
+      link({
+        href: `/${locale}/account-settings`,
+        label: t("accountSettings"),
+      }),
+      link({
+        href: `/${locale}/account-settings/language`,
+        label: t("language"),
+      }),
+    ];
+
     if (user?.role === "admin" || (user?.role === "staff" && hasAdminAccess)) {
       // Operational accounts get a lean menu — admin surfaces live behind
       // one entry. Trips stays reachable: any account can book under the
       // capability model, so booking/payment access must not dead-end here.
       accountItems.push(
+        { kind: "section", label: t("account") },
         link({ href: `/${locale}/profile`, label: t("profile") }),
+        link({ href: `/${locale}/bookings`, label: t("trips") }),
         link({
           href: `/${locale}/admin`,
           label: t("adminConsole"),
           count: adminPendingCount,
           accent: true,
         }),
-        link({ href: `/${locale}/bookings`, label: t("trips") }),
-        link({
-          href: `/${locale}/account-settings`,
-          label: t("accountSettings"),
-        }),
-        link({
-          href: `/${locale}/account-settings/language`,
-          label: t("language"),
-        }),
+        ...preferencesGroup,
         ...helpSupport
       );
     } else {
       // Marketplace users (guest, host, staff w/o console, field staff):
       // trips/favorites are account-scoped — hosts book as users too.
       accountItems.push(
+        { kind: "section", label: t("account") },
         link({ href: `/${locale}/profile`, label: t("profile") }),
         link({ href: `/${locale}/bookings`, label: t("trips") }),
         link({ href: `/${locale}/favorites`, label: t("favorites") }),
@@ -212,12 +219,22 @@ export function Header() {
           href: `/${locale}/notifications`,
           label: t("notifications"),
           count: notificationsUnread,
-        }),
-        link({
-          href: `/${locale}/account-settings`,
-          label: t("accountSettings"),
         })
       );
+      if (user?.role === "host") {
+        accountItems.push(
+          { kind: "section", label: t("hosting") },
+          link({ href: `/${locale}/host`, label: t("hostDashboard") }),
+          link({ href: `/${locale}/host/listings`, label: t("myListings") }),
+          link({
+            href: `/${locale}/host/bookings`,
+            label: t("reservations"),
+            count: hostPendingCount,
+          }),
+          link({ href: `/${locale}/host/earnings`, label: t("earnings") }),
+          link({ href: `/${locale}/host/guide`, label: t("hostGuide") })
+        );
+      }
       if (user?.role === "guest") {
         accountItems.push(
           link({
@@ -227,26 +244,7 @@ export function Header() {
           })
         );
       }
-      accountItems.push(
-        link({
-          href: `/${locale}/account-settings/language`,
-          label: t("language"),
-        })
-      );
-      if (user?.role === "host") {
-        accountItems.push(
-          { kind: "section", label: t("hosting") },
-          link({
-            href: `/${locale}/host`,
-            label: t("hostDashboard"),
-            count: hostPendingCount,
-          }),
-          link({ href: `/${locale}/host/listings`, label: t("myListings") }),
-          link({ href: `/${locale}/host/earnings`, label: t("earnings") }),
-          link({ href: `/${locale}/host/guide`, label: t("hostGuide") })
-        );
-      }
-      accountItems.push(...helpSupport);
+      accountItems.push(...preferencesGroup, ...helpSupport);
     }
   }
 

@@ -11,6 +11,7 @@ export interface InAppNotificationItem {
   locale: string;
   read_at: string | null;
   created_at: string;
+  booking_id: string | null;
 }
 
 export interface InAppNotificationList {

@@ -1400,7 +1400,7 @@ async def test_list_paginated_host_bookings_no_units(fake_session: AsyncMock, mo
     )
 
     result = await host_services.list_paginated_host_bookings(
-        fake_session, host, None, None, None, 50, 0
+        fake_session, host, limit=50, offset=0
     )
     assert result.items == []
     assert result.total == 0
@@ -1412,5 +1412,46 @@ async def test_list_paginated_host_bookings_guest_forbidden(fake_session: AsyncM
     guest = _make_user(user_id="guest-1", role=UserRole.GUEST)
     with pytest.raises(AuthorizationError):
         await host_services.list_paginated_host_bookings(
-            fake_session, guest, None, None, None, 50, 0
+            fake_session, guest, limit=50, offset=0
         )
+
+
+@pytest.mark.asyncio
+async def test_list_paginated_host_bookings_combines_area_status_search(
+    fake_session: AsyncMock, monkeypatch
+) -> None:
+    """Listing + area + status + search must all reach the repository
+    together — one filtering model across every status tab."""
+    host = _make_user(user_id="host-1")
+    monkeypatch.setattr(
+        host_services,
+        "get_managed_unit_ids",
+        AsyncMock(return_value=["unit-1", "unit-2"]),
+    )
+    repo = AsyncMock(return_value=([], 0))
+    monkeypatch.setattr(
+        host_services.bookings_repository, "list_paginated_host_bookings", repo
+    )
+    monkeypatch.setattr(
+        "app.host.services.host_permissions.get_unit_permission_scopes",
+        AsyncMock(return_value={}),
+    )
+
+    result = await host_services.list_paginated_host_bookings(
+        fake_session,
+        host,
+        status="confirmed",
+        unit_id="unit-1",
+        search="guest",
+        area="Maadi",
+        limit=10,
+        offset=0,
+    )
+
+    assert result.total == 0
+    repo.assert_awaited_once()
+    kwargs = repo.await_args.kwargs
+    assert kwargs["status"] == "confirmed"
+    assert kwargs["unit_id"] == "unit-1"
+    assert kwargs["search"] == "guest"
+    assert kwargs["area"] == "Maadi"

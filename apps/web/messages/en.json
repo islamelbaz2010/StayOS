@@ -54,6 +54,8 @@
     "notifications": "Notifications",
     "accountSettings": "Account settings",
     "language": "Languages & currency",
+    "preferences": "Preferences",
+    "reservations": "Reservations",
     "privacy": "Privacy",
     "terms": "Terms of service",
     "activity": "Account activity"
@@ -1051,6 +1053,7 @@
     "messageGuestError": "Could not open the conversation. Please try again.",
     "searchPlaceholder": "Search by guest or booking ID",
     "allUnits": "All listings",
+    "allAreas": "All areas",
     "noSearchResults": "No bookings match your search.",
     "pageInfo": "Page {page} of {total}",
     "clearFilters": "Clear filters",
@@ -2275,7 +2278,8 @@
     "empty": "No notifications yet.",
     "loadError": "Could not load notifications.",
     "markRead": "Mark read",
-    "markAllRead": "Mark all as read"
+    "markAllRead": "Mark all as read",
+    "viewBooking": "View booking"
   },
   "settings": {
     "title": "Account settings",

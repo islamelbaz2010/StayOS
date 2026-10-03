@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -96,6 +97,14 @@ export default function NotificationsPage() {
                       <p className="mt-1 whitespace-pre-line text-sm text-neutral-600">
                         {item.body}
                       </p>
+                      {item.booking_id && (
+                        <Link
+                          href={`/${locale}/bookings/${item.booking_id}`}
+                          className="mt-1 inline-block text-xs font-semibold text-accent-600 hover:text-accent-700"
+                        >
+                          {t("viewBooking")}
+                        </Link>
+                      )}
                       <p className="mt-2 text-xs text-neutral-400">
                         {formatDate(item.created_at, dateLocale)}
                       </p>

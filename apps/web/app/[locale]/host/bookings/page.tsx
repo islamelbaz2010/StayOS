@@ -35,6 +35,7 @@ export default function HostBookingsPage() {
 
   const status = searchParams?.get("status") ?? "all";
   const unitId = searchParams?.get("unitId") ?? null;
+  const area = searchParams?.get("area") ?? null;
   const q = searchParams?.get("q") ?? "";
   const page = Math.max(1, parseInt(searchParams?.get("page") ?? "1", 10) || 1);
   const selectedId = searchParams?.get("bookingId") ?? null;
@@ -50,11 +51,12 @@ export default function HostBookingsPage() {
     () => ({
       status: status === "all" ? null : status,
       unitId,
+      area,
       search: q || null,
       page,
       limit: PAGE_SIZE,
     }),
-    [status, unitId, q, page]
+    [status, unitId, area, q, page]
   );
 
   const {
@@ -100,6 +102,22 @@ export default function HostBookingsPage() {
     updateParams({ unitId: next === "all" ? null : next }, true);
   }
 
+  function handleAreaChange(next: string) {
+    const updates: Record<string, string | null> = {
+      area: next === "all" ? null : next,
+    };
+    // Keep listing + area coherent: a selected listing outside the new
+    // area can never match — reset it instead of yielding empty results.
+    if (
+      next !== "all" &&
+      unitId &&
+      !listings?.some((l) => l.id === unitId && l.city === next)
+    ) {
+      updates.unitId = null;
+    }
+    updateParams(updates, true);
+  }
+
   function handleSearchChange(value: string) {
     setSearchInput(value);
     if (searchTimeout.current) {
@@ -122,10 +140,22 @@ export default function HostBookingsPage() {
 
   const { data: listings } = useHostListings();
 
-  const emptyMessage =
-    q || unitId || status !== "all"
-      ? t("noSearchResults")
-      : t("noBookings");
+  // Area options are generated from the host's own listing locations —
+  // the persisted `city` field is the canonical area level.
+  const areas = useMemo(() => {
+    const cities = new Set(
+      (listings ?? []).map((l) => l.city).filter((c): c is string => !!c)
+    );
+    return [...cities].sort((a, b) => a.localeCompare(b));
+  }, [listings]);
+
+  const listingOptions = useMemo(
+    () => (area ? (listings ?? []).filter((l) => l.city === area) : (listings ?? [])),
+    [listings, area]
+  );
+
+  const hasFilters = !!(q || unitId || area || status !== "all");
+  const emptyMessage = hasFilters ? t("noSearchResults") : t("noBookings");
 
   return (
     <ProtectedRoute allowedRoles={["host", "admin"]}>
@@ -145,13 +175,27 @@ export default function HostBookingsPage() {
                   placeholder={t("searchPlaceholder")}
                   className="input w-full sm:w-64"
                 />
+                {areas.length > 0 && (
+                  <select
+                    value={area ?? "all"}
+                    onChange={(e) => handleAreaChange(e.target.value)}
+                    className="input w-full sm:w-40"
+                  >
+                    <option value="all">{t("allAreas")}</option>
+                    {areas.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <select
                   value={unitId ?? "all"}
                   onChange={(e) => handleUnitChange(e.target.value)}
                   className="input w-full sm:w-48"
                 >
                   <option value="all">{t("allUnits")}</option>
-                  {listings?.map((unit) => (
+                  {listingOptions.map((unit) => (
                     <option key={unit.id} value={unit.id}>
                       {unit.title}
                     </option>
@@ -225,7 +269,7 @@ export default function HostBookingsPage() {
                 ) : (
                   <div className="card p-6 text-center text-neutral-600">
                     <p className="mb-4">{emptyMessage}</p>
-                    {(q || unitId || status !== "all") && (
+                    {hasFilters && (
                       <button
                         type="button"
                         onClick={handleClearFilters}

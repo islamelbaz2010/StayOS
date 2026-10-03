@@ -428,14 +428,19 @@ export function HostBookingDetail({
                 {formatMoney(payment.amount_egp, "EGP", dateLocale)}
               </dd>
             </div>
-            {payment.accommodation_amount_egp != null && (
-              <div>
-                <dt className="text-sm text-neutral-500">{t("accommodationAmount")}</dt>
-                <dd className="text-sm font-medium text-brand-900">
-                  {formatMoney(payment.accommodation_amount_egp, "EGP", dateLocale)}
-                </dd>
-              </div>
-            )}
+            {/* Non-breakdown (host/guest) responses mirror the
+                all-inclusive total into accommodation_amount_egp — skip
+                the row when it would just repeat the payment amount.
+                Staff breakdown views still show the distinct component. */}
+            {payment.accommodation_amount_egp != null &&
+              payment.accommodation_amount_egp !== payment.amount_egp && (
+                <div>
+                  <dt className="text-sm text-neutral-500">{t("accommodationAmount")}</dt>
+                  <dd className="text-sm font-medium text-brand-900">
+                    {formatMoney(payment.accommodation_amount_egp, "EGP", dateLocale)}
+                  </dd>
+                </div>
+              )}
             {payment.cleaning_fee_egp != null && payment.cleaning_fee_egp > 0 && (
               <div>
                 <dt className="text-sm text-neutral-500">{t("cleaningFee")}</dt>

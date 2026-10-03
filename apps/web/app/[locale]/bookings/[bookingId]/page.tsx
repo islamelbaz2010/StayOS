@@ -574,7 +574,7 @@ function TripContent({
           </Link>
         )}
 
-        {canCheckIn && (
+        {isOwner && canCheckIn && (
           <button
             type="button"
             onClick={async () => {
@@ -593,7 +593,7 @@ function TripContent({
           </button>
         )}
 
-        {canCheckOut && (
+        {isOwner && canCheckOut && (
           <button
             type="button"
             onClick={async () => {
@@ -634,7 +634,7 @@ function TripContent({
           </div>
         )}
 
-        {CANCELLABLE_PHASES.has(phase) && (
+        {isOwner && CANCELLABLE_PHASES.has(phase) && (
           <CancelBookingButton booking={booking} onCancelled={() => refetch()} />
         )}
 

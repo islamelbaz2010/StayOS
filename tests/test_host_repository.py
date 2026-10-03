@@ -179,15 +179,25 @@ async def test_get_host_earnings_per_unit_includes_cover_image(fake_session: Asy
     card_per_unit_result = MagicMock()
     card_per_unit_result.all = MagicMock(return_value=[])
 
-    title_row = MagicMock()
-    title_row.title_ar = "شقة"
-    title_row.title_en = None
-    title_result = MagicMock()
-    title_result.one_or_none = MagicMock(return_value=title_row)
+    # Canonical cover path: unit loaded once with photos + listing, then
+    # resolve_cover_image_url picks the cover (and signs private refs).
+    photo = MagicMock()
+    photo.url = "https://cdn.example.com/covers/test.jpg"
+    photo.s3_key = ""
+    photo.is_cover = True
+    photo.moderation_state = "live"
+    listing = MagicMock()
+    listing.title_ar = "شقة"
+    listing.title_en = None
+    listing.cover_photo_id = None
+    unit = MagicMock()
+    unit.id = "unit-1"
+    unit.photos = [photo]
+    unit.listing = listing
 
-    cover_result = MagicMock()
-    cover_result.scalar_one_or_none = MagicMock(
-        return_value="https://cdn.example.com/covers/test.jpg"
+    units_result = MagicMock()
+    units_result.scalars = MagicMock(
+        return_value=MagicMock(all=MagicMock(return_value=[unit]))
     )
 
     fake_session.execute = AsyncMock(
@@ -196,8 +206,7 @@ async def test_get_host_earnings_per_unit_includes_cover_image(fake_session: Asy
             card_net_result,
             per_unit_result,
             card_per_unit_result,
-            title_result,
-            cover_result,
+            units_result,
         ]
     )
     # Order of scalars: total_bookings, confirmed_bookings, completed_stays,

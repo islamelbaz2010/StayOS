@@ -1,5 +1,11 @@
 name: Mobile Android APK Build (non-EAS)
 
+# SECONDARY / reference standalone Gradle build (plain release APK, no
+# QA profile selection, generic artifact name). The PRIMARY founder
+# acceptance pipeline is build-mobile-android.yml — same proven
+# toolchain, plus QA/release profile input, named artifacts and build
+# metadata. Kept as a minimal fallback; do not diverge it further.
+
 on:
   workflow_dispatch:
 

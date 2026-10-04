@@ -1,12 +1,21 @@
-name: Mobile Android APK Build
+name: Mobile Android QA APK (Gradle)
 
-# Builds the StayOS Android APK via EAS (the authoritative Expo build
-# mechanism — no committed native android/ directory) and persists the
-# APK as a normal GitHub Actions artifact: Actions → run → Artifacts.
+# PRIMARY founder-acceptance APK pipeline.
 #
-# Default profile is `qa` (internal acceptance build — exposes the
-# seeded-account QA login section). `preview` builds the same APK without
-# QA controls; `production` stays an AAB and is not used here.
+#   GitHub Actions → Android SDK/Java/Node → expo prebuild →
+#   Gradle assembleRelease → actions/upload-artifact →
+#   Actions → run → Artifacts → downloadable APK.
+#
+# No EXPO_TOKEN / EAS dependency. EAS remains a secondary distribution
+# path (`npx eas build --profile qa|preview`) but is never required for
+# the acceptance artifact.
+#
+# `qa` profile (default): staging API + EXPO_PUBLIC_QA_MODE=1 → the
+# internal QA role-login panel is compiled in (seeded /auth/dev-token
+# accounts; staging-only backend mechanism — 404s on production).
+# `release` profile: same app WITHOUT QA controls, still pointing at the
+# staging/demo backend (no production backend exists yet — do not point
+# this at prod until one does).
 
 on:
   push:
@@ -14,44 +23,36 @@ on:
       - main
     paths:
       - 'apps/mobile/**'
+      - '.github/workflows/build-mobile-android.yml'
   workflow_dispatch:
     inputs:
       profile:
-        description: 'EAS build profile (qa | preview)'
+        description: 'Build profile (qa = internal QA panel | release = no QA controls)'
         required: false
         default: 'qa'
         type: choice
         options:
           - qa
-          - preview
+          - release
 
 permissions:
   contents: read
 
 jobs:
   build-android:
-    name: Build Android APK (EAS ${{ github.event.inputs.profile || 'qa' }} profile)
+    name: Build Android APK via Gradle (${{ github.event.inputs.profile || 'qa' }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: apps/mobile
     env:
-      EAS_PROFILE: ${{ github.event.inputs.profile || 'qa' }}
+      EXPO_PUBLIC_API_URL: https://stayos-demo-production.up.railway.app/api/v1
+      BUILD_PROFILE: ${{ github.event.inputs.profile || 'qa' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Verify EXPO_TOKEN secret is configured
-        run: |
-          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
-            echo "::error::Required secret EXPO_TOKEN is not set."
-            echo "::error::EAS CLI authenticates non-interactively via the EXPO_TOKEN environment variable."
-            echo "::error::Create a token at https://expo.dev/accounts/islamelbaz/settings/access-tokens"
-            echo "::error::and add it as a repository secret named EXPO_TOKEN (Settings > Secrets and variables > Actions)."
-            exit 1
-          fi
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
@@ -60,75 +61,98 @@ jobs:
           cache: 'npm'
           cache-dependency-path: apps/mobile/package-lock.json
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        run: |
+          ANDROID_HOME="$HOME/android-sdk"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
+          unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
+          mv /tmp/cmdline-tools/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          yes | sdkmanager --licenses
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Read app metadata
+      - name: Patch ExpoModulesCorePlugin for Gradle 8 compatibility
+        run: |
+          sed -i "s/from components\.release/if (components.findByName('release')) { from components.findByName('release') }/g" node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+
+      - name: Enable QA mode (qa profile only)
+        if: env.BUILD_PROFILE == 'qa'
+        run: echo "EXPO_PUBLIC_QA_MODE=1" >> "$GITHUB_ENV"
+
+      - name: Expo prebuild for Android
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build release APK with Gradle
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+      - name: Verify release APK exists and contains JS bundle
+        run: |
+          set -euo pipefail
+          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+          ls -lh "$APK_PATH"
+          test -s "$APK_PATH"
+          unzip -l "$APK_PATH" | grep -q "index.android.bundle"
+
+      - name: Read app metadata + rename APK
         id: meta
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
           PACKAGE=$(node -p "require('./app.json').expo.android.package")
           SDK=$(node -p "require('./package.json').dependencies.expo.replace(/[^0-9.]/g,'')")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
-          echo "sdk=$SDK" >> "$GITHUB_OUTPUT"
-
-      - name: Trigger EAS Build
-        id: eas_build
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          npx eas build \
-            --platform android \
-            --profile "$EAS_PROFILE" \
-            --non-interactive \
-            --json > eas-build-result.json
-
-          node -e "
-            const b = require('./eas-build-result.json')[0];
-            const url = b.artifacts && b.artifacts.buildUrl;
-            if (!url) {
-              console.error('EAS build did not return a downloadable artifact URL.');
-              process.exit(1);
-            }
-            const fs = require('fs');
-            fs.appendFileSync(process.env.GITHUB_OUTPUT,
-              'apk_url=' + url + '\n' + 'build_id=' + b.id + '\n');
-            console.log('EAS build id:', b.id);
-            console.log('APK url:', url);
-          "
-
-      - name: Download built APK
-        run: |
           SHORT_SHA="${GITHUB_SHA:0:7}"
-          APK_NAME="StayOS-Android-${SHORT_SHA}-${{ steps.eas_build.outputs.build_id }}.apk"
-          curl -fSL -o "$APK_NAME" "${{ steps.eas_build.outputs.apk_url }}"
+          PROF=$(echo "$BUILD_PROFILE" | tr 'a-z' 'A-Z')
+          APK_NAME="StayOS-Android-${PROF}-${SHORT_SHA}.apk"
+          mv "android/app/build/outputs/apk/release/app-release.apk" "$APK_NAME"
           ls -lh "$APK_NAME"
-          test -s "$APK_NAME"
-          echo "apk_name=$APK_NAME" >> "$GITHUB_ENV"
-
-      - name: Write build summary
-        run: |
           {
-            echo "### StayOS Android APK (${EAS_PROFILE})"
-            echo ""
-            echo "| Field | Value |"
-            echo "|---|---|"
-            echo "| Commit | ${GITHUB_SHA} |"
-            echo "| App version | ${{ steps.meta.outputs.version }} |"
-            echo "| Expo SDK | ${{ steps.meta.outputs.sdk }} |"
-            echo "| Android package | ${{ steps.meta.outputs.package }} |"
-            echo "| EAS profile | ${EAS_PROFILE} |"
-            echo "| EAS build ID | ${{ steps.eas_build.outputs.build_id }} |"
-            echo "| Artifact | ${APK_NAME} |"
-            echo ""
-            echo "Download the APK from this run's **Artifacts** section."
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "version=$VERSION"
+            echo "package=$PACKAGE"
+            echo "sdk=$SDK"
+            echo "apk_name=$APK_NAME"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APK_NAME }}
-          path: apps/mobile/${{ env.APK_NAME }}
-          retention-days: 30
+          name: ${{ steps.meta.outputs.apk_name }}
+          path: apps/mobile/${{ steps.meta.outputs.apk_name }}
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Write build summary
+        run: |
+          {
+            echo "### StayOS Android APK — Gradle (${BUILD_PROFILE})"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Commit | ${GITHUB_SHA} |"
+            echo "| Branch | ${GITHUB_REF_NAME} |"
+            echo "| Build type | GitHub Actions → expo prebuild → Gradle assembleRelease |"
+            echo "| Designation | ${BUILD_PROFILE} (internal QA acceptance — not for store) |"
+            echo "| Android package | ${{ steps.meta.outputs.package }} |"
+            echo "| App version | ${{ steps.meta.outputs.version }} |"
+            echo "| Expo SDK | ${{ steps.meta.outputs.sdk }} |"
+            echo "| API environment | ${EXPO_PUBLIC_API_URL} |"
+            echo "| Artifact | ${{ steps.meta.outputs.apk_name }} |"
+            echo "| Workflow run | ${{ github.run_number }} |"
+            echo ""
+            echo "Download the APK from this run's **Artifacts** section."
+          } >> "$GITHUB_STEP_SUMMARY"

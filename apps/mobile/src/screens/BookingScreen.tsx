@@ -4,7 +4,8 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
-import { useBookingQuote, useCreateBooking } from "../lib/hooks";
+import { apiErrorMessage } from "../lib/api";
+import { useBookingQuote, useCreateBooking, useMe } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import type { RootStackParamList } from "../../App";
@@ -35,25 +36,31 @@ function addDays(date: Date, days: number): Date {
   return result;
 }
 
-function getBookingErrorMessage(error: unknown, t: (key: string) => string): string {
+function getBookingErrorMessage(
+  error: unknown,
+  t: (key: string) => string,
+  locale: string
+): string {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
-    const detail = error.response?.data?.detail;
-    if (status === 401 || status === 403) return t("authRequired");
-    if (status === 409) return t("datesUnavailable");
-    if (status === 422) {
-      return typeof detail === "string" ? detail : t("validationError");
-    }
+    if (status === 401) return t("authRequired");
+    if (status === 403) return apiErrorMessage(error, locale) ?? t("authRequired");
+    if (status === 409) return apiErrorMessage(error, locale) ?? t("datesUnavailable");
     if (!error.response) return t("networkError");
+    // Backend envelope carries a safe human-readable message (+ Arabic
+    // variant) for every StayOSError/HTTPException — surface it.
+    const backendMsg = apiErrorMessage(error, locale);
+    if (backendMsg && status && status < 500) return backendMsg;
   }
   return t("error");
 }
 
 export function BookingScreen() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const navigation = useNavigation<Nav>();
   const route = useRoute<BookingRoute>();
-  const { unitId, title, price, currency, maxGuests } = route.params;
+  const { unitId, title, price, currency, maxGuests, instantBook, hostId } = route.params;
+  const { data: user } = useMe();
 
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
@@ -100,7 +107,7 @@ export function BookingScreen() {
     }
 
     try {
-      await createBooking.mutateAsync({
+      const booking = await createBooking.mutateAsync({
         unit_id: unitId,
         check_in: toISODate(checkIn),
         check_out: toISODate(checkOut),
@@ -108,13 +115,34 @@ export function BookingScreen() {
         children,
         infants,
       });
-      Alert.alert(t("bookingConfirmed"), "", [
+      // Matches web BookingPanel: instant book → straight to checkout;
+      // request-to-book → "request sent" state and back to trips.
+      if (instantBook) {
+        navigation.replace("Payment", { bookingId: booking.id });
+        return;
+      }
+      Alert.alert(t("bookingRequestSent"), t("bookingRequestSentHint"), [
         { text: "OK", onPress: () => navigation.navigate("Home", { screen: "TripsTab" }) },
       ]);
     } catch (error) {
-      Alert.alert(t("bookingFailed"), getBookingErrorMessage(error, t));
+      Alert.alert(t("bookingFailed"), getBookingErrorMessage(error, t, locale));
     }
   };
+
+  const isKycVerified = user?.kyc_status === "verified";
+  const isOwnListing = Boolean(user?.id && hostId && user.id === hostId);
+
+  // Mirrors web BookingPanel: unauthenticated, unverified, and
+  // own-listing states are surfaced before any booking attempt —
+  // the backend enforces the same rules (KYC check inside
+  // create_booking, auth via get_current_user).
+  const gate = !user
+    ? { title: t("loginToBook"), cta: t("login"), route: "Login" as const }
+    : isOwnListing
+      ? { title: t("cantBookOwnListing"), cta: null, route: null }
+      : !isKycVerified
+        ? { title: t("kycRequiredToBook"), cta: t("verifyNow"), route: "Kyc" as const }
+        : null;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -236,15 +264,29 @@ export function BookingScreen() {
         <Text style={styles.trustSubtitle}>{t("trustMessageSubtitle")}</Text>
       </View>
 
-      <Pressable
-        style={[styles.confirmButton, createBooking.isPending && styles.confirmButtonDisabled]}
-        onPress={handleConfirm}
-        disabled={createBooking.isPending}
-      >
-        <Text style={styles.confirmButtonText}>
-          {createBooking.isPending ? t("loading") : t("confirmBooking")}
-        </Text>
-      </Pressable>
+      {gate ? (
+        <View style={styles.gateBox}>
+          <Text style={styles.gateText}>{gate.title}</Text>
+          {gate.cta && gate.route && (
+            <Pressable
+              style={styles.gateButton}
+              onPress={() => navigation.navigate(gate.route as never)}
+            >
+              <Text style={styles.gateButtonText}>{gate.cta}</Text>
+            </Pressable>
+          )}
+        </View>
+      ) : (
+        <Pressable
+          style={[styles.confirmButton, createBooking.isPending && styles.confirmButtonDisabled]}
+          onPress={handleConfirm}
+          disabled={createBooking.isPending}
+        >
+          <Text style={styles.confirmButtonText}>
+            {createBooking.isPending ? t("creatingBooking") : t("confirmBooking")}
+          </Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -444,6 +486,32 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: colors.white,
     fontSize: fontSize.lg,
+    fontWeight: "700",
+  },
+  gateBox: {
+    backgroundColor: colors.primary50,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    alignItems: "center",
+    marginBottom: spacing.xxl,
+  },
+  gateText: {
+    fontSize: fontSize.md,
+    color: colors.text,
+    textAlign: "center",
+    marginBottom: spacing.sm,
+    lineHeight: 22,
+  },
+  gateButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.xs,
+  },
+  gateButtonText: {
+    color: colors.white,
+    fontSize: fontSize.md,
     fontWeight: "700",
   },
 });

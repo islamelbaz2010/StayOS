@@ -144,6 +144,62 @@ export function HostProfileScreen() {
       )}
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t("hostOperations")}</Text>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("HostBookings")}
+        >
+          <Text style={styles.linkText}>{t("hostBookings")} →</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("HostPayments")}
+        >
+          <Text style={styles.linkText}>{t("hostPayments")} →</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("HostCreateListing")}
+        >
+          <Text style={styles.linkText}>{t("newListing")} →</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t("account")}</Text>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("Notifications")}
+        >
+          <Text style={styles.linkText}>{t("notifications")} →</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("ProfileSettings")}
+        >
+          <Text style={styles.linkText}>{t("editProfile")} →</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("PersonalData")}
+        >
+          <Text style={styles.linkText}>{t("personalInfo")} →</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("SecuritySettings")}
+        >
+          <Text style={styles.linkText}>{t("loginSecurity")} →</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("PrivacySettings")}
+        >
+          <Text style={styles.linkText}>{t("privacyNotifications")} →</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("language")}</Text>
         <View style={styles.langRow}>
           <Pressable
@@ -167,6 +223,12 @@ export function HostProfileScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("support")}</Text>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("HelpCenter")}
+        >
+          <Text style={styles.linkText}>{t("helpCenter")} →</Text>
+        </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("Support")}

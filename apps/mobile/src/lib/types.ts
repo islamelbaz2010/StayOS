@@ -25,6 +25,7 @@ export interface Listing {
   average_rating?: number | null;
   review_count?: number;
   available_for_dates?: boolean | null;
+  instant_book?: boolean;
 }
 
 export interface ListingDetail extends Listing {
@@ -213,6 +214,8 @@ export interface KycDocument {
   document_number: string | null;
   status: string;
   legal_name: string | null;
+  provider: string | null;
+  provider_applicant_id: string | null;
   front_image_key: string | null;
   back_image_key: string | null;
   selfie_image_key: string | null;
@@ -227,6 +230,9 @@ export interface KycStatusResponse {
   user_id: string;
   kyc_status: string;
   documents: KycDocument[];
+  verification_mode: string;
+  automated_available: boolean;
+  required_sides: Record<string, string[]>;
 }
 
 export interface LocationSuggestion {
@@ -248,10 +254,484 @@ export interface HostProfile {
 
 export interface User {
   id: string;
-  phone: string;
-  display_name: string;
+  // Backend sends phone_number; `phone` kept optional for legacy callers.
+  phone?: string | null;
+  phone_number: string | null;
+  email: string | null;
+  display_name: string | null;
   role: string;
   kyc_status: string;
+  is_active: boolean;
+  staff_permissions: string[];
+  has_password: boolean;
+  locale: string;
+  bio: string | null;
+  location: string | null;
+  languages: string[];
+  interests: string[] | null;
+  avatar_url: string | null;
+}
+
+export interface SessionItem {
+  id: string;
+  created_at: string | null;
+  expires_at: string;
+}
+
+export interface PrivacySettings {
+  profile_public: boolean;
+  read_receipts: boolean;
+}
+
+export interface NotificationPreferences {
+  preferences: Record<string, boolean>;
+}
+
+export interface AccountData {
+  id: string;
+  user_id: string;
+  legal_name: string | null;
+  national_id: string | null;
+  date_of_birth: string | null;
+  tax_id: string | null;
+  address: Record<string, unknown> | null;
+  mailing_address: Record<string, unknown> | null;
+  emergency_contact: Record<string, unknown> | null;
+  payout_method: string | null;
+  payout_bank_name: string | null;
+  payout_account_number: string | null;
+  payout_wallet_msisdn: string | null;
+  payout_holder_name: string | null;
+}
+
+export interface InAppNotification {
+  id: string;
+  event_type: string;
+  category: string;
+  subject: string | null;
+  body: string;
+  locale: string;
+  read_at: string | null;
+  created_at: string;
+  booking_id?: string | null;
+}
+
+export interface NotificationList {
+  items: InAppNotification[];
+  unread_count: number;
+}
+
+export interface Dispute {
+  id: string;
+  reporter_id: string;
+  reporter_name: string | null;
+  reporter_role: string | null;
+  booking_id: string;
+  category: string;
+  description: string;
+  status: string;
+  admin_notes: string | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DisputeList {
+  data: Dispute[];
+  total: number;
+}
+
+export interface BookingOffer {
+  id: string;
+  conversation_id: string;
+  unit_id: string;
+  host_id: string;
+  guest_id: string;
+  check_in: string;
+  check_out: string;
+  total_price_egp: number;
+  status: string;
+  booking_id: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface HostBooking {
+  id: string;
+  unit_id: string;
+  guest_id: string;
+  host_id: string | null;
+  status: string;
+  stay_phase: string;
+  check_in: string;
+  check_out: string;
+  adults: number;
+  children: number;
+  infants: number;
+  requested_at: string;
+  accepted_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  unit_title: string | null;
+  unit_cover_image: string | null;
+}
+
+export interface PaginatedBookings {
+  items: HostBooking[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface HostPerformance {
+  period_days: number;
+  total_bookings: number;
+  accepted_bookings: number;
+  completed_stays: number;
+  cancelled_bookings: number;
+  cancellation_rate_pct: number;
+  booked_nights: number;
+  occupancy_pct: number;
+  gross_revenue_egp: number;
+  avg_nightly_egp: number;
+  inquiries: number;
+  per_unit: Array<{ unit_id: string; unit_title: string | null; bookings: number; revenue_egp: number }>;
+}
+
+// ============================================================
+// Staff / Admin operations types
+// ============================================================
+
+export interface OpsDashboard {
+  pending_tasks: number;
+  in_progress_tasks: number;
+  completed_tasks_today: number;
+  overdue_tasks: number;
+  open_maintenance_requests: number;
+  not_ready_units: number;
+  active_field_staff: number;
+}
+
+export interface OpsTask {
+  id: string;
+  unit_id: string;
+  reservation_id: string | null;
+  task_type: string;
+  status: string;
+  priority: string;
+  field_staff_id: string | null;
+  due_by: string;
+  notes: string | null;
+  checklist: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MaintenanceRequest {
+  id: string;
+  unit_id: string;
+  reporter_id: string | null;
+  issue_type: string;
+  description: string | null;
+  status: string;
+  related_task_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PropertyReadiness {
+  id: string;
+  unit_id: string;
+  reservation_id: string | null;
+  status: string;
+  blocked_until: string | null;
+  reason: string | null;
+  updated_at: string;
+}
+
+export interface AdminOverview {
+  users_total: number;
+  users_guests: number;
+  users_hosts: number;
+  hosts_kyc_verified: number;
+  listings_total: number;
+  listings_listed: number;
+  listings_pending_verification: number;
+  listings_pending_changes: number;
+  listings_rejected: number;
+  listings_by_governorate: Record<string, number>;
+  bookings_total: number;
+  bookings_requested: number;
+  bookings_accepted: number;
+  bookings_confirmed: number;
+  bookings_completed: number;
+  bookings_cancelled: number;
+  bookings_rejected: number;
+  upcoming_checkins_7d: number;
+  payments_pending: number;
+  payments_proof_uploaded: number;
+  payments_verified: number;
+  payments_verified_amount_egp: number;
+  payments_refund_pending_amount_egp: number | null;
+  payments_refunded_amount_egp: number;
+  payouts_pending: number;
+  payouts_pending_amount_egp: number;
+  payouts_paid_amount_egp: number | null;
+  escrows_held: number;
+  escrows_held_amount_egp: number | null;
+  host_funds_held_egp: number | null;
+  host_payable_egp: number | null;
+  platform_revenue_egp: number | null;
+  vat_egp: number | null;
+  kyc_pending_documents: number;
+  disputes_open: number;
+  disputes_in_review: number;
+  maintenance_open: number;
+  tasks_pending: number;
+  tasks_overdue: number;
+}
+
+export interface AdminUser {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  role: string;
+  kyc_status: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AdminListing {
+  id: string;
+  title: string;
+  host_id: string;
+  status: string;
+  governorate: string;
+  city: string;
+  has_pending_changes: boolean;
+  created_at: string;
+}
+
+export interface AdminPaymentItem extends PaymentListItem {
+  unit_title: string | null;
+  check_in: string | null;
+  check_out: string | null;
+  booking_status: string | null;
+  reject_reason: string | null;
+  refunded_at: string | null;
+}
+
+export interface KycPendingList {
+  data: KycDocument[];
+  total: number;
+  inflight: KycDocument[];
+}
+
+export interface KycImageDownload {
+  front_url: string | null;
+  back_url: string | null;
+  selfie_url: string | null;
+}
+
+export interface StaffMember {
+  id: string;
+  phone_number: string | null;
+  email: string | null;
+  display_name: string | null;
+  role: string;
+  is_active: boolean;
+  permissions: string[];
+  has_password: boolean;
+  created_at: string;
+}
+
+export interface DiscoveryCandidate {
+  id: string;
+  source: string;
+  source_url: string;
+  discovered_at: string;
+  candidate_type: string | null;
+  raw_title: string | null;
+  title: string | null;
+  description: string | null;
+  city: string | null;
+  zone: string | null;
+  governorate: string | null;
+  property_type: string | null;
+  nightly_price: number | null;
+  contact_status: string;
+  contact_type: string | null;
+  contact_value: string | null;
+  duplicate_status: string;
+  status: string;
+  notes: string | null;
+  imported_unit_id: string | null;
+  qualification_score: number;
+}
+
+export interface DiscoveryCandidateList {
+  data: DiscoveryCandidate[];
+  pagination: { total: number; limit: number; offset: number };
+}
+
+export interface DiscoveryStats {
+  total_candidates: number;
+  unique_candidates: number;
+  qualified_candidates: number;
+  imported: number;
+  duplicate_rate: number;
+  contactable_candidates: number;
+}
+
+export interface ReviewReport {
+  id: string;
+  review_id: string;
+  reporter_id: string;
+  reason: string;
+  details: string | null;
+  status: string;
+  admin_notes: string | null;
+  created_at: string;
+}
+
+export interface ReviewReportList {
+  data: ReviewReport[];
+  total: number;
+}
+
+export interface Adjustment {
+  id: string;
+  booking_id: string | null;
+  user_id: string | null;
+  listing_id: string | null;
+  adjustment_type: string;
+  category: string;
+  amount_egp: number;
+  reason: string;
+  internal_note: string | null;
+  customer_note: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface ReportCatalogEntry {
+  key: string;
+  category: string;
+  columns: Array<{ key: string; label_en?: string; label_ar?: string }>;
+  date_basis: string;
+  filters: string[];
+  sortable: string[];
+  money_columns: string[];
+  implemented: boolean;
+  unavailable_reason: string | null;
+  note: string | null;
+}
+
+export interface ReportResult {
+  key: string;
+  columns: Array<{ key: string; label_en?: string; label_ar?: string }>;
+  rows: Array<Record<string, unknown>>;
+  total: number;
+  page: number;
+  page_size: number;
+  totals: Record<string, number> | null;
+  generated_at: string;
+  note: string | null;
+}
+
+export interface BookingTimelineEvent {
+  id: string;
+  event_type: string;
+  occurred_at: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  actor_role: string | null;
+  aggregate_type: string | null;
+  detail: Record<string, unknown> | string | null;
+}
+
+export interface BookingTimeline {
+  booking_id: string;
+  events: BookingTimelineEvent[];
+}
+
+export interface BookingFinancialContext {
+  booking_id: string;
+  booking_status: string;
+  check_in: string;
+  check_out: string;
+  guest_name: string | null;
+  guest_phone: string | null;
+  host_name: string | null;
+  host_phone: string | null;
+  unit_title: string | null;
+  unit_city: string | null;
+  unit_governorate: string | null;
+  payment_id: string | null;
+  payment_status: string | null;
+  payment_method: string | null;
+  payment_amount_egp: number | null;
+  reference_number: string | null;
+  refund_amount_egp: number | null;
+  refunded_at: string | null;
+  reject_reason: string | null;
+  escrow: Record<string, unknown> | null;
+  financials: Record<string, unknown> | null;
+  payout: Record<string, unknown> | null;
+  transactions: Array<Record<string, unknown>>;
+  disputes: Array<Record<string, unknown>>;
+  adjustments: Array<Record<string, unknown>>;
+}
+
+export interface EscrowRecord {
+  id: string;
+  reservation_id: string;
+  host_id: string;
+  amount_egp: number;
+  status: string;
+  hold_until: string | null;
+  released_at: string | null;
+  refunded_at: string | null;
+  host_amount_egp: number | null;
+  platform_share_egp: number | null;
+  vat_egp: number | null;
+  unit_title: string | null;
+  booking_status: string | null;
+  payment_status: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayoutRecord {
+  id: string;
+  wallet_id: string;
+  host_id: string;
+  amount_egp: number;
+  status: string;
+  provider: string | null;
+  provider_ref: string | null;
+  processed_at: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LedgerRecord {
+  id: string;
+  transaction_id: string;
+  wallet_id: string | null;
+  escrow_id: string | null;
+  ledger_account: string;
+  account_type: string;
+  entry_type: string;
+  amount_egp: number;
+  balance_after: number;
+  description: string | null;
+  created_at: string;
+  reservation_id: string | null;
 }
 
 export interface Message {
@@ -290,6 +770,9 @@ export interface ConversationListItem {
   unit_id: string | null;
   type: string;
   status: string;
+  subject: string | null;
+  support_status: string | null;
+  context_booking_id: string | null;
   unread_count: number;
   counterparty_name: string | null;
   unit_title: string | null;

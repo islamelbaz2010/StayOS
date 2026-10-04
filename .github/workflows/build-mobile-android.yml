@@ -1,43 +1,43 @@
 name: Mobile Android APK Build
 
-# Persistence pattern reproduced from islamelbaz2010/Tajribti's
-# .github/workflows/build-consumer-android.yml (inspected read-only,
-# not modified): build on push, upload the resulting APK as a
-# GitHub Actions artifact (not a Release, not a repo commit, not
-# GitHub Pages). See reports/audits/ANDROID_APK_AUTOMATION.md for
-# the full comparison and rationale.
+# Builds the StayOS Android APK via EAS (the authoritative Expo build
+# mechanism — no committed native android/ directory) and persists the
+# APK as a normal GitHub Actions artifact: Actions → run → Artifacts.
 #
-# Unlike Tajribti (bare Flutter/Gradle project built entirely on the
-# runner), StayOS mobile is a managed Expo/EAS project with no
-# committed native android/ directory, so the actual APK compilation
-# stays on Expo's EAS Build cloud service (the same "preview" /
-# internal / APK profile already used for manual builds). This
-# workflow only automates that existing flow and adds the
-# artifact-upload persistence step, mirroring Tajribti's mechanism.
+# Default profile is `qa` (internal acceptance build — exposes the
+# seeded-account QA login section). `preview` builds the same APK without
+# QA controls; `production` stays an AAB and is not used here.
 
 on:
   push:
     branches:
       - main
     paths:
-      # Deliberately excludes this workflow file's own path: publishing or
-      # editing the workflow must not, by itself, fire a push-triggered
-      # build attempt. Intentional runs still work via workflow_dispatch
-      # (manual) or an actual apps/mobile/** change (automatic).
       - 'apps/mobile/**'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile (qa | preview)'
+        required: false
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+          - preview
 
 permissions:
   contents: read
 
 jobs:
   build-android:
-    name: Build Android APK (EAS preview profile)
+    name: Build Android APK (EAS ${{ github.event.inputs.profile || 'qa' }} profile)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: apps/mobile
+    env:
+      EAS_PROFILE: ${{ github.event.inputs.profile || 'qa' }}
 
     steps:
       - name: Checkout repository
@@ -63,55 +63,72 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Read app version
-        id: app_version
+      - name: Read app metadata
+        id: meta
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
+          PACKAGE=$(node -p "require('./app.json').expo.android.package")
+          SDK=$(node -p "require('./package.json').dependencies.expo.replace(/[^0-9.]/g,'')")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "sdk=$SDK" >> "$GITHUB_OUTPUT"
 
-      - name: Trigger EAS Build (android / preview profile)
+      - name: Trigger EAS Build
         id: eas_build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           npx eas build \
             --platform android \
-            --profile preview \
+            --profile "$EAS_PROFILE" \
             --non-interactive \
             --json > eas-build-result.json
 
-          BUILD_URL=$(node -p "require('./eas-build-result.json')[0].artifacts.buildUrl")
-          if [ -z "$BUILD_URL" ] || [ "$BUILD_URL" = "undefined" ]; then
-            echo "::error::EAS build did not return a downloadable artifact URL. See eas-build-result.json for details."
-            exit 1
-          fi
-          echo "apk_url=$BUILD_URL" >> "$GITHUB_OUTPUT"
+          node -e "
+            const b = require('./eas-build-result.json')[0];
+            const url = b.artifacts && b.artifacts.buildUrl;
+            if (!url) {
+              console.error('EAS build did not return a downloadable artifact URL.');
+              process.exit(1);
+            }
+            const fs = require('fs');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,
+              'apk_url=' + url + '\n' + 'build_id=' + b.id + '\n');
+            console.log('EAS build id:', b.id);
+            console.log('APK url:', url);
+          "
 
       - name: Download built APK
         run: |
-          curl -fSL -o "StayOS-android-${{ steps.app_version.outputs.version }}-${{ github.run_number }}.apk" \
-            "${{ steps.eas_build.outputs.apk_url }}"
-          ls -lh "StayOS-android-${{ steps.app_version.outputs.version }}-${{ github.run_number }}.apk"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          APK_NAME="StayOS-Android-${SHORT_SHA}-${{ steps.eas_build.outputs.build_id }}.apk"
+          curl -fSL -o "$APK_NAME" "${{ steps.eas_build.outputs.apk_url }}"
+          ls -lh "$APK_NAME"
+          test -s "$APK_NAME"
+          echo "apk_name=$APK_NAME" >> "$GITHUB_ENV"
 
       - name: Write build summary
         run: |
           {
-            echo "### 📱 StayOS Android APK"
+            echo "### StayOS Android APK (${EAS_PROFILE})"
             echo ""
             echo "| Field | Value |"
             echo "|---|---|"
-            echo "| Version | ${{ steps.app_version.outputs.version }} |"
-            echo "| Run number | ${{ github.run_number }} |"
-            echo "| Commit | ${{ github.sha }} |"
-            echo "| EAS profile | preview (internal / APK) |"
+            echo "| Commit | ${GITHUB_SHA} |"
+            echo "| App version | ${{ steps.meta.outputs.version }} |"
+            echo "| Expo SDK | ${{ steps.meta.outputs.sdk }} |"
+            echo "| Android package | ${{ steps.meta.outputs.package }} |"
+            echo "| EAS profile | ${EAS_PROFILE} |"
+            echo "| EAS build ID | ${{ steps.eas_build.outputs.build_id }} |"
+            echo "| Artifact | ${APK_NAME} |"
             echo ""
-            echo "Download the APK from this run's **Artifacts** section above."
+            echo "Download the APK from this run's **Artifacts** section."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StayOS-android-${{ steps.app_version.outputs.version }}-${{ github.run_number }}
-          path: apps/mobile/StayOS-android-${{ steps.app_version.outputs.version }}-${{ github.run_number }}.apk
-          retention-days: 14
+          name: ${{ env.APK_NAME }}
+          path: apps/mobile/${{ env.APK_NAME }}
+          retention-days: 30
           if-no-files-found: error

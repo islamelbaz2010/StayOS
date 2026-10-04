@@ -114,7 +114,7 @@ export function ListingDetailScreen() {
       : [];
 
   const handleBook = () => {
-    navigation.navigate("Booking", { unitId, title, price: listing.price, currency: listing.currency, maxGuests: listing.max_guests });
+    navigation.navigate("Booking", { unitId, title, price: listing.price, currency: listing.currency, maxGuests: listing.max_guests, instantBook: listing.instant_book ?? false, hostId: listing.host_id });
   };
 
   return (

@@ -1,7 +1,8 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-import { api, hasTokens } from "./api";
+import { api, hasTokens, subscribeTokenChanges } from "./api";
+import { useSyncExternalStore } from "react";
 import type {
   Booking,
   BookingCancellationPreview,
@@ -513,6 +514,16 @@ export function useUpgradeRole() {
       qc.invalidateQueries({ queryKey: ["me"] });
     },
   });
+}
+
+/**
+ * React-aware token state. `hasTokens()` alone is a snapshot evaluated at
+ * render time — components never re-render when it changes. Subscribing at
+ * the app root makes login/logout/session-expiry propagate immediately:
+ * every `enabled: hasTokens()` site re-evaluates on the next render.
+ */
+export function useHasTokens(): boolean {
+  return useSyncExternalStore(subscribeTokenChanges, hasTokens, hasTokens);
 }
 
 export function useMe() {
@@ -1097,5 +1108,1114 @@ export function useDeleteCalendarRule() {
       qc.invalidateQueries({ queryKey: ["host", "calendar"] });
       qc.invalidateQueries({ queryKey: ["availability", variables.unitId] });
     },
+  });
+}
+
+// ============================================================
+// Auth / account / settings
+// ============================================================
+
+export function useSessions() {
+  return useQuery({
+    queryKey: ["sessions"],
+    queryFn: async () => {
+      const { data } = await api.get<{ sessions: import("./types").SessionItem[] }>(
+        "/auth/me/sessions"
+      );
+      return data.sessions;
+    },
+    enabled: hasTokens(),
+  });
+}
+
+export function useLogoutAll() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<{ revoked: number }>("/auth/me/logout-all");
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sessions"] });
+    },
+  });
+}
+
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      display_name?: string;
+      bio?: string | null;
+      location?: string | null;
+      interests?: string[] | null;
+      languages?: string[] | null;
+      locale?: string;
+    }) => {
+      const { data } = await api.patch<User>("/auth/me", payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["host", "profile"] });
+    },
+  });
+}
+
+export function useAccountData() {
+  return useQuery({
+    queryKey: ["account"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").AccountData>("/auth/me/account");
+      return data;
+    },
+    enabled: hasTokens(),
+  });
+}
+
+export function useUpdateAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Partial<import("./types").AccountData>) => {
+      const { data } = await api.patch<import("./types").AccountData>(
+        "/auth/me/account",
+        payload
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["account"] });
+    },
+  });
+}
+
+export function usePrivacySettings() {
+  return useQuery({
+    queryKey: ["privacy"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").PrivacySettings>("/auth/me/privacy");
+      return data;
+    },
+    enabled: hasTokens(),
+  });
+}
+
+export function useUpdatePrivacy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Partial<import("./types").PrivacySettings>) => {
+      const { data } = await api.patch<import("./types").PrivacySettings>(
+        "/auth/me/privacy",
+        payload
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["privacy"] });
+    },
+  });
+}
+
+export function useNotificationPrefs() {
+  return useQuery({
+    queryKey: ["notification-prefs"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").NotificationPreferences>(
+        "/auth/me/notification-preferences"
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+  });
+}
+
+export function useUpdateNotificationPrefs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { preferences: Record<string, boolean> }) => {
+      const { data } = await api.put<import("./types").NotificationPreferences>(
+        "/auth/me/notification-preferences",
+        payload
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notification-prefs"] });
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: async () => {
+      await api.delete("/auth/me");
+    },
+  });
+}
+
+export function useSetPassword() {
+  return useMutation({
+    mutationFn: async (payload: { new_password: string; current_password?: string }) => {
+      await api.post("/auth/password", payload);
+    },
+  });
+}
+
+export function usePresignAvatar() {
+  return useMutation({
+    mutationFn: async (payload: { filename: string; content_type: string }) => {
+      const { data } = await api.post<{ upload_url: string; s3_key: string }>(
+        "/auth/me/avatar/presign",
+        payload
+      );
+      return data;
+    },
+  });
+}
+
+export function useConfirmAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { s3_key: string }) => {
+      const { data } = await api.post<User>("/auth/me/avatar", payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}
+
+// ============================================================
+// In-app notifications
+// ============================================================
+
+export function useNotifications() {
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").NotificationList>(
+        "/notifications",
+        { params: { limit: 100 } }
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (notificationId: string) => {
+      await api.post(`/notifications/${notificationId}/read`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await api.post("/notifications/read-all");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+// ============================================================
+// Support conversations (in-app)
+// ============================================================
+
+export function useCreateSupportConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      content: string;
+      subject?: string | null;
+      booking_id?: string | null;
+    }) => {
+      const { data } = await api.post<Conversation>("/messages/support", payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+}
+
+// ============================================================
+// Disputes
+// ============================================================
+
+export function useDisputes() {
+  return useQuery({
+    queryKey: ["disputes"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").DisputeList>("/disputes");
+      return data;
+    },
+    enabled: hasTokens(),
+  });
+}
+
+export function useCreateDispute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      booking_id: string;
+      category: string;
+      description: string;
+    }) => {
+      const { data } = await api.post<import("./types").Dispute>("/disputes", payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+    },
+  });
+}
+
+// ============================================================
+// Booking offers (host proposes custom price in a conversation)
+// ============================================================
+
+export function useConversationOffers(conversationId: string | null) {
+  return useQuery({
+    queryKey: ["offers", conversationId],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").BookingOffer[]>(
+        "/bookings/offers",
+        { params: { conversation_id: conversationId } }
+      );
+      return data;
+    },
+    enabled: !!conversationId,
+  });
+}
+
+export function useCreateOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      ...payload
+    }: {
+      conversationId: string;
+      check_in: string;
+      check_out: string;
+      total_price_egp: number;
+      message?: string;
+    }) => {
+      const { data } = await api.post<import("./types").BookingOffer>(
+        "/bookings/offers",
+        payload,
+        { params: { conversation_id: conversationId } }
+      );
+      return data;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["offers", v.conversationId] });
+      qc.invalidateQueries({ queryKey: ["messages"] });
+    },
+  });
+}
+
+export function useOfferAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ offerId, action }: { offerId: string; action: "accept" | "decline" }) => {
+      const { data } = await api.post(`/bookings/offers/${offerId}/${action}`);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["offers"] });
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+}
+
+// ============================================================
+// Host: bookings w/ filters, payments, performance
+// ============================================================
+
+export function useHostBookings(params: {
+  status?: string;
+  unit_id?: string;
+  search?: string;
+  area?: string;
+  governorate?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ["host", "bookings", params],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").PaginatedBookings>(
+        "/host/bookings",
+        { params }
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useHostPayments() {
+  return useQuery({
+    queryKey: ["host", "payments"],
+    queryFn: async () => {
+      const { data } = await api.get<PaymentListItem[]>("/payments/host");
+      return data;
+    },
+    enabled: hasTokens(),
+  });
+}
+
+export function useHostPerformance(days = 30) {
+  return useQuery({
+    queryKey: ["host", "performance", days],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").HostPerformance>(
+        "/host/performance",
+        { params: { days } }
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+  });
+}
+
+export function useBookingTimeline(bookingId: string | null) {
+  return useQuery({
+    queryKey: ["booking-timeline", bookingId],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").BookingTimeline>(
+        `/bookings/admin/${bookingId}/timeline`
+      );
+      return data;
+    },
+    enabled: !!bookingId,
+  });
+}
+
+export function useAdminContactParticipant() {
+  return useMutation({
+    mutationFn: async (payload: {
+      booking_id: string;
+      target: "guest" | "host";
+      content: string;
+    }) => {
+      const { data } = await api.post("/messages/admin/conversations", payload);
+      return data;
+    },
+  });
+}
+
+// ============================================================
+// Staff / Admin operations
+// ============================================================
+
+export function useOpsDashboard() {
+  return useQuery({
+    queryKey: ["ops", "dashboard"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").OpsDashboard>(
+        "/operations/dashboard"
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useOpsTask(taskId: string | null) {
+  return useQuery({
+    queryKey: ["ops", "task", taskId],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").OpsTask>(
+        `/operations/tasks/${taskId}`
+      );
+      return data;
+    },
+    enabled: !!taskId && hasTokens(),
+    retry: false,
+  });
+}
+
+export function useMaintenanceRequests() {
+  return useQuery({
+    queryKey: ["ops", "maintenance"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").MaintenanceRequest[]>(
+        "/operations/maintenance"
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useMaintenanceUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      requestId,
+      payload,
+    }: {
+      requestId: string;
+      payload: { status?: string; related_task_id?: string };
+    }) => {
+      const { data } = await api.patch(`/operations/maintenance/${requestId}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops"] });
+    },
+  });
+}
+
+export function usePropertyReadiness(unitId: string | null) {
+  return useQuery({
+    queryKey: ["ops", "readiness", unitId],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").PropertyReadiness>(
+        `/operations/readiness/${unitId}`
+      );
+      return data;
+    },
+    enabled: !!unitId && hasTokens(),
+    retry: false,
+  });
+}
+
+export function useReadinessUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      unitId,
+      payload,
+    }: {
+      unitId: string;
+      payload: { status: string; blocked_until?: string; reason?: string };
+    }) => {
+      const { data } = await api.patch(`/operations/readiness/${unitId}`, payload);
+      return data;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["ops", "readiness", v.unitId] });
+    },
+  });
+}
+
+export function useTaskAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      action,
+      payload,
+    }: {
+      taskId: string;
+      action: "assign" | "start" | "complete" | "notes" | "attachments";
+      payload?: Record<string, unknown>;
+    }) => {
+      const { data } = await api.post(`/operations/tasks/${taskId}/${action}`, payload ?? {});
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops"] });
+    },
+  });
+}
+
+export function useKycQueue(params?: { limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: ["ops", "kyc", params],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").KycPendingList>("/kyc/pending", {
+        params,
+      });
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useKycDocAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      documentId,
+      action,
+      payload,
+    }: {
+      documentId: string;
+      action: "approve" | "reject" | "process";
+      payload?: Record<string, unknown>;
+    }) => {
+      const { data } = await api.post(`/kyc/documents/${documentId}/${action}`, payload ?? {});
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops", "kyc"] });
+      qc.invalidateQueries({ queryKey: ["admin", "overview"] });
+    },
+  });
+}
+
+export function useKycImages(documentId: string | null) {
+  return useQuery({
+    queryKey: ["ops", "kyc-images", documentId],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").KycImageDownload>(
+        `/kyc/documents/${documentId}/images`
+      );
+      return data;
+    },
+    enabled: !!documentId,
+    retry: false,
+  });
+}
+
+export function usePaymentsQueue(status?: string) {
+  return useQuery({
+    queryKey: ["ops", "payments", status],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").AdminPaymentItem[]>(
+        "/payments/admin/queue",
+        { params: { status } }
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function usePaymentQueueAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      action,
+      payload,
+    }: {
+      paymentId: string;
+      action: "verify" | "reject" | "refund";
+      payload?: Record<string, unknown>;
+    }) => {
+      const { data } = await api.post(`/payments/${paymentId}/${action}`, payload ?? {});
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops", "payments"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+    },
+  });
+}
+
+export function useSupportQueue(status?: string) {
+  return useQuery({
+    queryKey: ["ops", "support", status],
+    queryFn: async () => {
+      const { data } = await api.get<ConversationListItem[]>(
+        "/messages/support/queue",
+        { params: { support_status: status } }
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useSupportStatusUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      status,
+    }: {
+      conversationId: string;
+      status: string;
+    }) => {
+      const { data } = await api.post(`/messages/support/${conversationId}/status`, {
+        status,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops", "support"] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+}
+
+export function useAdminDisputes(status?: string) {
+  return useQuery({
+    queryKey: ["ops", "disputes", status],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").DisputeList>(
+        "/disputes/admin/all",
+        { params: { status } }
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useDisputeAdminUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      disputeId,
+      ...payload
+    }: {
+      disputeId: string;
+      status?: string;
+      admin_notes?: string;
+      reply?: string;
+    }) => {
+      const { data } = await api.patch(`/disputes/admin/${disputeId}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops", "disputes"] });
+    },
+  });
+}
+
+export function useReviewReports() {
+  return useQuery({
+    queryKey: ["ops", "review-reports"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").ReviewReportList>(
+        "/reviews/admin/reports"
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useReviewReportUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      reportId,
+      ...payload
+    }: {
+      reportId: string;
+      status?: string;
+      admin_notes?: string;
+      hide_review?: boolean;
+    }) => {
+      const { data } = await api.patch(`/reviews/admin/reports/${reportId}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops", "review-reports"] });
+    },
+  });
+}
+
+export function usePendingListings() {
+  return useQuery({
+    queryKey: ["ops", "listings-pending"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").AdminListing[]>(
+        "/listings/admin/pending"
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useListingModeration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      unitId,
+      action,
+      payload,
+    }: {
+      unitId: string;
+      action: "approve" | "reject";
+      payload?: { reason?: string };
+    }) => {
+      const { data } = await api.post(`/listings/admin/${unitId}/${action}`, payload ?? {});
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops", "listings-pending"] });
+      qc.invalidateQueries({ queryKey: ["admin", "listings"] });
+    },
+  });
+}
+
+export function useAdminOverview() {
+  return useQuery({
+    queryKey: ["admin", "overview"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").AdminOverview>("/admin/overview");
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useAdminUsers(params?: { role?: string; kyc_status?: string; search?: string }) {
+  return useQuery({
+    queryKey: ["admin", "users", params],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").AdminUser[]>("/admin/users", {
+        params,
+      });
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useAdminUserAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      action,
+      payload,
+    }: {
+      userId: string;
+      action: "suspend" | "reactivate" | "deactivate-hosting" | "restore-hosting";
+      payload?: { reason?: string };
+    }) => {
+      const { data } = await api.post(`/admin/users/${userId}/${action}`, payload ?? {});
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+}
+
+export function useAdminListings(params?: { status?: string; governorate?: string }) {
+  return useQuery({
+    queryKey: ["admin", "listings", params],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").AdminListing[]>("/admin/listings", {
+        params,
+      });
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useAdminStaff() {
+  return useQuery({
+    queryKey: ["admin", "staff"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").StaffMember[]>("/admin/staff");
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useAdminStaffAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: { permissions?: string[]; is_active?: boolean; display_name?: string };
+    }) => {
+      const { data } = await api.patch(`/admin/staff/${userId}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "staff"] });
+    },
+  });
+}
+
+export function useAdminStaffPermissions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, permissions }: { userId: string; permissions: string[] }) => {
+      const { data } = await api.put(`/admin/staff/${userId}/permissions`, { permissions });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "staff"] });
+    },
+  });
+}
+
+export function useAdminCreateStaff() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      phone_number: string;
+      display_name: string;
+      email?: string;
+      permissions?: string[];
+      role_group?: string;
+    }) => {
+      const { data } = await api.post("/admin/staff", payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "staff"] });
+    },
+  });
+}
+
+export function useDiscoveryCandidates(params?: {
+  status?: string;
+  city?: string;
+  governorate?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ["admin", "discovery", params],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").DiscoveryCandidateList>(
+        "/discovery/candidates",
+        { params }
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useDiscoveryStats() {
+  return useQuery({
+    queryKey: ["admin", "discovery-stats"],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").DiscoveryStats>("/discovery/stats");
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useDiscoveryStatusUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      candidateId,
+      ...payload
+    }: {
+      candidateId: string;
+      status: string;
+      notes?: string;
+    }) => {
+      const { data } = await api.patch(`/discovery/candidates/${candidateId}/status`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "discovery"] });
+      qc.invalidateQueries({ queryKey: ["admin", "discovery-stats"] });
+    },
+  });
+}
+
+export function useDiscoveryImport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      candidateId,
+      ...payload
+    }: {
+      candidateId: string;
+      host_name?: string;
+      host_phone?: string;
+      host_email?: string;
+      overrides?: Record<string, unknown>;
+    }) => {
+      const { data } = await api.post(`/discovery/candidates/${candidateId}/import`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "discovery"] });
+      qc.invalidateQueries({ queryKey: ["admin", "discovery-stats"] });
+      qc.invalidateQueries({ queryKey: ["admin", "listings"] });
+    },
+  });
+}
+
+export function useReportCatalog() {
+  return useQuery({
+    queryKey: ["admin", "report-catalog"],
+    queryFn: async () => {
+      const { data } = await api.get<{ reports: import("./types").ReportCatalogEntry[] }>(
+        "/admin/reports/catalog"
+      );
+      return data.reports;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useAdminReport(reportKey: string | null, params?: Record<string, string>) {
+  return useQuery({
+    queryKey: ["admin", "report", reportKey, params],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").ReportResult>(
+        `/admin/reports/${reportKey}`,
+        { params }
+      );
+      return data;
+    },
+    enabled: !!reportKey && hasTokens(),
+    retry: false,
+  });
+}
+
+export function useAdjustments(params?: { status?: string; booking_id?: string }) {
+  return useQuery({
+    queryKey: ["admin", "adjustments", params],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").Adjustment[]>(
+        "/admin/adjustments",
+        { params }
+      );
+      return data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useAdjustmentAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      adjustmentId,
+      action,
+      payload,
+    }: {
+      adjustmentId: string;
+      action: "decide" | "apply" | "cancel";
+      payload?: Record<string, unknown>;
+    }) => {
+      const { data } = await api.post(
+        `/admin/adjustments/${adjustmentId}/${action}`,
+        payload ?? {}
+      );
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "adjustments"] });
+    },
+  });
+}
+
+export function useCreateAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      adjustment_type: string;
+      category: string;
+      amount_egp: number;
+      reason: string;
+      booking_id?: string;
+      user_id?: string;
+      listing_id?: string;
+      internal_note?: string;
+      customer_note?: string;
+    }) => {
+      const { data } = await api.post("/admin/adjustments", payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "adjustments"] });
+    },
+  });
+}
+
+export function useBookingFinancial(bookingId: string | null) {
+  return useQuery({
+    queryKey: ["admin", "booking-financial", bookingId],
+    queryFn: async () => {
+      const { data } = await api.get<import("./types").BookingFinancialContext>(
+        `/admin/bookings/${bookingId}/financial`
+      );
+      return data;
+    },
+    enabled: !!bookingId && hasTokens(),
+    retry: false,
+  });
+}
+
+export function useFinanceEscrow(status?: string) {
+  return useQuery({
+    queryKey: ["admin", "escrow", status],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: import("./types").EscrowRecord[] }>(
+        "/finance/escrow",
+        { params: { status } }
+      );
+      return data.data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useFinancePayouts(status?: string) {
+  return useQuery({
+    queryKey: ["admin", "payouts", status],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: import("./types").PayoutRecord[] }>(
+        "/finance/payouts",
+        { params: { status } }
+      );
+      return data.data;
+    },
+    enabled: hasTokens(),
+    retry: false,
+  });
+}
+
+export function useFinanceLedger(ledgerAccount?: string) {
+  return useQuery({
+    queryKey: ["admin", "ledger", ledgerAccount],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: import("./types").LedgerRecord[] }>(
+        "/finance/ledger",
+        { params: ledgerAccount ? { ledger_account: ledgerAccount } : {} }
+      );
+      return data.data;
+    },
+    enabled: hasTokens() && !!ledgerAccount,
+    retry: false,
   });
 }

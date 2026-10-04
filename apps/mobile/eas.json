@@ -6,8 +6,35 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://stayos-demo-production.up.railway.app/api/v1"
+      },
       "android": {
         "buildType": "apk"
+      }
+    },
+    "qa": {
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://stayos-demo-production.up.railway.app/api/v1",
+        "EXPO_PUBLIC_QA_MODE": "1"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://stayos-demo-production.up.railway.app/api/v1"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
       }
     }
   }

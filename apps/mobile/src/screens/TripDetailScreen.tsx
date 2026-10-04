@@ -130,6 +130,9 @@ export function TripDetailScreen() {
           <Pressable onPress={() => navigation.navigate("Message", { bookingId })}>
             <Text style={styles.linkText}>{t("messageHost")}</Text>
           </Pressable>
+          <Pressable onPress={() => navigation.navigate("Disputes", { bookingId })}>
+            <Text style={styles.linkText}>{t("reportProblem")}</Text>
+          </Pressable>
           {property.house_rules && (
             <>
               <Text style={styles.instructionsLabel}>{t("houseRules")}</Text>

@@ -18,7 +18,16 @@ import { LoadingSpinner, ErrorView } from "../components/States";
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-type Side = "front" | "selfie";
+// Backend canonical contract (services.DOCUMENT_REQUIRED_SIDES) — used as
+// the fallback when the status payload doesn't include required_sides.
+const FALLBACK_SIDES: Record<string, string[]> = {
+  passport: ["front", "selfie"],
+  national_id: ["front", "back", "selfie"],
+  driving_license: ["front", "back", "selfie"],
+  residence_permit: ["front", "back", "selfie"],
+};
+const DOC_TYPES = ["passport", "national_id", "driving_license", "residence_permit"];
+const SIDE_ORDER = ["front", "back", "selfie"];
 
 interface PickedImage {
   uri: string;
@@ -34,8 +43,8 @@ export function KycScreen() {
   const submit = useSubmitKyc();
   const upgrade = useUpgradeRole();
 
-  const [front, setFront] = useState<PickedImage | null>(null);
-  const [selfie, setSelfie] = useState<PickedImage | null>(null);
+  const [docType, setDocType] = useState("national_id");
+  const [sides, setSides] = useState<Record<string, PickedImage | null>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,8 +55,16 @@ export function KycScreen() {
 
   const status = kycStatus.kyc_status ?? "unverified";
   const latestDoc = kycStatus.documents?.[0];
+  const sidesMap = kycStatus.required_sides && Object.keys(kycStatus.required_sides).length > 0
+    ? kycStatus.required_sides
+    : FALLBACK_SIDES;
+  const requiredSides: string[] = (
+    sidesMap[docType] ?? FALLBACK_SIDES[docType] ?? ["front", "selfie"]
+  )
+    .slice()
+    .sort((a: string, b: string) => SIDE_ORDER.indexOf(a) - SIDE_ORDER.indexOf(b));
 
-  const pickImage = async (side: Side, useCamera: boolean) => {
+  const pickImage = async (side: string, useCamera: boolean) => {
     const options: ImagePicker.ImagePickerOptions = {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.85,
@@ -67,9 +84,7 @@ export function KycScreen() {
       return;
     }
     setError(null);
-    const picked: PickedImage = { uri: asset.uri, mimeType, size: asset.fileSize ?? null };
-    if (side === "front") setFront(picked);
-    else setSelfie(picked);
+    setSides((prev) => ({ ...prev, [side]: { uri: asset.uri, mimeType, size: asset.fileSize ?? null } }));
   };
 
   const uploadToS3 = async (url: string, file: PickedImage) => {
@@ -82,17 +97,23 @@ export function KycScreen() {
     if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
   };
 
+  const allCaptured = requiredSides.every((s: string) => sides[s]);
+
   const handleSubmit = async () => {
-    if (!front || !selfie) {
+    if (!allCaptured) {
       setError(t("kycBothRequired"));
       return;
     }
     setError(null);
     setSubmitting(true);
     try {
-      const initiated = await initiate.mutateAsync({ document_type: "national_id" });
-      await uploadToS3(initiated.upload_urls.front, front);
-      await uploadToS3(initiated.upload_urls.selfie, selfie);
+      const initiated = await initiate.mutateAsync({ document_type: docType });
+      const urls = initiated.upload_urls as unknown as Record<string, string>;
+      for (const side of requiredSides) {
+        const url = urls[side];
+        const file = sides[side];
+        if (url && file) await uploadToS3(url, file);
+      }
       await submit.mutateAsync(initiated.document_id);
       Alert.alert("", t("kycSubmitted"));
     } catch {
@@ -112,6 +133,8 @@ export function KycScreen() {
   };
 
   const isGuest = user?.role !== "host" && user?.role !== "admin";
+  const sideLabel = (s: string) => t(`kycSide_${s}`);
+  const sideHint = (s: string) => t(`kycSide_${s}Hint`);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -160,57 +183,55 @@ export function KycScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t("kycFrontId")}</Text>
-            <Text style={styles.metaText}>{t("kycFrontIdHint")}</Text>
-            {front && (
-              <Image source={{ uri: front.uri }} style={styles.preview} resizeMode="cover" />
-            )}
-            <View style={styles.pickRow}>
-              <Pressable
-                style={[styles.secondaryButton, submitting && styles.disabledButton]}
-                onPress={() => pickImage("front", false)}
-                disabled={submitting}
-              >
-                <Text style={styles.secondaryButtonText}>{t("kycPickGallery")}</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.secondaryButton, submitting && styles.disabledButton]}
-                onPress={() => pickImage("front", true)}
-                disabled={submitting}
-              >
-                <Text style={styles.secondaryButtonText}>{t("kycPickCamera")}</Text>
-              </Pressable>
+            <Text style={styles.sectionTitle}>{t("kycDocType")}</Text>
+            <View style={styles.chipRow}>
+              {DOC_TYPES.map((dt) => (
+                <Pressable
+                  key={dt}
+                  style={[styles.chip, docType === dt && styles.chipActive]}
+                  onPress={() => {
+                    setDocType(dt);
+                    setSides({});
+                  }}
+                >
+                  <Text style={[styles.chipText, docType === dt && styles.chipTextActive]}>
+                    {t(`kycDoc_${dt}`)}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t("kycSelfie")}</Text>
-            <Text style={styles.metaText}>{t("kycSelfieHint")}</Text>
-            {selfie && (
-              <Image source={{ uri: selfie.uri }} style={styles.preview} resizeMode="cover" />
-            )}
-            <View style={styles.pickRow}>
-              <Pressable
-                style={[styles.secondaryButton, submitting && styles.disabledButton]}
-                onPress={() => pickImage("selfie", true)}
-                disabled={submitting}
-              >
-                <Text style={styles.secondaryButtonText}>{t("kycPickCamera")}</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.secondaryButton, submitting && styles.disabledButton]}
-                onPress={() => pickImage("selfie", false)}
-                disabled={submitting}
-              >
-                <Text style={styles.secondaryButtonText}>{t("kycPickGallery")}</Text>
-              </Pressable>
+          {requiredSides.map((side: string) => (
+            <View key={side} style={styles.section}>
+              <Text style={styles.sectionTitle}>{sideLabel(side)}</Text>
+              <Text style={styles.metaText}>{sideHint(side)}</Text>
+              {sides[side] && (
+                <Image source={{ uri: sides[side]!.uri }} style={styles.preview} resizeMode="cover" />
+              )}
+              <View style={styles.pickRow}>
+                <Pressable
+                  style={[styles.secondaryButton, submitting && styles.disabledButton]}
+                  onPress={() => pickImage(side, false)}
+                  disabled={submitting}
+                >
+                  <Text style={styles.secondaryButtonText}>{t("kycPickGallery")}</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.secondaryButton, submitting && styles.disabledButton]}
+                  onPress={() => pickImage(side, true)}
+                  disabled={submitting}
+                >
+                  <Text style={styles.secondaryButtonText}>{t("kycPickCamera")}</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          ))}
 
           <Pressable
             style={[styles.primaryButton, submitting && styles.disabledButton]}
             onPress={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || !allCaptured}
           >
             <Text style={styles.primaryButtonText}>
               {submitting ? t("kycSubmitting") : t("kycSubmit")}
@@ -246,6 +267,30 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.text,
     marginBottom: spacing.sm,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  chipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipText: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+  },
+  chipTextActive: {
+    color: colors.white,
+    fontWeight: "600",
   },
   successTitle: {
     fontSize: fontSize.lg,

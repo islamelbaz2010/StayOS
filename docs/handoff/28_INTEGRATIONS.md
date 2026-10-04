@@ -5,6 +5,7 @@
 | Firebase | Phone OTP auth | Active | `FIREBASE_*` |
 | Paymob Accept | Card payments (Intention + IFrame) | **Sandbox** — `sk_test` key; live key unprovisioned | `PAYMOB_SECRET/PUBLIC_KEY`, `PAYMOB_*_INTEGRATION_ID`, `PAYMOB_IFRAME_ID`, `PAYMOB_HMAC_SECRET` |
 | Paymob Payouts | Host disbursement rail | **Not provisioned** | `PAYMOB_PAYOUT_*` (unset) |
+| Stripe | Alternate card rail | **Dormant** — `/finance/webhooks/stripe` endpoint exists (signature-verified + idempotent) but no checkout flow consumes it and keys are unset; Paymob is the payment provider | `STRIPE_*` (unset) |
 | Sumsub | Automated KYC | Architecture implemented, **not activated** (manual mode) | `SUMSUB_*` (unset) |
 | Twilio Verify | OTP fallback | Configured | `TWILIO_*` |
 | Akedly | Egyptian OTP | Configured | `AKEDLY_*` |

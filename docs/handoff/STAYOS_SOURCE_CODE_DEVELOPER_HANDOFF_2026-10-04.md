@@ -63,5 +63,19 @@ Status → `39`. Limitations → `40`. Founder decisions → `41`. ADRs → `42`
    reachable + Paymob sandbox. Sequence in `33_SECURITY.md`.
 
 ## Exact next action
-`MOBILE_PHASE_1_EXECUTION_PLAN.md` — support inbox, `/host/bookings`
-filter parity, build profiles. No blockers.
+**PRE-LAUNCH GATE (must close before any public launch):**
+1. Provision live Paymob merchant credentials (current key is `sk_test` —
+   checkout is sandbox-verified only; no real-money capture).
+2. Configure real `PAYMENT_BANK_*` values if the manual-transfer rail
+   will be enabled.
+3. Set `ENVIRONMENT=production` on the Railway services — only AFTER
+   step 1 (payments fail closed on a test key under production).
+4. Verify `dev-token` returns 404.
+5. Verify production checkout end-to-end.
+6. Verify production security headers (HSTS).
+7. Perform final production acceptance.
+
+**Then:** `MOBILE_PHASE_1_EXECUTION_PLAN.md` — support inbox,
+`/host/bookings` filter parity, build profiles. No Mobile-structural
+blockers; the pre-launch gate is a launch dependency, not a Phase-1
+blocker.

@@ -1,3 +1,8 @@
+> **TERMINOLOGY NOTE (2026-10-04):** This is a business-model
+> planning document. Current engineering wording uses **"designated
+> funds-holding accounts"** — do not present internal fund holding as
+> "legal escrow". See `docs/handoff/17_FINANCIAL_LEDGER.md`.
+
 # Escrow Model
 
 ## Purpose

@@ -1,3 +1,11 @@
+> **STATUS: SUPERSEDED / HISTORICAL**
+>
+> **AUTHORITATIVE REPLACEMENT:** `docs/handoff/STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md`
+> (plus `docs/handoff/STAYOS_CURRENT_STATUS_2026-10-04.md` for current-state).
+>
+> Do not use this document for current architecture, production state,
+> deployment, or release decisions. Retained for historical evidence only.
+
 # StayOS — Release Readiness & Mobile Handoff
 
 R3 consolidated gate. Authoritative state as of the commit that adds this file.

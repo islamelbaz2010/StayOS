@@ -33,8 +33,9 @@ Classic modular monolith + SPA + mobile app:
 4. **Server-side truth** — every role/permission check, fee split, and
    privacy boundary is enforced in services/repository, never trusted
    from the client. Web hides UI for UX only.
-5. **Escrow-style funds-held model** — payment capture recognizes
-   platform revenue + VAT into the ledger; host net stays as an escrow
+5. **Funds-holding model** — internal `escrow_*` accounts (engineering
+   name, NOT legal escrow). Payment capture recognizes
+   platform revenue + VAT into the ledger; host net stays in funds-holding
    liability until release (check-in + 24h). See `17_FINANCIAL_LEDGER`.
 6. **Capability-based booking detail** — the same booking page adapts by
    viewer relationship (owner/host/co-host/staff), not by hard role.

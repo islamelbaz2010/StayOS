@@ -1,6 +1,24 @@
 # StayOS Documentation Index — 2026-10-04
 **"Where do I start?" → read in this order.**
 
+## CURRENT SOURCE OF TRUTH (in precedence order)
+1. `STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md` — master doc
+2. `STAYOS_CURRENT_STATUS_2026-10-04.md` — authoritative status matrix
+3. Numbered docs `01`–`42` + catalogs under `docs/handoff/`
+4. `StayOS_Legal_Accounting_Regulatory_Readiness_Egypt_2026-10-04_v4{,_AR}.pdf`
+5. `StayOS_Marketing_Launch_Brief_V3_PRODUCT_UI.pdf`
+6. `StayOS_Technical_Developer_Handoff_Workbook_2026-10-04_v4.xlsx`
+
+**Anything outside this list that conflicts is NOT authoritative.**
+Documents marked `STATUS: SUPERSEDED / HISTORICAL` (e.g.
+`docs/RELEASE_TECHNICAL_HANDOFF.md`, `docs/SINGLE_SOURCE_OF_TRUTH.md`,
+`docs/STATUS_RECONCILIATION_2026-09-28.md`, `docs/ENGINEERING_MASTER_PLAN.md`,
+`docs/MVP_SLICE.md`, `docs/MANIFEST.md`, `docs/DOCUMENT_MAP.md`,
+`docs/RELEASE_READINESS_AND_MOBILE_HANDOFF.md`,
+`docs/FINAL_WEB_RELEASE_ACCEPTANCE.md`, `docs/ENGINEERING_PROGRESS.md`,
+`docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md`) are kept for evidence
+only — do not use them for current-state answers.
+
 ## Start here
 1. `STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md` — master doc
 2. `01_PROJECT_OVERVIEW.md` — what StayOS is

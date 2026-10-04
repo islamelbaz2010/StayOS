@@ -58,14 +58,17 @@ export function AccountScreen() {
     );
   }
 
-  const handleLogout = async () => {
-    const refreshToken = await getRefreshToken();
-    await clearTokens();
+  const handleLogout = () => {
+    getRefreshToken()
+      .then((refreshToken) => {
+        if (refreshToken) {
+          api.post("/auth/logout", { refresh_token: refreshToken }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+    clearTokens().catch(() => {});
     queryClient.clear();
     navigation.navigate("Home");
-    if (refreshToken) {
-      api.post("/auth/logout", { refresh_token: refreshToken }).catch(() => {});
-    }
   };
 
   const unread = notifs?.unread_count ?? 0;

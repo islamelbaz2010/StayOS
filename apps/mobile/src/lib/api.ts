@@ -40,19 +40,19 @@ export async function getRefreshToken(): Promise<string | null> {
 }
 
 export async function setTokens(access: string, refresh: string) {
+  _setHasTokens(true);
   await Promise.all([
     SecureStore.setItemAsync(TOKEN_KEY, access),
     SecureStore.setItemAsync(REFRESH_KEY, refresh),
   ]);
-  _setHasTokens(true);
 }
 
 export async function clearTokens() {
+  _setHasTokens(false);
   await Promise.all([
     SecureStore.deleteItemAsync(TOKEN_KEY),
     SecureStore.deleteItemAsync(REFRESH_KEY),
   ]);
-  _setHasTokens(false);
 }
 
 export const api = axios.create({

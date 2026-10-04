@@ -1,3 +1,12 @@
+> **STATUS: SUPERSEDED / HISTORICAL**
+>
+> **AUTHORITATIVE REPLACEMENT:** `docs/handoff/STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md`
+> (plus `docs/handoff/STAYOS_CURRENT_STATUS_2026-10-04.md` for current-state).
+>
+> Do not use this document for current architecture, production state,
+> deployment, payment-rail, or release decisions. Retained for historical
+> evidence only.
+
 # COMMERCIAL READINESS REVIEW — StayOS
 
 **Prepared by:** Executive Product Director, Marketplace Founder, COO, CTO, Growth Director, Operations Director, Investment Committee  

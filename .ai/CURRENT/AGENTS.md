@@ -1,3 +1,12 @@
+> **STATUS: SUPERSEDED / HISTORICAL**
+>
+> **AUTHORITATIVE REPLACEMENT:** `docs/handoff/STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md`
+> (plus `docs/handoff/STAYOS_CURRENT_STATUS_2026-10-04.md` for current-state).
+>
+> Do not use this document for current architecture, production state,
+> deployment, payment-rail, or release decisions. Retained for historical
+> evidence only.
+
 # AGENTS.md — Universal AI Agent Rules for StayOS
 
 **Applies to**: Claude, Gemini, Codex, Devin, GPT-4, and any other AI agent working on this repository.

@@ -1,3 +1,12 @@
+> **STATUS: SUPERSEDED / HISTORICAL**
+>
+> **AUTHORITATIVE REPLACEMENT:** `docs/handoff/STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md`
+> (plus `docs/handoff/STAYOS_CURRENT_STATUS_2026-10-04.md` for current-state).
+>
+> Do not use this document for current architecture, production state,
+> deployment, payment-rail, or release decisions. Retained for historical
+> evidence only.
+
 # 14 — Engineering Backlog
 
 **Cross-references**: [13_IMPLEMENTATION_ORDER.md](13_IMPLEMENTATION_ORDER.md) · [PRODUCT_CANON.md](../../PRODUCT_CANON.md) · [02_DOMAIN_DRIVEN_DESIGN.md](02_DOMAIN_DRIVEN_DESIGN.md) · [04_API_SPECIFICATION.md](04_API_SPECIFICATION.md)

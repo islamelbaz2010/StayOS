@@ -1,3 +1,12 @@
+> **STATUS: SUPERSEDED / HISTORICAL**
+>
+> **AUTHORITATIVE REPLACEMENT:** `docs/handoff/STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md`
+> (plus `docs/handoff/STAYOS_CURRENT_STATUS_2026-10-04.md` for current-state).
+>
+> Do not use this document for current architecture, production state,
+> deployment, payment-rail, or release decisions. Retained for historical
+> evidence only.
+
 # 04 — API Specification
 
 **Cross-references**: [03_MICROSERVICES.md](03_MICROSERVICES.md) · [08_RBAC.md](08_RBAC.md) · [ADR-014](../architecture/adr/ADR-014-api-style.md) · [ADR-006](../architecture/adr/ADR-006-authentication-strategy.md) · [PRODUCT_CANON.md](../../PRODUCT_CANON.md)

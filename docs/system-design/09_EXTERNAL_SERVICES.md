@@ -1,3 +1,12 @@
+> **STATUS: SUPERSEDED / HISTORICAL**
+>
+> **AUTHORITATIVE REPLACEMENT:** `docs/handoff/STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md`
+> (plus `docs/handoff/STAYOS_CURRENT_STATUS_2026-10-04.md` for current-state).
+>
+> Do not use this document for current architecture, production state,
+> deployment, payment-rail, or release decisions. Retained for historical
+> evidence only.
+
 # 09 — External Services
 
 **Cross-references**: [01_SYSTEM_OVERVIEW.md](01_SYSTEM_OVERVIEW.md) · [ADR-003](../architecture/adr/ADR-003-payment-provider.md) · [ADR-006](../architecture/adr/ADR-006-authentication-strategy.md) · [ADR-009](../architecture/adr/ADR-009-storage-strategy.md) · [ADR-011](../architecture/adr/ADR-011-notification-architecture.md) · [10_SECURITY_MODEL.md](10_SECURITY_MODEL.md)

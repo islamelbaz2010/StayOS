@@ -17,8 +17,10 @@ from the same commit. DB migrations are **manual**:
 `alembic upgrade head` with a `postgresql+asyncpg://…@127.0.0.1:<port>`
 `DATABASE_URL`.
 
-**Caution — stale workflows:** `.github/workflows/deploy-prod.yml` and
-`deploy-staging.yml` target a retired AWS ECS path and fail on every push.
+**Note — archived workflows:** `.github/workflows/deploy-prod.yml` and
+`deploy-staging.yml` target a retired AWS ECS path; **archived
+2026-10-04** (push triggers disabled, manual dispatch only) — they were
+failing red on every push while real deploys ran Railway+Vercel.
 They are not the real deploy path; treat their red status as expected
 until cleaned up (do not rely on them).
 

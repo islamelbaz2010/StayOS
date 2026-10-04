@@ -1,3 +1,12 @@
+> **STATUS: SUPERSEDED / HISTORICAL**
+>
+> **AUTHORITATIVE REPLACEMENT:** `docs/handoff/STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md`
+> (plus `docs/handoff/STAYOS_CURRENT_STATUS_2026-10-04.md` for current-state).
+>
+> Do not use this document for current architecture, production state,
+> deployment, payment-rail, or release decisions. Retained for historical
+> evidence only.
+
 # 10 — Security Model
 
 **Cross-references**: [08_RBAC.md](08_RBAC.md) · [09_EXTERNAL_SERVICES.md](09_EXTERNAL_SERVICES.md) · [ADR-006](../architecture/adr/ADR-006-authentication-strategy.md) · [ADR-007](../architecture/adr/ADR-007-deployment-strategy.md) · [ADR-009](../architecture/adr/ADR-009-storage-strategy.md) · [ENGINEERING_RULES.md](../../ENGINEERING_RULES.md)

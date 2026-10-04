@@ -1,3 +1,12 @@
+> **STATUS: SUPERSEDED / HISTORICAL**
+>
+> **AUTHORITATIVE REPLACEMENT:** `docs/handoff/STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md`
+> (plus `docs/handoff/STAYOS_CURRENT_STATUS_2026-10-04.md` for current-state).
+>
+> Do not use this document for current architecture, production state,
+> deployment, payment-rail, or release decisions. Retained for historical
+> evidence only.
+
 # 11 — Deployment Architecture
 
 **Cross-references**: [01_SYSTEM_OVERVIEW.md](01_SYSTEM_OVERVIEW.md) · [ADR-007](../architecture/adr/ADR-007-deployment-strategy.md) · [ADR-001](../architecture/adr/ADR-001-frontend-framework.md) · [12_SCALABILITY_PLAN.md](12_SCALABILITY_PLAN.md) · [10_SECURITY_MODEL.md](10_SECURITY_MODEL.md)

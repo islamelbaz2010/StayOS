@@ -1,5 +1,5 @@
 # StayOS — Source Code Developer Handoff
-**Date: 2026-10-04 · Web = CLOSED · Phase 3 handoff · Phase 4 Mobile = ready**
+**Date: 2026-10-04 · Web = CLOSED · Phase 3 handoff · Phase 4 Mobile = ready to start (not launch-ready) · Security = pre-launch gate open**
 
 A senior developer new to StayOS should be able to understand the whole
 system from this file + the linked `docs/handoff/` handbook without

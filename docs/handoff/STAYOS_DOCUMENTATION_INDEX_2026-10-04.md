@@ -10,14 +10,15 @@
 6. `StayOS_Technical_Developer_Handoff_Workbook_2026-10-04_v4.xlsx`
 
 **Anything outside this list that conflicts is NOT authoritative.**
-Documents marked `STATUS: SUPERSEDED / HISTORICAL` (e.g.
-`docs/RELEASE_TECHNICAL_HANDOFF.md`, `docs/SINGLE_SOURCE_OF_TRUTH.md`,
-`docs/STATUS_RECONCILIATION_2026-09-28.md`, `docs/ENGINEERING_MASTER_PLAN.md`,
-`docs/MVP_SLICE.md`, `docs/MANIFEST.md`, `docs/DOCUMENT_MAP.md`,
-`docs/RELEASE_READINESS_AND_MOBILE_HANDOFF.md`,
-`docs/FINAL_WEB_RELEASE_ACCEPTANCE.md`, `docs/ENGINEERING_PROGRESS.md`,
-`docs/benchmark/FINAL_AIRBNB_BENCHMARK_CLOSURE.md`) are kept for evidence
-only — do not use them for current-state answers.
+80+ older documents across `docs/`, `reports/`, `.ai/`, `epos/`,
+`knowledge/`, and `business/` are marked `STATUS: SUPERSEDED /
+HISTORICAL` at the top of the file — including the old release
+handoffs, "Single Source of Truth", engineering master plans, sprint
+boards, audit reports, AWS-ECS deployment guides, ADRs predating the
+Railway/Vercel move, and the old `.ai/CURRENT` agent rules (which
+describe a stale Phase-0 state and an unresolved Paymob/Stripe
+conflict — both long resolved). They are kept for evidence only — do
+not use them for current-state answers.
 
 ## Start here
 1. `STAYOS_SOURCE_CODE_DEVELOPER_HANDOFF_2026-10-04.md` — master doc

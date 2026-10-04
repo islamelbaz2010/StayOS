@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useHostOwnProfile,
   useUpdateHostProfile,
   useHostEarnings,
+  useHasTokens,
 } from "../../lib/hooks";
 import { useLocale } from "../../lib/LocaleContext";
 import { api, clearTokens, getRefreshToken } from "../../lib/api";
@@ -23,11 +25,14 @@ export function HostProfileScreen() {
   const { data: profile, isLoading, isError, refetch } = useHostOwnProfile();
   const { data: earnings } = useHostEarnings();
   const updateProfile = useUpdateHostProfile();
+  const insets = useSafeAreaInsets();
+  const authed = useHasTokens();
 
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
 
+  if (!authed) return <LoadingSpinner />;
   if (isLoading) return <LoadingSpinner />;
   if (isError) return <ErrorView message={t("error")} onRetry={refetch} />;
   if (!profile) return <LoadingSpinner />;
@@ -51,22 +56,26 @@ export function HostProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      const refreshToken = await getRefreshToken();
-      if (refreshToken) {
-        await api.post("/auth/logout", { refresh_token: refreshToken }).catch(() => {});
-      }
-    } finally {
-      await clearTokens();
-      queryClient.removeQueries({ queryKey: ["me"] });
-      queryClient.removeQueries({ queryKey: ["host"] });
-      navigation.navigate("Home");
-    }
+  const handleLogout = () => {
+    getRefreshToken()
+      .then((refreshToken) => {
+        if (refreshToken) {
+          api.post("/auth/logout", { refresh_token: refreshToken }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+    clearTokens().catch(() => {});
+    queryClient.removeQueries({ queryKey: ["me"] });
+    queryClient.removeQueries({ queryKey: ["host"] });
+    navigation.navigate("Home");
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.profileSection}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>

@@ -1,8 +1,10 @@
-name: Deploy to Staging
+name: Deploy to Staging (ARCHIVED — AWS ECS)
 
+# ARCHIVED 2026-10-04: StayOS deploys via Railway + Vercel, not AWS ECS.
+# Push trigger disabled; retained for manual reference only.
+# See docs/handoff/CI_CD_WORKFLOW_MAP.md.
 on:
-  push:
-    branches: [ develop ]
+  workflow_dispatch: {}
 
 jobs:
   deploy:

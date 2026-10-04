@@ -17,6 +17,9 @@
 4. Smoke: `/health` (db+redis), a guest route, an authed route.
 
 ## Migrations (production)
+Migrations are **NOT automatic** — nothing runs `alembic upgrade` on
+deploy. They are an explicit operator step inside the release sequence.
+
 ```bash
 railway connect Postgres --ssh --tunnel-only   # opens 127.0.0.1:5433
 DATABASE_URL=postgresql+asyncpg://postgres:<pw>@127.0.0.1:5433/railway \
@@ -25,6 +28,23 @@ DATABASE_URL=postgresql+asyncpg://postgres:<pw>@127.0.0.1:5433/railway \
 ```
 Always `alembic heads` first; never run against the internal hostname
 (`*.railway.internal` is unreachable locally — DNS failure, use the tunnel).
+
+## Deterministic release sequence (actual policy)
+When a change carries a migration, deploy in this exact order:
+
+1. **Code deploy** — push `product-completion-review`; Railway redeploys
+   api + worker + beat. New code must tolerate the pre-migration schema
+   (additive-first migrations; no column drops in the same release).
+2. **Migration** — `alembic upgrade head` over the `railway connect`
+   tunnel (above).
+3. **Verification** — `/health` green; run the affected surface's smoke
+   check; confirm `alembic current` == head.
+4. **Worker/beat** — confirm both services restarted on the new code and
+   are processing (Railway logs; missed beats → stale notifications).
+5. **Web acceptance** — Vercel deploy on `main`; verify on the canonical
+   URL only (`web-amber-pi-98.vercel.app`).
+
+For code-only changes steps 2–3 reduce to the `/health` + smoke checks.
 
 ## Rollback
 - Railway: redeploy the previous deployment (service → Deployments →

@@ -1,8 +1,11 @@
-name: Deploy to Production
+name: Deploy to Production (ARCHIVED — AWS ECS)
 
+# ARCHIVED 2026-10-04: StayOS production deploys via Railway (api/worker/beat)
+# and Vercel (web), not AWS ECS. This workflow failed on every main push.
+# Push trigger disabled; retained for manual reference only.
+# See docs/handoff/CI_CD_WORKFLOW_MAP.md.
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch: {}
 
 jobs:
   deploy:

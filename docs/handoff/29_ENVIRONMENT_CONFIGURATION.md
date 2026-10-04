@@ -25,3 +25,9 @@ Authoritative variable inventory: **`ENVIRONMENT_VARIABLES_REFERENCE.md`**
 - `PAYMENT_BANK_ACCOUNT_NUMBER`, `PAYMENT_VODAFONE_CASH_NUMBER`
   (manual-transfer instructions) — unset on prod.
 - `SEED_*` (dev only).
+
+## Environment-state flag (pre-launch gate)
+Production service runs `ENVIRONMENT=staging` — keeps `dev-token`
+reachable and pairs with the sandbox `sk_test` Paymob key (a live key
+would fail closed). Correct launch value is `production`; flip only
+AFTER a live Paymob key is set (fail-closed ordering — `33_SECURITY.md`).

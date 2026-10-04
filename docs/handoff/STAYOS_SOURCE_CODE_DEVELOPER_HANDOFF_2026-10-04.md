@@ -30,8 +30,9 @@ Auth/RBAC (RS256 JWT, roles + staff permissions, capability model) → `10`.
 Booking: request→accept→pay→confirm→stay→complete; cancel by guest/admin
 → `11`. Listings: draft→submit→moderate→live → `12`. Host/guest → `13`.
 KYC: **manual mode in prod**; Sumsub architecture implemented but
-unprovisioned → `14`. Payments: Paymob Accept **live**; manual transfer
-placeholder; **payout rail unprovisioned** → `15`, `20`. Refunds → `16`.
+unprovisioned → `14`. Payments: Paymob Accept **sandbox (`sk_test`)**;
+manual transfer placeholder; **payout rail unprovisioned** → `15`, `20`.
+Refunds → `16`.
 Ledger: double-entry, idempotent → `17`. **Commercial Model B (6+6=12%,
 all-inclusive, guest-blind) is founder-locked** → `18`. VAT 14% assumption
 → `19`. Messaging + support (`SUPPORT` type, ops queue) → `21`, `22`.
@@ -56,7 +57,10 @@ Status → `39`. Limitations → `40`. Founder decisions → `41`. ADRs → `42`
 2. **AuthZ:** every new surface needs server-side checks; UI hiding ≠ security.
 3. **`context_booking_id` ≠ `booking_id`** on support conversations.
 4. **Guest-facing payloads never expose fee internals.**
-5. **Deploy reality = Railway/Vercel**, not the red AWS workflows.
+5. **Deploy reality = Railway/Vercel** — AWS `deploy-*.yml` are ARCHIVED
+   (manual dispatch only).
+6. **Pre-launch gate open:** `ENVIRONMENT=staging` on prod → `dev-token`
+   reachable + Paymob sandbox. Sequence in `33_SECURITY.md`.
 
 ## Exact next action
 `MOBILE_PHASE_1_EXECUTION_PLAN.md` — support inbox, `/host/bookings`

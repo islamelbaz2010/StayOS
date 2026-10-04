@@ -33,5 +33,7 @@
 ## Infra
 | Symptom | Cause | Fix |
 |---|---|---|
-| `deploy-prod` CI red on every push | stale AWS ECS workflow — not the real deploy path | deploys are Railway/Vercel; workflow flagged for removal decision |
+| `dev-token` returns tokens in "production" | `ENVIRONMENT=staging` on prod service (pre-launch gate) | live Paymob key → `ENVIRONMENT=production` (fail-closed order — `33_SECURITY.md`) |
+| Checkout raises "test credentials cannot be used in production" | `ENVIRONMENT=production` flipped while `PAYMOB_SECRET_KEY` is `sk_test` | provision live key OR set ENVIRONMENT back to staging until live key exists |
+| `deploy-prod` CI red on pushes | was stale AWS ECS workflow | RESOLVED: push triggers disabled 2026-10-04; real deploys are Railway/Vercel |
 | Worker/beat not processing | service crash or Redis URL | Railway service logs + `REDIS_URL` |

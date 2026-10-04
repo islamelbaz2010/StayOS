@@ -7,9 +7,11 @@
   (`auth.refresh_tokens` table). `/auth/logout-all` revokes all devices.
 - **Password reset:** `/auth/forgot-password` flow exists.
 - **Device tokens:** `POST /auth/device-token` registers Expo push tokens.
-- **Dev login:** `POST /auth/dev-token` — gated by `ENVIRONMENT`; returns 404
-  in true production. The Railway prod service runs `ENVIRONMENT=staging`,
-  which intentionally keeps it enabled for ops verification.
+- **Dev login:** `POST /auth/dev-token` — gated by `ENVIRONMENT`; 404 only in
+  `production`. **OPEN GATE:** the prod service currently runs
+  `ENVIRONMENT=staging` so this endpoint is reachable and mints a JWT pair
+  for any known `user_id` — must be off before public launch
+  (remediation: `33_SECURITY.md`).
 - **OTP fallback:** Akedly (Egyptian OTP provider) + Twilio Verify.
 
 ## Roles

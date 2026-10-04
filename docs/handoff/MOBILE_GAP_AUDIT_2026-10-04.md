@@ -3,8 +3,9 @@
 Read-only audit of `apps/mobile` against the CURRENT production API
 (OpenAPI: 223 paths / 257 operations). No mobile code modified.
 
-## Verdict: READY — substantive app; all existing endpoint calls resolve.
-No genuine blocker for Phase 4.
+## Verdict: READY TO START PHASE 1 — NOT LAUNCH READY
+Substantive app; all existing endpoint calls resolve. No genuine blocker;
+P1 gaps (in-app support, host filter parity, prod EAS profile) remain.
 
 ## Feature matrix
 | FEATURE | CURRENT STATE | API READY | MOBILE READY | GAP | PRIORITY | ACTION |

@@ -18,10 +18,14 @@
 | API authz boundary | unauthed → 401; staff-only → 403 |
 | EN/AR/RTL | `dir="rtl"` on ar pages |
 
-## Open items (documented, non-blocking)
-- `deploy-prod/staging.yml` stale AWS workflows (fail red on push).
+## Open items (documented)
+- **PRE-LAUNCH SECURITY GATE (OPEN):** `ENVIRONMENT=staging` on prod →
+  `dev-token` reachable; `PAYMOB_SECRET_KEY` is `sk_test` (sandbox
+  payments). Remediation in `33_SECURITY.md` — live key must precede the
+  ENVIRONMENT flip (fail-closed ordering).
+- `deploy-prod/staging.yml` — **RESOLVED 2026-10-04:** push triggers
+  disabled, workflows archived to manual dispatch (were stale AWS ECS,
+  failing red on every push; real deploy = Railway/Vercel).
 - `KYC` manual mode in prod (Sumsub architecture unprovisioned).
 - Paymob Payouts unprovisioned; manual ops payout flow.
 - `PAYMENT_BANK_*` placeholders unset.
-- `ENVIRONMENT=staging` on prod service (dev-token surface; flag to
-  tighten pre-launch).

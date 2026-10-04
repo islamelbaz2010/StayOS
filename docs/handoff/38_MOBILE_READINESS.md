@@ -3,7 +3,8 @@
 > Full audit: `MOBILE_GAP_AUDIT_2026-10-04.md`,
 > `MOBILE_API_PARITY_2026-10-04.md`, plan: `MOBILE_PHASE_1_EXECUTION_PLAN.md`.
 
-## Verdict: READY TO START — substantive app, no structural blocker
+## Verdict: READY TO START PHASE 1 — NOT LAUNCH READY
+Substantive app, no structural blocker; P1 implementation gaps remain open.
 
 `apps/mobile` is a real Expo/React Native application, not a scaffold:
 

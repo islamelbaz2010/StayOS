@@ -8,10 +8,14 @@
 | Egyptian e-invoice/e-receipt | no integration exists; regulatory timing — accountant/legal item |
 | Entity/bank details for manual transfers | `PAYMENT_BANK_*` placeholders unset |
 
+## Pre-launch gate (OPEN — see `33_SECURITY.md`)
+- Prod `ENVIRONMENT=staging` → `dev-token` reachable; `PAYMOB_SECRET_KEY`
+  is `sk_test` → card checkout is sandbox. Launch sequence: live Paymob
+  key → `PAYMENT_BANK_*` (if needed) → `ENVIRONMENT=production` → verify.
+
 ## Engineering limitations (known, accepted)
-- Stale `deploy-*.yml` AWS workflows fail on push (deploy is Railway/Vercel).
-- Prod API `ENVIRONMENT=staging` → dev-token endpoint reachable; tighten
-  before public launch.
+- ~~Stale `deploy-*.yml` AWS workflows~~ — **RESOLVED 2026-10-04:** push
+  triggers disabled, archived to manual dispatch.
 - No orphan-object GC for S3.
 - No external paging/alerting beyond Sentry+Railway.
 - Single production environment; no staging env on Railway.

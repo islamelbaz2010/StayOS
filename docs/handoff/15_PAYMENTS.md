@@ -3,7 +3,7 @@
 ## Rails (actual)
 | Rail | State |
 |---|---|
-| Paymob Accept (card, Intention flow) | **PROVISIONED** — `PAYMOB_SECRET_KEY`/`PUBLIC_KEY`/integration IDs set in prod; payment key → IFrame `PAYMOB_IFRAME_ID` |
+| Paymob Accept (card, Intention flow) | **SANDBOX** — `PAYMOB_SECRET_KEY` present but is a **`sk_test` key**; flow works end-to-end in Paymob test mode, no real money moves. Live key = external provisioning blocker; `ENVIRONMENT=production` + test key fails closed by design (`providers.py:290`) |
 | Manual bank transfer (proof upload) | Implemented; **bank details placeholder** — `PAYMENT_BANK_ACCOUNT_NUMBER` / `PAYMENT_VODAFONE_CASH_NUMBER` unset on prod. Must be set before the manual path is guest-usable |
 | Paymob Payouts | **NOT PROVISIONED** — `PAYMOB_PAYOUT_*` unset; host payouts executed manually by ops |
 

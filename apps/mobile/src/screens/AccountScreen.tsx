@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { useMe, useNotifications, useUpgradeRole } from "../lib/hooks";
+import { useMe, useNotifications, useUpgradeRole, useHasTokens } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { api, clearTokens, getRefreshToken } from "../lib/api";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
@@ -35,6 +35,29 @@ export function AccountScreen() {
   const { data: user, isLoading } = useMe();
   const { data: notifs } = useNotifications();
   const upgradeRole = useUpgradeRole();
+  const authed = useHasTokens();
+
+  if (!authed) {
+    return (
+      <View style={styles.container}>
+        <Pressable style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
+          <Text style={styles.loginButtonText}>{t("login")}</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.loginButton, styles.registerButton]}
+          onPress={() => navigation.navigate("Register")}
+        >
+          <Text style={styles.loginButtonText}>{t("createAccount")}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.helpLink}
+          onPress={() => navigation.navigate("HelpCenter")}
+        >
+          <Text style={styles.helpLinkText}>{t("helpCenter")} ›</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   if (isLoading) return <LoadingSpinner />;
 

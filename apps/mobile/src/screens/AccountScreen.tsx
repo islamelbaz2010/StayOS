@@ -1,5 +1,6 @@
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -29,6 +30,7 @@ function MenuRow({ label, onPress, badge }: { label: string; onPress: () => void
 export function AccountScreen() {
   const { locale, setLocale, t } = useLocale();
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { data: user, isLoading } = useMe();
   const { data: notifs } = useNotifications();
@@ -75,7 +77,11 @@ export function AccountScreen() {
   const isStaff = user.role === "staff" || user.role === "admin";
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+      showsVerticalScrollIndicator={false}
+    >
       <Pressable style={styles.profileSection} onPress={() => navigation.navigate("ProfileSettings")}>
         {user.avatar_url ? (
           <Image source={{ uri: user.avatar_url }} style={styles.avatarImg} />

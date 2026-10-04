@@ -83,13 +83,23 @@
 
 - Guest `acceptance-guest@stayos.test`, Host "Omar Hassan", Staff, Admin — seeded via `scripts/seed_acceptance*.py`. Role testing uses real accounts; dev-token only in dev builds (and only on non-production backends).
 
-## Verification status
+## Verification status — ACCEPTED on physical device
 
 - `npx tsc --noEmit`: CLEAN
 - `npx jest`: 12/12 PASS (auth pub/sub, useHasTokens propagation, QA gating, booking contract)
 - Secret scan: CLEAN
 - Backend pytest / web suite: not re-run (no backend/web changes in this batch)
-- APK installs and runs against live backend
+- Final QA APK (`7f177cce`) installed on `TKINR8IJ5D9DSKQK` and verified:
+  - QA role panel present; **Guest** login → guest Home immediately;
+    **Host** → host dashboard w/ real reservations; **Staff** → permission-gated
+    OpsHome (6 grants, admin-only sections hidden); **Admin** → full OpsHome incl.
+    Maintenance & readiness + Operations overview
+  - **Logout** → immediate logged-out Account tab (no restart)
+  - **Booking**: listing → dates → Confirm → Payment screen → Paymob hosted
+    checkout (`accept.paymob.com`, EGP 96,672) → "Thanks for your payment" →
+    backend confirms booking `e76ddcbc` `confirmed`/`check_in_ready`, payment
+    `STY-E9F10C92` `verified` via Paymob
+  - Email/password register + login verified via API (token pair returned)
 
 ## Acceptance-defect fixes (batch 2)
 
@@ -116,12 +126,11 @@ Regression tests: `src/lib/__tests__/authState.test.tsx`, `api.test.ts`.
 - EAS build `7f177cce-7e55-4507-ad0b-47c1cf857656` (profile `qa`) — adds logout ordering fix + axios timeout.
 - QA backend verified reachable; dev-token live for all four fixtures; booking + Paymob checkout-session verified via API and on-device.
 
-## Known limitations / blockers
+## Known limitations
 
 - EAS archive 261 MB (no `.easignore` yet) — upload time only, not a defect.
-- Device `TKINR8IJ5D9DSKQK` dropped USB authorization mid-session — install of the QA APK requires the founder to replug/re-authorize the device.
 - `AdminBookingsScreen` financial context needs `payments` grant (bookings list needs `operations`) — a staff member may need both grants to see full detail; backend enforces.
 - iOS unbuilt (Android-first per phase); Google Play profile exists but untested.
 - Push notification token registration wired via `push.ts`; end-to-end push delivery unverified on device.
-- GitHub artifact flow requires `EXPO_TOKEN` secret + a push to `main`.
-- Source handoff package NOT refreshed yet — refresh once, at final commit, per policy.
+- GitHub artifact flow requires `EXPO_TOKEN` repo secret + a push to `main` — not yet exercised in CI (workflow validated by inspection + identical EAS invocation as the successful local build).
+- Jest emits harmless `act()` warnings from React Query; a worker-force-exit notice appears but the suite exits 0.

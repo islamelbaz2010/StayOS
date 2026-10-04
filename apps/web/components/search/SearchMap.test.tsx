@@ -37,6 +37,9 @@ describe("markerHtml", () => {
     expect(html).toContain("rounded-full");
     expect(html).toContain("text-xs");
     expect(html).toContain("max-width:120px");
+    // Block-level pills collapse to ~0 inside the 0x0 icon anchor —
+    // the pill must size to its content to avoid clipped text.
+    expect(html).toContain("width:max-content");
     expect(html).toContain("translate(-50%,-50%)");
   });
 

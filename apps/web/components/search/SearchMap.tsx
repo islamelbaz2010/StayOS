@@ -34,7 +34,7 @@ export const markerHtml = (price: number, currency: string, active: boolean, loc
     active
       ? "bg-brand-900 text-white border-brand-900"
       : "bg-white text-brand-700 border-brand-200"
-  }" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;transform:translate(-50%,-50%);">${formatMarkerPrice(price, locale)} ${currency}</div>`;
+  }" style="display:inline-block;width:max-content;max-width:120px;overflow:hidden;text-overflow:ellipsis;transform:translate(-50%,-50%);">${formatMarkerPrice(price, locale)} ${currency}</div>`;
 
 const makeIcon = (price: number, currency: string, active: boolean, locale: string) =>
   L.divIcon({

@@ -3,7 +3,7 @@
 ## Baseline & scope
 
 - Baseline commit: `cfa222a1156e31c9465800899d53e3fe31bda7f9` (accepted Web/source state)
-- Working tree: mobile parity implementation on top of baseline (uncommitted at time of writing; final commit + single handoff refresh happens after founder device acceptance)
+- Working tree: mobile parity implementation on top of baseline — committed through `ce050f0` on `main`; founder device acceptance completed on the GitHub Actions Gradle artifact
 - Scope: Android-first full-product parity — Guest, Host, Staff, Admin — against the real FastAPI backend. No mock APIs, no duplicated business truth, backend remains authoritative for all business rules and authorization.
 
 ## Screens
@@ -118,7 +118,23 @@ Regression tests: `src/lib/__tests__/authState.test.tsx`, `api.test.ts`.
 
 **3. QA role logins** — new `qa` EAS profile (`EXPO_PUBLIC_QA_MODE=1`). Login screen shows "QA test accounts" (Guest/Host/Staff/Admin) only when `__DEV__ || EXPO_PUBLIC_QA_MODE` — absent in preview/production builds. Uses real `/auth/dev-token` (404s on production backends). Seeded fixture IDs verified live (all four mint tokens; guest is KYC-verified so it can book).
 
-**4. GitHub APK artifact** — `build-mobile-android.yml` rewritten: `workflow_dispatch` profile input (default `qa`), artifact named `StayOS-Android-<short-sha>-<eas-build-id>.apk`, 30-day retention, build summary with commit/version/SDK/package/EAS ID. Requires `EXPO_TOKEN` repo secret (documented in the workflow). Note: artifacts only appear once changes are **pushed to `main`** — the mobile work was uncommitted during the first acceptance run.
+**4. GitHub APK artifact** — `build-mobile-android.yml` rewritten (see batch 3 for the final Gradle-primary form).
+
+## Acceptance-defect fixes (batch 3 — GitHub Gradle APK pipeline)
+
+**1. Gradle pipeline is now the PRIMARY QA/acceptance APK path** — `.github/workflows/build-mobile-android.yml` builds the APK natively in CI: Node 20 + Java 17 + Android SDK → `npm ci` → `expo prebuild --platform android --no-install` → `gradle assembleRelease` → verify APK + bundled JS → `actions/upload-artifact@v4`. No `EXPO_TOKEN` required for the Gradle path. `workflow_dispatch` with a `profile` input (default `qa`); `qa` injects `EXPO_PUBLIC_QA_MODE=1` + the staging API URL at bundle time. Artifact: `StayOS-Android-QA-<short-sha>.apk` (30-day retention); `GITHUB_STEP_SUMMARY` records commit/branch/build type/package/version/API env/run number. `build-android-local.yml` remains as the local standalone reference (same approach, run on demand). EAS remains a secondary cloud/distribution path (`eas.json` `qa` profile unchanged) — not required for founder acceptance.
+
+**2. Logout "dead tap" root-caused** — three compounding issues, all fixed:
+- `handleLogout` on `AccountScreen`/`HostProfileScreen` awaited SecureStore + server logout before clearing local state; now fully non-blocking (in-memory flag flips synchronously inside `clearTokens()`, cache clears + navigate happen immediately, storage/server cleanup is fire-and-forget).
+- Stale-render: cached `useMe`/`useHostOwnProfile` data could keep rendering logged-in UI after tokens cleared (frozen background screen + disabled-query cache). `AccountScreen` and `HostProfileScreen` now gate on `useHasTokens()` directly — the logged-out branch renders the instant `_hasTokens` flips, independent of query state.
+- Bottom-edge touch dead zone above the tab bar on gesture-nav devices: both scroll views got `contentContainerStyle.paddingBottom = insets.bottom + spacing.xl` so the logout button never sits flush against the nav area.
+
+**3. Final device verification (artifact `StayOS-Android-QA-ce050f0.apk`, GitHub run `37194815084`)**:
+- Guest QA login → immediate Account tab (Acceptance Guest, verified badge) — twice.
+- Guest logout → immediate logged-out branch (Login / Create account) — twice, consecutive cycles.
+- Host QA login → real host dashboard ("Staying/Departing: Acceptance Guest", reservations, earnings 178,416 EGP) → Host profile logout → immediate swap to guest Home + logged-out Account tab.
+- Session persistence: force-stop → relaunch → correctly stays logged out; earlier cycles confirmed logged-in persistence across restarts.
+- Prior Gradle artifact (`04efd82`, run `37192044283`) verified: all four QA roles on-device, Arabic RTL end-to-end, booking → Payment → Paymob hosted checkout → "Payment verified" (booking `e76ddcbc` `confirmed`, payment `STY-E9F10C92` `verified` server-side). Only logout code changed since — booking/payment paths untouched.
 
 ## Build & device (batch 2)
 
@@ -126,11 +142,18 @@ Regression tests: `src/lib/__tests__/authState.test.tsx`, `api.test.ts`.
 - EAS build `7f177cce-7e55-4507-ad0b-47c1cf857656` (profile `qa`) — adds logout ordering fix + axios timeout.
 - QA backend verified reachable; dev-token live for all four fixtures; booking + Paymob checkout-session verified via API and on-device.
 
+## Build & device (batch 3 — Gradle artifacts)
+
+- GitHub Actions `build-mobile-android.yml` runs: `37190128971` (dispatch), `37192044283` (`04efd82`), `37193579416` (`9de6c64`), `37193939795` (`cfdff0e`), `37194815084` (`ce050f0`) — all green, each producing `StayOS-Android-QA-<short-sha>.apk` via `actions/upload-artifact@v4`, downloadable from the run's Artifacts section.
+- Final acceptance artifact: `StayOS-Android-QA-ce050f0.apk` (commit `ce050f0`, ~66 MB, `com.stayos.mobile`) — installed on physical device `TKINR8IJ5D9DSKQK` (CPH2481), all critical flows pass.
+- Gradle release builds sign with the debug keystore — signature differs from EAS builds; `install -r` requires uninstall first when switching between EAS/Gradle artifacts.
+
 ## Known limitations
 
 - EAS archive 261 MB (no `.easignore` yet) — upload time only, not a defect.
 - `AdminBookingsScreen` financial context needs `payments` grant (bookings list needs `operations`) — a staff member may need both grants to see full detail; backend enforces.
 - iOS unbuilt (Android-first per phase); Google Play profile exists but untested.
 - Push notification token registration wired via `push.ts`; end-to-end push delivery unverified on device.
-- GitHub artifact flow requires `EXPO_TOKEN` repo secret + a push to `main` — not yet exercised in CI (workflow validated by inspection + identical EAS invocation as the successful local build).
+- GitHub Gradle artifact flow fully exercised in CI — no `EXPO_TOKEN` needed; `EXPO_TOKEN` only matters if the optional EAS path is invoked.
+- The touch dead-zone above the gesture nav bar observed on the test device is worked around via safe-area padding on the two logout-bearing scroll views; other screens place actions higher in the content flow.
 - Jest emits harmless `act()` warnings from React Query; a worker-force-exit notice appears but the suite exits 0.

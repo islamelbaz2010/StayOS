@@ -14,13 +14,14 @@
 |---|---|
 | ZIP filename | `STAYOS_SOURCE_HANDOFF_2026-10-04.zip` |
 | Git bundle | `STAYOS_GIT_HANDOFF_2026-10-04.bundle` |
-| Final handoff commit | `git rev-parse main` at package time — application code at `cb31f94`; docs commits may follow (per the «rendered» rule above, the bundle's `main` ref is authoritative and clone-verified) |
-| Application code commit | `cb31f94` — founder acceptance fixes (QA build, reactive auth, booking/payment, GH artifact) |
+| Final handoff commit | `ecde09e` — regenerated at HEAD (bundle `main` ref is authoritative and clone-verified) |
+| Application code commit | `ce050f0` — founder acceptance fixes (QA build, reactive auth, booking/payment, Gradle APK pipeline, device-verified logout) |
 | Previous handoff commit | `cfa222a1156e31c9465800899d53e3fe31bda7f9` (pre-mobile-acceptance-fixes) |
 | ZIP SHA256 | recorded in `STAYOS_SOURCE_HANDOFF_2026-10-04.zip.sha256` (a ZIP cannot contain its own hash — sidecar + release report carry it) |
-| Bundle SHA256 | `5881374c4dd90c3706a85e08e682144d4f6439f5d582e291a36c039b39f0222e` — also in `STAYOS_GIT_HANDOFF_2026-10-04.bundle.sha256` |
-| ZIP file count | **1,491** (from `unzip -l`) |
-| Packaged at | 2026-10-04 (regenerated after mobile acceptance-fix commit `cb31f94`) |
+| Bundle SHA256 | `423ca04b78fd2db5773bf93f6baac1c16ab387faa6bb95d0a46c81e175981aa3` — also in `STAYOS_GIT_HANDOFF_2026-10-04.bundle.sha256` |
+| ZIP SHA256 | `c35b1570c5b67f259e1d115f3f08b7cd1eddf71910cd17784c6c822dda86077d` — also in `STAYOS_SOURCE_HANDOFF_2026-10-04.zip.sha256` |
+| ZIP file count | **1,492** (from `unzip -l`) |
+| Packaged at | 2026-10-04 (regenerated at `ecde09e` after founder device acceptance) |
 
 ## Included
 - `src/app/**` backend (all domain modules), `alembic/**`, `tests/**`

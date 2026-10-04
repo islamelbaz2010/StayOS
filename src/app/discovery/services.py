@@ -362,20 +362,33 @@ async def import_candidate(
             f"Current: {candidate.status}"
         )
 
+    overrides = overrides or {}
+
     if not candidate.title:
         raise ValidationError("Candidate has no title — cannot import")
     if not candidate.city:
         raise ValidationError("Candidate has no city — cannot import")
     if candidate.latitude is None or candidate.longitude is None:
         raise ValidationError("Candidate has no coordinates — cannot import")
-    if not candidate.property_type:
+    if not (overrides.get("property_type") or candidate.property_type):
         raise ValidationError("Candidate has no property type — cannot import")
-
-    overrides = overrides or {}
 
     effective_price = overrides.get("price", candidate.nightly_price)
     if effective_price is None or effective_price < 100:
         raise ValidationError("Candidate has no valid price (min 100 EGP) — cannot import")
+
+    host_name = host_name.strip() if host_name else None
+    host_phone = host_phone.strip() if host_phone else None
+    host_email = host_email.strip().lower() if host_email else None
+
+    if overrides.get("price") is not None:
+        has_source_price = candidate.nightly_price is not None and candidate.nightly_price >= 100
+        note = (
+            "Import: nightly price overridden by admin"
+            if has_source_price
+            else "Import: nightly price entered by admin (no discovered source price)"
+        )
+        candidate.notes = f"{candidate.notes}\n{note}" if candidate.notes else note
 
     row_data = ImportRowData(
         row_number=1,

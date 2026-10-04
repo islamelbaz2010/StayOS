@@ -7,6 +7,10 @@ import { useTranslations } from "next-intl";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminLayout } from "@/components/layouts";
 import {
+  ImportCandidateModal,
+  type ImportCandidatePayload,
+} from "@/components/admin/ImportCandidateModal";
+import {
   useDiscoveryCandidates,
   useDiscoveryStats,
   useDiscoverySources,
@@ -66,12 +70,6 @@ export default function AdminDiscoveryPage() {
     status: "",
   });
   const [selected, setSelected] = useState<DiscoveryCandidate | null>(null);
-  const [importHost, setImportHost] = useState({
-    host_name: "",
-    host_phone: "",
-    host_email: "",
-    price: "",
-  });
   const [showImportModal, setShowImportModal] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [runSource, setRunSource] = useState("");
@@ -137,31 +135,29 @@ export default function AdminDiscoveryPage() {
     [statusMutation, selected]
   );
 
-  const handleImport = useCallback(async () => {
-    if (!selected) return;
-    setImportError(null);
-    try {
-      const overrides: Record<string, unknown> = {};
-      if (importHost.price) {
-        overrides.price = Number(importHost.price);
+  const handleImport = useCallback(
+    async (payload: ImportCandidatePayload) => {
+      if (!selected) return;
+      setImportError(null);
+      try {
+        await importMutation.mutateAsync({
+          id: selected.id,
+          host_name: payload.host_name,
+          host_phone: payload.host_phone,
+          host_email: payload.host_email,
+          overrides: payload.overrides,
+        });
+        setShowImportModal(false);
+        setSelected(null);
+      } catch (err) {
+        const detail = (
+          err as { response?: { data?: { error?: { message?: string } } } }
+        )?.response?.data?.error?.message;
+        setImportError(detail || td("importFailed"));
       }
-      await importMutation.mutateAsync({
-        id: selected.id,
-        host_name: importHost.host_name || undefined,
-        host_phone: importHost.host_phone || undefined,
-        host_email: importHost.host_email || undefined,
-        overrides:
-          Object.keys(overrides).length > 0 ? overrides : undefined,
-      });
-      setShowImportModal(false);
-      setSelected(null);
-    } catch (err) {
-      const detail = (
-        err as { response?: { data?: { error?: { message?: string } } } }
-      )?.response?.data?.error?.message;
-      setImportError(detail || td("importFailed"));
-    }
-  }, [selected, importHost, importMutation, td]);
+    },
+    [selected, importMutation, td]
+  );
 
   const scoreColor = useMemo(
     () => (score: number) => {
@@ -879,20 +875,6 @@ export default function AdminDiscoveryPage() {
                         type="button"
                         onClick={() => {
                           setImportError(null);
-                          setImportHost({
-                            host_name: "",
-                            host_phone:
-                              selected.contact_type === "phone"
-                                ? selected.contact_value || ""
-                                : "",
-                            host_email:
-                              selected.contact_type === "email"
-                                ? selected.contact_value || ""
-                                : "",
-                            price: selected.nightly_price
-                              ? String(selected.nightly_price)
-                              : "",
-                          });
                           setShowImportModal(true);
                         }}
                         disabled={importMutation.isPending}
@@ -918,122 +900,13 @@ export default function AdminDiscoveryPage() {
 
             {/* Import modal */}
             {showImportModal && selected && (
-              <div
-                className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
-                onClick={() => setShowImportModal(false)}
-              >
-                <div
-                  className="w-full max-w-md rounded-card bg-surface-card p-6 shadow-lg"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <h3 className="text-lg font-bold text-brand-900">
-                    {td("importTitle")}
-                  </h3>
-                  <p className="mt-2 text-sm text-neutral-600">
-                    {td("importDescription")}
-                  </p>
-                  <div className="mt-4 space-y-3">
-                    <div>
-                      <label className="text-sm font-medium text-neutral-700">
-                        {td("hostName")}
-                      </label>
-                      <input
-                        type="text"
-                        value={importHost.host_name}
-                        onChange={(e) =>
-                          setImportHost((prev) => ({
-                            ...prev,
-                            host_name: e.target.value,
-                          }))
-                        }
-                        className="input mt-1 text-sm"
-                        placeholder={td("hostNamePlaceholder")}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-neutral-700">
-                        {td("hostPhone")}
-                      </label>
-                      <input
-                        type="text"
-                        value={importHost.host_phone}
-                        onChange={(e) =>
-                          setImportHost((prev) => ({
-                            ...prev,
-                            host_phone: e.target.value,
-                          }))
-                        }
-                        className="input mt-1 text-sm"
-                        placeholder="+20..."
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-neutral-700">
-                        {td("hostEmail")}
-                      </label>
-                      <input
-                        type="text"
-                        value={importHost.host_email}
-                        onChange={(e) =>
-                          setImportHost((prev) => ({
-                            ...prev,
-                            host_email: e.target.value,
-                          }))
-                        }
-                        className="input mt-1 text-sm"
-                        placeholder="owner@example.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-neutral-700">
-                        {td("nightlyPriceEgp")}
-                      </label>
-                      <input
-                        type="number"
-                        value={importHost.price}
-                        onChange={(e) =>
-                          setImportHost((prev) => ({
-                            ...prev,
-                            price: e.target.value,
-                          }))
-                        }
-                        className="input mt-1 text-sm"
-                        placeholder={td("pricePlaceholder")}
-                        min={100}
-                      />
-                      {(!selected.nightly_price || selected.nightly_price < 100) && (
-                        <p className="mt-1 text-xs text-warning-600">
-                          {td("noPriceWarning")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {importError && (
-                    <p className="mt-3 text-sm text-danger-600" role="alert">
-                      {importError}
-                    </p>
-                  )}
-                  <div className="mt-6 flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowImportModal(false)}
-                      className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-                    >
-                      {t("cancel")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleImport}
-                      disabled={importMutation.isPending}
-                      className="btn-primary text-sm disabled:opacity-50"
-                    >
-                      {importMutation.isPending
-                        ? td("importing")
-                        : td("confirmImport")}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ImportCandidateModal
+                candidate={selected}
+                isPending={importMutation.isPending}
+                error={importError}
+                onClose={() => setShowImportModal(false)}
+                onSubmit={handleImport}
+              />
             )}
           </div>
         </section>

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
-import { I18nManager } from "react-native";
+import { I18nManager, View } from "react-native";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -416,7 +416,11 @@ function AppContent() {
   const HomeComponent =
     role === "host" ? HostTabs : role === "admin" || role === "staff" || role === "field_staff" ? OpsTabs : GuestTabs;
 
+  // I18nManager.forceRTL alone cannot flip a running app — it needs a
+  // native restart. Wrapping the container in a direction-controlled
+  // View mirrors the whole subtree (tab bar included) at runtime.
   return (
+    <View style={{ flex: 1, direction: isRTL ? "rtl" : "ltr" }}>
     <NavigationContainer theme={theme} linking={linking}>
       <Stack.Navigator>
         <Stack.Screen name="Home" component={HomeComponent} options={{ headerShown: false }} />
@@ -662,6 +666,7 @@ function AppContent() {
         />
       </Stack.Navigator>
     </NavigationContainer>
+    </View>
   );
 }
 

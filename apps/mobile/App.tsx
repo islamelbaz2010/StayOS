@@ -486,6 +486,16 @@ function AppContent() {
           options={{ title: "Notifications" }}
         />
         <Stack.Screen
+          name="Trips"
+          component={TripsScreen}
+          options={{ title: "Trips" }}
+        />
+        <Stack.Screen
+          name="Favorites"
+          component={FavoritesScreen}
+          options={{ title: "Favorites" }}
+        />
+        <Stack.Screen
           name="HelpCenter"
           component={HelpCenterScreen}
           options={{ title: "Help Center" }}

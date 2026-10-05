@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import { useRef, useState } from "react";
+import { Animated, Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import type { Listing } from "../lib/types";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { useLocale } from "../lib/LocaleContext";
 import { RatingBadge } from "./RatingBadge";
+import { formatMoney } from "../lib/money";
 
 interface ListingCardProps {
   listing: Listing;
@@ -19,9 +20,21 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
   const [imageLoading, setImageLoading] = useState(true);
 
   const showPlaceholder = !listing.cover_image || imageFailed;
+  const heartScale = useRef(new Animated.Value(1)).current;
+
+  const handleToggleFavorite = () => {
+    Animated.sequence([
+      Animated.timing(heartScale, { toValue: 1.35, duration: 110, useNativeDriver: true }),
+      Animated.spring(heartScale, { toValue: 1, friction: 4, useNativeDriver: true }),
+    ]).start();
+    onToggleFavorite?.(listing.id);
+  };
 
   return (
-    <Pressable style={styles.card} onPress={() => onPress(listing.id)}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={() => onPress(listing.id)}
+    >
       <View style={styles.imageContainer}>
         {showPlaceholder ? (
           <View style={[styles.image, styles.placeholder]}>
@@ -54,10 +67,12 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
         {onToggleFavorite && (
           <Pressable
             style={styles.heartButton}
-            onPress={() => onToggleFavorite(listing.id)}
+            onPress={handleToggleFavorite}
             hitSlop={12}
           >
-            <Text style={styles.heart}>{isFavorite ? "♥" : "♡"}</Text>
+            <Animated.Text style={[styles.heart, { transform: [{ scale: heartScale }] }]}>
+              {isFavorite ? "♥" : "♡"}
+            </Animated.Text>
           </Pressable>
         )}
       </View>
@@ -77,7 +92,7 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
           <Text style={styles.stat}>{listing.max_guests} {t("guests")}</Text>
         </View>
         <Text style={styles.price}>
-          {listing.price} {listing.currency} / {t("perNight")}
+          {formatMoney(listing.price, listing.currency)} / {t("perNight")}
         </Text>
       </View>
     </Pressable>
@@ -91,9 +106,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     overflow: "hidden",
   },
+  cardPressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.985 }],
+  },
   imageContainer: {
     position: "relative",
-    height: 200,
+    aspectRatio: 4 / 3,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
@@ -120,7 +139,7 @@ const styles = StyleSheet.create({
   heartButton: {
     position: "absolute",
     top: spacing.sm,
-    right: spacing.sm,
+    end: spacing.sm,
     backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: radius.full,
     width: 36,
@@ -135,7 +154,7 @@ const styles = StyleSheet.create({
   availableBadge: {
     position: "absolute",
     top: spacing.sm,
-    left: spacing.sm,
+    start: spacing.sm,
     backgroundColor: colors.success,
     borderRadius: radius.md,
     paddingHorizontal: spacing.sm,

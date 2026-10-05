@@ -19,6 +19,7 @@ import { ListingCard } from "../components/ListingCard";
 import { LoadingSpinner, EmptyView } from "../components/States";
 import type { LocationSuggestion } from "../lib/types";
 import type { RootStackParamList } from "../../App";
+import { formatMoney } from "../lib/money";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SearchRoute = RouteProp<RootStackParamList, "Search">;
@@ -235,7 +236,7 @@ export function SearchScreen() {
                 >
                   <View style={styles.priceMarker}>
                     <Text style={styles.priceMarkerText}>
-                      {listing.price} {listing.currency}
+                      {formatMoney(listing.price, listing.currency)}
                     </Text>
                   </View>
                 </Marker>
@@ -244,7 +245,7 @@ export function SearchScreen() {
             {listings.length > 0 && (
               <View style={styles.averagePill}>
                 <Text style={styles.averagePillText}>
-                  {t("avgPriceInResults")}: {getAveragePrice(listings)} {listings[0]?.currency}
+                  {t("avgPriceInResults")}: {formatMoney(getAveragePrice(listings), listings[0]?.currency)}
                 </Text>
               </View>
             )}

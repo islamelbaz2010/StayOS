@@ -9,6 +9,7 @@ const translations = {
     trips: "Trips",
     account: "Account",
     whereTo: "Where to?",
+    homeTagline: "Find your next stay in Egypt",
     checkIn: "Check in",
     checkOut: "Check out",
     guests: "Guests",
@@ -179,6 +180,11 @@ const translations = {
     confirm: "Confirm",
     back: "Back",
     egp: "EGP",
+    role: "Role",
+    success: "Success",
+    noListings: "No listings",
+    reservationStatus: "Reservation status",
+
 
     // Guest payment / proof submission
     paymentTitle: "Payment",
@@ -601,6 +607,9 @@ const translations = {
     walletNumber: "Wallet number",
     accountHolderName: "Account holder name",
     accountSettings: "Account settings",
+    preferences: "Preferences",
+    helpSupport: "Help & Support",
+    adminConsole: "Admin Console",
     editProfile: "Edit profile",
     loginSecurity: "Login & security",
     privacyNotifications: "Privacy & notifications",
@@ -841,6 +850,7 @@ const translations = {
     trips: "رحلاتي",
     account: "حسابي",
     whereTo: "إلى أين؟",
+    homeTagline: "اعثر على إقامتك القادمة في مصر",
     checkIn: "تاريخ الوصول",
     checkOut: "تاريخ المغادرة",
     guests: "الضيوف",
@@ -1011,6 +1021,11 @@ const translations = {
     confirm: "تأكيد",
     back: "رجوع",
     egp: "جنيه",
+    role: "الدور",
+    success: "تم بنجاح",
+    noListings: "لا توجد إعلانات",
+    reservationStatus: "حالة الحجز",
+
 
     // Guest payment / proof submission
     paymentTitle: "الدفع",
@@ -1433,6 +1448,9 @@ const translations = {
     walletNumber: "رقم المحفظة",
     accountHolderName: "اسم صاحب الحساب",
     accountSettings: "إعدادات الحساب",
+    preferences: "التفضيلات",
+    helpSupport: "المساعدة والدعم",
+    adminConsole: "وحدة تحكم المسؤول",
     editProfile: "تعديل الملف الشخصي",
     loginSecurity: "تسجيل الدخول والأمان",
     privacyNotifications: "الخصوصية والإشعارات",

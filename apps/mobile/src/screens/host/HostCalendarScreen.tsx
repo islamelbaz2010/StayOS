@@ -5,6 +5,7 @@ import { useLocale } from "../../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { LoadingSpinner, ErrorView, EmptyView } from "../../components/States";
 import type { HostCalendarDay } from "../../lib/types";
+import { formatMoney } from "../../lib/money";
 
 function formatISO(d: Date): string {
   return d.toISOString().split("T")[0];
@@ -138,7 +139,7 @@ function CalendarGrid({
                   {day.status === "BOOKED" && day.guest_name
                     ? day.guest_name.slice(0, 6)
                     : day.status === "AVAILABLE"
-                    ? `${day.price_egp}`
+                    ? formatMoney(day.price_egp, t("egp"))
                     : day.status.slice(0, 4)}
                 </Text>
               </View>

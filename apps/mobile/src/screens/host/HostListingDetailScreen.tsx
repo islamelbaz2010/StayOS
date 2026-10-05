@@ -21,6 +21,7 @@ import { useLocale } from "../../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { RootStackParamList } from "../../../App";
+import { formatMoney } from "../../lib/money";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type DetailRoute = RouteProp<RootStackParamList, "HostListingDetail">;
@@ -113,7 +114,7 @@ export function HostListingDetailScreen() {
           </Text>
         </View>
         <Text style={styles.priceText}>
-          {listing.base_price_egp} {t("listingEgp")} / {t("listingPerNight")}
+          {formatMoney(listing.base_price_egp, t("listingEgp"))} / {t("listingPerNight")}
         </Text>
       </View>
 

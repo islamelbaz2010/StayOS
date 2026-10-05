@@ -8,6 +8,7 @@ import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, ErrorView, EmptyView } from "../components/States";
 import type { PaymentListItem } from "../lib/types";
 import type { RootStackParamList } from "../../App";
+import { formatMoney } from "../lib/money";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -54,7 +55,7 @@ export function PaymentsScreen() {
       >
         <View style={styles.cardHeader}>
           <Text style={styles.amount}>
-            {item.amount_egp} {t("egp")}
+            {formatMoney(item.amount_egp)}
           </Text>
           <View style={[styles.badge, { backgroundColor: statusColor }]}>
             <Text style={styles.badgeText}>

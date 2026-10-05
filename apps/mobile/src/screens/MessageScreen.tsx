@@ -27,6 +27,7 @@ import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import type { BookingOffer } from "../lib/types";
 import type { RootStackParamList } from "../../App";
+import { formatMoney } from "../lib/money";
 
 type MessageRoute = RouteProp<RootStackParamList, "Message">;
 
@@ -139,7 +140,7 @@ export function MessageScreen() {
           {offer.check_in} → {offer.check_out}
         </Text>
         <Text style={styles.offerPrice}>
-          {offer.total_price_egp.toLocaleString()} EGP
+          {formatMoney(offer.total_price_egp)}
         </Text>
         {canAct && (
           <View style={styles.offerActions}>

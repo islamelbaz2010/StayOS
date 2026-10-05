@@ -13,6 +13,7 @@ import {
 import { useLocale } from "../../lib/LocaleContext";
 import { api, clearTokens, getRefreshToken } from "../../lib/api";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
+import { formatMoney } from "../../lib/money";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { RootStackParamList } from "../../../App";
 
@@ -139,8 +140,8 @@ export function HostProfileScreen() {
       {earnings && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("hostEarnings")}</Text>
-          <StatRow label={t("earningsTotalRevenue")} value={`${earnings.total_revenue_egp} ${t("egp")}`} />
-          <StatRow label={t("earningsNetEarnings")} value={`${earnings.net_earnings_egp} ${t("egp")}`} />
+          <StatRow label={t("earningsTotalRevenue")} value={formatMoney(earnings.total_revenue_egp)} />
+          <StatRow label={t("earningsNetEarnings")} value={formatMoney(earnings.net_earnings_egp, t("egp"))} />
           <StatRow label={t("earningsTotalBookings")} value={String(earnings.total_bookings)} />
           <StatRow label={t("earningsCompletedStays")} value={String(earnings.completed_stays)} />
           <Pressable
@@ -171,6 +172,22 @@ export function HostProfileScreen() {
           onPress={() => navigation.navigate("HostCreateListing")}
         >
           <Text style={styles.linkText}>{t("newListing")} →</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t("stays")}</Text>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("Trips")}
+        >
+          <Text style={styles.linkText}>{t("trips")} →</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("Favorites")}
+        >
+          <Text style={styles.linkText}>{t("favorites")} →</Text>
         </Pressable>
       </View>
 

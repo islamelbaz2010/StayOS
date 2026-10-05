@@ -133,7 +133,15 @@ export function AccountScreen() {
       {isStaff && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("account")}</Text>
+          <MenuRow label={t("adminConsole")} onPress={() => navigation.navigate("Home")} />
           <MenuRow label={t("notifications")} badge={unread || undefined} onPress={() => navigation.navigate("Notifications")} />
+        </View>
+      )}
+      {isStaff && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("stays")}</Text>
+          <MenuRow label={t("trips")} onPress={() => navigation.navigate("Trips")} />
+          <MenuRow label={t("favorites")} onPress={() => navigation.navigate("Favorites")} />
         </View>
       )}
 
@@ -174,7 +182,7 @@ export function AccountScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("accountSettings")}</Text>
+        <Text style={styles.sectionTitle}>{t("preferences")}</Text>
         <MenuRow label={t("editProfile")} onPress={() => navigation.navigate("ProfileSettings")} />
         <MenuRow label={t("personalInfo")} onPress={() => navigation.navigate("PersonalData")} />
         <MenuRow label={t("loginSecurity")} onPress={() => navigation.navigate("SecuritySettings")} />
@@ -204,7 +212,7 @@ export function AccountScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("support")}</Text>
+        <Text style={styles.sectionTitle}>{t("helpSupport")}</Text>
         <MenuRow label={t("helpCenter")} onPress={() => navigation.navigate("HelpCenter")} />
         <MenuRow label={t("contactSupport")} onPress={() => navigation.navigate("Support")} />
       </View>

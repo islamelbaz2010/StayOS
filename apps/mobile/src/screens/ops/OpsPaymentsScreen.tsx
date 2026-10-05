@@ -17,6 +17,7 @@ import {
 } from "../../components/UI";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { AdminPaymentItem } from "../../lib/types";
+import { formatMoney } from "../../lib/money";
 
 const STATUS_FILTERS = [
   { key: "", en: "All", ar: "الكل" },
@@ -75,7 +76,7 @@ export function OpsPaymentsScreen() {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Section title={selected.reference_number}>
-          <Row label={t("amount")} value={`${selected.amount_egp.toLocaleString()} ${t("egp")}`} />
+          <Row label={t("amount")} value={formatMoney(selected.amount_egp, t("egp"))} />
           <Row label={t("status")} value={selected.status} />
           <Row label={t("method")} value={selected.method} />
           <Row label={t("property")} value={selected.unit_title} />
@@ -159,7 +160,7 @@ export function OpsPaymentsScreen() {
               (data ?? []).map((p: AdminPaymentItem) => (
                 <ListRow
                   key={p.id}
-                  title={`${p.amount_egp.toLocaleString()} ${t("egp")} · ${p.reference_number}`}
+                  title={`${formatMoney(p.amount_egp, t("egp"))} · ${p.reference_number}`}
                   subtitle={`${p.unit_title ?? p.unit_id.slice(0, 8)} · ${new Date(
                     p.created_at
                   ).toLocaleDateString(dateLocale)}`}

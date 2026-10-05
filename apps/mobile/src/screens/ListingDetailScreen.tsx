@@ -23,6 +23,7 @@ import { RatingBadge } from "../components/RatingBadge";
 import { ReviewsList } from "../components/ReviewsList";
 import { addRecentlyViewed } from "../lib/recentlyViewed";
 import type { RootStackParamList } from "../../App";
+import { formatMoney } from "../lib/money";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type DetailRoute = RouteProp<RootStackParamList, "ListingDetail">;
@@ -260,7 +261,7 @@ export function ListingDetailScreen() {
       <View style={[styles.bookingBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
         <View>
           <Text style={styles.bookingPrice}>
-            {listing.price} {listing.currency}
+            {formatMoney(listing.price, listing.currency)}
           </Text>
           <Text style={styles.bookingPerNight}>{t("perNight")}</Text>
         </View>

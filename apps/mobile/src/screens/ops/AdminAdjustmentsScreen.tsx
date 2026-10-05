@@ -19,6 +19,7 @@ import {
 } from "../../components/UI";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { Adjustment } from "../../lib/types";
+import { formatMoney } from "../../lib/money";
 
 const STATUS_FILTERS = [
   { key: "", en: "All", ar: "الكل" },
@@ -167,7 +168,7 @@ export function AdminAdjustmentsScreen() {
               (data ?? []).map((a: Adjustment) => (
                 <View key={a.id}>
                   <ListRow
-                    title={`${a.amount_egp.toLocaleString()} ${t("egp")} · ${t(`adj_${a.adjustment_type}`)}`}
+                    title={`${formatMoney(a.amount_egp, t("egp"))} · ${t(`adj_${a.adjustment_type}`)}`}
                     subtitle={`${a.category} · ${a.reason} · ${new Date(
                       a.created_at
                     ).toLocaleDateString(dateLocale)}`}

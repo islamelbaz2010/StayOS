@@ -19,6 +19,7 @@ import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, ErrorView } from "../components/States";
 import type { RootStackParamList } from "../../App";
+import { formatMoney } from "../lib/money";
 
 type PaymentRoute = RouteProp<RootStackParamList, "Payment">;
 
@@ -231,7 +232,7 @@ export function PaymentScreen() {
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>{t("payTotal")}</Text>
           <Text style={styles.totalValue}>
-            {payment.amount_egp.toLocaleString()} {t("egp")}
+            {formatMoney(payment.amount_egp)}
           </Text>
         </View>
         <Text style={styles.metaText}>{t("includesAllFees")}</Text>

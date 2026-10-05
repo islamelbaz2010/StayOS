@@ -5,6 +5,7 @@ import { useLocale } from "../../lib/LocaleContext";
 import { colors, spacing } from "../../lib/theme";
 import { Empty, ListRow, StatusBadge } from "../../components/UI";
 import { LoadingSpinner, ErrorView } from "../../components/States";
+import { formatMoney } from "../../lib/money";
 
 const TONE: Record<string, "ok" | "warn" | "err" | "info"> = {
   verified: "ok",
@@ -31,7 +32,7 @@ export function HostPaymentsScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <ListRow
-            title={`${item.amount_egp.toLocaleString()} ${t("egp")}`}
+            title={formatMoney(item.amount_egp, t("egp"))}
             subtitle={`${item.reference_number} · ${new Date(
               item.created_at
             ).toLocaleDateString(dateLocale)}`}

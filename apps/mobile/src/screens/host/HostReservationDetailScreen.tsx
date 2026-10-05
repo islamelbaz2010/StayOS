@@ -13,6 +13,7 @@ import { useLocale } from "../../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { RootStackParamList } from "../../../App";
+import { formatMoney } from "../../lib/money";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -161,7 +162,7 @@ export function HostReservationDetailScreen() {
               </Text>
             </View>
           </View>
-          <InfoRow label={t("reservationAmount")} value={`${payment.amount_egp} ${t("egp")}`} />
+          <InfoRow label={t("reservationAmount")} value={formatMoney(payment.amount_egp, t("egp"))} />
           <InfoRow label={t("reservationNights").replace("{count}", String(payment.nights))} value="" />
           <InfoRow label={t("reservationReference")} value={payment.reference_number} />
           {payment.verified_at && (
@@ -185,11 +186,11 @@ export function HostReservationDetailScreen() {
           />
           <InfoRow
             label={t("reservationTotalPaid")}
-            value={`${cancellation_preview.total_paid_egp} ${t("egp")}`}
+            value={formatMoney(cancellation_preview.total_paid_egp, t("egp"))}
           />
           <InfoRow
             label={t("reservationRefundAmount")}
-            value={`${cancellation_preview.refund_amount_egp} ${t("egp")}`}
+            value={formatMoney(cancellation_preview.refund_amount_egp, t("egp"))}
           />
           <InfoRow
             label={t("reservationRefundPolicy")}

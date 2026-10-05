@@ -2,9 +2,12 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any, cast
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import repository as auth_repository
+from app.auth.models import StaffPermission, User
+from app.bookings import repository as bookings_repository
 from app.listings import repository as listings_repository
 
 from . import providers, repository, templates
@@ -48,6 +51,13 @@ async def resolve_recipient(
                 # In a real system host contact details would be loaded from the user table.
                 result.setdefault("host_name", getattr(unit, "host_id", "Host"))
 
+    # Enrich display names from user ids so templates render real names.
+    for id_key, name_key in (("host_id", "host_name"), ("guest_id", "guest_name")):
+        if payload.get(id_key) and not payload.get(name_key):
+            user = await auth_repository.get_user_by_id(session, str(payload[id_key]))
+            if user is not None and user.display_name:
+                payload[name_key] = user.display_name
+
     return result
 
 
@@ -67,6 +77,12 @@ def channels_for_event(event_type: str) -> list[str]:
         "booking.cancelled": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.SMS],
         "booking.no_show": [NotificationChannel.IN_APP, NotificationChannel.EMAIL, NotificationChannel.SMS],
         "message.received": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "booking.created": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "booking.payment_confirmed": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "offer.created": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "dispute.opened": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "dispute.status_changed": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        "payment.refunded": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         "listing.approved": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         "listing.rejected": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         "listing.edit_approved": [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
@@ -86,6 +102,9 @@ _IN_APP_HOST_EVENTS = {
     "listing.rejected",
     "listing.edit_approved",
     "listing.edit_rejected",
+    # Guest-initiated events whose business recipient is the host.
+    "booking.created",
+    "booking.payment_confirmed",
 }
 
 
@@ -113,6 +132,67 @@ def _in_app_user_id(
     return str(value) if value else None
 
 
+async def _resolve_listing_title(
+    session: AsyncSession, payload: dict[str, Any]
+) -> str | None:
+    """Resolve a human-readable listing title for notification copy.
+
+    Emitters are not required to carry the title — it is resolved here
+    from ``unit_id`` or ``booking_id`` so user-facing copy never falls
+    back to raw identifiers.
+    """
+    unit_id = payload.get("unit_id")
+    if not unit_id and payload.get("booking_id"):
+        booking = await bookings_repository.get_booking(
+            session, str(payload["booking_id"])
+        )
+        if booking is not None:
+            unit_id = booking.unit_id
+    if not unit_id:
+        return None
+    unit = await listings_repository.get_unit_with_listing(session, str(unit_id))
+    listing = getattr(unit, "listing", None) if unit else None
+    if listing:
+        return listing.title_en or listing.title_ar
+    return None
+
+
+async def _staff_with_permission(session: AsyncSession, permission: str) -> list[str]:
+    result = await session.execute(
+        select(StaffPermission.user_id).where(
+            StaffPermission.permission == permission,
+            StaffPermission.is_active.is_(True),
+        )
+    )
+    ids = list(result.scalars().all())
+    admins = await session.execute(
+        select(User.id).where(User.role == "admin", User.is_active.is_(True))
+    )
+    ids.extend(admins.scalars().all())
+    return list(dict.fromkeys(ids))
+
+
+async def _dispute_recipients(
+    session: AsyncSession, payload: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Dispute events notify the counter-party plus authorized operations
+    staff (users holding the ``disputes`` permission and admins)."""
+    reporter_id = payload.get("reporter_id")
+    ids: list[str] = []
+    booking_id = payload.get("booking_id")
+    if booking_id:
+        booking = await bookings_repository.get_booking(session, str(booking_id))
+        if booking is not None:
+            host_id = booking.unit.host_id if booking.unit is not None else None
+            for party in (booking.guest_id, host_id):
+                if party and party != reporter_id:
+                    ids.append(str(party))
+    for staff_id in await _staff_with_permission(session, "disputes"):
+        if staff_id != reporter_id:
+            ids.append(str(staff_id))
+    return [{"user_id": i} for i in dict.fromkeys(ids)]
+
+
 async def create_notifications_for_event(
     session: AsyncSession,
     event_id: str,
@@ -120,6 +200,27 @@ async def create_notifications_for_event(
     payload: dict[str, Any],
 ) -> list[Notification]:
     notifications: list[Notification] = []
+
+    if "listing_title" not in payload:
+        try:
+            title = await _resolve_listing_title(session, payload)
+            if title:
+                payload["listing_title"] = title
+        except Exception:  # noqa: BLE001
+            logger.warning("Could not resolve listing title for event %s", event_id)
+
+    if event_type in ("dispute.opened", "dispute.status_changed"):
+        for contact in await _dispute_recipients(session, payload):
+            notifications.extend(
+                await _create_notifications_for_contact(
+                    session,
+                    event_id,
+                    event_type,
+                    payload,
+                    contact=contact,
+                )
+            )
+        return notifications
 
     # Some events (e.g. new in-app messages) may have multiple recipients.
     recipients = payload.get("recipients")

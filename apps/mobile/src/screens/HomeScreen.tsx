@@ -49,9 +49,13 @@ export function HomeScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.appName}>{t("appName")}</Text>
+        <Text style={styles.tagline}>{t("homeTagline")}</Text>
       </View>
 
-      <Pressable style={styles.searchBar} onPress={() => goToSearch()}>
+      <Pressable
+        style={({ pressed }) => [styles.searchBar, pressed && styles.searchBarPressed]}
+        onPress={() => goToSearch()}
+      >
         <Text style={styles.searchIcon}>🔍</Text>
         <Text style={styles.searchPlaceholder}>{t("whereTo")}</Text>
       </Pressable>
@@ -62,7 +66,7 @@ export function HomeScreen() {
           {popular?.map((city: LocationSuggestion) => (
             <Pressable
               key={city.canonical_name_en}
-              style={styles.cityChip}
+              style={({ pressed }) => [styles.cityChip, pressed && styles.cityChipPressed]}
               onPress={() => goToSearch(city.canonical_name_en)}
             >
               <Text style={styles.cityChipText}>
@@ -107,6 +111,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.primary,
   },
+  tagline: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -119,9 +128,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  searchBarPressed: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary50,
+  },
   searchIcon: {
     fontSize: 18,
-    marginRight: spacing.sm,
+    marginEnd: spacing.sm,
   },
   searchPlaceholder: {
     fontSize: fontSize.md,
@@ -147,6 +160,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary50,
     borderRadius: radius.full,
     marginHorizontal: spacing.xs,
+  },
+  cityChipPressed: {
+    opacity: 0.7,
   },
   cityChipText: {
     fontSize: fontSize.sm,

@@ -6,25 +6,25 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "تم استلام طلب حجزك",
-                "body": "مرحبًا {{guest_name}}، تم استلام حجزك {{reservation_id}} بانتظار الدفع.",
+                "body": "مرحبًا {{guest_name}}، تم استلام حجزك في {{listing_title}} بانتظار الدفع.",
             },
             "whatsapp": {
-                "body": "مرحبًا {{guest_name}}، تم استلام حجزك {{reservation_id}} بانتظار الدفع.",
+                "body": "مرحبًا {{guest_name}}، تم استلام حجزك في {{listing_title}} بانتظار الدفع.",
             },
             "sms": {
-                "body": "تم استلام حجزك {{reservation_id}}. أكمل الدفع لتأكيده.",
+                "body": "تم استلام حجزك في {{listing_title}}. أكمل الدفع لتأكيده.",
             },
         },
         "en": {
             "email": {
                 "subject": "Your booking request received",
-                "body": "Hi {{guest_name}}, your booking {{reservation_id}} is pending payment.",
+                "body": "Hi {{guest_name}}, your booking at {{listing_title}} is pending payment.",
             },
             "whatsapp": {
-                "body": "Hi {{guest_name}}, your booking {{reservation_id}} is pending payment.",
+                "body": "Hi {{guest_name}}, your booking at {{listing_title}} is pending payment.",
             },
             "sms": {
-                "body": "Booking {{reservation_id}} received. Complete payment to confirm.",
+                "body": "Your booking at {{listing_title}} was received. Complete payment to confirm.",
             },
         },
     },
@@ -32,25 +32,25 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "تم تأكيد حجزك",
-                "body": "مرحبًا {{guest_name}}، تم تأكيد حجزك {{reservation_id}}.",
+                "body": "مرحبًا {{guest_name}}، تم تأكيد حجزك في {{listing_title}}.",
             },
             "whatsapp": {
-                "body": "مرحبًا {{guest_name}}، تم تأكيد حجزك {{reservation_id}}.",
+                "body": "مرحبًا {{guest_name}}، تم تأكيد حجزك في {{listing_title}}.",
             },
             "sms": {
-                "body": "تم تأكيد حجزك {{reservation_id}}.",
+                "body": "تم تأكيد حجزك في {{listing_title}}.",
             },
         },
         "en": {
             "email": {
                 "subject": "Your booking is confirmed",
-                "body": "Hi {{guest_name}}, your booking {{reservation_id}} is confirmed.",
+                "body": "Hi {{guest_name}}, your booking at {{listing_title}} is confirmed.",
             },
             "whatsapp": {
-                "body": "Hi {{guest_name}}, your booking {{reservation_id}} is confirmed.",
+                "body": "Hi {{guest_name}}, your booking at {{listing_title}} is confirmed.",
             },
             "sms": {
-                "body": "Booking {{reservation_id}} confirmed.",
+                "body": "Your booking at {{listing_title}} is confirmed.",
             },
         },
     },
@@ -58,25 +58,25 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "فشلت عملية الدفع",
-                "body": "عذرًا {{guest_name}}، فشلت عملية الدفع للحجز {{reservation_id}}. يرجى المحاولة مرة أخرى.",
+                "body": "عذرًا {{guest_name}}، فشلت عملية الدفع لحجزك في {{listing_title}}. يرجى المحاولة مرة أخرى.",
             },
             "whatsapp": {
-                "body": "عذرًا {{guest_name}}، فشلت عملية الدفع للحجز {{reservation_id}}.",
+                "body": "عذرًا {{guest_name}}، فشلت عملية الدفع لحجزك في {{listing_title}}.",
             },
             "sms": {
-                "body": "فشلت عملية الدفع للحجز {{reservation_id}}.",
+                "body": "فشلت عملية الدفع لحجزك في {{listing_title}}.",
             },
         },
         "en": {
             "email": {
                 "subject": "Payment failed",
-                "body": "Sorry {{guest_name}}, payment for booking {{reservation_id}} failed. Please retry.",
+                "body": "Sorry {{guest_name}}, payment for your booking at {{listing_title}} failed. Please retry.",
             },
             "whatsapp": {
-                "body": "Sorry {{guest_name}}, payment for booking {{reservation_id}} failed.",
+                "body": "Sorry {{guest_name}}, payment for your booking at {{listing_title}} failed.",
             },
             "sms": {
-                "body": "Payment for booking {{reservation_id}} failed.",
+                "body": "Payment for your booking at {{listing_title}} failed.",
             },
         },
     },
@@ -84,19 +84,19 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "تعليمات الدفع لحجزك",
-                "body": "مرحبًا {{guest_name}}، تم قبول حجزك {{reservation_id}}. المبلغ المطلوب: {{amount_egp}} ج.م. رقم المرجع: {{reference_number}}. يرجى تحويل المبلغ ورفع إيصال الدفع لتأكيد الحجز.",
+                "body": "مرحبًا {{guest_name}}، تم قبول حجزك في {{listing_title}}. المبلغ المطلوب: {{amount_egp}} ج.م. رقم المرجع: {{reference_number}}. يرجى تحويل المبلغ ورفع إيصال الدفع لتأكيد الحجز.",
             },
             "whatsapp": {
-                "body": "مرحبًا {{guest_name}}، تم قبض حجزك {{reservation_id}}. المبلغ: {{amount_egp}} ج.م. المرجع: {{reference_number}}. يرجى الدفع ورفع الإيصال.",
+                "body": "مرحبًا {{guest_name}}، تم قبض حجزك في {{listing_title}}. المبلغ: {{amount_egp}} ج.م. المرجع: {{reference_number}}. يرجى الدفع ورفع الإيصال.",
             },
         },
         "en": {
             "email": {
                 "subject": "Payment instructions for your booking",
-                "body": "Hi {{guest_name}}, your booking {{reservation_id}} has been accepted. Amount due: {{amount_egp}} EGP. Reference: {{reference_number}}. Please transfer the amount and upload your receipt to confirm your booking.",
+                "body": "Hi {{guest_name}}, your booking at {{listing_title}} has been accepted. Amount due: {{amount_egp}} EGP. Reference: {{reference_number}}. Please transfer the amount and upload your receipt to confirm your booking.",
             },
             "whatsapp": {
-                "body": "Hi {{guest_name}}, booking {{reservation_id}} accepted. Amount: {{amount_egp}} EGP. Ref: {{reference_number}}. Please pay and upload receipt.",
+                "body": "Hi {{guest_name}}, your booking at {{listing_title}} was accepted. Amount: {{amount_egp}} EGP. Ref: {{reference_number}}. Please pay and upload receipt.",
             },
         },
     },
@@ -118,19 +118,19 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "تم تأكيد الدفع",
-                "body": "مرحبًا {{guest_name}}، تم تأكيد دفعك بنجاح. حجزك {{reservation_id}} أصبح مؤكدًا.",
+                "body": "مرحبًا {{guest_name}}، تم تأكيد دفعك بنجاح. حجزك في {{listing_title}} أصبح مؤكدًا.",
             },
             "sms": {
-                "body": "تم تأكيد الدفع لحجزك {{reservation_id}}. حجزك مؤكد.",
+                "body": "تم تأكيد الدفع لحجزك في {{listing_title}}. حجزك مؤكد.",
             },
         },
         "en": {
             "email": {
                 "subject": "Payment confirmed",
-                "body": "Hi {{guest_name}}, your payment has been verified. Your booking {{reservation_id}} is now confirmed.",
+                "body": "Hi {{guest_name}}, your payment has been verified. Your booking {{listing_title}} is now confirmed.",
             },
             "sms": {
-                "body": "Payment confirmed for booking {{reservation_id}}. Your booking is confirmed.",
+                "body": "Payment confirmed for your booking at {{listing_title}}. Your booking is confirmed.",
             },
         },
     },
@@ -138,43 +138,43 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "تعذّر التحقق من الدفع",
-                "body": "عذرًا {{guest_name}}، تعذّر التحقق من إيصال الدفع لحجزك {{reservation_id}}. السبب: {{reject_reason}}. يرجى رفع إيصال جديد.",
+                "body": "عذرًا {{guest_name}}، تعذّر التحقق من إيصال الدفع لحجزك في {{listing_title}}. السبب: {{reject_reason}}. يرجى رفع إيصال جديد.",
             },
             "whatsapp": {
-                "body": "عذرًا {{guest_name}}، تعذّر التحقق من الدفع للحجز {{reservation_id}}. يرجى رفع إيصال جديد.",
+                "body": "عذرًا {{guest_name}}، تعذّر التحقق من الدفع لحجزك في {{listing_title}}. يرجى رفع إيصال جديد.",
             },
         },
         "en": {
             "email": {
                 "subject": "Payment verification failed",
-                "body": "Sorry {{guest_name}}, your payment receipt for booking {{reservation_id}} could not be verified. Reason: {{reject_reason}}. Please upload a new receipt.",
+                "body": "Sorry {{guest_name}}, your payment receipt for your booking at {{listing_title}} could not be verified. Reason: {{reject_reason}}. Please upload a new receipt.",
             },
             "whatsapp": {
-                "body": "Sorry {{guest_name}}, payment for booking {{reservation_id}} could not be verified. Please upload a new receipt.",
+                "body": "Sorry {{guest_name}}, payment for your booking at {{listing_title}} could not be verified. Please upload a new receipt.",
             },
         },
     },
     "booking.checked_in": {
         "ar": {
             "sms": {
-                "body": "تم تسجيل الدخول للحجز {{reservation_id}}. نتمنى لك إقامة سعيدة.",
+                "body": "تم تسجيل الدخول لحجزك في {{listing_title}}. نتمنى لك إقامة سعيدة.",
             },
         },
         "en": {
             "sms": {
-                "body": "Checked in for booking {{reservation_id}}. Enjoy your stay.",
+                "body": "Checked in for your stay at {{listing_title}}. Enjoy your stay.",
             },
         },
     },
     "booking.checked_out": {
         "ar": {
             "sms": {
-                "body": "تم تسجيل الخروج للحجز {{reservation_id}}. نأمل أن تكون إقامتك ممتازة.",
+                "body": "تم تسجيل الخروج لحجزك في {{listing_title}}. نأمل أن تكون إقامتك ممتازة.",
             },
         },
         "en": {
             "sms": {
-                "body": "Checked out for booking {{reservation_id}}. We hope you enjoyed your stay.",
+                "body": "Checked out from {{listing_title}}. We hope you enjoyed your stay.",
             },
         },
     },
@@ -208,19 +208,19 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "تسجيل عدم حضور",
-                "body": "تم تسجيل عدم حضور للحجز {{reservation_id}}. وفقًا لسياسة الإلغاء، لا يحق استرداد مبلغ الإقامة أو رسوم الخدمة.",
+                "body": "تم تسجيل عدم حضور لحجزك في {{listing_title}}. وفقًا لسياسة الإلغاء، لا يحق استرداد مبلغ الإقامة أو رسوم الخدمة.",
             },
             "sms": {
-                "body": "تم تسجيل عدم حضور للحجز {{reservation_id}}.",
+                "body": "تم تسجيل عدم حضور لحجزك في {{listing_title}}.",
             },
         },
         "en": {
             "email": {
                 "subject": "No-show recorded",
-                "body": "A no-show was recorded for booking {{reservation_id}}. Per the cancellation policy, the accommodation amount and service fee are not refundable.",
+                "body": "A no-show was recorded for your booking at {{listing_title}}. Per the cancellation policy, the accommodation amount and service fee are not refundable.",
             },
             "sms": {
-                "body": "A no-show was recorded for booking {{reservation_id}}.",
+                "body": "A no-show was recorded for your booking at {{listing_title}}.",
             },
         },
     },
@@ -228,13 +228,13 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "رسالة جديدة",
-                "body": "لديك رسالة جديدة من {{sender_name}} بخصوص الحجز {{booking_id}}.",
+                "body": "لديك رسالة جديدة من {{sender_name}} بخصوص إقامتك في {{listing_title}}.",
             },
         },
         "en": {
             "email": {
                 "subject": "New message",
-                "body": "You have a new message from {{sender_name}} regarding booking {{booking_id}}.",
+                "body": "You have a new message from {{sender_name}} regarding your stay at {{listing_title}}.",
             },
         },
     },
@@ -291,6 +291,90 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
             "email": {
                 "subject": "Your listing changes were not approved",
                 "body": "Hi {{host_name}}, the changes you submitted for \"{{listing_title}}\" were not approved. Reason: {{reason}}. Your current published version stays live.",
+            },
+        },
+    },
+    "booking.created": {
+        "ar": {
+            "email": {
+                "subject": "طلب حجز جديد",
+                "body": "مرحبًا {{host_name}}، لديك حجز جديد في «{{listing_title}}» من {{check_in}} إلى {{check_out}}.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "New booking request",
+                "body": "Hi {{host_name}}, you have a new booking at \"{{listing_title}}\" from {{check_in}} to {{check_out}}.",
+            },
+        },
+    },
+    "booking.payment_confirmed": {
+        "ar": {
+            "email": {
+                "subject": "تم تأكيد دفع الحجز",
+                "body": "مرحبًا {{host_name}}، تم تأكيد دفع الحجز في «{{listing_title}}». الحجز مؤكد الآن.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Booking payment confirmed",
+                "body": "Hi {{host_name}}, payment for the booking at \"{{listing_title}}\" is confirmed. The booking is now confirmed.",
+            },
+        },
+    },
+    "offer.created": {
+        "ar": {
+            "email": {
+                "subject": "عرض خاص على إقامتك",
+                "body": "مرحبًا {{guest_name}}، أرسل لك المضيف عرضًا خاصًا لـ«{{listing_title}}» بقيمة {{total_price_egp}} ج.م. يمكنك مراجعته من الرسائل.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "A special offer for your stay",
+                "body": "Hi {{guest_name}}, your host sent you a special offer for \"{{listing_title}}\" at {{total_price_egp}} EGP. Review it in your messages.",
+            },
+        },
+    },
+    "dispute.opened": {
+        "ar": {
+            "email": {
+                "subject": "بلاغ جديد بخصوص حجز",
+                "body": "تم فتح بلاغ بخصوص الحجز في «{{listing_title}}». فريق الدعم يراجع التفاصيل.",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "A dispute was opened",
+                "body": "A dispute was opened regarding the booking at \"{{listing_title}}\". Our support team is reviewing the details.",
+            },
+        },
+    },
+    "dispute.status_changed": {
+        "ar": {
+            "email": {
+                "subject": "تحديث حالة البلاغ",
+                "body": "تم تحديث حالة البلاغ الخاص بالحجز في «{{listing_title}}» إلى «{{new_status}}».",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Dispute status update",
+                "body": "The dispute for the booking at \"{{listing_title}}\" was updated to \"{{new_status}}\".",
+            },
+        },
+    },
+    "payment.refunded": {
+        "ar": {
+            "email": {
+                "subject": "تم رد مبلغ الدفع",
+                "body": "مرحبًا {{guest_name}}، تم رد مبلغ {{amount_egp}} ج.م. للحجز في «{{listing_title}}».",
+            },
+        },
+        "en": {
+            "email": {
+                "subject": "Your payment was refunded",
+                "body": "Hi {{guest_name}}, {{amount_egp}} EGP was refunded for your booking at \"{{listing_title}}\".",
             },
         },
     },

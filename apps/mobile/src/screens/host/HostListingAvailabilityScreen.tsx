@@ -20,6 +20,7 @@ import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { LoadingSpinner, ErrorView, EmptyView } from "../../components/States";
 import type { HostCalendarDay } from "../../lib/types";
 import type { RootStackParamList } from "../../../App";
+import { formatMoney } from "../../lib/money";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type AvailRoute = RouteProp<RootStackParamList, "HostListingAvailability">;
@@ -201,7 +202,7 @@ export function HostListingAvailabilityScreen() {
                 )}
                 {day.price_egp > 0 && (
                   <Text style={styles.dayPrice}>
-                    {day.price_egp} {t("listingEgp")}
+                    {formatMoney(day.price_egp, t("listingEgp"))}
                   </Text>
                 )}
               </View>

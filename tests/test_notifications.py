@@ -29,11 +29,27 @@ def test_render_template_arabic_reservation_created() -> None:
         "reservation.created",
         "email",
         "ar",
-        {"reservation_id": "res-1", "guest_name": "أحمد"},
+        {"listing_title": "شقة المعادي", "guest_name": "أحمد"},
     )
     assert subject is not None
-    assert "res-1" in body
+    assert "شقة المعادي" in body
     assert "أحمد" in body
+
+
+def test_render_template_no_raw_reservation_id() -> None:
+    """User-facing copy must name the stay, never the internal booking id."""
+    _, body = templates.render_template(
+        "reservation.created",
+        "email",
+        "en",
+        {
+            "reservation_id": "75d867ae-e2b1-44ff-877f-3fc045f1b79c",
+            "listing_title": "Elegant Apartment in Korba",
+            "guest_name": "Mona",
+        },
+    )
+    assert "75d867ae" not in body
+    assert "Elegant Apartment in Korba" in body
 
 
 def test_render_template_fallback_to_english() -> None:
@@ -41,9 +57,9 @@ def test_render_template_fallback_to_english() -> None:
         "reservation.created",
         "email",
         "fr",
-        {"reservation_id": "res-2", "guest_name": "John"},
+        {"listing_title": "Maadi Garden Flat", "guest_name": "John"},
     )
-    assert "res-2" in body
+    assert "Maadi Garden Flat" in body
     assert "John" in body
 
 

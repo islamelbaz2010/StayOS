@@ -7,6 +7,7 @@ import { colors, spacing } from "../../lib/theme";
 import { Empty, FilterChips, ListRow, Section, StatusBadge } from "../../components/UI";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { EscrowRecord, LedgerRecord, PayoutRecord } from "../../lib/types";
+import { formatMoney } from "../../lib/money";
 
 const TABS = [
   { key: "escrow", en: "Escrow", ar: "الضمان" },
@@ -64,7 +65,7 @@ export function AdminFinanceScreen() {
                 (escrow.data ?? []).map((e: EscrowRecord) => (
                   <ListRow
                     key={e.id}
-                    title={`${e.amount_egp.toLocaleString()} ${t("egp")}`}
+                    title={formatMoney(e.amount_egp, t("egp"))}
                     subtitle={`${e.unit_title ?? e.reservation_id.slice(0, 8)} · ${new Date(
                       e.created_at
                     ).toLocaleDateString(dateLocale)}`}
@@ -84,7 +85,7 @@ export function AdminFinanceScreen() {
                 (payouts.data ?? []).map((p: PayoutRecord) => (
                   <ListRow
                     key={p.id}
-                    title={`${p.amount_egp.toLocaleString()} ${t("egp")}`}
+                    title={formatMoney(p.amount_egp, t("egp"))}
                     subtitle={`${t("host")}: ${p.host_id.slice(0, 8)} · ${new Date(
                       p.created_at
                     ).toLocaleDateString(dateLocale)}`}
@@ -104,7 +105,7 @@ export function AdminFinanceScreen() {
                 (ledger.data ?? []).slice(0, 100).map((l: LedgerRecord) => (
                   <ListRow
                     key={l.id}
-                    title={`${l.entry_type} · ${l.amount_egp.toLocaleString()} ${t("egp")}`}
+                    title={`${l.entry_type} · ${formatMoney(l.amount_egp, t("egp"))}`}
                     subtitle={`${l.description ?? l.ledger_account} · ${new Date(
                       l.created_at
                     ).toLocaleDateString(dateLocale)}`}

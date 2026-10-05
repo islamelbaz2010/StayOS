@@ -3,6 +3,7 @@ import { useHostEarnings } from "../../lib/hooks";
 import { useLocale } from "../../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { LoadingSpinner, ErrorView, EmptyView } from "../../components/States";
+import { formatMoney } from "../../lib/money";
 
 export function HostEarningsScreen() {
   const { t } = useLocale();
@@ -25,11 +26,11 @@ export function HostEarningsScreen() {
       <View style={styles.summaryCard}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>{t("earningsNetEarnings")}</Text>
-          <Text style={styles.summaryValue}>{data.net_earnings_egp} {t("egp")}</Text>
+          <Text style={styles.summaryValue}>{formatMoney(data.net_earnings_egp, t("egp"))}</Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>{t("earningsTotalRevenue")}</Text>
-          <Text style={styles.summaryValue}>{data.total_revenue_egp} {t("egp")}</Text>
+          <Text style={styles.summaryValue}>{formatMoney(data.total_revenue_egp, t("egp"))}</Text>
         </View>
       </View>
 
@@ -38,8 +39,8 @@ export function HostEarningsScreen() {
         <StatRow label={t("earningsTotalBookings")} value={String(data.total_bookings)} />
         <StatRow label={t("earningsConfirmedBookings")} value={String(data.confirmed_bookings)} />
         <StatRow label={t("earningsCompletedStays")} value={String(data.completed_stays)} />
-        <StatRow label={t("earningsPendingVerification")} value={`${data.pending_verification_egp} ${t("egp")}`} />
-        <StatRow label={t("earningsRefundPending")} value={`${data.refund_pending_egp} ${t("egp")}`} />
+        <StatRow label={t("earningsPendingVerification")} value={formatMoney(data.pending_verification_egp, t("egp"))} />
+        <StatRow label={t("earningsRefundPending")} value={formatMoney(data.refund_pending_egp, t("egp"))} />
       </View>
 
       {data.per_unit.length > 0 && (
@@ -50,7 +51,7 @@ export function HostEarningsScreen() {
               <Text style={styles.unitTitle} numberOfLines={1}>{u.unit_title || u.unit_id.slice(0, 8)}</Text>
               <View style={styles.unitStats}>
                 <Text style={styles.unitBookings}>{u.booking_count} {t("hostReservations")}</Text>
-                <Text style={styles.unitRevenue}>{u.revenue_egp} {t("egp")}</Text>
+                <Text style={styles.unitRevenue}>{formatMoney(u.revenue_egp, t("egp"))}</Text>
               </View>
             </View>
           ))}

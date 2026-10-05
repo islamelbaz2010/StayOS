@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
+  useMe,
   useNotifications,
 } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
@@ -19,6 +20,7 @@ export function NotificationsScreen() {
   const { t, locale } = useLocale();
   const navigation = useNavigation<Nav>();
   const { data, isLoading, error, refetch } = useNotifications();
+  const { data: me } = useMe();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
 
@@ -32,7 +34,11 @@ export function NotificationsScreen() {
   const open = (item: InAppNotification) => {
     if (!item.read_at) markRead.mutate(item.id);
     if (item.booking_id) {
-      navigation.navigate("TripDetail", { bookingId: item.booking_id });
+      // Hosts get the operational reservation view; travelers get their trip.
+      navigation.navigate(
+        me?.role === "host" ? "HostReservationDetail" : "TripDetail",
+        { bookingId: item.booking_id }
+      );
     }
   };
 

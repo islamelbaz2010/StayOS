@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, TextInput
 import { useCancelBooking, useCancellationPreview } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
+import { formatMoney } from "../lib/money";
 
 const POLICY_KEYS: Record<string, string> = {
   FLEXIBLE: "listingCancellationFlexible",
@@ -56,10 +57,10 @@ export function CancelBookingModal({ visible, bookingId, onClose, onCancelled }:
               {p.total_paid_egp === 0
                 ? t("cancelNoPayment")
                 : p.refund_amount_egp === p.total_paid_egp
-                  ? `${t("cancelRefundFull")} ${p.refund_amount_egp} ${t("egp")}.`
+                  ? `${t("cancelRefundFull")} ${formatMoney(p.refund_amount_egp)}.`
                   : p.refund_amount_egp === 0
                     ? t("cancelRefundNone")
-                    : `${t("cancelRefundPartial")} ${p.refund_amount_egp} ${t("egp")} (${t("cancelRefundOf")} ${p.total_paid_egp} ${t("egp")} ${t("cancelRefundPaid")}).`}
+                    : `${t("cancelRefundPartial")} ${formatMoney(p.refund_amount_egp)} (${t("cancelRefundOf")} ${formatMoney(p.total_paid_egp)} ${t("cancelRefundPaid")}).`}
             </Text>
           )}
 
@@ -70,7 +71,7 @@ export function CancelBookingModal({ visible, bookingId, onClose, onCancelled }:
                 : ""}
               {t("cancelServiceFeeRetained").replace(
                 "{amount}",
-                String(p.service_fee_retained_egp)
+                formatMoney(p.service_fee_retained_egp)
               )}
             </Text>
           )}

@@ -82,6 +82,12 @@ _EVENT_CATEGORY: dict[str, str] = {
     NotificationEvent.BOOKING_CHECKED_OUT: NotificationCategory.RESERVATIONS,
     NotificationEvent.BOOKING_CANCELLED: NotificationCategory.RESERVATIONS,
     NotificationEvent.BOOKING_NO_SHOW: NotificationCategory.RESERVATIONS,
+    "booking.created": NotificationCategory.RESERVATIONS,
+    "booking.payment_confirmed": NotificationCategory.RESERVATIONS,
+    "payment.refunded": NotificationCategory.RESERVATIONS,
+    "dispute.opened": NotificationCategory.RESERVATIONS,
+    "dispute.status_changed": NotificationCategory.RESERVATIONS,
+    "offer.created": NotificationCategory.OFFERS,
 }
 
 _ACCOUNT_PREFIXES = (

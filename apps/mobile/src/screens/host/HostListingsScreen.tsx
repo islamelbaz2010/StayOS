@@ -6,6 +6,7 @@ import { useLocale } from "../../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { LoadingSpinner, ErrorView, EmptyView } from "../../components/States";
 import type { RootStackParamList } from "../../../App";
+import { formatMoney } from "../../lib/money";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -104,7 +105,7 @@ function ListingCard({
       </View>
 
       <Text style={styles.priceText}>
-        {listing.base_price_egp} {t("egp")} / {t("perNight")}
+        {formatMoney(listing.base_price_egp, t("egp"))} / {t("perNight")}
       </Text>
 
       {readiness && (

@@ -21,6 +21,7 @@ import {
 } from "../../components/UI";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { BookingTimelineEvent, HostBooking } from "../../lib/types";
+import { formatMoney } from "../../lib/money";
 
 const QUEUES = [
   { key: "", en: "All", ar: "الكل" },
@@ -85,12 +86,12 @@ export function AdminBookingsScreen() {
             <Row label={t("paymentStatus")} value={fin.payment_status} />
             <Row
               label={t("amount")}
-              value={fin.payment_amount_egp != null ? `${fin.payment_amount_egp} ${t("egp")}` : null}
+              value={fin.payment_amount_egp != null ? formatMoney(fin.payment_amount_egp, t("egp")) : null}
             />
             <Row label={t("payReference")} value={fin.reference_number} mono />
             <Row
               label={t("refund")}
-              value={fin.refund_amount_egp != null ? `${fin.refund_amount_egp} ${t("egp")}` : null}
+              value={fin.refund_amount_egp != null ? formatMoney(fin.refund_amount_egp, t("egp")) : null}
             />
             {fin.disputes.length > 0 && (
               <Row label={t("disputes")} value={fin.disputes.length} />

@@ -36,14 +36,25 @@ function getCancellationLabel(policy: string, t: (key: string) => string): strin
   return t("cancellationFlexible");
 }
 
+const CULTURAL_TAG_KEYS: Record<string, string> = {
+  FAMILY_ONLY: "tagFamilyOnly",
+  HALAL_CERTIFIED: "tagHalal",
+  MIXED: "tagMixed",
+  COUPLES_WELCOME: "tagCouplesWelcome",
+};
+
 function getCulturalTagLabel(tag: string, t: (key: string) => string): string {
-  const labels: Record<string, string> = {
-    FAMILY_ONLY: "عائلات فقط",
-    HALAL_CERTIFIED: "حلال",
-    MIXED: "مختلط",
-    COUPLES_WELCOME: "مرحب بالأزواج",
-  };
-  return labels[tag.toUpperCase()] || tag.replace(/_/g, " ").toLowerCase();
+  const key = CULTURAL_TAG_KEYS[tag.toUpperCase()];
+  return key ? t(key) : tag.replace(/_/g, " ").toLowerCase();
+}
+
+function getAccessibilityLabel(feature: string, t: (key: string) => string): string {
+  const camel = feature
+    .toLowerCase()
+    .replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase());
+  const key = `acc${camel.charAt(0).toUpperCase()}${camel.slice(1)}`;
+  const label = t(key);
+  return label === key ? feature.replace(/_/g, " ").toLowerCase() : label;
 }
 
 function GalleryImage({ uri, width }: { uri: string; width: number }) {
@@ -191,12 +202,68 @@ export function ListingDetailScreen() {
             </Section>
           )}
 
-          {listing.cultural_tags.length > 0 && (
-            <Section title={t("filters")}>
+          {(listing.cultural_tags.length > 0 ||
+            listing.allows_pets ||
+            listing.self_check_in ||
+            (listing.accessibility_features?.length ?? 0) > 0) && (
+            <Section title={t("listingDiscovery")}>
+              {listing.cultural_tags.length > 0 && (
+                <View>
+                  <Text style={styles.featureGroupTitle}>{t("listingCulturalTags")}</Text>
+                  <View style={styles.amenitiesGrid}>
+                    {listing.cultural_tags.map((tag: string) => (
+                      <View key={tag} style={styles.amenityChip}>
+                        <Text style={styles.amenityText}>{getCulturalTagLabel(tag, t)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              {listing.allows_pets && (
+                <Text style={styles.featureLine}>🐾 {t("searchPetsAllowed")}</Text>
+              )}
+              {listing.self_check_in && (
+                <View>
+                  <Text style={styles.featureLine}>🔑 {t("searchSelfCheckIn")}</Text>
+                  {(listing.self_check_in_methods?.length ?? 0) > 0 && (
+                    <View style={styles.amenitiesGrid}>
+                      {listing.self_check_in_methods!.map((m: string) => (
+                        <View key={m} style={styles.amenityChip}>
+                          <Text style={styles.amenityText}>
+                            {t(`selfCheckInMethod_${m.toLowerCase()}`)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+              {(listing.accessibility_features?.length ?? 0) > 0 && (
+                <View>
+                  <Text style={styles.featureGroupTitle}>{t("listingAccessibility")}</Text>
+                  <View style={styles.amenitiesGrid}>
+                    {listing.accessibility_features!.map((f: string) => (
+                      <View key={f} style={styles.amenityChip}>
+                        <Text style={styles.amenityText}>
+                          {getAccessibilityLabel(f, t)}
+                          {listing.accessibility_photo_features?.includes(f)
+                            ? ` · 📷 ${t("photoProvided")}`
+                            : ""}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </Section>
+          )}
+
+          {(listing.host_languages?.length ?? 0) > 0 && (
+            <Section title={t("hostLanguages")}>
               <View style={styles.amenitiesGrid}>
-                {listing.cultural_tags.map((tag: string) => (
-                  <View key={tag} style={styles.amenityChip}>
-                    <Text style={styles.amenityText}>{getCulturalTagLabel(tag, t)}</Text>
+                {listing.host_languages!.map((lang: string) => (
+                  <View key={lang} style={styles.amenityChip}>
+                    <Text style={styles.amenityText}>{t(`lang_${lang}`)}</Text>
                   </View>
                 ))}
               </View>
@@ -423,6 +490,18 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     backgroundColor: colors.primary50,
     borderRadius: radius.sm,
+  },
+  featureGroupTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  featureLine: {
+    fontSize: fontSize.md,
+    color: colors.text,
+    marginTop: spacing.sm,
   },
   amenityText: {
     fontSize: fontSize.sm,

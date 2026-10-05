@@ -46,6 +46,12 @@ export interface ListingDetail extends Listing {
   min_nights: number;
   max_nights: number;
   host_joined_at?: string | null;
+  allows_pets?: boolean;
+  self_check_in?: boolean;
+  self_check_in_methods?: string[];
+  accessibility_features?: string[];
+  accessibility_photo_features?: string[];
+  host_languages?: string[];
 }
 
 export interface SearchResponse {

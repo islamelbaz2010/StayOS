@@ -442,11 +442,7 @@ export function SearchScreen() {
         )}
       </View>
 
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : listings.length === 0 ? (
-        <EmptyView title={t("noResults")} subtitle={t("tryDifferentSearch")} />
-      ) : viewMode === "map" ? (
+      {viewMode === "map" ? (
         <View style={styles.mapContainer}>
           <OsmMap
             markers={mapMarkers}
@@ -461,7 +457,22 @@ export function SearchScreen() {
               <Text style={styles.searchAreaButtonText}>{t("searchArea")}</Text>
             </Pressable>
           )}
+          {isLoading ? (
+            <View style={styles.mapLoading}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : (
+            listings.length === 0 && (
+              <View style={styles.mapEmpty}>
+                <Text style={styles.mapEmptyText}>{t("noResults")}</Text>
+              </View>
+            )
+          )}
         </View>
+      ) : isLoading ? (
+        <LoadingSpinner />
+      ) : listings.length === 0 ? (
+        <EmptyView title={t("noResults")} subtitle={t("tryDifferentSearch")} />
       ) : (
         <FlatList
           data={listings}
@@ -928,6 +939,33 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSize.sm,
     fontWeight: "700",
+  },
+  mapLoading: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.4)",
+  },
+  mapEmpty: {
+    position: "absolute",
+    bottom: spacing.xl,
+    alignSelf: "center",
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    elevation: 3,
+  },
+  mapEmptyText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: "600",
   },
 });
 

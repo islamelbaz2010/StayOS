@@ -28,7 +28,8 @@ const PAYMENT_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 export function HostReservationDetailScreen() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const arrow = locale === "ar" ? "←" : "→";
   const navigation = useNavigation<Nav>();
   const route = useRoute();
   const bookingId = (route.params as { bookingId: string }).bookingId;
@@ -136,7 +137,7 @@ export function HostReservationDetailScreen() {
           style={styles.linkButton}
           onPress={() => navigation.navigate("ListingDetail", { unitId: property.unit_id })}
         >
-          <Text style={styles.linkText}>{t("viewDetails")} →</Text>
+          <Text style={styles.linkText}>{t("viewDetails")} {arrow}</Text>
         </Pressable>
       </View>
 

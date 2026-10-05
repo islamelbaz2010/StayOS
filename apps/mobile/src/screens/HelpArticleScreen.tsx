@@ -15,6 +15,7 @@ const ALL_ARTICLES = [...GUEST_ARTICLES, ...HOST_ARTICLES];
 
 export function HelpArticleScreen() {
   const { t, locale } = useLocale();
+  const arrow = locale === "ar" ? "←" : "→";
   const navigation = useNavigation<Nav>();
   const route = useRoute<HelpRoute>();
   const article = ALL_ARTICLES.find((a) => a.slug === route.params.slug);
@@ -46,7 +47,7 @@ export function HelpArticleScreen() {
           style={styles.supportBox}
           onPress={() => navigation.navigate("Support")}
         >
-          <Text style={styles.supportText}>{t("contactSupport")} →</Text>
+          <Text style={styles.supportText}>{t("contactSupport")} {arrow}</Text>
         </Pressable>
       ) : null}
 

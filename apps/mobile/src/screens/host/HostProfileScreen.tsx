@@ -21,6 +21,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function HostProfileScreen() {
   const { locale, setLocale, t } = useLocale();
+  const arrow = locale === "ar" ? "←" : "→";
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
   const { data: profile, isLoading, isError, refetch } = useHostOwnProfile();
@@ -132,7 +133,7 @@ export function HostProfileScreen() {
             style={styles.linkButton}
             onPress={() => navigation.navigate("Kyc")}
           >
-            <Text style={styles.linkText}>{t("verifyIdentity")} →</Text>
+            <Text style={styles.linkText}>{t("verifyIdentity")} {arrow}</Text>
           </Pressable>
         )}
       </View>
@@ -140,7 +141,7 @@ export function HostProfileScreen() {
       {earnings && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("hostEarnings")}</Text>
-          <StatRow label={t("earningsTotalRevenue")} value={formatMoney(earnings.total_revenue_egp)} />
+          <StatRow label={t("earningsTotalRevenue")} value={formatMoney(earnings.total_revenue_egp, t("egp"))} />
           <StatRow label={t("earningsNetEarnings")} value={formatMoney(earnings.net_earnings_egp, t("egp"))} />
           <StatRow label={t("earningsTotalBookings")} value={String(earnings.total_bookings)} />
           <StatRow label={t("earningsCompletedStays")} value={String(earnings.completed_stays)} />
@@ -148,7 +149,7 @@ export function HostProfileScreen() {
             style={styles.linkButton}
             onPress={() => navigation.navigate("HostEarnings")}
           >
-            <Text style={styles.linkText}>{t("hostEarnings")} →</Text>
+            <Text style={styles.linkText}>{t("hostEarnings")} {arrow}</Text>
           </Pressable>
         </View>
       )}
@@ -159,19 +160,19 @@ export function HostProfileScreen() {
           style={styles.linkButton}
           onPress={() => navigation.navigate("HostBookings")}
         >
-          <Text style={styles.linkText}>{t("hostBookings")} →</Text>
+          <Text style={styles.linkText}>{t("hostBookings")} {arrow}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("HostPayments")}
         >
-          <Text style={styles.linkText}>{t("hostPayments")} →</Text>
+          <Text style={styles.linkText}>{t("hostPayments")} {arrow}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("HostCreateListing")}
         >
-          <Text style={styles.linkText}>{t("newListing")} →</Text>
+          <Text style={styles.linkText}>{t("newListing")} {arrow}</Text>
         </Pressable>
       </View>
 
@@ -181,13 +182,13 @@ export function HostProfileScreen() {
           style={styles.linkButton}
           onPress={() => navigation.navigate("Trips")}
         >
-          <Text style={styles.linkText}>{t("trips")} →</Text>
+          <Text style={styles.linkText}>{t("trips")} {arrow}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("Favorites")}
         >
-          <Text style={styles.linkText}>{t("favorites")} →</Text>
+          <Text style={styles.linkText}>{t("favorites")} {arrow}</Text>
         </Pressable>
       </View>
 
@@ -197,31 +198,31 @@ export function HostProfileScreen() {
           style={styles.linkButton}
           onPress={() => navigation.navigate("Notifications")}
         >
-          <Text style={styles.linkText}>{t("notifications")} →</Text>
+          <Text style={styles.linkText}>{t("notifications")} {arrow}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("ProfileSettings")}
         >
-          <Text style={styles.linkText}>{t("editProfile")} →</Text>
+          <Text style={styles.linkText}>{t("editProfile")} {arrow}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("PersonalData")}
         >
-          <Text style={styles.linkText}>{t("personalInfo")} →</Text>
+          <Text style={styles.linkText}>{t("personalInfo")} {arrow}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("SecuritySettings")}
         >
-          <Text style={styles.linkText}>{t("loginSecurity")} →</Text>
+          <Text style={styles.linkText}>{t("loginSecurity")} {arrow}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("PrivacySettings")}
         >
-          <Text style={styles.linkText}>{t("privacyNotifications")} →</Text>
+          <Text style={styles.linkText}>{t("privacyNotifications")} {arrow}</Text>
         </Pressable>
       </View>
 
@@ -253,13 +254,13 @@ export function HostProfileScreen() {
           style={styles.linkButton}
           onPress={() => navigation.navigate("HelpCenter")}
         >
-          <Text style={styles.linkText}>{t("helpCenter")} →</Text>
+          <Text style={styles.linkText}>{t("helpCenter")} {arrow}</Text>
         </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("Support")}
         >
-          <Text style={styles.linkText}>{t("contactSupport")} →</Text>
+          <Text style={styles.linkText}>{t("contactSupport")} {arrow}</Text>
         </Pressable>
       </View>
 

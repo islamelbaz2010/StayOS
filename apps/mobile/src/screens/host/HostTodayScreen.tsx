@@ -22,7 +22,7 @@ const ITEM_TYPE_STYLES: Record<string, { bg: string; border: string; text: strin
 };
 
 export function HostTodayScreen() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const navigation = useNavigation<Nav>();
   const { data, isLoading, isError, refetch } = useHostToday();
 
@@ -66,7 +66,7 @@ export function HostTodayScreen() {
               )}
               {item.booking_id && (
                 <Text style={[styles.itemAction, { color: style.text }]}>
-                  {t("viewDetails")} →
+                  {t("viewDetails")} {locale === "ar" ? "←" : "→"}
                 </Text>
               )}
             </Pressable>

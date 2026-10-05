@@ -15,7 +15,8 @@ function toKey(date: Date): string {
 
 interface DateRangeCalendarProps {
   visible: boolean;
-  unitId: string;
+  /** Optional: when provided, unavailable dates are blocked in the calendar. */
+  unitId?: string;
   initialCheckIn: Date | null;
   initialCheckOut: Date | null;
   onClose: () => void;
@@ -51,7 +52,7 @@ export function DateRangeCalendar({
   const maxDate = useMemo(() => addDays(today, MAX_RANGE_DAYS), [today]);
 
   const { data: availability, isLoading } = useListingAvailability(
-    unitId,
+    unitId ?? "",
     toKey(today),
     toKey(maxDate)
   );

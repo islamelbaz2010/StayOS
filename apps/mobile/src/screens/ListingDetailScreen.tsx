@@ -13,7 +13,7 @@ import {
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapView, { Marker } from "react-native-maps";
+import { OsmMap } from "../components/OsmMap";
 import { useListingDetail, useListingPhotos, useListingReviews, useSimilarListings, useToggleFavorite, useFavorites } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
@@ -85,7 +85,7 @@ export function ListingDetailScreen() {
   const route = useRoute<DetailRoute>();
   const insets = useSafeAreaInsets();
   const unitId = route.params?.unitId || "";
-  const hasMapKey = Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY);
+
 
   const { data: listing, isLoading, isError, refetch } = useListingDetail(unitId);
   const { data: photos } = useListingPhotos(unitId);
@@ -212,26 +212,14 @@ export function ListingDetailScreen() {
             <Text style={styles.addressText}>
               {listing.district ? `${listing.district}, ` : ""}{listing.city}, {listing.governorate}
             </Text>
-            {hasMapKey ? (
-              <MapView
-                style={styles.map}
-                initialRegion={{
-                  latitude: listing.lat,
-                  longitude: listing.lng,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }}
-              >
-                <Marker
-                  coordinate={{ latitude: listing.lat, longitude: listing.lng }}
-                  title={title}
-                />
-              </MapView>
-            ) : (
-              <View style={styles.map}>
-                <EmptyView title={t("noMapKey")} />
-              </View>
-            )}
+            <OsmMap
+              style={styles.map}
+              markers={[
+                { id: listing.id, lat: listing.lat, lng: listing.lng },
+              ]}
+              center={{ lat: listing.lat, lng: listing.lng }}
+              zoom={14}
+            />
           </Section>
 
           {listing.house_rules && (

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import MapView, { Marker } from "react-native-maps";
+import { OsmMap } from "../components/OsmMap";
 
 import { useCheckIn, useCheckOut, useStayInfo } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
@@ -28,8 +28,6 @@ const PHASE_KEYS: Record<StayPhase, string> = {
   rejected: "statusRejected",
   no_show: "statusNoShow",
 };
-
-const hasMapKey = Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY);
 
 export function TripDetailScreen() {
   const { t } = useLocale();
@@ -91,18 +89,15 @@ export function TripDetailScreen() {
           <Text style={styles.metaText}>
             {t("checkInTime")}: {arrival.default_check_in_time}
           </Text>
-          {hasMapKey && property.lat != null && property.lng != null ? (
-            <MapView
+          {property.lat != null && property.lng != null ? (
+            <OsmMap
               style={styles.map}
-              initialRegion={{
-                latitude: property.lat,
-                longitude: property.lng,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-            >
-              <Marker coordinate={{ latitude: property.lat, longitude: property.lng }} />
-            </MapView>
+              markers={[
+                { id: property.unit_id ?? "unit", lat: property.lat, lng: property.lng },
+              ]}
+              center={{ lat: property.lat, lng: property.lng }}
+              zoom={14}
+            />
           ) : null}
 
           {arrival.eligible ? (

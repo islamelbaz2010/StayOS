@@ -13,6 +13,17 @@ import type { RootStackParamList } from "../../App";
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const CANCELLABLE_STATUSES = new Set(["requested", "accepted", "confirmed"]);
+const ACTIVE_STATUSES = new Set(["requested", "accepted", "confirmed"]);
+const TERMINAL_STATUSES = new Set(["completed", "rejected", "no_show"]);
+const TRIP_TABS = ["upcoming", "past", "cancelled", "all"] as const;
+type TripTab = (typeof TRIP_TABS)[number];
+const TAB_LABEL_KEYS: Record<TripTab, string> = {
+  upcoming: "upcoming",
+  past: "past",
+  cancelled: "filterCancelled",
+  all: "filterAll",
+};
+
 const STATUS_KEYS: Record<string, string> = {
   requested: "statusRequested",
   accepted: "statusAccepted",
@@ -25,7 +36,7 @@ const STATUS_KEYS: Record<string, string> = {
 export function TripsScreen() {
   const { t } = useLocale();
   const navigation = useNavigation<Nav>();
-  const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
+  const [tab, setTab] = useState<TripTab>("upcoming");
   const [reviewTarget, setReviewTarget] = useState<{ bookingId: string; unitId: string } | null>(
     null
   );
@@ -35,32 +46,42 @@ export function TripsScreen() {
 
   if (isLoading) return <LoadingSpinner />;
 
+  // Same bucketing as the web trips page: past = terminal status or an
+  // active booking whose check-out has already passed.
   const now = new Date();
+  now.setHours(0, 0, 0, 0);
   const filtered = (bookings || []).filter((b: any) => {
-    const checkIn = new Date(b.check_in);
-    if (tab === "upcoming") return checkIn >= now && b.status !== "cancelled" && b.status !== "no_show";
-    return checkIn < now || b.status === "cancelled" || b.status === "no_show";
+    const checkOut = new Date(b.check_out);
+    const isCancelled = b.status === "cancelled";
+    const isPast =
+      TERMINAL_STATUSES.has(b.status) ||
+      (ACTIVE_STATUSES.has(b.status) && checkOut < now);
+    switch (tab) {
+      case "upcoming":
+        return !isCancelled && !isPast;
+      case "past":
+        return isPast;
+      case "cancelled":
+        return isCancelled;
+      case "all":
+        return true;
+    }
   });
 
   return (
     <View style={styles.container}>
       <View style={styles.tabs}>
-        <Pressable
-          style={[styles.tab, tab === "upcoming" && styles.tabActive]}
-          onPress={() => setTab("upcoming")}
-        >
-          <Text style={[styles.tabText, tab === "upcoming" && styles.tabTextActive]}>
-            {t("upcoming")}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, tab === "past" && styles.tabActive]}
-          onPress={() => setTab("past")}
-        >
-          <Text style={[styles.tabText, tab === "past" && styles.tabTextActive]}>
-            {t("past")}
-          </Text>
-        </Pressable>
+        {TRIP_TABS.map((key) => (
+          <Pressable
+            key={key}
+            style={[styles.tab, tab === key && styles.tabActive]}
+            onPress={() => setTab(key)}
+          >
+            <Text style={[styles.tabText, tab === key && styles.tabTextActive]}>
+              {t(TAB_LABEL_KEYS[key])}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {filtered.length === 0 ? (

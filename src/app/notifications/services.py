@@ -58,6 +58,16 @@ async def resolve_recipient(
             if user is not None and user.display_name:
                 payload[name_key] = user.display_name
 
+    # Host-targeted events emit ids only — resolve host contact + locale
+    # so email/sms channels deliver instead of being skipped.
+    if event_type in _IN_APP_HOST_EVENTS and payload.get("host_id"):
+        host = await auth_repository.get_user_by_id(session, str(payload["host_id"]))
+        if host is not None:
+            result["email"] = result["email"] or host.email
+            result["phone_number"] = result["phone_number"] or host.phone_number
+            result["locale"] = host.locale or result["locale"]
+            result["name"] = host.display_name or result["name"]
+
     return result
 
 
@@ -177,7 +187,9 @@ async def _dispute_recipients(
 ) -> list[dict[str, Any]]:
     """Dispute events notify the counter-party plus authorized operations
     staff (users holding the ``disputes`` permission and admins)."""
-    reporter_id = payload.get("reporter_id")
+    actor_ids = {
+        str(v) for v in (payload.get("reporter_id"), payload.get("changed_by")) if v
+    }
     ids: list[str] = []
     booking_id = payload.get("booking_id")
     if booking_id:
@@ -185,12 +197,24 @@ async def _dispute_recipients(
         if booking is not None:
             host_id = booking.unit.host_id if booking.unit is not None else None
             for party in (booking.guest_id, host_id):
-                if party and party != reporter_id:
+                if party and str(party) not in actor_ids:
                     ids.append(str(party))
     for staff_id in await _staff_with_permission(session, "disputes"):
-        if staff_id != reporter_id:
+        if staff_id not in actor_ids:
             ids.append(str(staff_id))
-    return [{"user_id": i} for i in dict.fromkeys(ids)]
+    contacts: list[dict[str, Any]] = []
+    for i in dict.fromkeys(ids):
+        user = await auth_repository.get_user_by_id(session, i)
+        contacts.append(
+            {
+                "user_id": i,
+                "email": user.email if user else None,
+                "phone_number": user.phone_number if user else None,
+                "locale": user.locale if user else "ar",
+                "name": (user.display_name if user else None) or "Guest",
+            }
+        )
+    return contacts
 
 
 async def create_notifications_for_event(

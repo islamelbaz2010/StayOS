@@ -955,6 +955,7 @@ async def refund_payment(
             "payment_id": payment.id,
             "booking_id": payment.booking_id,
             "refund_amount_egp": payment.refund_amount_egp,
+            "guest_id": str(payment.guest_id) if payment.guest_id else None,
             "guest_name": guest_user.display_name if guest_user else "Guest",
             "guest_phone": guest_user.phone_number if guest_user else None,
             "guest_email": guest_user.email if guest_user else None,

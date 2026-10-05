@@ -368,13 +368,13 @@ _DEFAULT_TEMPLATES: dict[str, dict[str, dict[str, dict[str, str]]]] = {
         "ar": {
             "email": {
                 "subject": "تم رد مبلغ الدفع",
-                "body": "مرحبًا {{guest_name}}، تم رد مبلغ {{amount_egp}} ج.م. للحجز في «{{listing_title}}».",
+                "body": "مرحبًا {{guest_name}}، تم رد مبلغ {{refund_amount_egp}} ج.م. للحجز في «{{listing_title}}».",
             },
         },
         "en": {
             "email": {
                 "subject": "Your payment was refunded",
-                "body": "Hi {{guest_name}}, {{amount_egp}} EGP was refunded for your booking at \"{{listing_title}}\".",
+                "body": "Hi {{guest_name}}, {{refund_amount_egp}} EGP was refunded for your booking at \"{{listing_title}}\".",
             },
         },
     },

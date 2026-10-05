@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Platform } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Alert, Platform } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -70,6 +70,7 @@ export function BookingScreen() {
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
+  const [message, setMessage] = useState("");
 
   const createBooking = useCreateBooking();
 
@@ -115,6 +116,7 @@ export function BookingScreen() {
         adults,
         children,
         infants,
+        message: message.trim() || undefined,
       });
       // Matches web BookingPanel: instant book → straight to checkout;
       // request-to-book → "request sent" state and back to trips.
@@ -242,6 +244,21 @@ export function BookingScreen() {
         )}
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t("messageToHost")}</Text>
+        <TextInput
+          style={styles.messageInput}
+          value={message}
+          onChangeText={setMessage}
+          placeholder={t("messageToHostPlaceholder")}
+          multiline
+          numberOfLines={3}
+          maxLength={4000}
+          textAlignVertical="top"
+        />
+        <Text style={styles.messageHint}>{t("messageToHostHint")}</Text>
+      </View>
+
       <View style={styles.summary}>
         {isQuoteLoading ? (
           <Text style={styles.summaryText}>{t("loading")}</Text>
@@ -353,6 +370,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.text,
     marginBottom: spacing.md,
+  },
+  messageInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: fontSize.md,
+    color: colors.text,
+    minHeight: 80,
+    backgroundColor: colors.white,
+  },
+  messageHint: {
+    fontSize: fontSize.xs,
+    color: colors.textTertiary,
+    marginTop: spacing.xs,
   },
   dateField: {
     height: 48,

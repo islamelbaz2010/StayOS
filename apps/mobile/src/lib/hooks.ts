@@ -298,6 +298,7 @@ export function useCreateBooking() {
       adults: number;
       children: number;
       infants: number;
+      message?: string;
     }) => {
       const { data } = await api.post<Booking>("/bookings", payload);
       return data;

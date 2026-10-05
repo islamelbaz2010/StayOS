@@ -15,30 +15,15 @@ import { useLocale } from "../../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { ListingUpdatePayload } from "../../lib/types";
+import { AMENITY_VALUES, amenityLabel } from "../../lib/amenities";
 import type { RootStackParamList } from "../../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type EditorRoute = RouteProp<RootStackParamList, "HostListingEditor">;
 
-const AMENITIES = [
-  "WIFI", "AC", "KITCHEN", "PARKING", "POOL", "GYM",
-  "WASHER", "TV", "HEATING", "ELEVATOR", "GARDEN", "SEA_VIEW",
-];
-
-const AMENITY_LABELS: Record<string, string> = {
-  WIFI: "listingWifi",
-  AC: "listingAc",
-  KITCHEN: "listingKitchen",
-  PARKING: "listingParking",
-  POOL: "listingPool",
-  GYM: "listingGym",
-  WASHER: "listingWasher",
-  TV: "listingTv",
-  HEATING: "listingHeating",
-  ELEVATOR: "listingElevator",
-  GARDEN: "listingGarden",
-  SEA_VIEW: "listingSeaView",
-};
+// Must match the backend/web amenity vocabulary (lowercase snake_case) —
+// search filters on these values, so saving anything else breaks filtering.
+const AMENITIES = AMENITY_VALUES;
 
 const CANCELLATION_POLICIES = ["FLEXIBLE", "MODERATE", "STRICT"];
 
@@ -273,7 +258,6 @@ function AmenitiesSection({
       <View style={styles.amenityGrid}>
         {AMENITIES.map((amenity) => {
           const selected = (form.amenities || []).includes(amenity);
-          const labelKey = AMENITY_LABELS[amenity] || amenity;
           return (
             <Pressable
               key={amenity}
@@ -281,7 +265,7 @@ function AmenitiesSection({
               onPress={() => toggleAmenity(amenity)}
             >
               <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                {t(labelKey)}
+                {amenityLabel(amenity, t)}
               </Text>
             </Pressable>
           );

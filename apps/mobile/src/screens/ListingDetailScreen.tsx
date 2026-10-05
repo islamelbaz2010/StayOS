@@ -24,6 +24,7 @@ import { ReviewsList } from "../components/ReviewsList";
 import { addRecentlyViewed } from "../lib/recentlyViewed";
 import type { RootStackParamList } from "../../App";
 import { currencyLabel, formatMoney } from "../lib/money";
+import { amenityLabel } from "../lib/amenities";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type DetailRoute = RouteProp<RootStackParamList, "ListingDetail">;
@@ -183,7 +184,7 @@ export function ListingDetailScreen() {
               <View style={styles.amenitiesGrid}>
                 {listing.amenities.map((a: string) => (
                   <View key={a} style={styles.amenityChip}>
-                    <Text style={styles.amenityText}>{a.replace(/_/g, " ").toLowerCase()}</Text>
+                    <Text style={styles.amenityText}>{amenityLabel(a, t)}</Text>
                   </View>
                 ))}
               </View>

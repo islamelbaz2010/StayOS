@@ -23,6 +23,7 @@ import { DateRangeCalendar } from "../components/DateRangeCalendar";
 import type { LocationSuggestion } from "../lib/types";
 import type { RootStackParamList } from "../../App";
 import { currencyLabel, formatMoney } from "../lib/money";
+import { AMENITY_VALUES, amenityLabel } from "../lib/amenities";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SearchRoute = RouteProp<RootStackParamList, "Search">;
@@ -50,18 +51,8 @@ const LISTING_CATEGORIES = [
   { value: "SHARED_ROOM", key: "catSharedRoom" },
 ];
 
-const AMENITIES = [
-  { value: "wifi", key: "listingWifi" },
-  { value: "air_conditioning", key: "listingAc" },
-  { value: "heating", key: "listingHeating" },
-  { value: "kitchen", key: "listingKitchen" },
-  { value: "parking", key: "listingParking" },
-  { value: "pool", key: "listingPool" },
-  { value: "gym", key: "listingGym" },
-  { value: "washer", key: "listingWasher" },
-  { value: "tv", key: "listingTv" },
-  { value: "elevator", key: "listingElevator" },
-];
+const AMENITIES = AMENITY_VALUES.map((value) => ({ value }));
+
 
 const ACCESSIBILITY_FEATURES = [
   { value: "STEP_FREE_ENTRANCE", key: "accStepFreeEntrance" },
@@ -175,7 +166,6 @@ export function SearchScreen() {
 
   const [query, setQuery] = useState(initialCity || "");
   const [debouncedQuery, setDebouncedQuery] = useState(initialCity || "");
-  const [selectedCity, setSelectedCity] = useState<string | undefined>(initialCity);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -201,8 +191,9 @@ export function SearchScreen() {
   const favoriteIds = new Set(favorites?.data?.map((f: { id: string }) => f.id));
 
   const params = {
-    q: selectedCity ? undefined : debouncedQuery || undefined,
-    city: selectedCity,
+    // Web parity: the input text is sent as `q` — the backend resolves
+    // location terms (city/governorate) server-side.
+    q: debouncedQuery || undefined,
     check_in: checkIn ? format(checkIn, "yyyy-MM-dd") : undefined,
     check_out: checkOut ? format(checkOut, "yyyy-MM-dd") : undefined,
     guests: filters.guests,
@@ -240,14 +231,12 @@ export function SearchScreen() {
     const name = locale === "ar" ? suggestion.canonical_name_ar : suggestion.canonical_name_en;
     setQuery(name);
     setDebouncedQuery(name);
-    setSelectedCity(suggestion.canonical_name_en);
     setShowAutocomplete(false);
   };
 
   const clearSelection = () => {
     setQuery("");
     setDebouncedQuery("");
-    setSelectedCity(undefined);
     setShowAutocomplete(false);
   };
 
@@ -280,9 +269,7 @@ export function SearchScreen() {
   };
 
   const shouldShowSuggestions =
-    showAutocomplete &&
-    debouncedQuery.length >= 2 &&
-    !selectedCity;
+    showAutocomplete && debouncedQuery.length >= 2;
 
   const datesLabel =
     checkIn && checkOut
@@ -319,13 +306,12 @@ export function SearchScreen() {
             value={query}
             onChangeText={(text) => {
               setQuery(text);
-              setSelectedCity(undefined);
               setShowAutocomplete(true);
             }}
             onFocus={() => setShowAutocomplete(true)}
             onSubmitEditing={() => setShowAutocomplete(false)}
           />
-          {(query.length > 0 || selectedCity) && (
+          {query.length > 0 && (
             <Pressable style={styles.clearButton} onPress={clearSelection}>
               <Text style={styles.clearButtonText}>×</Text>
             </Pressable>
@@ -370,11 +356,6 @@ export function SearchScreen() {
           </View>
         )}
 
-        {selectedCity && (
-          <View style={styles.activeFilter}>
-            <Text style={styles.activeFilterText}>{selectedCity}</Text>
-          </View>
-        )}
 
         <ScrollView
           horizontal
@@ -681,7 +662,7 @@ function FiltersSheet({
               {AMENITIES.map((a) => (
                 <Chip
                   key={a.value}
-                  label={t(a.key)}
+                  label={amenityLabel(a.value, t)}
                   active={draft.amenities.includes(a.value)}
                   onPress={() =>
                     set({ amenities: toggleIn(draft.amenities, a.value) })

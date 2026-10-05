@@ -57,10 +57,10 @@ export function CancelBookingModal({ visible, bookingId, onClose, onCancelled }:
               {p.total_paid_egp === 0
                 ? t("cancelNoPayment")
                 : p.refund_amount_egp === p.total_paid_egp
-                  ? `${t("cancelRefundFull")} ${formatMoney(p.refund_amount_egp)}.`
+                  ? `${t("cancelRefundFull")} ${formatMoney(p.refund_amount_egp, t("egp"))}.`
                   : p.refund_amount_egp === 0
                     ? t("cancelRefundNone")
-                    : `${t("cancelRefundPartial")} ${formatMoney(p.refund_amount_egp)} (${t("cancelRefundOf")} ${formatMoney(p.total_paid_egp)} ${t("cancelRefundPaid")}).`}
+                    : `${t("cancelRefundPartial")} ${formatMoney(p.refund_amount_egp, t("egp"))} (${t("cancelRefundOf")} ${formatMoney(p.total_paid_egp, t("egp"))} ${t("cancelRefundPaid")}).`}
             </Text>
           )}
 
@@ -71,7 +71,7 @@ export function CancelBookingModal({ visible, bookingId, onClose, onCancelled }:
                 : ""}
               {t("cancelServiceFeeRetained").replace(
                 "{amount}",
-                formatMoney(p.service_fee_retained_egp)
+                formatMoney(p.service_fee_retained_egp, t("egp"))
               )}
             </Text>
           )}

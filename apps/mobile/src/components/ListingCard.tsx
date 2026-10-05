@@ -4,7 +4,7 @@ import type { Listing } from "../lib/types";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { useLocale } from "../lib/LocaleContext";
 import { RatingBadge } from "./RatingBadge";
-import { formatMoney } from "../lib/money";
+import { currencyLabel, formatMoney } from "../lib/money";
 
 interface ListingCardProps {
   listing: Listing;
@@ -92,7 +92,7 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
           <Text style={styles.stat}>{listing.max_guests} {t("guests")}</Text>
         </View>
         <Text style={styles.price}>
-          {formatMoney(listing.price, listing.currency)} / {t("perNight")}
+          {formatMoney(listing.price, currencyLabel(listing.currency, t("egp")))} / {t("perNight")}
         </Text>
       </View>
     </Pressable>

@@ -232,7 +232,7 @@ export function PaymentScreen() {
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>{t("payTotal")}</Text>
           <Text style={styles.totalValue}>
-            {formatMoney(payment.amount_egp)}
+            {formatMoney(payment.amount_egp, t("egp"))}
           </Text>
         </View>
         <Text style={styles.metaText}>{t("includesAllFees")}</Text>

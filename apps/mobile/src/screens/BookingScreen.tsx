@@ -9,7 +9,7 @@ import { useBookingQuote, useCreateBooking, useMe } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import type { RootStackParamList } from "../../App";
-import { formatMoney } from "../lib/money";
+import { currencyLabel, formatMoney } from "../lib/money";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type BookingRoute = RouteProp<RootStackParamList, "Booking">;
@@ -84,7 +84,7 @@ export function BookingScreen() {
     checkOut ? toISODate(checkOut) : ""
   );
 
-  const quoteTotal = quote ? formatMoney(quote.total_egp, currency) : null;
+  const quoteTotal = quote ? formatMoney(quote.total_egp, currencyLabel(currency, t("egp"))) : null;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -149,7 +149,7 @@ export function BookingScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.pricePerNight}>{formatMoney(price, currency)} / {t("perNight")}</Text>
+        <Text style={styles.pricePerNight}>{formatMoney(price, currencyLabel(currency, t("egp")))} / {t("perNight")}</Text>
       </View>
 
       <View style={styles.section}>
@@ -249,11 +249,11 @@ export function BookingScreen() {
           <>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryText}>{t("accommodation")}</Text>
-              <Text style={styles.summaryValue}>{formatMoney(quote.total_egp, currency)}</Text>
+              <Text style={styles.summaryValue}>{formatMoney(quote.total_egp, currencyLabel(currency, t("egp")))}</Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryTotal}>{t("total")}</Text>
-              <Text style={styles.summaryTotalValue}>{formatMoney(quote.total_egp, currency)}</Text>
+              <Text style={styles.summaryTotalValue}>{formatMoney(quote.total_egp, currencyLabel(currency, t("egp")))}</Text>
             </View>
             <Text style={styles.summaryText}>{t("includesAllFees")}</Text>
           </>

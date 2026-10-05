@@ -140,7 +140,7 @@ export function MessageScreen() {
           {offer.check_in} → {offer.check_out}
         </Text>
         <Text style={styles.offerPrice}>
-          {formatMoney(offer.total_price_egp)}
+          {formatMoney(offer.total_price_egp, t("egp"))}
         </Text>
         {canAct && (
           <View style={styles.offerActions}>

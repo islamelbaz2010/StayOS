@@ -55,7 +55,7 @@ export function PaymentsScreen() {
       >
         <View style={styles.cardHeader}>
           <Text style={styles.amount}>
-            {formatMoney(item.amount_egp)}
+            {formatMoney(item.amount_egp, t("egp"))}
           </Text>
           <View style={[styles.badge, { backgroundColor: statusColor }]}>
             <Text style={styles.badgeText}>

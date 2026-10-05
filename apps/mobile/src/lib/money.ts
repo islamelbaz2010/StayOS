@@ -14,3 +14,15 @@ export function formatMoney(
   if (!Number.isFinite(n)) return "";
   return `${Math.round(n).toLocaleString("en-US")} ${currency}`;
 }
+
+/**
+ * Localize a currency code for display. EGP renders via the localized
+ * "egp" i18n label ("EGP" / "جنيه"); other codes pass through unchanged.
+ */
+export function currencyLabel(
+  currency: string | null | undefined,
+  egpLabel: string
+): string {
+  if (!currency || currency.toUpperCase() === "EGP") return egpLabel;
+  return currency;
+}

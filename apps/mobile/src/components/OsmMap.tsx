@@ -42,21 +42,20 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
 <style>
   html, body, #map { height: 100%; margin: 0; padding: 0; }
   .stayos-price-pill {
-    display: inline-block; width: max-content; max-width: 120px;
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    transform: translate(-50%, -50%);
-    padding: 2px 8px; border-radius: 9999px;
+    padding: 0 8px; border-radius: 9999px; box-sizing: border-box;
     font: 700 12px system-ui, sans-serif;
     background: #0F766E; color: #fff; border: 1px solid #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.25);
   }
   .stayos-price-pill.selected {
-    background: #0D5A54; border: 2px solid #0F766E;
-    transform: translate(-50%, -50%) scale(1.15);
+    background: #0D5A54; border: 2px solid #14B8A6;
+    transform: scale(1.15);
   }
   .stayos-dot {
-    width: 14px; height: 14px; border-radius: 9999px;
-    transform: translate(-50%, -50%);
+    width: 100%; height: 100%; border-radius: 9999px;
     background: #0F766E; border: 2px solid #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.35);
   }
@@ -77,10 +76,23 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
     try { window.ReactNativeWebView.postMessage(JSON.stringify(msg)); } catch (e) {}
   }
   function icon(label, selected) {
-    var html = label
-      ? '<div class="stayos-price-pill' + (selected ? ' selected' : '') + '">' + label + '</div>'
-      : '<div class="stayos-dot"></div>';
-    return L.divIcon({ className: 'stayos-marker', html: html, iconSize: [0,0], iconAnchor: [0,0] });
+    if (!label) {
+      return L.divIcon({
+        className: 'stayos-marker',
+        html: '<div class="stayos-dot"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      });
+    }
+    // Real icon size gives Leaflet a proper hit area — a zero-size icon
+    // leaves only a ~1px tap target at the anchor point.
+    var w = Math.min(120, Math.max(64, String(label).length * 8 + 20));
+    return L.divIcon({
+      className: 'stayos-marker',
+      html: '<div class="stayos-price-pill' + (selected ? ' selected' : '') + '">' + label + '</div>',
+      iconSize: [w, 26],
+      iconAnchor: [w / 2, 13]
+    });
   }
   window.updateMarkers = function(markers) {
     markerLayer.clearLayers();

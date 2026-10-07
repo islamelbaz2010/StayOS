@@ -107,6 +107,7 @@ export function ListingDetailScreen() {
   const toggleFav = useToggleFavorite();
 
   const isFavorite = favorites?.data?.some((f: { id: string }) => f.id === unitId);
+  const [activePhoto, setActivePhoto] = useState(0);
 
   useEffect(() => {
     if (listing) addRecentlyViewed(listing);
@@ -138,7 +139,16 @@ export function ListingDetailScreen() {
       >
         <View style={styles.gallery}>
           {galleryImages.length > 0 ? (
-            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) =>
+                setActivePhoto(
+                  Math.round(e.nativeEvent.contentOffset.x / windowWidth)
+                )
+              }
+            >
               {galleryImages.map((uri: string, i: number) => (
                 <GalleryImage key={i} uri={uri} width={windowWidth} />
               ))}
@@ -146,6 +156,13 @@ export function ListingDetailScreen() {
           ) : (
             <View style={[styles.galleryImage, { width: windowWidth }, styles.placeholder]}>
               <Text style={styles.placeholderText}>{t("appName")}</Text>
+            </View>
+          )}
+          {galleryImages.length > 1 && (
+            <View style={styles.galleryCounter}>
+              <Text style={styles.galleryCounterText}>
+                {activePhoto + 1} / {galleryImages.length}
+              </Text>
             </View>
           )}
           <Pressable
@@ -383,10 +400,24 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     fontSize: fontSize.xl,
   },
+  galleryCounter: {
+    position: "absolute",
+    bottom: spacing.md,
+    end: spacing.md,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  galleryCounterText: {
+    color: colors.white,
+    fontSize: fontSize.xs,
+    fontWeight: "600",
+  },
   heartButton: {
     position: "absolute",
     top: spacing.md,
-    right: spacing.md,
+    end: spacing.md,
     backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: radius.full,
     width: 40,

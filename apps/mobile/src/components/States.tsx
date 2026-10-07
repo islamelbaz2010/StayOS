@@ -1,5 +1,6 @@
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { colors } from "../lib/theme";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { colors, fontSize, radius, spacing } from "../lib/theme";
+import { useLocale } from "../lib/LocaleContext";
 
 export function LoadingSpinner() {
   return (
@@ -10,23 +11,77 @@ export function LoadingSpinner() {
 }
 
 export function ErrorView({ message, onRetry }: { message?: string; onRetry?: () => void }) {
+  const { t } = useLocale();
   return (
     <View style={styles.container}>
-      <Text style={styles.errorText}>{message || "Something went wrong"}</Text>
+      <Text style={styles.errorText}>{message || t("error")}</Text>
       {onRetry && (
-        <Text style={styles.retryLink} onPress={onRetry}>
-          Retry
-        </Text>
+        <Pressable style={styles.retryButton} onPress={onRetry}>
+          <Text style={styles.retryButtonText}>{t("retry")}</Text>
+        </Pressable>
       )}
     </View>
   );
 }
 
-export function EmptyView({ title, subtitle }: { title: string; subtitle?: string }) {
+export function EmptyView({
+  title,
+  subtitle,
+  icon,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
   return (
     <View style={styles.container}>
+      {icon ? <Text style={styles.emptyIcon}>{icon}</Text> : null}
       <Text style={styles.emptyTitle}>{title}</Text>
       {subtitle && <Text style={styles.emptySubtitle}>{subtitle}</Text>}
+      {actionLabel && onAction ? (
+        <Pressable style={styles.actionButton} onPress={onAction}>
+          <Text style={styles.actionButtonText}>{actionLabel}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function Skeleton({
+  width,
+  height,
+  radius: r = radius.sm,
+  style,
+}: {
+  width?: number | string;
+  height: number;
+  radius?: number;
+  style?: object;
+}) {
+  return (
+    <View
+      style={[
+        styles.skeleton,
+        { height, borderRadius: r, ...(width !== undefined ? { width: width as number } : null) },
+        style,
+      ]}
+    />
+  );
+}
+
+export function CardSkeleton() {
+  return (
+    <View style={styles.cardSkeleton}>
+      <Skeleton height={180} radius={radius.lg} />
+      <View style={styles.cardSkeletonBody}>
+        <Skeleton height={16} width="70%" />
+        <Skeleton height={14} width="45%" style={{ marginTop: spacing.sm }} />
+        <Skeleton height={16} width="30%" style={{ marginTop: spacing.sm }} />
+      </View>
     </View>
   );
 }
@@ -36,29 +91,64 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: spacing.xl,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: fontSize.md,
     color: colors.error,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: spacing.md,
   },
-  retryLink: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: "600",
+  retryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  retryButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.white,
+    fontWeight: "700",
+  },
+  emptyIcon: {
+    fontSize: 40,
+    marginBottom: spacing.md,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: fontSize.lg,
     fontWeight: "600",
     color: colors.text,
     textAlign: "center",
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
     textAlign: "center",
+  },
+  actionButton: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  actionButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.white,
+    fontWeight: "700",
+  },
+  skeleton: {
+    backgroundColor: colors.surface,
+  },
+  cardSkeleton: {
+    marginBottom: spacing.lg,
+  },
+  cardSkeletonBody: {
+    paddingTop: spacing.md,
   },
 });

@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     backgroundColor: colors.primary,
-    marginLeft: spacing.sm,
+    marginStart: spacing.sm,
     marginTop: 4,
   },
 });

@@ -159,7 +159,7 @@ export function BookingScreen() {
         <Pressable style={styles.dateField} onPress={() => setShowCheckIn(true)}>
           <Text style={styles.dateLabel}>{t("checkIn")}</Text>
           <Text style={checkIn ? styles.dateValue : styles.datePlaceholder}>
-            {checkIn ? formatDate(checkIn, "en") : "YYYY-MM-DD"}
+            {checkIn ? formatDate(checkIn, locale) : "YYYY-MM-DD"}
           </Text>
         </Pressable>
         {showCheckIn && (
@@ -185,7 +185,7 @@ export function BookingScreen() {
         <Pressable style={styles.dateField} onPress={() => setShowCheckOut(true)}>
           <Text style={styles.dateLabel}>{t("checkOut")}</Text>
           <Text style={checkOut ? styles.dateValue : styles.datePlaceholder}>
-            {checkOut ? formatDate(checkOut, "en") : "YYYY-MM-DD"}
+            {checkOut ? formatDate(checkOut, locale) : "YYYY-MM-DD"}
           </Text>
         </Pressable>
         {showCheckOut && (

@@ -7,8 +7,8 @@ import { api } from "../lib/api";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { ListingRail } from "../components/ListingRail";
-import { LoadingSpinner } from "../components/States";
-import { usePopularLocations } from "../lib/hooks";
+import { CardSkeleton } from "../components/States";
+import { usePopularLocations, useMe } from "../lib/hooks";
 import { getRecentlyViewed } from "../lib/recentlyViewed";
 import type { Listing, LocationSuggestion } from "../lib/types";
 import type { RootStackParamList } from "../../App";
@@ -19,6 +19,7 @@ export function HomeScreen() {
   const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
   const { data: popular } = usePopularLocations();
+  const { data: user } = useMe();
   const [recentlyViewed, setRecentlyViewed] = useState<Listing[]>([]);
 
   useFocusEffect(
@@ -27,7 +28,7 @@ export function HomeScreen() {
     }, [])
   );
 
-  const { data: featured, isLoading } = useQuery({
+  const { data: featured, isLoading, isError, refetch } = useQuery({
     queryKey: ["featured"],
     queryFn: async () => {
       const { data } = await api.get<{ data: any[] }>("/listings", {
@@ -49,7 +50,11 @@ export function HomeScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.appName}>{t("appName")}</Text>
-        <Text style={styles.tagline}>{t("homeTagline")}</Text>
+        <Text style={styles.tagline}>
+          {user?.display_name
+            ? `${t("welcomeBack")}, ${user.display_name}`
+            : t("homeTagline")}
+        </Text>
       </View>
 
       <Pressable
@@ -80,7 +85,11 @@ export function HomeScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("featuredListings")}</Text>
         {isLoading ? (
-          <LoadingSpinner />
+          <CardSkeleton />
+        ) : isError ? (
+          <Pressable style={styles.retryBox} onPress={() => refetch()}>
+            <Text style={styles.retryText}>{t("retry")}</Text>
+          </Pressable>
         ) : (
           <ListingRail listings={featured || []} onPress={goToDetail} />
         )}
@@ -167,6 +176,17 @@ const styles = StyleSheet.create({
   cityChipText: {
     fontSize: fontSize.sm,
     fontWeight: "600",
+    color: colors.primary,
+  },
+  retryBox: {
+    alignItems: "center",
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+  },
+  retryText: {
+    fontSize: fontSize.sm,
+    fontWeight: "700",
     color: colors.primary,
   },
 });

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { OsmMap } from "../components/OsmMap";
@@ -30,7 +30,7 @@ const PHASE_KEYS: Record<StayPhase, string> = {
 };
 
 export function TripDetailScreen() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const navigation = useNavigation<Nav>();
   const route = useRoute<DetailRoute>();
   const { bookingId } = route.params;
@@ -68,19 +68,28 @@ export function TripDetailScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Trip summary + stay status */}
-      <Section title={t("tripSummary")}>
-        {property.title && <Text style={styles.propertyTitle}>{property.title}</Text>}
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusBadgeText}>{t(PHASE_KEYS[phase] ?? phase)}</Text>
+      <View style={styles.heroCard}>
+        {property.cover_image ? (
+          <Image source={{ uri: property.cover_image }} style={styles.heroImage} />
+        ) : null}
+        <View style={styles.heroBody}>
+          {property.title && <Text style={styles.propertyTitle}>{property.title}</Text>}
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusBadgeText}>{t(PHASE_KEYS[phase] ?? phase)}</Text>
+          </View>
+          <Text style={styles.datesText}>
+            {formatTripDate(booking.check_in, locale)} → {formatTripDate(booking.check_out, locale)}
+          </Text>
+          <Text style={styles.guestsText}>
+            {booking.adults} {t("adults")}
+            {booking.children > 0 && ` · ${booking.children} ${t("children")}`}
+            {booking.infants > 0 && ` · ${booking.infants} ${t("infants")}`}
+          </Text>
+          <Pressable onPress={() => navigation.navigate("ListingDetail", { unitId: booking.unit_id })}>
+            <Text style={styles.linkText}>{t("viewStay")} ›</Text>
+          </Pressable>
         </View>
-        <Text style={styles.datesText}>
-          {booking.check_in} → {booking.check_out}
-        </Text>
-        <Text style={styles.guestsText}>
-          {booking.adults} {t("adults")}
-          {booking.children > 0 && ` · ${booking.children} ${t("children")}`}
-        </Text>
-      </Section>
+      </View>
 
       {/* Arrival */}
       {phase !== "cancelled" && phase !== "rejected" && phase !== "no_show" && (
@@ -117,6 +126,9 @@ export function TripDetailScreen() {
       {(phase === "checked_in" || phase === "checkout_ready" || phase === "check_in_ready" || phase === "upcoming") && (
         <Section title={t("stayInfo")}>
           {host.name && <Text style={styles.bodyText}>{host.name}</Text>}
+          {host.kyc_status === "verified" && (
+            <Text style={styles.verifiedText}>✓ {t("verified")}</Text>
+          )}
           {host.phone && (
             <Pressable onPress={() => Linking.openURL(`tel:${host.phone}`)}>
               <Text style={styles.linkText}>{t("callHost")}</Text>
@@ -213,6 +225,16 @@ export function TripDetailScreen() {
   );
 }
 
+function formatTripDate(iso: string, locale: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(locale === "ar" ? "ar-EG" : "en-EG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -230,6 +252,28 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
+  },
+  heroCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+    overflow: "hidden",
+  },
+  heroImage: {
+    width: "100%",
+    height: 160,
+    backgroundColor: colors.surface,
+  },
+  heroBody: {
+    padding: spacing.lg,
+  },
+  verifiedText: {
+    fontSize: fontSize.sm,
+    color: colors.success,
+    fontWeight: "600",
+    marginBottom: spacing.sm,
   },
   section: {
     backgroundColor: colors.white,

@@ -10,18 +10,21 @@ interface LocaleContextValue {
   setLocale: (l: Locale) => void;
   t: (key: string) => string;
   isRTL: boolean;
+  loaded: boolean;
 }
 
 const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("ar");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(LOCALE_KEY).then((stored) => {
       if (stored === "en" || stored === "ar") {
         setLocaleState(stored);
       }
+      setLoaded(true);
     });
   }, []);
 
@@ -35,6 +38,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setLocale,
     t: (key: string) => translate(locale, key),
     isRTL: locale === "ar",
+    loaded,
   };
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;

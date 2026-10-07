@@ -17,7 +17,7 @@ import { useSearchListings, useLocationAutocomplete, useToggleFavorite, useFavor
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { ListingCard } from "../components/ListingCard";
-import { LoadingSpinner, EmptyView } from "../components/States";
+import { EmptyView, ErrorView, CardSkeleton } from "../components/States";
 import { OsmMap, type OsmMapBounds } from "../components/OsmMap";
 import { DateRangeCalendar } from "../components/DateRangeCalendar";
 import type { LocationSuggestion } from "../lib/types";
@@ -220,6 +220,8 @@ export function SearchScreen() {
   const {
     data: searchResult,
     isLoading,
+    isError,
+    refetch,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
@@ -470,9 +472,21 @@ export function SearchScreen() {
           )}
         </View>
       ) : isLoading ? (
-        <LoadingSpinner />
+        <View style={styles.list}>
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </View>
+      ) : isError ? (
+        <ErrorView onRetry={() => refetch()} />
       ) : listings.length === 0 ? (
-        <EmptyView title={t("noResults")} subtitle={t("tryDifferentSearch")} />
+        <EmptyView
+          icon="🔍"
+          title={t("noResults")}
+          subtitle={t("tryDifferentSearch")}
+          actionLabel={activeFilterCount > 0 ? t("searchClearFilters") : undefined}
+          onAction={activeFilterCount > 0 ? clearSheetFilters : undefined}
+        />
       ) : (
         <FlatList
           data={listings}

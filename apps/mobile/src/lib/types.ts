@@ -95,6 +95,8 @@ export interface Booking {
   checked_out_at: string | null;
   reject_reason: string | null;
   cancel_reason: string | null;
+  unit_title?: string | null;
+  unit_cover_image?: string | null;
 }
 
 export interface BookingCancellationPreview {
@@ -121,6 +123,8 @@ export interface StayPropertyInfo {
 export interface StayHostInfo {
   name: string | null;
   phone: string | null;
+  kyc_status?: string | null;
+  languages?: string[];
 }
 
 export interface StayArrivalInfo {

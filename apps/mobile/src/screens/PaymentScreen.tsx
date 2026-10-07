@@ -34,6 +34,16 @@ const STATUS_KEYS: Record<string, string> = {
 };
 
 const UPLOADABLE_STATUSES = new Set<string>(["pending", "rejected"]);
+
+const STATUS_TONES: Record<string, "ok" | "warn" | "err" | "info"> = {
+  pending: "warn",
+  proof_uploaded: "info",
+  verified: "ok",
+  rejected: "err",
+  cancelled: "err",
+  refund_pending: "warn",
+  refunded: "info",
+};
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -194,8 +204,27 @@ export function PaymentScreen() {
       {/* Status */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("paymentStatus")}</Text>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusBadgeText}>
+        <View
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor:
+                STATUS_TONES[payment.status] === "ok"
+                  ? colors.success
+                  : STATUS_TONES[payment.status] === "warn"
+                    ? colors.warning
+                    : STATUS_TONES[payment.status] === "err"
+                      ? colors.error
+                      : colors.surface,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusBadgeText,
+              { color: STATUS_TONES[payment.status] && STATUS_TONES[payment.status] !== "info" ? colors.white : colors.primary },
+            ]}
+          >
             {t(STATUS_KEYS[payment.status] ?? payment.status)}
           </Text>
         </View>
@@ -246,16 +275,17 @@ export function PaymentScreen() {
         </View>
       ) : null}
 
-      {/* Card payment via Paymob hosted checkout */}
+      {/* Payment methods — Paymob card checkout + manual transfer proof */}
       {canUpload && (
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("payMethodTitle")}</Text>
           <Pressable
             style={[styles.primaryButton, openingCheckout && styles.disabledButton]}
             onPress={payByCard}
             disabled={openingCheckout}
           >
             <Text style={styles.primaryButtonText}>
-              {openingCheckout ? t("payOpeningCheckout") : t("payByCard")}
+              {openingCheckout ? t("payOpeningCheckout") : `💳 ${t("payByCard")}`}
             </Text>
           </Pressable>
         </View>
@@ -263,7 +293,8 @@ export function PaymentScreen() {
 
       {/* Proof upload */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("payUploadTitle")}</Text>
+        <Text style={styles.sectionTitle}>{t("payManualTitle")}</Text>
+        <Text style={styles.subsectionTitle}>{t("payUploadTitle")}</Text>
         {canUpload && (
           <Text style={styles.metaText}>{t("payUploadHint")}</Text>
         )}
@@ -358,6 +389,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.text,
     marginBottom: spacing.sm,
+  },
+  subsectionTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
   },
   statusBadge: {
     alignSelf: "flex-start",

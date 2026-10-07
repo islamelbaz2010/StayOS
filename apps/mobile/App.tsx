@@ -360,7 +360,7 @@ function OpsTabs() {
 }
 
 function AppContent() {
-  const { isRTL } = useLocale();
+  const { isRTL, loaded } = useLocale();
   const { data: user } = useMe();
   const authed = useHasTokens();
   const queryClient = useQueryClient();
@@ -390,10 +390,20 @@ function AppContent() {
     }
   }, [user?.id]);
 
-  if (isRTL && !I18nManager.isRTL) {
-    I18nManager.forceRTL(true);
-  } else if (!isRTL && I18nManager.isRTL) {
-    I18nManager.forceRTL(false);
+  // Sync the native RTL flag only after the persisted locale has hydrated —
+  // otherwise the "ar" boot default would write forceRTL(true) on every
+  // cold start before the real (e.g. English) locale loads.
+  useEffect(() => {
+    if (!loaded) return;
+    if (isRTL !== I18nManager.isRTL) {
+      I18nManager.forceRTL(isRTL);
+    }
+  }, [loaded, isRTL]);
+
+  // Hold render until the persisted locale is known — prevents an Arabic
+  // flash for English users and a wrong-direction first frame.
+  if (!loaded) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
   }
 
   const theme = {

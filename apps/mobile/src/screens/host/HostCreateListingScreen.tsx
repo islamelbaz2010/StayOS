@@ -1,6 +1,9 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  FlatList,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,13 +13,44 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCreateListing } from "../../lib/hooks";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  useCreateListing,
+  useLocationTree,
+  type LocationGovernorate,
+} from "../../lib/hooks";
 import { useLocale } from "../../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
+import { OsmMap } from "../../components/OsmMap";
 import type { ListingCreatePayload } from "../../lib/types";
 import type { RootStackParamList } from "../../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+// Same seed list as the web listing form — the canonical location tree is
+// unioned on top so curated areas stay selectable in both surfaces.
+const EGYPT_GOVERNORATES = [
+  "Cairo",
+  "Giza",
+  "Alexandria",
+  "Luxor",
+  "Aswan",
+  "Red Sea",
+  "South Sinai",
+  "Matrouh",
+  "Fayoum",
+  "Port Said",
+  "Suez",
+  "Ismailia",
+  "Dakahlia",
+  "Beheira",
+  "Sharqia",
+  "Qalyubia",
+  "Menoufia",
+  "Gharbia",
+  "Kafr El Sheikh",
+  "Damietta",
+];
 
 const PROPERTY_TYPES = [
   "apartment",
@@ -34,9 +68,16 @@ const CATEGORIES = [
 ];
 
 export function HostCreateListingScreen() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const navigation = useNavigation<Nav>();
   const createMut = useCreateListing();
+  const { data: locationTree } = useLocationTree();
+  const [geocoding, setGeocoding] = useState(false);
+  const [picker, setPicker] = useState<{
+    title: string;
+    options: { value: string; label: string }[];
+    onSelect: (value: string) => void;
+  } | null>(null);
 
   const [form, setForm] = useState({
     property_type: "apartment",
@@ -66,6 +107,46 @@ export function HostCreateListingScreen() {
 
   const setField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const tree: LocationGovernorate[] = locationTree ?? [];
+  const governorates = Array.from(
+    new Set([...EGYPT_GOVERNORATES, ...tree.map((g) => g.name)])
+  );
+  const cities =
+    tree.find((g) => g.name === form.governorate)?.cities ?? [];
+  const areas = cities.find((c) => c.name === form.city)?.areas ?? [];
+  const selectedArea = areas.find((a) => a.name_en === form.district);
+  const districtLabel = selectedArea
+    ? locale === "ar"
+      ? selectedArea.name_ar
+      : selectedArea.name_en
+    : form.district;
+
+  // Same Nominatim geocoding as the web LocationPicker — best-effort, the pin
+  // stays draggable either way.
+  const geocodeAddress = async () => {
+    const query = [form.address, form.district, form.city, form.governorate, "Egypt"]
+      .filter(Boolean)
+      .join(", ");
+    setGeocoding(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=eg`,
+        { headers: { "Accept-Language": "en" } }
+      );
+      const results = (await res.json()) as { lat: string; lon: string }[];
+      const first = results[0];
+      const lat = first ? parseFloat(first.lat) : NaN;
+      const lng = first ? parseFloat(first.lon) : NaN;
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setForm((prev) => ({ ...prev, lat, lng }));
+      }
+    } catch {
+      // Host can still position the pin manually — same fallback as web.
+    } finally {
+      setGeocoding(false);
+    }
   };
 
   const handleCreate = async () => {
@@ -175,25 +256,80 @@ export function HostCreateListingScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("listingLocation")}</Text>
         <Field label={t("listingGovernorate")}>
-          <TextInput
-            style={styles.input}
+          <PickerField
             value={form.governorate}
-            onChangeText={(v) => setField("governorate", v)}
+            placeholder={t("listingSelectGovernorate")}
+            onPress={() =>
+              setPicker({
+                title: t("listingGovernorate"),
+                options: governorates.map((g) => ({ value: g, label: g })),
+                onSelect: (v) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    governorate: v,
+                    city: "",
+                    district: "",
+                  }));
+                },
+              })
+            }
           />
         </Field>
         <Field label={t("listingCity")}>
-          <TextInput
-            style={styles.input}
-            value={form.city}
-            onChangeText={(v) => setField("city", v)}
-          />
+          {cities.length > 0 ? (
+            <PickerField
+              value={form.city}
+              placeholder={t("listingSelectCity")}
+              onPress={() =>
+                setPicker({
+                  title: t("listingCity"),
+                  options: cities.map((c) => ({ value: c.name, label: c.name })),
+                  onSelect: (v) => {
+                    setForm((prev) => ({ ...prev, city: v, district: "" }));
+                  },
+                })
+              }
+            />
+          ) : (
+            <TextInput
+              style={styles.input}
+              value={form.city}
+              onChangeText={(v) => setField("city", v)}
+            />
+          )}
         </Field>
         <Field label={t("listingDistrict")}>
-          <TextInput
-            style={styles.input}
-            value={form.district}
-            onChangeText={(v) => setField("district", v)}
-          />
+          {areas.length > 0 ? (
+            <PickerField
+              value={districtLabel}
+              placeholder={t("listingSelectDistrict")}
+              onPress={() =>
+                setPicker({
+                  title: t("listingDistrict"),
+                  options: areas.map((a) => ({
+                    value: a.name_en,
+                    label: locale === "ar" ? a.name_ar : a.name_en,
+                  })),
+                  onSelect: (v) => {
+                    const area = areas.find((a) => a.name_en === v);
+                    setForm((prev) => ({
+                      ...prev,
+                      district: v,
+                      ...(area?.lat != null && area?.lng != null
+                        ? { lat: area.lat, lng: area.lng }
+                        : {}),
+                    }));
+                  },
+                })
+              }
+            />
+          ) : (
+            <TextInput
+              style={styles.input}
+              value={form.district}
+              onChangeText={(v) => setField("district", v)}
+            />
+          )}
         </Field>
         <Field label={t("listingAddress")}>
           <TextInput
@@ -202,26 +338,28 @@ export function HostCreateListingScreen() {
             onChangeText={(v) => setField("address", v)}
           />
         </Field>
-        <View style={styles.formRow}>
-          <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>{t("listingLatitude")}</Text>
-            <TextInput
-              style={styles.input}
-              value={String(form.lat)}
-              keyboardType="decimal-pad"
-              onChangeText={(v) => setField("lat", Number(v) || 0)}
-            />
-          </View>
-          <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>{t("listingLongitude")}</Text>
-            <TextInput
-              style={styles.input}
-              value={String(form.lng)}
-              keyboardType="decimal-pad"
-              onChangeText={(v) => setField("lng", Number(v) || 0)}
-            />
-          </View>
+        <Pressable
+          style={styles.locateButton}
+          onPress={geocodeAddress}
+          disabled={geocoding}
+        >
+          {geocoding ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Ionicons name="locate-outline" size={16} color={colors.primary} />
+          )}
+          <Text style={styles.locateButtonText}>{t("listingLocateOnMap")}</Text>
+        </Pressable>
+        <View style={styles.mapWrap}>
+          <OsmMap
+            markers={[]}
+            pin={{ lat: form.lat, lng: form.lng }}
+            onPinMoved={(lat, lng) =>
+              setForm((prev) => ({ ...prev, lat, lng }))
+            }
+          />
         </View>
+        <Text style={styles.pinHint}>{t("listingPinHint")}</Text>
       </View>
 
       <View style={styles.section}>
@@ -258,9 +396,86 @@ export function HostCreateListingScreen() {
           <Text style={styles.errorText}>{t("listingCreateError")}</Text>
         )}
       </View>
+
+      <Modal
+        visible={picker != null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPicker(null)}
+      >
+        <Pressable style={styles.pickerBackdrop} onPress={() => setPicker(null)} />
+        <View style={styles.pickerSheet}>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.pickerTitle}>{picker?.title}</Text>
+            <Pressable onPress={() => setPicker(null)} hitSlop={12}>
+              <Ionicons name="close" size={22} color={colors.text} />
+            </Pressable>
+          </View>
+          <FlatList
+            data={picker?.options ?? []}
+            keyExtractor={(item) => item.value}
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.pickerOption}
+                onPress={() => {
+                  picker?.onSelect(item.value);
+                  setPicker(null);
+                }}
+              >
+                <Text style={styles.pickerOptionText}>{item.label}</Text>
+              </Pressable>
+            )}
+          />
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
+
+function PickerField({
+  value,
+  placeholder,
+  onPress,
+}: {
+  value: string;
+  placeholder: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={pickerStyles.field} onPress={onPress}>
+      <Text
+        style={[
+          pickerStyles.fieldText,
+          !value && pickerStyles.fieldPlaceholder,
+        ]}
+      >
+        {value || placeholder}
+      </Text>
+      <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
+    </Pressable>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+  },
+  fieldText: {
+    fontSize: fontSize.md,
+    color: colors.text,
+    flex: 1,
+  },
+  fieldPlaceholder: {
+    color: colors.textTertiary,
+  },
+});
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -399,6 +614,67 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  mapWrap: {
+    height: 220,
+    borderRadius: radius.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: spacing.sm,
+  },
+  pinHint: {
+    fontSize: fontSize.xs,
+    color: colors.textTertiary,
+    marginTop: spacing.xs,
+  },
+  locateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    alignSelf: "flex-start",
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    marginTop: -spacing.xs,
+  },
+  locateButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: "600",
+  },
+  pickerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  pickerSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    maxHeight: "60%",
+    paddingBottom: spacing.xl,
+  },
+  pickerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  pickerTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  pickerOption: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  pickerOptionText: {
+    fontSize: fontSize.md,
+    color: colors.text,
   },
   footer: {
     padding: spacing.lg,

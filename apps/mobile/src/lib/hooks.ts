@@ -96,6 +96,60 @@ export function useSearchListings(params: SearchParams) {
   });
 }
 
+export interface PriceDistribution {
+  min_price_egp: number | null;
+  max_price_egp: number | null;
+  total: number;
+  buckets: { from_egp: number; to_egp: number; count: number }[];
+}
+
+export function usePriceDistribution(params: SearchParams) {
+  // The API computes the distribution over non-price filters only; strip the
+  // price params so dragging the slider does not refetch identical data.
+  const { min_price, max_price, ...rest } = params;
+  void min_price;
+  void max_price;
+  return useQuery({
+    queryKey: ["price-distribution", rest],
+    queryFn: async () => {
+      const { data } = await api.get<PriceDistribution>(
+        "/listings/price-distribution",
+        { params }
+      );
+      return data;
+    },
+    staleTime: 60_000,
+  });
+}
+
+export interface LocationArea {
+  name_en: string;
+  name_ar: string;
+  lat: number | null;
+  lng: number | null;
+}
+export interface LocationCity {
+  name: string;
+  areas: LocationArea[];
+}
+export interface LocationGovernorate {
+  name: string;
+  cities: LocationCity[];
+}
+
+export function useLocationTree() {
+  return useQuery({
+    queryKey: ["location-tree"],
+    queryFn: async () => {
+      const { data } = await api.get<{ governorates: LocationGovernorate[] }>(
+        "/locations/tree"
+      );
+      return data.governorates;
+    },
+    staleTime: 30 * 60_000,
+  });
+}
+
 export function useListingDetail(unitId: string) {
   return useQuery({
     queryKey: ["listing", unitId],
@@ -1051,6 +1105,29 @@ export function useSetCoverPhoto() {
     }) => {
       const { data } = await api.patch<PhotoResponse>(
         `/listings/${unitId}/photos/${photoId}/cover`
+      );
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["host", "listing-detail", variables.unitId] });
+      qc.invalidateQueries({ queryKey: ["photos", variables.unitId] });
+    },
+  });
+}
+
+export function useReorderPhotos() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      unitId,
+      photoOrders,
+    }: {
+      unitId: string;
+      photoOrders: { photo_id: string; display_order: number }[];
+    }) => {
+      const { data } = await api.patch<PhotoResponse[]>(
+        `/listings/${unitId}/photos/reorder`,
+        { photo_orders: photoOrders }
       );
       return data;
     },

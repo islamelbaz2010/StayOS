@@ -10,11 +10,15 @@ import {
 } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import {
   useCreatePhoto,
   useDeletePhoto,
   useHostListingDetail,
   usePresignPhoto,
+  useReorderPhotos,
   useSetCoverPhoto,
 } from "../../lib/hooks";
 import { useLocale } from "../../lib/LocaleContext";
@@ -36,6 +40,7 @@ export function HostListingPhotosScreen() {
   const createPhotoMut = useCreatePhoto();
   const deleteMut = useDeletePhoto();
   const coverMut = useSetCoverPhoto();
+  const reorderMut = useReorderPhotos();
   const [busy, setBusy] = useState(false);
 
   if (isLoading) return <LoadingSpinner />;
@@ -49,15 +54,79 @@ export function HostListingPhotosScreen() {
 
   const photos = listing.photos;
 
+  // Same three-step upload as the web PhotoUpload: presign → PUT to the
+  // presigned URL → POST the stored photo record.
   const handleAddPhoto = async () => {
-    // In a real app, this would use an image picker + presigned URL upload.
-    // For now, we simulate with a placeholder URL since the mobile app
-    // doesn't have an image picker library installed.
-    Alert.alert(
-      t("listingAddPhoto"),
-      "Photo upload requires an image picker. This is a placeholder — connect your image picker library here.",
-      [{ text: t("listingCancel"), style: "cancel" }]
-    );
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.85,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+
+    setBusy(true);
+    try {
+      let order = photos.length;
+      for (const asset of result.assets) {
+        const filename = asset.fileName ?? `photo_${Date.now()}.jpg`;
+        const contentType = asset.mimeType ?? "image/jpeg";
+        const presign = await presignMut.mutateAsync({
+          unitId,
+          filename,
+          contentType,
+        });
+        const upload = await FileSystem.uploadAsync(
+          presign.upload_url,
+          asset.uri,
+          {
+            httpMethod: "PUT",
+            uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+            headers: { "Content-Type": contentType },
+          }
+        );
+        if (upload.status < 200 || upload.status >= 300) {
+          throw new Error(`Upload failed: ${upload.status}`);
+        }
+        await createPhotoMut.mutateAsync({
+          unitId,
+          payload: {
+            s3_key: presign.photo_key,
+            url: presign.upload_url.split("?")[0],
+            is_cover: order === 0,
+            display_order: order,
+          },
+        });
+        order += 1;
+      }
+    } catch {
+      Alert.alert(t("listingUploadError"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleMove = async (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= photos.length) return;
+    const a = photos[index];
+    const b = photos[target];
+    setBusy(true);
+    try {
+      await reorderMut.mutateAsync({
+        unitId,
+        photoOrders: [
+          { photo_id: a.id, display_order: b.display_order },
+          { photo_id: b.id, display_order: a.display_order },
+        ],
+      });
+    } catch {
+      Alert.alert(t("listingSaveError"));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleDelete = (photoId: string) => {
@@ -114,7 +183,9 @@ export function HostListingPhotosScreen() {
         <EmptyView title={t("listingNoPhotos")} />
       ) : (
         <View style={styles.photoGrid}>
-          {photos.map((photo: HostListingPhoto) => (
+          {[...photos]
+            .sort((a, b) => a.display_order - b.display_order)
+            .map((photo: HostListingPhoto, index: number) => (
             <View key={photo.id} style={styles.photoCard}>
               <Image source={{ uri: photo.url }} style={styles.photoImage} />
               {photo.is_cover && (
@@ -124,6 +195,26 @@ export function HostListingPhotosScreen() {
               )}
               {canEdit && (
                 <View style={styles.photoActions}>
+                  {index > 0 && (
+                    <Pressable
+                      style={styles.photoAction}
+                      disabled={busy}
+                      accessibilityLabel={t("listingMoveEarlier")}
+                      onPress={() => handleMove(index, -1)}
+                    >
+                      <Ionicons name="arrow-up" size={16} color={colors.text} />
+                    </Pressable>
+                  )}
+                  {index < photos.length - 1 && (
+                    <Pressable
+                      style={styles.photoAction}
+                      disabled={busy}
+                      accessibilityLabel={t("listingMoveLater")}
+                      onPress={() => handleMove(index, 1)}
+                    >
+                      <Ionicons name="arrow-down" size={16} color={colors.text} />
+                    </Pressable>
+                  )}
                   {!photo.is_cover && (
                     <Pressable
                       style={styles.photoAction}

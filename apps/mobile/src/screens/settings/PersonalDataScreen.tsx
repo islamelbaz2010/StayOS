@@ -22,7 +22,6 @@ export function PersonalDataScreen() {
   const [legalName, setLegalName] = useState("");
   const [nationalId, setNationalId] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
-  const [taxId, setTaxId] = useState("");
   const [payoutMethod, setPayoutMethod] = useState<string | null>(null);
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -35,7 +34,6 @@ export function PersonalDataScreen() {
       setLegalName(data.legal_name ?? "");
       setNationalId(data.national_id ?? "");
       setDateOfBirth(data.date_of_birth ?? "");
-      setTaxId(data.tax_id ?? "");
       setPayoutMethod(data.payout_method ?? null);
       setBankName(data.payout_bank_name ?? "");
       setAccountNumber(data.payout_account_number ?? "");
@@ -53,7 +51,9 @@ export function PersonalDataScreen() {
         legal_name: legalName.trim() || null,
         national_id: nationalId.trim() || null,
         date_of_birth: dateOfBirth.trim() || null,
-        tax_id: taxId.trim() || null,
+        // tax_id intentionally omitted: not part of the mobile profile
+        // surface (founder requirement); the backend field is preserved
+        // for web Settings → Taxes and admin financial reports.
         payout_method: payoutMethod,
         payout_bank_name: bankName.trim() || null,
         payout_account_number: accountNumber.trim() || null,
@@ -84,7 +84,6 @@ export function PersonalDataScreen() {
           onChangeText={setDateOfBirth}
           placeholder="YYYY-MM-DD"
         />
-        <Field label={t("taxId")} value={taxId} onChangeText={setTaxId} />
       </Section>
 
       <Section title={t("payoutPreferences")}>

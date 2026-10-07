@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Image,
   Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,13 +15,14 @@ import {
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { format } from "date-fns";
-import { useSearchListings, useLocationAutocomplete, useToggleFavorite, useFavorites } from "../lib/hooks";
+import { useSearchListings, useLocationAutocomplete, useToggleFavorite, useFavorites, usePriceDistribution, type PriceDistribution } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { ListingCard } from "../components/ListingCard";
 import { EmptyView, ErrorView, CardSkeleton } from "../components/States";
 import { OsmMap, type OsmMapBounds } from "../components/OsmMap";
 import { DateRangeCalendar } from "../components/DateRangeCalendar";
+import { Ionicons } from "@expo/vector-icons";
 import type { LocationSuggestion } from "../lib/types";
 import type { RootStackParamList } from "../../App";
 import { currencyLabel, formatMoney } from "../lib/money";
@@ -30,9 +32,10 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SearchRoute = RouteProp<RootStackParamList, "Search">;
 
 // Must match app.listings.constants + the web search vocabulary (DEC-019).
+// Web removed HALAL_CERTIFIED from the search filter surface — it remains a
+// display-only cultural tag on listing detail, never a search criterion.
 const CULTURAL_TAG_OPTIONS = [
   { value: "FAMILY_ONLY", key: "tagFamilyOnly" },
-  { value: "HALAL_CERTIFIED", key: "tagHalal" },
   { value: "MIXED", key: "tagMixed" },
   { value: "COUPLES_WELCOME", key: "tagCouplesWelcome" },
 ];
@@ -230,6 +233,8 @@ export function SearchScreen() {
   } = useSearchListings(params);
   const listings = searchResult?.pages.flatMap((p) => p.data) ?? [];
   const total = searchResult?.pages[0]?.pagination.total_count ?? 0;
+  const { data: priceDistribution, isLoading: priceDistLoading } =
+    usePriceDistribution(params);
 
   const selectSuggestion = (suggestion: LocationSuggestion) => {
     const name = locale === "ar" ? suggestion.canonical_name_ar : suggestion.canonical_name_en;
@@ -334,6 +339,20 @@ export function SearchScreen() {
               {viewMode === "list" ? t("mapView") : t("listView")}
             </Text>
           </Pressable>
+          <Pressable
+            style={styles.filterButton}
+            onPress={() => setShowFilters(true)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t("filters")}
+          >
+            <Ionicons name="options-outline" size={22} color={colors.text} />
+            {activeFilterCount > 0 && (
+              <View style={styles.filterButtonBadge}>
+                <Text style={styles.filterButtonBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
 
         {isLoadingSuggestions && (
@@ -407,17 +426,6 @@ export function SearchScreen() {
               setFilters((f) => ({ ...f, instantBook: !f.instantBook }))
             }
           />
-          <Pressable
-            style={[styles.chip, styles.filtersChip]}
-            onPress={() => setShowFilters(true)}
-          >
-            <Text style={styles.filtersChipText}>{t("filters")}</Text>
-            {activeFilterCount > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-              </View>
-            )}
-          </Pressable>
         </ScrollView>
 
         <ScrollView
@@ -585,8 +593,184 @@ export function SearchScreen() {
         onClear={clearSheetFilters}
         resultsCount={total}
         activeQuickCount={sheetClearable}
+        priceDistribution={priceDistribution}
+        priceDistLoading={priceDistLoading}
         t={t}
       />
+    </View>
+  );
+}
+
+function PriceRangeControl({
+  distribution,
+  isLoading,
+  minPrice,
+  maxPrice,
+  onChange,
+  t,
+}: {
+  distribution: PriceDistribution | undefined;
+  isLoading: boolean;
+  minPrice: string;
+  maxPrice: string;
+  onChange: (min: string, max: string) => void;
+  t: (key: string) => string;
+}) {
+  const distMin = distribution?.min_price_egp ?? null;
+  const distMax = distribution?.max_price_egp ?? null;
+  const hasData = distMin != null && distMax != null && distMax > distMin;
+
+  const appliedMin = minPrice.trim() !== "" ? Number(minPrice) : distMin ?? 0;
+  const appliedMax = maxPrice.trim() !== "" ? Number(maxPrice) : distMax ?? 0;
+
+  const [lo, setLo] = useState(appliedMin);
+  const [hi, setHi] = useState(appliedMax);
+  const [trackW, setTrackW] = useState(0);
+  const loRef = useRef(lo);
+  const hiRef = useRef(hi);
+  loRef.current = lo;
+  hiRef.current = hi;
+
+  useEffect(() => {
+    setLo(appliedMin);
+    setHi(appliedMax);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minPrice, maxPrice, distMin, distMax]);
+
+  const span = hasData ? distMax! - distMin! : 1;
+  const toValue = (x: number) =>
+    Math.round(distMin! + (Math.max(0, Math.min(trackW, x)) / Math.max(1, trackW)) * span);
+  const toX = (v: number) => ((v - distMin!) / span) * trackW;
+
+  const commit = () => {
+    if (!hasData) return;
+    onChange(
+      lo > distMin! ? String(lo) : "",
+      hi < distMax! ? String(hi) : ""
+    );
+  };
+
+  const dragStart = useRef({ lo: 0, hi: 0 });
+  const panFor = (which: "lo" | "hi") =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => {
+        dragStart.current[which] =
+          which === "lo" ? toX(loRef.current) : toX(hiRef.current);
+      },
+      onPanResponderMove: (_e, g) => {
+        const v = toValue(dragStart.current[which] + g.dx);
+        if (which === "lo") setLo(Math.min(v, hiRef.current));
+        else setHi(Math.max(v, loRef.current));
+      },
+      onPanResponderRelease: commit,
+    });
+
+  const loPan = useRef(panFor("lo")).current;
+  const hiPan = useRef(panFor("hi")).current;
+
+  if (isLoading) {
+    return <View style={sheetStyles.priceSkeleton} />;
+  }
+
+  if (!hasData) {
+    return (
+      <View style={sheetStyles.priceRow}>
+        <TextInput
+          style={sheetStyles.priceInput}
+          placeholder={t("searchMinPrice")}
+          placeholderTextColor={colors.textTertiary}
+          keyboardType="numeric"
+          value={minPrice}
+          onChangeText={(v) => onChange(v.replace(/[^0-9]/g, ""), maxPrice)}
+        />
+        <Text style={sheetStyles.priceSep}>–</Text>
+        <TextInput
+          style={sheetStyles.priceInput}
+          placeholder={t("searchMaxPrice")}
+          placeholderTextColor={colors.textTertiary}
+          keyboardType="numeric"
+          value={maxPrice}
+          onChangeText={(v) => onChange(minPrice, v.replace(/[^0-9]/g, ""))}
+        />
+      </View>
+    );
+  }
+
+  const maxCount = Math.max(1, ...(distribution!.buckets.map((b) => b.count)));
+
+  return (
+    <View>
+      {/* Histogram — LTR regardless of locale (web parity). */}
+      <View style={sheetStyles.histogram}>
+        {distribution!.buckets.map((b, i) => {
+          const inRange = b.to_egp >= lo && b.from_egp <= hi;
+          return (
+            <View
+              key={i}
+              style={[
+                sheetStyles.histBar,
+                { height: `${Math.max(8, (b.count / maxCount) * 100)}%` },
+                inRange ? sheetStyles.histBarActive : sheetStyles.histBarDim,
+              ]}
+            />
+          );
+        })}
+      </View>
+
+      <View
+        style={sheetStyles.sliderTrack}
+        onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}
+      >
+        <View style={sheetStyles.sliderRail} />
+        <View
+          style={[
+            sheetStyles.sliderFill,
+            { left: toX(lo), width: Math.max(0, toX(hi) - toX(lo)) },
+          ]}
+        />
+        <View
+          style={[sheetStyles.thumb, { left: toX(lo) - 14 }]}
+          {...loPan.panHandlers}
+        />
+        <View
+          style={[sheetStyles.thumb, { left: toX(hi) - 14 }]}
+          {...hiPan.panHandlers}
+        />
+      </View>
+
+      <View style={sheetStyles.priceRow}>
+        <View style={sheetStyles.priceField}>
+          <Text style={sheetStyles.priceFieldLabel}>{t("searchMinPrice")}</Text>
+          <TextInput
+            style={sheetStyles.priceInput}
+            keyboardType="numeric"
+            value={String(lo)}
+            onChangeText={(v) => {
+              const n = Number(v.replace(/[^0-9]/g, ""));
+              setLo(Math.min(isNaN(n) ? distMin! : n, hiRef.current));
+            }}
+            onEndEditing={commit}
+          />
+        </View>
+        <Text style={sheetStyles.priceSep}>–</Text>
+        <View style={sheetStyles.priceField}>
+          <Text style={sheetStyles.priceFieldLabel}>{t("searchMaxPrice")}</Text>
+          <TextInput
+            style={sheetStyles.priceInput}
+            keyboardType="numeric"
+            value={String(hi)}
+            onChangeText={(v) => {
+              const n = Number(v.replace(/[^0-9]/g, ""));
+              setHi(Math.max(isNaN(n) ? distMax! : n, loRef.current));
+            }}
+            onEndEditing={commit}
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -599,6 +783,8 @@ function FiltersSheet({
   onClear,
   resultsCount,
   activeQuickCount,
+  priceDistribution,
+  priceDistLoading,
   t,
 }: {
   visible: boolean;
@@ -608,6 +794,8 @@ function FiltersSheet({
   onClear: () => void;
   resultsCount: number;
   activeQuickCount: number;
+  priceDistribution: PriceDistribution | undefined;
+  priceDistLoading: boolean;
   t: (key: string) => string;
 }) {
   const set = (patch: Partial<DraftFilters>) => onChange({ ...draft, ...patch });
@@ -683,23 +871,14 @@ function FiltersSheet({
             </View>
 
             <Text style={sheetStyles.sectionTitle}>{t("priceRange")}</Text>
-            <View style={sheetStyles.priceRow}>
-              <TextInput
-                style={sheetStyles.priceInput}
-                placeholder={t("searchMinPrice")}
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="numeric"
-                value={draft.minPrice}
-                onChangeText={(v) => set({ minPrice: v.replace(/[^0-9]/g, "") })}
-              />
-              <Text style={sheetStyles.priceSep}>–</Text>
-              <TextInput
-                style={sheetStyles.priceInput}
-                placeholder={t("searchMaxPrice")}
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="numeric"
-                value={draft.maxPrice}
-                onChangeText={(v) => set({ maxPrice: v.replace(/[^0-9]/g, "") })}
+            <View style={{ direction: "ltr" }}>
+              <PriceRangeControl
+                distribution={priceDistribution}
+                isLoading={priceDistLoading}
+                minPrice={draft.minPrice}
+                maxPrice={draft.maxPrice}
+                onChange={(min, max) => set({ minPrice: min, maxPrice: max })}
+                t={t}
               />
             </View>
 
@@ -865,6 +1044,33 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.primary,
   },
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterButtonBadge: {
+    position: "absolute",
+    top: -6,
+    end: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  filterButtonBadgeText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: "700",
+  },
   loadingText: {
     marginTop: spacing.sm,
     fontSize: fontSize.sm,
@@ -926,31 +1132,6 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: colors.white,
-  },
-  filtersChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    borderColor: colors.textTertiary,
-  },
-  filtersChipText: {
-    fontSize: fontSize.sm,
-    color: colors.text,
-    fontWeight: "700",
-  },
-  filterBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-  },
-  filterBadgeText: {
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: "700",
   },
   mapAreaRow: {
     flexDirection: "row",
@@ -1175,6 +1356,68 @@ const sheetStyles = StyleSheet.create({
   priceSep: {
     fontSize: fontSize.md,
     color: colors.textTertiary,
+    marginTop: spacing.md,
+  },
+  priceSkeleton: {
+    height: 64,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+  histogram: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    height: 64,
+    gap: 1,
+    marginTop: spacing.sm,
+  },
+  histBar: {
+    flex: 1,
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
+  },
+  histBarActive: {
+    backgroundColor: colors.primary,
+  },
+  histBarDim: {
+    backgroundColor: colors.border,
+  },
+  sliderTrack: {
+    height: 40,
+    justifyContent: "center",
+    marginTop: -spacing.xs,
+  },
+  sliderRail: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+  },
+  sliderFill: {
+    position: "absolute",
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+  },
+  thumb: {
+    position: "absolute",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  priceField: {
+    flex: 1,
+  },
+  priceFieldLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textTertiary,
+    marginBottom: 2,
   },
   footer: {
     flexDirection: "row",

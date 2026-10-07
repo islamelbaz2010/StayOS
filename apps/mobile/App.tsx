@@ -233,7 +233,7 @@ function getHostTabIconName(routeName: string, focused: boolean): keyof typeof I
     case "HostTodayTab":
       return focused ? "today" : "today-outline";
     case "HostExploreTab":
-      return focused ? "compass" : "compass-outline";
+      return focused ? "search" : "search-outline";
     case "HostCalendarTab":
       return focused ? "calendar" : "calendar-outline";
     case "HostListingsTab":
@@ -252,7 +252,7 @@ function getOpsTabIconName(routeName: string, focused: boolean): keyof typeof Io
     case "OpsHomeTab":
       return focused ? "briefcase" : "briefcase-outline";
     case "OpsExploreTab":
-      return focused ? "compass" : "compass-outline";
+      return focused ? "search" : "search-outline";
     case "OpsMessagesTab":
       return focused ? "chatbubble" : "chatbubble-outline";
     case "OpsAccountTab":
@@ -312,7 +312,7 @@ function HostTabs() {
       })}
     >
       <Tab.Screen name="HostTodayTab" component={HostTodayScreen} options={{ tabBarLabel: t("hostToday") }} />
-      <Tab.Screen name="HostExploreTab" component={HomeScreen} options={{ tabBarLabel: t("explore") }} />
+      <Tab.Screen name="HostExploreTab" component={SearchScreen} options={{ tabBarLabel: t("search") }} />
       <Tab.Screen name="HostCalendarTab" component={HostCalendarScreen} options={{ tabBarLabel: t("hostCalendar") }} />
       <Tab.Screen name="HostListingsTab" component={HostListingsScreen} options={{ tabBarLabel: t("hostListings") }} />
       <Tab.Screen
@@ -345,7 +345,7 @@ function OpsTabs() {
       })}
     >
       <Tab.Screen name="OpsHomeTab" component={OpsHomeScreen} options={{ tabBarLabel: t("opsConsole") }} />
-      <Tab.Screen name="OpsExploreTab" component={HomeScreen} options={{ tabBarLabel: t("explore") }} />
+      <Tab.Screen name="OpsExploreTab" component={SearchScreen} options={{ tabBarLabel: t("search") }} />
       <Tab.Screen
         name="OpsMessagesTab"
         component={InboxScreen}

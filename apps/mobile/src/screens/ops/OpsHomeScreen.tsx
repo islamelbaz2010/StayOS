@@ -11,7 +11,7 @@ import type { RootStackParamList } from "../../../App";
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type OpsRoute = keyof RootStackParamList;
 
-interface OpsSection {
+interface OpsItem {
   key: string;
   route: OpsRoute;
   permission: string | null; // null = admin-only
@@ -19,26 +19,69 @@ interface OpsSection {
   labelAr: string;
 }
 
-const SECTIONS: OpsSection[] = [
-  { key: "kyc", route: "OpsKyc", permission: "kyc", labelEn: "KYC verification queue", labelAr: "قائمة توثيق الهوية" },
-  { key: "payments", route: "OpsPayments", permission: "payments", labelEn: "Payment review queue", labelAr: "قائمة مراجعة المدفوعات" },
-  { key: "support", route: "OpsSupport", permission: "operations", labelEn: "Support queue", labelAr: "قائمة الدعم" },
-  // /operations/* is role-gated (admin/operations/field_staff), not
-  // permission-gated — staff with the "operations" grant still 403.
-  { key: "tasks", route: "OpsTasks", permission: null, labelEn: "Maintenance & readiness", labelAr: "الصيانة والجاهزية" },
-  { key: "listings", route: "OpsListings", permission: "listings", labelEn: "Listing moderation", labelAr: "مراجعة الإعلانات" },
-  { key: "disputes", route: "OpsDisputes", permission: "disputes", labelEn: "Disputes", labelAr: "النزاعات" },
-  { key: "reviews", route: "OpsReviewReports", permission: "disputes", labelEn: "Review reports", labelAr: "بلاغات التقييمات" },
-  { key: "discovery", route: "AdminDiscovery", permission: "discovery", labelEn: "Discovery & import", labelAr: "الاكتشاف والاستيراد" },
-  // AdminBookingsScreen lists via /host/bookings → "operations" grant
-  { key: "bookings", route: "AdminBookings", permission: "operations", labelEn: "Bookings", labelAr: "الحجوزات" },
-  { key: "users", route: "AdminUsers", permission: null, labelEn: "Users", labelAr: "المستخدمون" },
-  { key: "listingsAll", route: "AdminListings", permission: "listings", labelEn: "All listings", labelAr: "كل الإعلانات" },
-  { key: "reports", route: "AdminReports", permission: "reports", labelEn: "Reports", labelAr: "التقارير" },
-  { key: "staff", route: "AdminStaff", permission: null, labelEn: "Staff & permissions", labelAr: "الموظفون والصلاحيات" },
-  // /admin/adjustments* is guarded by the "payments" permission
-  { key: "adjustments", route: "AdminAdjustments", permission: "payments", labelEn: "Adjustments", labelAr: "التسويات" },
-  { key: "finance", route: "AdminFinance", permission: "payments", labelEn: "Finance", labelAr: "المالية" },
+interface OpsGroup {
+  key: string;
+  labelKey: string;
+  items: OpsItem[];
+}
+
+// Mirrors the web AdminLayout navGroups (adminNav.groups.*).
+const GROUPS: OpsGroup[] = [
+  {
+    key: "marketplace",
+    labelKey: "opsGroupMarketplace",
+    items: [
+      { key: "listings", route: "OpsListings", permission: "listings", labelEn: "Listing moderation", labelAr: "مراجعة الإعلانات" },
+      { key: "listingsAll", route: "AdminListings", permission: "listings", labelEn: "All listings", labelAr: "كل الإعلانات" },
+      { key: "discovery", route: "AdminDiscovery", permission: "discovery", labelEn: "Discovery & import", labelAr: "الاكتشاف والاستيراد" },
+    ],
+  },
+  {
+    key: "usersTrust",
+    labelKey: "opsGroupUsersTrust",
+    items: [
+      { key: "users", route: "AdminUsers", permission: null, labelEn: "Users", labelAr: "المستخدمون" },
+      { key: "kyc", route: "OpsKyc", permission: "kyc", labelEn: "KYC verification queue", labelAr: "قائمة توثيق الهوية" },
+    ],
+  },
+  {
+    key: "money",
+    labelKey: "opsGroupMoney",
+    items: [
+      { key: "payments", route: "OpsPayments", permission: "payments", labelEn: "Payment review queue", labelAr: "قائمة مراجعة المدفوعات" },
+      // /admin/adjustments* is guarded by the "payments" permission
+      { key: "adjustments", route: "AdminAdjustments", permission: "payments", labelEn: "Adjustments", labelAr: "التسويات" },
+      { key: "finance", route: "AdminFinance", permission: "payments", labelEn: "Finance", labelAr: "المالية" },
+    ],
+  },
+  {
+    key: "insights",
+    labelKey: "opsGroupInsights",
+    items: [
+      { key: "reports", route: "AdminReports", permission: "reports", labelEn: "Reports", labelAr: "التقارير" },
+    ],
+  },
+  {
+    key: "operations",
+    labelKey: "opsGroupOperations",
+    items: [
+      // AdminBookingsScreen lists via /host/bookings → "operations" grant
+      { key: "bookings", route: "AdminBookings", permission: "operations", labelEn: "Bookings", labelAr: "الحجوزات" },
+      { key: "support", route: "OpsSupport", permission: "operations", labelEn: "Support queue", labelAr: "قائمة الدعم" },
+      { key: "disputes", route: "OpsDisputes", permission: "disputes", labelEn: "Disputes", labelAr: "النزاعات" },
+      { key: "reviews", route: "OpsReviewReports", permission: "disputes", labelEn: "Review reports", labelAr: "بلاغات التقييمات" },
+      // /operations/* is role-gated (admin/operations/field_staff), not
+      // permission-gated — staff with the "operations" grant still 403.
+      { key: "tasks", route: "OpsTasks", permission: null, labelEn: "Maintenance & readiness", labelAr: "الصيانة والجاهزية" },
+    ],
+  },
+  {
+    key: "admin",
+    labelKey: "opsGroupAdmin",
+    items: [
+      { key: "staff", route: "AdminStaff", permission: null, labelEn: "Staff & permissions", labelAr: "الموظفون والصلاحيات" },
+    ],
+  },
 ];
 
 function Stat({ label, value }: { label: string; value: number | string }) {
@@ -60,9 +103,12 @@ export function OpsHomeScreen() {
   const adminOverview = useAdminOverview();
   const opsDashboard = useOpsDashboard();
 
-  const allowed = SECTIONS.filter(
-    (s) => isAdmin || (s.permission !== null && permissions.includes(s.permission))
-  );
+  const visible = GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter(
+      (s) => isAdmin || (s.permission !== null && permissions.includes(s.permission))
+    ),
+  })).filter((g) => g.items.length > 0);
 
   // /admin/overview: admin or staff with ≥1 grant. /operations/dashboard:
   // role-gated (admin only in practice — no "operations" role exists).
@@ -97,20 +143,22 @@ export function OpsHomeScreen() {
         </Section>
       )}
 
-      <Section title={t("operations")}>
-        {allowed.map((s: OpsSection) => (
-          <Pressable
-            key={s.key}
-            style={styles.sectionRow}
-            onPress={() => navigation.navigate(s.route as never)}
-          >
-            <Text style={styles.sectionRowText}>
-              {locale === "ar" ? s.labelAr : s.labelEn}
-            </Text>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
-        ))}
-      </Section>
+      {visible.map((group) => (
+        <Section key={group.key} title={t(group.labelKey)}>
+          {group.items.map((s) => (
+            <Pressable
+              key={s.key}
+              style={styles.sectionRow}
+              onPress={() => navigation.navigate(s.route as never)}
+            >
+              <Text style={styles.sectionRowText}>
+                {locale === "ar" ? s.labelAr : s.labelEn}
+              </Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          ))}
+        </Section>
+      ))}
     </ScrollView>
   );
 }

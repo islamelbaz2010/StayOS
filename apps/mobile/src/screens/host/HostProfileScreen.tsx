@@ -155,7 +155,31 @@ export function HostProfileScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("hostOperations")}</Text>
+        <Text style={styles.sectionTitle}>{t("hosting")}</Text>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("HostToday")}
+        >
+          <Text style={styles.linkText}>{t("hostToday")} {arrow}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("HostListings")}
+        >
+          <Text style={styles.linkText}>{t("hostListings")} {arrow}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("HostCreateListing")}
+        >
+          <Text style={styles.linkText}>{t("hostNewListing")} {arrow}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkButton}
+          onPress={() => navigation.navigate("HostCalendar")}
+        >
+          <Text style={styles.linkText}>{t("hostCalendar")} {arrow}</Text>
+        </Pressable>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("HostBookings")}
@@ -168,16 +192,10 @@ export function HostProfileScreen() {
         >
           <Text style={styles.linkText}>{t("hostPayments")} {arrow}</Text>
         </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("HostCreateListing")}
-        >
-          <Text style={styles.linkText}>{t("newListing")} {arrow}</Text>
-        </Pressable>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("stays")}</Text>
+        <Text style={styles.sectionTitle}>{t("travelerSection")}</Text>
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("Trips")}

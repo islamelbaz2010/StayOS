@@ -27,6 +27,13 @@ interface OsmMapProps {
   onMarkerPress?: (id: string) => void;
   /** Fired on every map move/zoom end with the current viewport bounds. */
   onRegionChanged?: (bounds: OsmMapBounds) => void;
+  /**
+   * Pin-pick mode: renders a single draggable pin and reports its position
+   * whenever the host moves it (drag end or map tap). Used by the listing
+   * form — matches the web LocationPicker.
+   */
+  pin?: { lat: number; lng: number };
+  onPinMoved?: (lat: number, lng: number) => void;
   style?: ViewStyle;
 }
 
@@ -94,6 +101,25 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
       iconAnchor: [w / 2, 13]
     });
   }
+  var pinLayer = L.layerGroup().addTo(map);
+  var pinMarker = null;
+  window.updatePin = function(lat, lng) {
+    if (pinMarker) {
+      pinMarker.setLatLng([lat, lng]);
+      return;
+    }
+    pinMarker = L.marker([lat, lng], { draggable: true }).addTo(pinLayer);
+    pinMarker.on('dragend', function() {
+      var p = pinMarker.getLatLng();
+      post({ type: 'pin', lat: p.lat, lng: p.lng });
+    });
+    map.setView([lat, lng], Math.max(map.getZoom(), 14));
+  };
+  map.on('click', function(e) {
+    if (!pinMarker) return;
+    pinMarker.setLatLng(e.latlng);
+    post({ type: 'pin', lat: e.latlng.lat, lng: e.latlng.lng });
+  });
   window.updateMarkers = function(markers) {
     markerLayer.clearLayers();
     var pts = [];
@@ -103,7 +129,7 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
       mk.on('click', function() { post({ type: 'marker', id: m.id }); });
       pts.push([m.lat, m.lng]);
     });
-    if (pts.length > 0) {
+    if (pts.length > 0 && !pinMarker) {
       map.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 15 });
     }
   };
@@ -128,16 +154,22 @@ export function OsmMap({
   zoom = 11,
   onMarkerPress,
   onRegionChanged,
+  pin,
+  onPinMoved,
   style,
 }: OsmMapProps) {
   const webRef = useRef<WebView>(null);
   const html = useRef(buildHtml(center, zoom)).current;
   const markersRef = useRef(markers);
   markersRef.current = markers;
+  const pinRef = useRef(pin);
+  pinRef.current = pin;
   const onMarkerPressRef = useRef(onMarkerPress);
   const onRegionChangedRef = useRef(onRegionChanged);
+  const onPinMovedRef = useRef(onPinMoved);
   onMarkerPressRef.current = onMarkerPress;
   onRegionChangedRef.current = onRegionChanged;
+  onPinMovedRef.current = onPinMoved;
 
   const pushMarkers = () => {
     webRef.current?.injectJavaScript(
@@ -145,17 +177,32 @@ export function OsmMap({
     );
   };
 
+  const pushPin = () => {
+    const p = pinRef.current;
+    if (!p) return;
+    webRef.current?.injectJavaScript(
+      `if (window.updatePin) { window.updatePin(${p.lat}, ${p.lng}); } true;`
+    );
+  };
+
   useEffect(() => {
     pushMarkers();
   }, [markers]);
+
+  useEffect(() => {
+    pushPin();
+  }, [pin?.lat, pin?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMessage = (event: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
       if (msg.type === "ready") {
         pushMarkers();
+        pushPin();
       } else if (msg.type === "marker" && msg.id) {
         onMarkerPressRef.current?.(msg.id);
+      } else if (msg.type === "pin") {
+        onPinMovedRef.current?.(msg.lat, msg.lng);
       } else if (msg.type === "bounds") {
         onRegionChangedRef.current?.({
           sw_lat: msg.sw_lat,
@@ -176,7 +223,7 @@ export function OsmMap({
         source={{ html }}
         style={styles.webview}
         onMessage={handleMessage}
-        onLoadEnd={pushMarkers}
+        onLoadEnd={() => { pushMarkers(); pushPin(); }}
         javaScriptEnabled
         originWhitelist={["*"]}
         scrollEnabled={false}

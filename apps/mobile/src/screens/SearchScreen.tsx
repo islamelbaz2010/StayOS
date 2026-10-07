@@ -733,13 +733,17 @@ function PriceRangeControl({
           ]}
         />
         <View
-          style={[sheetStyles.thumb, { left: toX(lo) - 14 }]}
+          style={[sheetStyles.thumb, { left: toX(lo) - 22 }]}
           {...loPan.panHandlers}
-        />
+        >
+          <View style={sheetStyles.thumbDot} />
+        </View>
         <View
-          style={[sheetStyles.thumb, { left: toX(hi) - 14 }]}
+          style={[sheetStyles.thumb, { left: toX(hi) - 22 }]}
           {...hiPan.panHandlers}
-        />
+        >
+          <View style={sheetStyles.thumbDot} />
+        </View>
       </View>
 
       <View style={sheetStyles.priceRow}>
@@ -1369,6 +1373,9 @@ const sheetStyles = StyleSheet.create({
     height: 64,
     gap: 1,
     marginTop: spacing.sm,
+    // Inset matches sliderTrack so thumb centers never sit inside the
+    // Android back-gesture edge zone when at range extremes.
+    marginHorizontal: spacing.md,
   },
   histBar: {
     flex: 1,
@@ -1385,6 +1392,7 @@ const sheetStyles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     marginTop: -spacing.xs,
+    marginHorizontal: spacing.md,
   },
   sliderRail: {
     height: 4,
@@ -1399,6 +1407,14 @@ const sheetStyles = StyleSheet.create({
   },
   thumb: {
     position: "absolute",
+    // 44dp touch target — PanResponder ignores hitSlop, so the view itself
+    // must be large; the visible handle is the inner dot.
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  thumbDot: {
     width: 28,
     height: 28,
     borderRadius: 14,

@@ -630,7 +630,8 @@ export interface Adjustment {
 export interface ReportCatalogEntry {
   key: string;
   category: string;
-  columns: Array<{ key: string; label_en?: string; label_ar?: string }>;
+  /** Stable i18n keys — labels come from REPORT_COLUMNS, same as web. */
+  columns: string[];
   date_basis: string;
   filters: string[];
   sortable: string[];
@@ -638,16 +639,20 @@ export interface ReportCatalogEntry {
   implemented: boolean;
   unavailable_reason: string | null;
   note: string | null;
+  total_labels?: Record<string, string>;
 }
 
 export interface ReportResult {
   key: string;
-  columns: Array<{ key: string; label_en?: string; label_ar?: string }>;
+  category: string;
+  date_basis: string;
+  columns: string[];
   rows: Array<Record<string, unknown>>;
   total: number;
   page: number;
   page_size: number;
-  totals: Record<string, number> | null;
+  totals: Record<string, number>;
+  total_labels?: Record<string, string>;
   generated_at: string;
   note: string | null;
 }

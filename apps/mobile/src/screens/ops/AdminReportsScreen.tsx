@@ -8,6 +8,7 @@ import { Empty, PrimaryButton, Section } from "../../components/UI";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import {
   REPORT_CATEGORIES,
+  REPORT_COLUMNS,
   REPORT_REPORTS,
   REPORT_DATEBASIS,
   REPORT_REASONS,
@@ -62,15 +63,19 @@ export function AdminReportsScreen() {
           ) : (
             (result?.rows ?? []).map((row: Record<string, unknown>, i: number) => (
               <View key={i} style={styles.reportRow}>
-                {cols.map((c: { key: string; label_en?: string; label_ar?: string }) => {
-                  const v = row[c.key];
+                {cols.map((c: string) => {
+                  const v = row[c];
                   if (v === null || v === undefined) return null;
-                  const label = locale === "ar" ? (c.label_ar ?? c.key) : (c.label_en ?? c.key);
+                  const col = REPORT_COLUMNS[c];
+                  const label =
+                    (locale === "ar" ? col?.ar : col?.en) ?? c;
                   return (
-                    <View key={c.key} style={styles.reportCell}>
+                    <View key={c} style={styles.reportCell}>
                       <Text style={styles.cellLabel}>{label}</Text>
                       <Text style={styles.cellValue}>
-                        {moneyCols.has(c.key) ? `${Number(v).toLocaleString()} ` : ""}
+                        {moneyCols.has(c) && typeof v === "number"
+                          ? `${v.toLocaleString()} `
+                          : ""}
                         {String(v)}
                       </Text>
                     </View>
@@ -80,6 +85,24 @@ export function AdminReportsScreen() {
             ))
           )}
         </Section>
+        {result && Object.keys(result.totals ?? {}).length > 0 && (
+          <Section title={t("totals")}>
+            {Object.entries(result.totals).map(([c, v]) => {
+              const labelKey = (result.total_labels ?? {})[c];
+              const col = REPORT_COLUMNS[labelKey ?? c] ?? REPORT_COLUMNS[c];
+              const label =
+                (locale === "ar" ? col?.ar : col?.en) ?? labelKey ?? c;
+              return (
+                <View key={c} style={styles.reportCell}>
+                  <Text style={styles.cellLabel}>{label}</Text>
+                  <Text style={styles.cellValue}>
+                    {typeof v === "number" ? v.toLocaleString() : String(v)}
+                  </Text>
+                </View>
+              );
+            })}
+          </Section>
+        )}
         {result && (
           <Text style={styles.total}>
             {t("totalRows")}: {result.total}

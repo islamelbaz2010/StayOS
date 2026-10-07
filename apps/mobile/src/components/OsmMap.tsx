@@ -104,16 +104,19 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
   var pinLayer = L.layerGroup().addTo(map);
   var pinMarker = null;
   window.updatePin = function(lat, lng) {
-    if (pinMarker) {
-      pinMarker.setLatLng([lat, lng]);
+    if (!pinMarker) {
+      pinMarker = L.marker([lat, lng], { draggable: true }).addTo(pinLayer);
+      pinMarker.on('dragend', function() {
+        var p = pinMarker.getLatLng();
+        post({ type: 'pin', lat: p.lat, lng: p.lng });
+      });
+      map.setView([lat, lng], Math.max(map.getZoom(), 14));
       return;
     }
-    pinMarker = L.marker([lat, lng], { draggable: true }).addTo(pinLayer);
-    pinMarker.on('dragend', function() {
-      var p = pinMarker.getLatLng();
-      post({ type: 'pin', lat: p.lat, lng: p.lng });
-    });
-    map.setView([lat, lng], Math.max(map.getZoom(), 14));
+    pinMarker.setLatLng([lat, lng]);
+    // Programmatic moves (area pick, geocode) should pan the map; a drag
+    // round-trip lands at the same spot so re-centering is a no-op there.
+    map.panTo([lat, lng]);
   };
   map.on('click', function(e) {
     if (!pinMarker) return;

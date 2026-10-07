@@ -13,7 +13,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: "listingsDraft",
   PENDING_VERIFICATION: "listingsPending",
-  LISTED: "listingsListed",
+  LISTED: "listingListedStatus",
   UNLISTED: "listingsUnlisted",
   ARCHIVED: "listingsArchived",
   REJECTED: "listingRejected",

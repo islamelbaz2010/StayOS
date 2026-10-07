@@ -626,10 +626,19 @@ function PriceRangeControl({
   const [lo, setLo] = useState(appliedMin);
   const [hi, setHi] = useState(appliedMax);
   const [trackW, setTrackW] = useState(0);
-  const loRef = useRef(lo);
-  const hiRef = useRef(hi);
-  loRef.current = lo;
-  hiRef.current = hi;
+
+  // PanResponders are created once — every value they need is read through
+  // this ref so callbacks never see stale trackWidth/bounds/positions.
+  const st = useRef({ trackW: 0, min: 0, max: 1, lo, hi });
+  st.current = {
+    trackW,
+    min: distMin ?? 0,
+    max: distMax ?? 1,
+    lo,
+    hi,
+  };
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     setLo(appliedMin);
@@ -658,15 +667,26 @@ function PriceRangeControl({
       onMoveShouldSetPanResponderCapture: () => true,
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
-        dragStart.current[which] =
-          which === "lo" ? toX(loRef.current) : toX(hiRef.current);
+        const s = st.current;
+        const w = Math.max(1, s.trackW);
+        const v = which === "lo" ? s.lo : s.hi;
+        dragStart.current[which] = ((v - s.min) / Math.max(1, s.max - s.min)) * w;
       },
       onPanResponderMove: (_e, g) => {
-        const v = toValue(dragStart.current[which] + g.dx);
-        if (which === "lo") setLo(Math.min(v, hiRef.current));
-        else setHi(Math.max(v, loRef.current));
+        const s = st.current;
+        const w = Math.max(1, s.trackW);
+        const x = Math.max(0, Math.min(w, dragStart.current[which] + g.dx));
+        const v = Math.round(s.min + (x / w) * Math.max(1, s.max - s.min));
+        if (which === "lo") setLo(Math.min(v, s.hi));
+        else setHi(Math.max(v, s.lo));
       },
-      onPanResponderRelease: commit,
+      onPanResponderRelease: () => {
+        const s = st.current;
+        onChangeRef.current(
+          s.lo > s.min ? String(s.lo) : "",
+          s.hi < s.max ? String(s.hi) : ""
+        );
+      },
     });
 
   const loPan = useRef(panFor("lo")).current;
@@ -721,9 +741,29 @@ function PriceRangeControl({
         })}
       </View>
 
-      <View
+      <Pressable
         style={sheetStyles.sliderTrack}
         onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}
+        // Tap on the track nudges the nearest thumb — keeps the control
+        // usable where a system edge gesture would otherwise eat the drag.
+        onPress={(e) => {
+          const s = st.current;
+          const x = e.nativeEvent.locationX;
+          const w = Math.max(1, s.trackW);
+          const v = Math.round(
+            s.min + (Math.max(0, Math.min(w, x)) / w) * Math.max(1, s.max - s.min)
+          );
+          const loX = ((s.lo - s.min) / Math.max(1, s.max - s.min)) * w;
+          const hiX = ((s.hi - s.min) / Math.max(1, s.max - s.min)) * w;
+          const nlo = Math.abs(x - loX) <= Math.abs(x - hiX) ? Math.min(v, s.hi) : s.lo;
+          const nhi = Math.abs(x - loX) <= Math.abs(x - hiX) ? s.hi : Math.max(v, s.lo);
+          setLo(nlo);
+          setHi(nhi);
+          onChangeRef.current(
+            nlo > s.min ? String(nlo) : "",
+            nhi < s.max ? String(nhi) : ""
+          );
+        }}
       >
         <View style={sheetStyles.sliderRail} />
         <View
@@ -744,7 +784,7 @@ function PriceRangeControl({
         >
           <View style={sheetStyles.thumbDot} />
         </View>
-      </View>
+      </Pressable>
 
       <View style={sheetStyles.priceRow}>
         <View style={sheetStyles.priceField}>
@@ -755,7 +795,7 @@ function PriceRangeControl({
             value={String(lo)}
             onChangeText={(v) => {
               const n = Number(v.replace(/[^0-9]/g, ""));
-              setLo(Math.min(isNaN(n) ? distMin! : n, hiRef.current));
+              setLo(Math.min(isNaN(n) ? distMin! : n, st.current.hi));
             }}
             onEndEditing={commit}
           />
@@ -769,7 +809,7 @@ function PriceRangeControl({
             value={String(hi)}
             onChangeText={(v) => {
               const n = Number(v.replace(/[^0-9]/g, ""));
-              setHi(Math.max(isNaN(n) ? distMax! : n, loRef.current));
+              setHi(Math.max(isNaN(n) ? distMax! : n, st.current.lo));
             }}
             onEndEditing={commit}
           />

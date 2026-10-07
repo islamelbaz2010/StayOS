@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     fontSize: fontSize.md,
     color: colors.text,
-    marginRight: spacing.sm,
+    marginEnd: spacing.sm,
   },
   sendButton: {
     backgroundColor: colors.primary,

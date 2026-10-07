@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -178,6 +179,7 @@ export function SearchScreen() {
   const [mapBounds, setMapBounds] = useState<OsmMapBounds | null>(null);
   const [boundsDirty, setBoundsDirty] = useState(false);
   const [appliedBounds, setAppliedBounds] = useState<OsmMapBounds | null>(null);
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
@@ -285,7 +287,12 @@ export function SearchScreen() {
       lat: l.lat,
       lng: l.lng,
       label: formatMoney(l.price, currencyLabel(l.currency, t("egp"))),
+      selected: l.id === selectedMarkerId,
     }));
+
+  const selectedListing = selectedMarkerId
+    ? listings.find((l: any) => l.id === selectedMarkerId)
+    : undefined;
 
   const applyMapArea = () => {
     if (!mapBounds) return;
@@ -448,12 +455,53 @@ export function SearchScreen() {
         <View style={styles.mapContainer}>
           <OsmMap
             markers={mapMarkers}
-            onMarkerPress={goToDetail}
+            onMarkerPress={(id) => setSelectedMarkerId(id)}
             onRegionChanged={(b) => {
               setMapBounds(b);
               setBoundsDirty(true);
             }}
           />
+          {selectedListing && (
+            <Pressable
+              style={styles.mapPreviewCard}
+              onPress={() => goToDetail(selectedListing.id)}
+            >
+              {selectedListing.cover_image ? (
+                <Image
+                  source={{ uri: selectedListing.cover_image }}
+                  style={styles.mapPreviewImage}
+                />
+              ) : (
+                <View style={[styles.mapPreviewImage, styles.mapPreviewPlaceholder]} />
+              )}
+              <View style={styles.mapPreviewBody}>
+                <Text style={styles.mapPreviewTitle} numberOfLines={1}>
+                  {locale === "ar"
+                    ? selectedListing.title_ar || selectedListing.title
+                    : selectedListing.title_en || selectedListing.title}
+                </Text>
+                <Text style={styles.mapPreviewMeta} numberOfLines={1}>
+                  {selectedListing.city}, {selectedListing.governorate}
+                </Text>
+                <Text style={styles.mapPreviewPrice}>
+                  {formatMoney(
+                    selectedListing.price,
+                    currencyLabel(selectedListing.currency, t("egp"))
+                  )}{" "}
+                  / {t("perNight")}
+                </Text>
+              </View>
+              <Pressable
+                style={styles.mapPreviewClose}
+                onPress={() => setSelectedMarkerId(null)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t("close")}
+              >
+                <Text style={styles.mapPreviewCloseText}>✕</Text>
+              </Pressable>
+            </Pressable>
+          )}
           {boundsDirty && (
             <Pressable style={styles.searchAreaButton} onPress={applyMapArea}>
               <Text style={styles.searchAreaButtonText}>{t("searchArea")}</Text>
@@ -979,6 +1027,59 @@ const styles = StyleSheet.create({
   mapEmptyText: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
+    fontWeight: "600",
+  },
+  mapPreviewCard: {
+    position: "absolute",
+    bottom: spacing.lg,
+    left: spacing.lg,
+    right: spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  mapPreviewImage: {
+    width: 88,
+    height: 88,
+    backgroundColor: colors.surface,
+  },
+  mapPreviewPlaceholder: {},
+  mapPreviewBody: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: 2,
+  },
+  mapPreviewTitle: {
+    fontSize: fontSize.md,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  mapPreviewMeta: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+  },
+  mapPreviewPrice: {
+    fontSize: fontSize.sm,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  mapPreviewClose: {
+    padding: spacing.md,
+    alignSelf: "flex-start",
+  },
+  mapPreviewCloseText: {
+    fontSize: fontSize.md,
+    color: colors.textTertiary,
     fontWeight: "600",
   },
 });

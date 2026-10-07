@@ -169,6 +169,8 @@ export function ListingDetailScreen() {
             style={styles.heartButton}
             onPress={() => toggleFav.mutate(unitId)}
             hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t("favorites")}
           >
             <Text style={styles.heart}>{isFavorite ? "♥" : "♡"}</Text>
           </Pressable>

@@ -69,6 +69,8 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
             style={styles.heartButton}
             onPress={handleToggleFavorite}
             hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t("favorites")}
           >
             <Animated.Text style={[styles.heart, { transform: [{ scale: heartScale }] }]}>
               {isFavorite ? "♥" : "♡"}

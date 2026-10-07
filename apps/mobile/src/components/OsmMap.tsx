@@ -8,6 +8,8 @@ export interface OsmMapMarker {
   lng: number;
   /** Price-pill label (already formatted/localized by the caller). */
   label?: string;
+  /** Renders the pill in its emphasized selected state. */
+  selected?: boolean;
 }
 
 export interface OsmMapBounds {
@@ -48,6 +50,10 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
     background: #0F766E; color: #fff; border: 1px solid #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.25);
   }
+  .stayos-price-pill.selected {
+    background: #0D5A54; border: 2px solid #0F766E;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
   .stayos-dot {
     width: 14px; height: 14px; border-radius: 9999px;
     transform: translate(-50%, -50%);
@@ -70,9 +76,9 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
   function post(msg) {
     try { window.ReactNativeWebView.postMessage(JSON.stringify(msg)); } catch (e) {}
   }
-  function icon(label) {
+  function icon(label, selected) {
     var html = label
-      ? '<div class="stayos-price-pill">' + label + '</div>'
+      ? '<div class="stayos-price-pill' + (selected ? ' selected' : '') + '">' + label + '</div>'
       : '<div class="stayos-dot"></div>';
     return L.divIcon({ className: 'stayos-marker', html: html, iconSize: [0,0], iconAnchor: [0,0] });
   }
@@ -81,7 +87,7 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
     var pts = [];
     markers.forEach(function(m) {
       if (typeof m.lat !== 'number' || typeof m.lng !== 'number') return;
-      var mk = L.marker([m.lat, m.lng], { icon: icon(m.label) }).addTo(markerLayer);
+      var mk = L.marker([m.lat, m.lng], { icon: icon(m.label, m.selected), zIndexOffset: m.selected ? 1000 : 0 }).addTo(markerLayer);
       mk.on('click', function() { post({ type: 'marker', id: m.id }); });
       pts.push([m.lat, m.lng]);
     });

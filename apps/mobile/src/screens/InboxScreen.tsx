@@ -29,7 +29,7 @@ export function InboxScreen() {
   if (isLoading) return <LoadingSpinner />;
   if (isError) return <ErrorView message={t("error")} onRetry={refetch} />;
   if (!conversations || conversations.length === 0) {
-    return <EmptyView title={t("noMessages")} />;
+    return <EmptyView icon="💬" title={t("noMessages")} />;
   }
 
   const renderItem = ({ item }: { item: ConversationListItem }) => {
@@ -45,31 +45,38 @@ export function InboxScreen() {
           })
         }
       >
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {title}
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {(item.counterparty_name || item.unit_title || "?").charAt(0).toUpperCase()}
           </Text>
-          {item.last_message && (
-            <Text style={styles.cardTime}>{formatTime(item.last_message.created_at)}</Text>
-          )}
         </View>
-        {item.unit_title && item.counterparty_name && (
-          <Text style={styles.cardSubtitle} numberOfLines={1}>
-            {item.unit_title}
-          </Text>
-        )}
-        <View style={styles.previewRow}>
-          <Text
-            style={[styles.preview, item.unread_count > 0 && styles.previewUnread]}
-            numberOfLines={2}
-          >
-            {preview}
-          </Text>
-          {item.unread_count > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{item.unread_count}</Text>
-            </View>
+        <View style={styles.cardBody}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {title}
+            </Text>
+            {item.last_message && (
+              <Text style={styles.cardTime}>{formatTime(item.last_message.created_at)}</Text>
+            )}
+          </View>
+          {item.unit_title && item.counterparty_name && (
+            <Text style={styles.cardSubtitle} numberOfLines={1}>
+              {item.unit_title}
+            </Text>
           )}
+          <View style={styles.previewRow}>
+            <Text
+              style={[styles.preview, item.unread_count > 0 && styles.previewUnread]}
+              numberOfLines={2}
+            >
+              {preview}
+            </Text>
+            {item.unread_count > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{item.unread_count}</Text>
+              </View>
+            )}
+          </View>
         </View>
       </Pressable>
     );
@@ -105,10 +112,28 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: spacing.md,
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: fontSize.lg,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  cardBody: {
+    flex: 1,
   },
   cardHeader: {
     flexDirection: "row",

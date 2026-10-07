@@ -52,7 +52,9 @@ export function HostListingPhotosScreen() {
     listing.permission_scope === "admin" ||
     listing.permission_scope === "full_access";
 
-  const photos = listing.photos;
+  const photos = [...listing.photos].sort(
+    (a, b) => a.display_order - b.display_order
+  );
 
   // Same three-step upload as the web PhotoUpload: presign → PUT to the
   // presigned URL → POST the stored photo record.
@@ -183,9 +185,7 @@ export function HostListingPhotosScreen() {
         <EmptyView title={t("listingNoPhotos")} />
       ) : (
         <View style={styles.photoGrid}>
-          {[...photos]
-            .sort((a, b) => a.display_order - b.display_order)
-            .map((photo: HostListingPhoto, index: number) => (
+          {photos.map((photo: HostListingPhoto, index: number) => (
             <View key={photo.id} style={styles.photoCard}>
               <Image source={{ uri: photo.url }} style={styles.photoImage} />
               {photo.is_cover && (

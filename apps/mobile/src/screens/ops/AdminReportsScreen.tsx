@@ -11,6 +11,7 @@ import {
   REPORT_COLUMNS,
   REPORT_REPORTS,
   REPORT_DATEBASIS,
+  REPORT_NOTES,
   REPORT_REASONS,
 } from "../../lib/reportNames";
 import type { ReportCatalogEntry } from "../../lib/types";
@@ -50,10 +51,16 @@ export function AdminReportsScreen() {
     const result = report.data;
     const cols = result?.columns ?? entry?.columns ?? [];
     const moneyCols = new Set(entry?.money_columns ?? []);
+    const noteKey = result?.note ?? entry?.note;
+    const noteLabel = noteKey
+      ? (locale === "ar"
+          ? REPORT_NOTES[noteKey]?.ar
+          : REPORT_NOTES[noteKey]?.en) ?? noteKey
+      : null;
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Section title={name(selected)}>
-          {result?.note ? <Text style={styles.note}>{result.note}</Text> : null}
+          {noteLabel ? <Text style={styles.note}>{noteLabel}</Text> : null}
           {report.isLoading ? (
             <LoadingSpinner />
           ) : report.error ? (
@@ -74,9 +81,8 @@ export function AdminReportsScreen() {
                       <Text style={styles.cellLabel}>{label}</Text>
                       <Text style={styles.cellValue}>
                         {moneyCols.has(c) && typeof v === "number"
-                          ? `${v.toLocaleString()} `
-                          : ""}
-                        {String(v)}
+                          ? v.toLocaleString()
+                          : String(v)}
                       </Text>
                     </View>
                   );

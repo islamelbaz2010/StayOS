@@ -185,4 +185,10 @@ export const REPORT_COLUMNS: Record<string, { en: string; ar: string }> = {
   vat_recognised_egp: { en: 'VAT Recognised (EGP)', ar: 'ض.ق.م معترف بها (ج.م)' },
   vat_reversed_egp: { en: 'VAT Reversed (EGP)', ar: 'ض.ق.م معكوسة (ج.م)' },
   verified_at: { en: 'Verified', ar: 'تاريخ التحقق' },
+};export const REPORT_NOTES: Record<string, { en: string; ar: string }> = {
+  economics_not_revenue: { en: 'Booking economics for the selected bookings — includes unpaid, cancelled and refunded bookings. Totals are gross booking value, not collected revenue.', ar: 'اقتصاديات الحجز للحجوزات المحددة — تشمل الحجوزات غير المدفوعة والملغاة والمستردة. الإجماليات قيمة إجمالية للحجوزات وليست إيرادًا محصّلًا.' },
+  recognition_semantics: { en: 'Ledger recognition basis: revenue, VAT and host payable are net signed ledger balances; collected/refunded come from capture and refund transactions. VAT payable = ledger-recognised VAT + VAT still held inside open escrows.', ar: 'أساس الاعتراف في القيود: الإيراد وضريبة القيمة المضافة والمستحق للمضيف أرصدة قيود صافية موقّعة؛ المحصّل والمسترد من معاملات التحصيل والاسترداد. ض.ق.م المستحقة = المعترف بها في القيود + المحتجزة داخل الضمانات المفتوحة.' },
+  signed_ledger: { en: 'Signed ledger entries — credits are positive, debits/reversals are negative. Net total reconciles with Admin Earnings.', ar: 'قيود موقّعة — الدائن موجب والمدين/العكسيات سالبة. الصافي يتطابق مع أرباح الإدارة.' },
+  vat_calculated_semantics: { en: 'VAT calculated on booking economics for the selected bookings — includes refunded bookings whose VAT is later reversed. Not the payable balance.', ar: 'ضريبة القيمة المضافة المحسوبة على اقتصاديات الحجوزات المحددة — تشمل الحجوزات المستردة التي تُعكس ضريبتها لاحقًا. ليست الرصيد المستحق.' },
+  vat_payable_semantics: { en: 'VAT payable per booking = VAT calculated − VAT reversed on refunds. A fully refunded booking contributes zero payable VAT.', ar: 'ض.ق.م المستحقة لكل حجز = المحسوبة − المعكوسة عند الاسترداد. الحجز المسترد بالكامل يساهم بصفر في المستحق.' },
 };

@@ -135,7 +135,13 @@ export type RootStackParamList = {
   Support: undefined;
   MenuGroup: {
     title: string;
-    items: { key: string; label: string; route: string; icon?: string }[];
+    items: {
+      key: string;
+      label: string;
+      route: string;
+      params?: Record<string, unknown>;
+      icon?: string;
+    }[];
   };
 };
 

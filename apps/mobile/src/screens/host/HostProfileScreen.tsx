@@ -164,7 +164,7 @@ export function HostProfileScreen() {
         <Text style={styles.sectionTitle}>{t("hostProfileTitle")}</Text>
         <StatRow label={t("hostProfileListings")} value={`${profile.total_listings} (${profile.listed_listings} ${t("listingsListed").replace("{count} ", "")})`} />
         <StatRow label={t("hostProfileCoHostUnits")} value={String(profile.co_host_units)} />
-        <StatRow label={t("hostProfileKyc")} value={profile.kyc_status} />
+        <StatRow label={t("hostProfileKyc")} value={profile.kyc_status === "verified" ? t("verified") : profile.kyc_status} />
         {profile.kyc_status !== "verified" && (
           <Pressable
             style={styles.linkButton}
@@ -200,10 +200,10 @@ export function HostProfileScreen() {
             navigation.navigate("MenuGroup", {
               title: t("hosting"),
               items: [
-                { key: "today", label: t("hostToday"), route: "HostToday", icon: "today-outline" },
-                { key: "listings", label: t("hostListings"), route: "HostListings", icon: "business-outline" },
+                { key: "today", label: t("hostToday"), route: "Home", params: { screen: "HostTodayTab" }, icon: "today-outline" },
+                { key: "listings", label: t("hostListings"), route: "Home", params: { screen: "HostListingsTab" }, icon: "business-outline" },
                 { key: "newListing", label: t("hostNewListing"), route: "HostCreateListing", icon: "add-circle-outline" },
-                { key: "calendar", label: t("hostCalendar"), route: "HostCalendar", icon: "calendar-outline" },
+                { key: "calendar", label: t("hostCalendar"), route: "Home", params: { screen: "HostCalendarTab" }, icon: "calendar-outline" },
                 { key: "bookings", label: t("hostBookings"), route: "HostBookings", icon: "clipboard-outline" },
                 { key: "payments", label: t("hostPayments"), route: "HostPayments", icon: "card-outline" },
                 { key: "earnings", label: t("hostEarnings"), route: "HostEarnings", icon: "stats-chart-outline" },

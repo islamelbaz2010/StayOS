@@ -25,7 +25,13 @@ export function MenuGroupScreen() {
         <Pressable
           key={item.key}
           style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-          onPress={() => navigation.navigate(item.route as never)}
+          onPress={() =>
+            navigation.navigate(
+              ...(item.params
+                ? [item.route, item.params]
+                : [item.route]) as never
+            )
+          }
           accessibilityRole="button"
         >
           {item.icon ? (

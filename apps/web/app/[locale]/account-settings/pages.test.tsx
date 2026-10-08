@@ -211,7 +211,6 @@ describe("Account settings hub", () => {
       "activity",
       "language",
       "payments",
-      "taxes",
     ]) {
       expect(screen.getByText(cards[key].title)).toBeInTheDocument();
     }

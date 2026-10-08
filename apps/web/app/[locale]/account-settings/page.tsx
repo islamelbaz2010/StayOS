@@ -187,12 +187,8 @@ export default function AccountSettingsPage() {
               href={`/${locale}/account-settings/payments`}
               action={t("open")}
             />
-            <Card
-              title={t("cards.taxes.title")}
-              body={t("cards.taxes.body")}
-              href={`/${locale}/account-settings/payments`}
-              action={t("open")}
-            />
+            {/* Tax ID lives only in the dedicated payments/tax surface —
+                never on the general account settings index. */}
             {isHost ? (
               <Card
                 title={t("cards.hosting.title")}

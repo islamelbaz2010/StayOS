@@ -61,6 +61,9 @@ export function HomeScreen() {
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   const [guests, setGuests] = useState(1);
   const [showDates, setShowDates] = useState(false);
+  const [brokenCovers, setBrokenCovers] = useState<ReadonlySet<string>>(
+    () => new Set()
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -82,15 +85,20 @@ export function HomeScreen() {
 
   const featured = useMemo(() => (feed ?? []).slice(0, 10), [feed]);
 
-  // Cover image per destination, taken from real listings in that city or
-  // governorate — falls back to the branded pin tile when none exists.
-  const coverByPlace = useMemo(() => {
-    const map = new Map<string, string>();
+  // All covers per destination (feed order) — a card falls back through
+  // them on error, then to the branded pin tile when none survive.
+  const coversByPlace = useMemo(() => {
+    const map = new Map<string, string[]>();
     for (const l of feed ?? []) {
       if (!l.cover_image) continue;
-      if (l.city && !map.has(`c:${l.city}`)) map.set(`c:${l.city}`, l.cover_image);
-      if (l.governorate && !map.has(`g:${l.governorate}`)) {
-        map.set(`g:${l.governorate}`, l.cover_image);
+      for (const key of [
+        l.city ? `c:${l.city}` : null,
+        l.governorate ? `g:${l.governorate}` : null,
+      ]) {
+        if (!key) continue;
+        const list = map.get(key) ?? [];
+        if (!list.includes(l.cover_image)) list.push(l.cover_image);
+        map.set(key, list);
       }
     }
     return map;
@@ -283,9 +291,12 @@ export function HomeScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinationRow}>
           {(popular ?? []).map((place: LocationSuggestion, i: number) => {
             const name = locale === "ar" ? place.canonical_name_ar : place.canonical_name_en;
-            const cover =
-              coverByPlace.get(`c:${place.city}`) ??
-              coverByPlace.get(`g:${place.governorate}`);
+            const candidates = (
+              coversByPlace.get(`c:${place.city}`) ??
+              coversByPlace.get(`g:${place.governorate}`) ??
+              []
+            ).filter((c) => !brokenCovers.has(c));
+            const cover = candidates[0];
             return (
               <Pressable
                 key={`${place.canonical_name_en}:${i}`}
@@ -293,7 +304,19 @@ export function HomeScreen() {
                 onPress={() => goToSearch(place.canonical_name_en)}
               >
                 {cover ? (
-                  <Image source={{ uri: cover }} style={styles.destinationImage} resizeMode="cover" />
+                  <Image
+                    source={{ uri: cover }}
+                    style={styles.destinationImage}
+                    resizeMode="cover"
+                    onError={() =>
+                      setBrokenCovers((prev) => {
+                        if (prev.has(cover)) return prev;
+                        const next = new Set(prev);
+                        next.add(cover);
+                        return next;
+                      })
+                    }
+                  />
                 ) : (
                   <View style={[styles.destinationImage, styles.destinationFallback]}>
                     <Ionicons name="location" size={28} color={colors.accentText} />

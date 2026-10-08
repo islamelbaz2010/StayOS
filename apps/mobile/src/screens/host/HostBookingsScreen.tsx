@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { useMemo, useState } from "react";
+import { FlatList, StyleSheet, TextInput, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
@@ -9,7 +9,7 @@ import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { Empty, FilterChips, ListRow, StatusBadge } from "../../components/UI";
 import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { RootStackParamList } from "../../../App";
-import type { ListingDetail } from "../../lib/types";
+import type { HostBooking, ListingDetail } from "../../lib/types";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,15 +36,42 @@ export function HostBookingsScreen() {
   const navigation = useNavigation<Nav>();
   const [status, setStatus] = useState<string | null>(null);
   const [unitId, setUnitId] = useState<string | null>(null);
+  const [dateBucket, setDateBucket] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const { data: listings } = useHostListings();
   const { data, isLoading, error, refetch } = useHostBookings({
     status: status ?? undefined,
-    unit_id: unitId ?? undefined,
-    search: search.trim() || undefined,
     limit: 100,
   });
+
+  // The backend only accepts `status`; listing/search/date filters are
+  // applied client-side against the returned real bookings.
+  const items = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const q = search.trim().toLowerCase();
+    return (data?.items ?? []).filter((b: HostBooking) => {
+      if (unitId && b.unit_id !== unitId) return false;
+      if (
+        dateBucket === "upcoming" &&
+        !(b.check_in > today)
+      )
+        return false;
+      if (
+        dateBucket === "in_progress" &&
+        !(b.check_in <= today && b.check_out > today)
+      )
+        return false;
+      if (dateBucket === "past" && !(b.check_out <= today)) return false;
+      if (
+        q &&
+        !(b.unit_title ?? "").toLowerCase().includes(q) &&
+        !b.id.toLowerCase().includes(q)
+      )
+        return false;
+      return true;
+    });
+  }, [data, unitId, dateBucket, search]);
 
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
   const unitOptions = [
@@ -72,6 +99,16 @@ export function HostBookingsScreen() {
       {unitOptions.length > 1 && (
         <FilterChips options={unitOptions} value={unitId} onChange={setUnitId} />
       )}
+      <FilterChips
+        options={[
+          { key: "", label: t("allDates") },
+          { key: "upcoming", label: t("upcoming") },
+          { key: "in_progress", label: t("inProgress") },
+          { key: "past", label: t("past") },
+        ]}
+        value={dateBucket}
+        onChange={setDateBucket}
+      />
 
       {isLoading ? (
         <LoadingSpinner />
@@ -79,7 +116,7 @@ export function HostBookingsScreen() {
         <ErrorView message={t("error")} onRetry={refetch} />
       ) : (
         <FlatList
-          data={data?.items ?? []}
+          data={items}
           keyExtractor={(b) => b.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (

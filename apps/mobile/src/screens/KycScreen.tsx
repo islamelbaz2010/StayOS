@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   chipTextActive: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontWeight: "600",
   },
   successTitle: {
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: fontSize.lg,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
     marginBottom: spacing.sm,
   },
   rejectBanner: {
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: {
-    color: colors.primary,
+    color: colors.accentText,
     fontSize: fontSize.sm,
     fontWeight: "600",
   },

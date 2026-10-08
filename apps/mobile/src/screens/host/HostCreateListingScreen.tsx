@@ -98,6 +98,9 @@ export function HostCreateListingScreen() {
     description_en: "",
     base_price_egp: 500,
     cleaning_fee_egp: 0,
+    listing_discount_pct: 0,
+    weekly_discount_pct: 0,
+    monthly_discount_pct: 0,
     cancellation_policy: "flexible",
     min_nights: 1,
     max_nights: 30,
@@ -344,9 +347,9 @@ export function HostCreateListingScreen() {
           disabled={geocoding}
         >
           {geocoding ? (
-            <ActivityIndicator size="small" color={colors.primary} />
+            <ActivityIndicator size="small" color={colors.accentText} />
           ) : (
-            <Ionicons name="locate-outline" size={16} color={colors.primary} />
+            <Ionicons name="locate-outline" size={16} color={colors.accentText} />
           )}
           <Text style={styles.locateButtonText}>{t("listingLocateOnMap")}</Text>
         </Pressable>
@@ -379,6 +382,39 @@ export function HostCreateListingScreen() {
             keyboardType="numeric"
             onChangeText={(v) => setField("cleaning_fee_egp", Number(v) || 0)}
           />
+        </Field>
+        <Text style={styles.discountTitle}>{t("listingDiscountsTitle")}</Text>
+        <Field label={t("listingDiscountPct")}>
+          <TextInput
+            style={styles.input}
+            value={String(form.listing_discount_pct)}
+            keyboardType="numeric"
+            onChangeText={(v) =>
+              setField("listing_discount_pct", Math.max(0, Math.min(90, Math.round(Number(v) || 0))))
+            }
+          />
+        </Field>
+        <Field label={t("listingWeeklyDiscount")}>
+          <TextInput
+            style={styles.input}
+            value={String(form.weekly_discount_pct)}
+            keyboardType="numeric"
+            onChangeText={(v) =>
+              setField("weekly_discount_pct", Math.max(0, Math.min(90, Math.round(Number(v) || 0))))
+            }
+          />
+          <Text style={styles.hint}>{t("listingWeeklyDiscountHint")}</Text>
+        </Field>
+        <Field label={t("listingMonthlyDiscount")}>
+          <TextInput
+            style={styles.input}
+            value={String(form.monthly_discount_pct)}
+            keyboardType="numeric"
+            onChangeText={(v) =>
+              setField("monthly_discount_pct", Math.max(0, Math.min(90, Math.round(Number(v) || 0))))
+            }
+          />
+          <Text style={styles.hint}>{t("listingMonthlyDiscountHint")}</Text>
         </Field>
       </View>
 
@@ -537,6 +573,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.md,
   },
+  discountTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+    marginBottom: spacing.md,
+  },
+  hint: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
   field: {
     marginBottom: spacing.lg,
   },
@@ -587,7 +637,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   chipTextSelected: {
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   capacityRow: {
@@ -639,7 +689,7 @@ const styles = StyleSheet.create({
   },
   locateButtonText: {
     fontSize: fontSize.sm,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   pickerBackdrop: {
@@ -690,7 +740,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   createButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.lg,
     fontWeight: "700",
   },

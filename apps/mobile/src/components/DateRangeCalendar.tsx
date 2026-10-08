@@ -115,7 +115,7 @@ export function DateRangeCalendar({
         ...marks[key],
         startingDay: true,
         endingDay: true,
-        color: colors.primary,
+        color: colors.accentText,
         textColor: colors.white,
       };
     } else if (checkIn && checkOut) {
@@ -124,7 +124,7 @@ export function DateRangeCalendar({
         const key = toKey(cursor);
         marks[key] = {
           ...marks[key],
-          color: colors.primary,
+          color: colors.accentText,
           textColor: colors.white,
           startingDay: key === toKey(checkIn),
           endingDay: key === toKey(checkOut),
@@ -314,6 +314,6 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontSize: fontSize.md,
     fontWeight: "700",
-    color: colors.white,
+    color: colors.onPrimary,
   },
 });

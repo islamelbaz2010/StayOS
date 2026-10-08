@@ -105,7 +105,7 @@ export function HostListingAvailabilityScreen() {
         <Text style={styles.title}>{t("listingAvailability")}</Text>
         <View style={styles.statsRow}>
           <Stat label={t("calendarAvailable")} value={availableDays.length} color={colors.success} />
-          <Stat label={t("calendarBooked")} value={bookedDays.length} color={colors.primary} />
+          <Stat label={t("calendarBooked")} value={bookedDays.length} color={colors.accentText} />
           <Stat label={t("calendarBlocked")} value={blockedDays.length} color={colors.warning} />
         </View>
       </View>
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   addButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   chipTextSelected: {
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   saveButton: {
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },

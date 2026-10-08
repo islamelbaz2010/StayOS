@@ -83,7 +83,7 @@ export function StatusBadge({ label, tone }: { label: string; tone?: "ok" | "war
         : tone === "err"
           ? colors.error
           : colors.surface;
-  const fg = tone ? colors.white : colors.primary;
+  const fg = tone ? colors.white : colors.accentText;
   return (
     <View style={[styles.statusBadge, { backgroundColor: bg }]}>
       <Text style={[styles.statusBadgeText, { color: fg }]}>{label}</Text>
@@ -182,7 +182,15 @@ export function PrimaryButton({
       onPress={onPress}
       disabled={disabled}
     >
-      <Text style={[styles.btnText, secondary && styles.btnTextSecondary]}>{label}</Text>
+      <Text
+        style={[
+          styles.btnText,
+          !danger && !secondary && styles.btnTextPrimary,
+          secondary && styles.btnTextSecondary,
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -239,7 +247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
-  badgeText: { fontSize: fontSize.xs, color: colors.primary, fontWeight: "600" },
+  badgeText: { fontSize: fontSize.xs, color: colors.accentText, fontWeight: "600" },
   statusBadge: {
     alignSelf: "flex-start",
     borderRadius: radius.full,
@@ -259,7 +267,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: fontSize.sm, color: colors.text, fontWeight: "600" },
-  chipTextActive: { color: colors.white },
+  chipTextActive: { color: colors.onPrimary },
   field: { marginBottom: spacing.md },
   fieldLabel: {
     fontSize: fontSize.sm,
@@ -291,7 +299,8 @@ const styles = StyleSheet.create({
   btnDanger: { backgroundColor: colors.error },
   btnDisabled: { opacity: 0.55 },
   btnText: { color: colors.white, fontSize: fontSize.md, fontWeight: "700" },
-  btnTextSecondary: { color: colors.primary },
+  btnTextPrimary: { color: colors.onPrimary },
+  btnTextSecondary: { color: colors.accentText },
   empty: {
     fontSize: fontSize.sm,
     color: colors.textTertiary,

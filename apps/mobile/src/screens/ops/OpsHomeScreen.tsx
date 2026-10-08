@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   stat: { width: "23%", alignItems: "center", marginBottom: spacing.md },
-  statValue: { fontSize: fontSize.xl, fontWeight: "800", color: colors.primary },
+  statValue: { fontSize: fontSize.xl, fontWeight: "800", color: colors.accentText },
   statLabel: {
     fontSize: fontSize.xs,
     color: colors.textSecondary,

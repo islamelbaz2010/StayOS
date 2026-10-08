@@ -373,7 +373,7 @@ function TripContent({
                 const ics = [
                   "BEGIN:VCALENDAR",
                   "VERSION:2.0",
-                  "PRODID:-//StayOS//Booking//EN",
+                  "PRODID:-//MAKAZOH//Booking//EN",
                   "BEGIN:VEVENT",
                   `UID:${booking.id}@stayos`,
                   `DTSTAMP:${fmt(new Date())}`,

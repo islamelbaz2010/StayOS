@@ -1,9 +1,13 @@
 export const colors = {
-  primary: "#0F766E",
-  primaryDark: "#0D5A54",
-  primaryLight: "#14B8A6",
-  primary50: "#F0FDFA",
-  primary100: "#CCFBF1",
+  // MAKAZOH brand: bright lime fills (with dark text), darker lime for
+  // text accents, near-black typography on white/light-gray surfaces.
+  primary: "#84CC16",
+  primaryDark: "#65A30D",
+  primaryLight: "#A3E635",
+  primary50: "#F7FEE7",
+  primary100: "#ECFCCB",
+  onPrimary: "#1A2E05",
+  accentText: "#4D7C0F",
   background: "#FFFFFF",
   surface: "#F9FAFB",
   text: "#111827",
@@ -13,6 +17,7 @@ export const colors = {
   error: "#EF4444",
   success: "#22C55E",
   warning: "#F59E0B",
+  warningSoft: "#FEF3C7",
   star: "#FBBF24",
   white: "#FFFFFF",
   overlay: "rgba(0,0,0,0.5)",

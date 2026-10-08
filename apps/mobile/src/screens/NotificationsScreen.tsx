@@ -82,7 +82,7 @@ export function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   markAll: { padding: spacing.md, alignItems: "flex-end" },
-  markAllText: { color: colors.primary, fontSize: fontSize.sm, fontWeight: "700" },
+  markAllText: { color: colors.accentText, fontSize: fontSize.sm, fontWeight: "700" },
   item: {
     flexDirection: "row",
     alignItems: "flex-start",

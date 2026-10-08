@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     backgroundColor: colors.primary,
-    color: colors.white,
+    color: colors.onPrimary,
     borderColor: colors.primary,
   },
   footer: {

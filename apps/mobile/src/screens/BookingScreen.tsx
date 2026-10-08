@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   },
   nightsText: {
     fontSize: fontSize.md,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
     marginTop: spacing.sm,
   },
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   },
   stepperButtonText: {
     fontSize: 20,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "700",
   },
   stepperValue: {
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   summaryTotalValue: {
     fontSize: fontSize.lg,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
     marginTop: spacing.sm,
   },
   trustBox: {
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
   trustTitle: {
     fontSize: fontSize.md,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
     marginBottom: 4,
   },
   trustSubtitle: {
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   confirmButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.lg,
     fontWeight: "700",
   },
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   gateButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },

@@ -880,7 +880,7 @@ export default function AdminDiscoveryPage() {
                         disabled={importMutation.isPending}
                         className="btn-primary text-sm disabled:opacity-50"
                       >
-                        {td("importToStayOS")}
+                        {td("importToMAKAZOH")}
                       </button>
                     )}
                     <button

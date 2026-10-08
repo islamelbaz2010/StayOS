@@ -213,7 +213,7 @@ export default function ManagementReportPage() {
               {/* ---- Masthead ---- */}
               <header className="border-b-2 border-brand-900 pb-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-accent-600">
-                  StayOS
+                  MAKAZOH
                 </p>
                 <h1 className="mt-1 text-2xl font-bold text-brand-900 sm:text-3xl">
                   {t("title")}
@@ -646,7 +646,7 @@ export default function ManagementReportPage() {
               </Section>
 
               <footer className="print-footer mt-10 border-t border-neutral-200 pt-3 text-[10px] text-neutral-400">
-                StayOS · {t("title")} · {t("generatedAt")}{" "}
+                MAKAZOH · {t("title")} · {t("generatedAt")}{" "}
                 {new Date(data.generated_at).toLocaleString(intlLocale)}
               </footer>
             </div>

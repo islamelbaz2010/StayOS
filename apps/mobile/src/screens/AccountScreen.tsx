@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: fontSize.xxxl,
     fontWeight: "700",
-    color: colors.white,
+    color: colors.onPrimary,
   },
   displayName: {
     fontSize: fontSize.xxl,
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 6,
   },
-  menuBadgeText: { color: colors.white, fontSize: fontSize.xs, fontWeight: "700" },
+  menuBadgeText: { color: colors.onPrimary, fontSize: fontSize.xs, fontWeight: "700" },
   chevron: { fontSize: 20, color: colors.textTertiary },
   langRow: {
     flexDirection: "row",
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   langTextActive: {
-    color: colors.white,
+    color: colors.onPrimary,
   },
   loginButton: {
     backgroundColor: colors.primary,
@@ -336,12 +336,12 @@ const styles = StyleSheet.create({
   },
   registerButton: { marginTop: spacing.md },
   loginButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.lg,
     fontWeight: "700",
   },
   helpLink: { alignItems: "center", marginTop: spacing.xl },
-  helpLinkText: { color: colors.primary, fontSize: fontSize.md, fontWeight: "600" },
+  helpLinkText: { color: colors.accentText, fontSize: fontSize.md, fontWeight: "600" },
   logoutButton: {
     paddingVertical: spacing.md,
     alignItems: "center",

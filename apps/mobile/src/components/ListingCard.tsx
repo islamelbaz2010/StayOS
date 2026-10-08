@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Animated, Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { Listing } from "../lib/types";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { useLocale } from "../lib/LocaleContext";
@@ -54,10 +55,16 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
             />
             {imageLoading && (
               <View style={styles.imageLoading}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={colors.accentText} />
               </View>
             )}
           </>
+        )}
+        {listing.host_kyc_status === "verified" && (
+          <View style={styles.verifiedBadge}>
+            <Ionicons name="checkmark-circle" size={12} color={colors.onPrimary} />
+            <Text style={styles.verifiedText}>{t("verified")}</Text>
+          </View>
         )}
         {listing.available_for_dates && (
           <View style={styles.availableBadge}>
@@ -89,9 +96,18 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
           {listing.city}, {listing.governorate}
         </Text>
         <View style={styles.stats}>
-          <Text style={styles.stat}>{listing.bedrooms} {t("bedrooms")}</Text>
-          <Text style={styles.statDot}>·</Text>
           <Text style={styles.stat}>{listing.max_guests} {t("guests")}</Text>
+          <Text style={styles.statDot}>·</Text>
+          <Text style={styles.stat}>{listing.bedrooms} {t("bedrooms")}</Text>
+          {listing.beds != null && listing.beds > 0 && (
+            <>
+              <Text style={styles.statDot}>·</Text>
+              <Text style={styles.stat}>{listing.beds} {t("bedsLabel")}</Text>
+            </>
+          )}
+        </View>
+        <View style={styles.stats}>
+          <Text style={styles.stat}>{listing.bathrooms} {t("bathrooms")}</Text>
         </View>
         <Text style={styles.price}>
           {formatMoney(listing.price, currencyLabel(listing.currency, t("egp")))} / {t("perNight")}
@@ -153,9 +169,26 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: colors.error,
   },
-  availableBadge: {
+  verifiedBadge: {
     position: "absolute",
     top: spacing.sm,
+    start: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.primary,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  verifiedText: {
+    fontSize: fontSize.xs,
+    fontWeight: "700",
+    color: colors.onPrimary,
+  },
+  availableBadge: {
+    position: "absolute",
+    bottom: spacing.sm,
     start: spacing.sm,
     backgroundColor: colors.success,
     borderRadius: radius.md,

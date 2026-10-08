@@ -177,7 +177,10 @@ export function SearchScreen() {
   const [showDates, setShowDates] = useState(false);
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
-  const [filters, setFilters] = useState<DraftFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<DraftFilters>({
+    ...EMPTY_FILTERS,
+    propertyType: route.params?.propertyType,
+  });
   const [sort, setSort] = useState<string | undefined>(undefined);
   const [mapBounds, setMapBounds] = useState<OsmMapBounds | null>(null);
   const [boundsDirty, setBoundsDirty] = useState(false);
@@ -517,7 +520,7 @@ export function SearchScreen() {
           )}
           {isLoading ? (
             <View style={styles.mapLoading}>
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={colors.accentText} />
             </View>
           ) : (
             listings.length === 0 && (
@@ -566,7 +569,7 @@ export function SearchScreen() {
           ListFooterComponent={
             isFetchingNextPage ? (
               <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={colors.accentText} />
               </View>
             ) : null
           }
@@ -1086,7 +1089,7 @@ const styles = StyleSheet.create({
   viewToggleText: {
     fontSize: fontSize.sm,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.accentText,
   },
   filterButton: {
     width: 48,
@@ -1111,7 +1114,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   filterButtonBadgeText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -1149,7 +1152,7 @@ const styles = StyleSheet.create({
   },
   activeFilterText: {
     fontSize: fontSize.sm,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   chipsRow: {
@@ -1175,7 +1178,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   chipTextActive: {
-    color: colors.white,
+    color: colors.onPrimary,
   },
   mapAreaRow: {
     flexDirection: "row",
@@ -1190,7 +1193,7 @@ const styles = StyleSheet.create({
   mapAreaClear: {
     fontSize: fontSize.sm,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
   },
   resultsCount: {
     marginTop: spacing.sm,
@@ -1223,7 +1226,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   searchAreaButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.sm,
     fontWeight: "700",
   },
@@ -1296,7 +1299,7 @@ const styles = StyleSheet.create({
   mapPreviewPrice: {
     fontSize: fontSize.sm,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
   },
   mapPreviewClose: {
     padding: spacing.md,
@@ -1372,7 +1375,7 @@ const sheetStyles = StyleSheet.create({
   },
   stepButtonText: {
     fontSize: 20,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "700",
   },
   stepValue: {
@@ -1486,7 +1489,7 @@ const sheetStyles = StyleSheet.create({
   clearText: {
     fontSize: fontSize.sm,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
   },
   applyButton: {
     backgroundColor: colors.primary,
@@ -1495,7 +1498,7 @@ const sheetStyles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   applyButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.sm,
     fontWeight: "700",
   },

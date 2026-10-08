@@ -1,11 +1,11 @@
 /**
- * StayOS Help Center — canonical content model.
+ * MAKAZOH Help Center — canonical content model.
  *
  * Static typed catalog (single source of truth, enforced EN/AR parity
  * via `Localized`). Every article declares the account roles it serves,
  * its topic (category) and optional subtopic, related articles, search
  * keywords, a contextual app route, and ordering. Content must describe
- * only real StayOS capabilities — never benchmark-only features.
+ * only real MAKAZOH capabilities — never benchmark-only features.
  */
 
 export type HelpRole = "guest" | "host" | "staff";
@@ -246,8 +246,8 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     order: 99,
     title: { en: "Contact support", ar: "التواصل مع الدعم" },
     blurb: {
-      en: "Reach StayOS Support about anything unresolved.",
-      ar: "تواصل مع دعم StayOS بشأن أي شيء لم يُحل.",
+      en: "Reach MAKAZOH Support about anything unresolved.",
+      ar: "تواصل مع دعم MAKAZOH بشأن أي شيء لم يُحل.",
     },
   },
 ];

@@ -15,6 +15,7 @@ export interface Listing {
   lng: number;
   max_guests: number;
   bedrooms: number;
+  beds?: number;
   bathrooms: number;
   amenities: string[];
   cultural_tags: string[];
@@ -525,6 +526,47 @@ export interface AdminListing {
   created_at: string;
 }
 
+export interface PendingListingPhoto {
+  id: string;
+  url: string;
+  moderation_state: string;
+  is_cover: boolean;
+}
+
+export interface PendingChangeSet {
+  unit?: Record<string, unknown>;
+  listing?: Record<string, unknown>;
+  lat?: number | null;
+  lng?: number | null;
+  submitted_by?: string;
+  submitted_at?: string;
+}
+
+/** /listings/admin/pending returns full ListingResponse objects plus
+    edit-moderation context. */
+export interface PendingListing {
+  id: string;
+  host_id: string;
+  title: string;
+  title_ar: string;
+  title_en: string | null;
+  status: string;
+  governorate: string;
+  city: string;
+  country: string;
+  district: string | null;
+  cover_image: string | null;
+  base_price_egp: number;
+  price: number;
+  currency: string;
+  has_pending_changes: boolean;
+  pending_changes: PendingChangeSet | null;
+  pending_photos: PendingListingPhoto[];
+  rejection_reason: string | null;
+  created_at: string | null;
+  [key: string]: unknown;
+}
+
 export interface AdminPaymentItem extends PaymentListItem {
   unit_title: string | null;
   check_in: string | null;
@@ -1004,6 +1046,9 @@ export interface HostListingDetail {
   policies: string | null;
   base_price_egp: number;
   cleaning_fee_egp: number;
+  listing_discount_pct?: number;
+  weekly_discount_pct?: number;
+  monthly_discount_pct?: number;
   cancellation_policy: string;
   currency: string;
   weekend_mult: number;
@@ -1038,6 +1083,9 @@ export interface ListingCreatePayload {
   cultural_tags?: string[];
   base_price_egp: number;
   cleaning_fee_egp?: number;
+  listing_discount_pct?: number;
+  weekly_discount_pct?: number;
+  monthly_discount_pct?: number;
   cancellation_policy?: string;
   weekend_mult?: number;
   peak_mult?: number;
@@ -1063,6 +1111,9 @@ export interface ListingUpdatePayload {
   cultural_tags?: string[];
   base_price_egp?: number;
   cleaning_fee_egp?: number;
+  listing_discount_pct?: number;
+  weekly_discount_pct?: number;
+  monthly_discount_pct?: number;
   cancellation_policy?: string;
   category?: string;
   address?: string | null;

@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: fontSize.lg,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
   },
   cardBody: {
     flex: 1,
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     marginStart: spacing.sm,
   },
   badgeText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.xs,
     fontWeight: "700",
   },

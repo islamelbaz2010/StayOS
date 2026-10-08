@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   createButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   createButtonTextSmall: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.xxl,
     fontWeight: "700",
   },
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   statusTextActive: {
-    color: colors.primary,
+    color: colors.accentText,
   },
   statusTextInactive: {
     color: colors.textSecondary,

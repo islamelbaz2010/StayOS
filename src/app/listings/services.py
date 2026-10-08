@@ -276,6 +276,7 @@ def _to_listing_response(
         ]
         if include_pending
         else [],
+        created_at=str(unit.created_at) if unit.created_at else None,
     )
 
 

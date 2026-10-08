@@ -18,5 +18,6 @@ declare const process: {
     EXPO_PUBLIC_ENABLE_DEV_LOGIN?: string;
     EXPO_PUBLIC_QA_MODE?: string;
     EXPO_PUBLIC_SUPPORT_WHATSAPP_NUMBER?: string;
+    EXPO_PUBLIC_WEB_URL?: string;
   };
 };

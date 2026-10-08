@@ -84,7 +84,7 @@ function GalleryImage({ uri, width }: { uri: string; width: number }) {
       />
       {loading && (
         <View style={styles.imageLoading}>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <ActivityIndicator size="small" color={colors.accentText} />
         </View>
       )}
     </View>
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
   },
   amenityText: {
     fontSize: fontSize.sm,
-    color: colors.primary,
+    color: colors.accentText,
     textTransform: "capitalize",
   },
   addressText: {
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   bookButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },

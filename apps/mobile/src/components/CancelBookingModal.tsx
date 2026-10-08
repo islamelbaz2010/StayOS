@@ -50,7 +50,7 @@ export function CancelBookingModal({ visible, bookingId, onClose, onCancelled }:
             </Pressable>
           </View>
 
-          {preview.isLoading && <ActivityIndicator color={colors.primary} />}
+          {preview.isLoading && <ActivityIndicator color={colors.accentText} />}
 
           {p && (
             <Text style={styles.refundText}>

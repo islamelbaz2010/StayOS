@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: fontSize.xxxl,
     fontWeight: "700",
-    color: colors.white,
+    color: colors.onPrimary,
   },
   displayName: {
     fontSize: fontSize.xxl,
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontSize: fontSize.sm,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   editForm: {
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontWeight: "700",
   },
   cancelButton: {
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: fontSize.md,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   langRow: {

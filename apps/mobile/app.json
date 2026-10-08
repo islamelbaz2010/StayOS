@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "StayOS",
+    "name": "MAKAZOH",
     "slug": "stayos-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,7 @@
     "scheme": "stayos",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#0F766E"
+      "backgroundColor": "#F7FEE7"
     },
     "ios": {
       "supportsTablet": true,
@@ -21,8 +21,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "StayOS needs access to your photos to upload payment receipts and identity documents.",
-          "cameraPermission": "StayOS needs camera access to photograph your identity document and take a verification selfie."
+          "photosPermission": "MAKAZOH needs access to your photos to upload payment receipts and identity documents.",
+          "cameraPermission": "MAKAZOH needs camera access to photograph your identity document and take a verification selfie."
         }
       ],
       "expo-document-picker",

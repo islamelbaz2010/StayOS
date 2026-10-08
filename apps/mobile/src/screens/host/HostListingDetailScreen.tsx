@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: "600",
   },
-  statusTextActive: { color: colors.primary },
+  statusTextActive: { color: colors.accentText },
   statusTextInactive: { color: colors.textSecondary },
   permissionText: {
     fontSize: fontSize.xs,
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },

@@ -387,6 +387,7 @@ class ListingResponse(BaseModel):
     has_pending_changes: bool = False
     pending_changes: dict | None = None
     pending_photos: list[PendingPhotoRef] = Field(default_factory=list)
+    created_at: str | None = None
 
 
 class ListingSearchResult(BaseModel):

@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   tabTextActive: {
-    color: colors.white,
+    color: colors.onPrimary,
   },
   list: {
     padding: spacing.lg,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   phaseText: {
     fontSize: fontSize.xs,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.accentText,
   },
   actionButton: {
     marginTop: spacing.sm,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   actionButtonPrimaryText: {
     fontSize: fontSize.sm,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.accentText,
   },
   actionButtonSecondaryText: {
     fontSize: fontSize.sm,

@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: fontSize.md,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   actions: {
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   messageButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },

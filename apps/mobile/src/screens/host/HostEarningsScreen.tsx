@@ -98,13 +98,13 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: fontSize.md,
-    color: colors.white,
+    color: colors.onPrimary,
     opacity: 0.9,
   },
   summaryValue: {
     fontSize: fontSize.xxl,
     fontWeight: "700",
-    color: colors.white,
+    color: colors.onPrimary,
   },
   section: {
     marginBottom: spacing.xl,
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   unitRevenue: {
     fontSize: fontSize.sm,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "700",
   },
   disclaimer: {

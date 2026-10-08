@@ -1928,7 +1928,7 @@ export function usePendingListings() {
   return useQuery({
     queryKey: ["ops", "listings-pending"],
     queryFn: async () => {
-      const { data } = await api.get<import("./types").AdminListing[]>(
+      const { data } = await api.get<import("./types").PendingListing[]>(
         "/listings/admin/pending"
       );
       return data;

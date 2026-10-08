@@ -49,6 +49,9 @@ export function HostListingEditorScreen() {
         cultural_tags: listing.cultural_tags,
         base_price_egp: listing.base_price_egp,
         cleaning_fee_egp: listing.cleaning_fee_egp,
+        listing_discount_pct: listing.listing_discount_pct ?? 0,
+        weekly_discount_pct: listing.weekly_discount_pct ?? 0,
+        monthly_discount_pct: listing.monthly_discount_pct ?? 0,
         cancellation_policy: listing.cancellation_policy,
         category: listing.category,
         address: listing.address,
@@ -374,6 +377,27 @@ function PricingSection({ form, setField, t }: FormProps) {
           onChange={(v) => setField("cleaning_fee_egp", v)}
         />
       </Field>
+      <Text style={styles.discountsTitle}>{t("listingDiscountsTitle")}</Text>
+      <Field label={t("listingDiscountPct")}>
+        <NumberInput
+          value={form.listing_discount_pct ?? 0}
+          onChange={(v) => setField("listing_discount_pct", Math.max(0, Math.min(90, Math.round(v))))}
+        />
+      </Field>
+      <Field label={t("listingWeeklyDiscount")}>
+        <NumberInput
+          value={form.weekly_discount_pct ?? 0}
+          onChange={(v) => setField("weekly_discount_pct", Math.max(0, Math.min(90, Math.round(v))))}
+        />
+        <Text style={styles.fieldHint}>{t("listingWeeklyDiscountHint")}</Text>
+      </Field>
+      <Field label={t("listingMonthlyDiscount")}>
+        <NumberInput
+          value={form.monthly_discount_pct ?? 0}
+          onChange={(v) => setField("monthly_discount_pct", Math.max(0, Math.min(90, Math.round(v))))}
+        />
+        <Text style={styles.fieldHint}>{t("listingMonthlyDiscountHint")}</Text>
+      </Field>
       <Field label={t("listingWeekendMultiplier")}>
         <DecimalInput
           value={form.weekend_mult ?? 1.0}
@@ -477,6 +501,15 @@ const styles = StyleSheet.create({
   field: {
     marginBottom: spacing.lg,
   },
+  discountsTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+    marginBottom: spacing.md,
+  },
   fieldLabel: {
     fontSize: fontSize.sm,
     fontWeight: "600",
@@ -527,7 +560,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   chipTextSelected: {
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   footer: {
@@ -551,7 +584,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },

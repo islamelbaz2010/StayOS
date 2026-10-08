@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginTop: spacing.sm,
   },
-  supportText: { color: colors.primary, fontWeight: "700", fontSize: fontSize.md },
+  supportText: { color: colors.accentText, fontWeight: "700", fontSize: fontSize.md },
   related: { marginTop: spacing.lg },
   relatedTitle: {
     fontSize: fontSize.md,
@@ -103,5 +103,5 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   relatedRow: { paddingVertical: spacing.sm },
-  relatedText: { color: colors.primary, fontSize: fontSize.md, fontWeight: "600" },
+  relatedText: { color: colors.accentText, fontSize: fontSize.md, fontWeight: "600" },
 });

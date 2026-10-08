@@ -90,7 +90,7 @@ describe("ImportCandidateModal", () => {
     expect(screen.getByText("Contact Email")).toBeInTheDocument();
     expect(screen.queryByText("Host Name")).not.toBeInTheDocument();
     // No host account may be implied
-    expect(screen.getByText(/no StayOS host account is created/)).toBeInTheDocument();
+    expect(screen.getByText(/no MAKAZOH host account is created/)).toBeInTheDocument();
   });
 
   it("requires a property type before import is allowed", () => {

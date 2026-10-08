@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   catActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   catText: { fontSize: fontSize.sm, color: colors.text, fontWeight: "600" },
-  catTextActive: { color: colors.white },
+  catTextActive: { color: colors.onPrimary },
   list: { padding: spacing.md, paddingTop: 0 },
   card: {
     backgroundColor: colors.white,

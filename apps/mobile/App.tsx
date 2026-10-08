@@ -75,7 +75,7 @@ import { AdminListingsScreen } from "./src/screens/ops/AdminListingsScreen";
 
 export type RootStackParamList = {
   Home: { screen?: "TripsTab" } | undefined;
-  Search: { city?: string } | undefined;
+  Search: { city?: string; propertyType?: string } | undefined;
   ListingDetail: { unitId: string };
   HostProfile: { hostId: string };
   Booking: { unitId: string; title: string; price: number; currency: string; maxGuests: number; instantBook?: boolean; hostId?: string };
@@ -269,7 +269,7 @@ function GuestTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.accentText,
         tabBarInactiveTintColor: colors.textTertiary,
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
@@ -302,7 +302,7 @@ function HostTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.accentText,
         tabBarInactiveTintColor: colors.textTertiary,
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
@@ -335,7 +335,7 @@ function OpsTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.accentText,
         tabBarInactiveTintColor: colors.textTertiary,
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {

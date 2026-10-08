@@ -211,7 +211,7 @@ describe("PaymentsPage", () => {
     ).toBeTruthy();
   });
 
-  it("states that StayOS does not store card details", () => {
+  it("states that MAKAZOH does not store card details", () => {
     renderPage([]);
     expect(
       screen.getByText(paymentsMsgs.methodsNote as string)

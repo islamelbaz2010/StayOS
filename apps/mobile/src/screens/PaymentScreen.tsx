@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: fontSize.sm,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.accentText,
   },
   rejectBox: {
     marginTop: spacing.sm,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: fontSize.md,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
   },
   bodyText: {
     fontSize: fontSize.md,
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: {
-    color: colors.primary,
+    color: colors.accentText,
     fontSize: fontSize.sm,
     fontWeight: "600",
   },

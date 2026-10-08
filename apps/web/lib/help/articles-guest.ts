@@ -2,7 +2,7 @@ import type { HelpArticle } from "./catalog";
 
 /**
  * Guest + shared Help Center articles. Every article describes real
- * StayOS capabilities only — verified against the product's actual
+ * MAKAZOH capabilities only — verified against the product's actual
  * workflows, payment model, KYC, cancellation and messaging behaviour.
  */
 export const GUEST_ARTICLES: HelpArticle[] = [
@@ -19,11 +19,11 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     },
     body: {
       en: [
-        "Use Search on StayOS to browse published listings. Enter a destination, your dates, and the number of guests, and we will show stays that can host your group on those dates.",
+        "Use Search on MAKAZOH to browse published listings. Enter a destination, your dates, and the number of guests, and we will show stays that can host your group on those dates.",
         "Results only include listings that are published and available — unavailable or unapproved listings never appear in search.",
       ],
       ar: [
-        "استخدم البحث في StayOS لتصفح الإعلانات المنشورة. أدخل الوجهة وتواريخك وعدد الضيوف، وسنعرض الإقامات التي تستوعب مجموعتك في تلك التواريخ.",
+        "استخدم البحث في MAKAZOH لتصفح الإعلانات المنشورة. أدخل الوجهة وتواريخك وعدد الضيوف، وسنعرض الإقامات التي تستوعب مجموعتك في تلك التواريخ.",
         "تتضمن النتائج فقط الإعلانات المنشورة والمتاحة — لن تظهر أبدًا الإعلانات غير المتاحة أو غير المعتمدة في البحث.",
       ],
     },
@@ -106,8 +106,8 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     order: 5,
     title: { en: "How prices are displayed", ar: "كيف تُعرض الأسعار" },
     summary: {
-      en: "StayOS shows all-inclusive totals to guests.",
-      ar: "يعرض StayOS إجماليات شاملة للضيوف.",
+      en: "MAKAZOH shows all-inclusive totals to guests.",
+      ar: "يعرض MAKAZOH إجماليات شاملة للضيوف.",
     },
     body: {
       en: [
@@ -179,8 +179,8 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     order: 3,
     title: { en: "Guest requirements", ar: "متطلبات الضيف" },
     summary: {
-      en: "What hosts and StayOS may require before you book.",
-      ar: "ما قد يتطلبه المضيفون وStayOS قبل الحجز.",
+      en: "What hosts and MAKAZOH may require before you book.",
+      ar: "ما قد يتطلبه المضيفون وMAKAZOH قبل الحجز.",
     },
     body: {
       en: [
@@ -280,12 +280,12 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     },
     body: {
       en: [
-        "Message your host first — most changes are easiest to resolve directly. If the reservation itself is affected (dates, cancellation), use the booking detail actions or contact StayOS Support from the booking.",
-        "When a confirmed reservation can no longer happen, StayOS Support can help with the cancellation and refund process.",
+        "Message your host first — most changes are easiest to resolve directly. If the reservation itself is affected (dates, cancellation), use the booking detail actions or contact MAKAZOH Support from the booking.",
+        "When a confirmed reservation can no longer happen, MAKAZOH Support can help with the cancellation and refund process.",
       ],
       ar: [
-        "راسل مضيفك أولًا — معظم التغييرات يتم حلها مباشرة بسهولة أكبر. إذا تأثر الحجز نفسه (التواريخ، الإلغاء)، استخدم إجراءات تفاصيل الحجز أو تواصل مع دعم StayOS من الحجز.",
-        "عندما لا يمكن إتمام حجز مؤكد، يمكن لدعم StayOS المساعدة في عملية الإلغاء والاسترداد.",
+        "راسل مضيفك أولًا — معظم التغييرات يتم حلها مباشرة بسهولة أكبر. إذا تأثر الحجز نفسه (التواريخ، الإلغاء)، استخدم إجراءات تفاصيل الحجز أو تواصل مع دعم MAKAZOH من الحجز.",
+        "عندما لا يمكن إتمام حجز مؤكد، يمكن لدعم MAKAZOH المساعدة في عملية الإلغاء والاسترداد.",
       ],
     },
     keywords: ["change", "تغيير", "problem", "مشكلة", "help", "مساعدة"],
@@ -301,17 +301,17 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     order: 1,
     title: { en: "Paying for a reservation", ar: "الدفع مقابل الحجز" },
     summary: {
-      en: "Complete payment through StayOS checkout.",
-      ar: "أكمل الدفع من خلال صفحة الدفع في StayOS.",
+      en: "Complete payment through MAKAZOH checkout.",
+      ar: "أكمل الدفع من خلال صفحة الدفع في MAKAZOH.",
     },
     body: {
       en: [
-        "Pay for your booking through StayOS checkout using the payment methods offered at the payment step. Your payment is recorded on the booking and verified before the reservation is confirmed.",
-        "Always pay inside StayOS — a genuine host will never ask you to pay outside the platform.",
+        "Pay for your booking through MAKAZOH checkout using the payment methods offered at the payment step. Your payment is recorded on the booking and verified before the reservation is confirmed.",
+        "Always pay inside MAKAZOH — a genuine host will never ask you to pay outside the platform.",
       ],
       ar: [
-        "ادفع مقابل حجزك من خلال صفحة الدفع في StayOS باستخدام طرق الدفع المعروضة في خطوة الدفع. يتم تسجيل دفعتك في الحجز والتحقق منها قبل تأكيد الحجز.",
-        "ادفع دائمًا داخل StayOS — لن يطلب منك مضيف حقيقي الدفع خارج المنصة أبدًا.",
+        "ادفع مقابل حجزك من خلال صفحة الدفع في MAKAZOH باستخدام طرق الدفع المعروضة في خطوة الدفع. يتم تسجيل دفعتك في الحجز والتحقق منها قبل تأكيد الحجز.",
+        "ادفع دائمًا داخل MAKAZOH — لن يطلب منك مضيف حقيقي الدفع خارج المنصة أبدًا.",
       ],
     },
     keywords: ["pay", "دفع", "paymob", "payment", "مدفوعات", "checkout"],
@@ -353,11 +353,11 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     body: {
       en: [
         "If a payment fails or an uploaded proof is rejected, open the booking and pay again or upload a clearer proof. The booking is not lost — the payment step simply needs to succeed before the reservation can be confirmed.",
-        "Repeated failures can be raised to StayOS Support from the booking page.",
+        "Repeated failures can be raised to MAKAZOH Support from the booking page.",
       ],
       ar: [
         "إذا فشلت الدفعة أو رُفض الإثبات المرفوع، افتح الحجز وادفع مرة أخرى أو ارفع إثباتًا أوضح. الحجز لم يُفقد — تحتاج خطوة الدفع فقط للنجاح قبل أن يتأكد الحجز.",
-        "يمكن رفع الإخفاقات المتكررة إلى دعم StayOS من صفحة الحجز.",
+        "يمكن رفع الإخفاقات المتكررة إلى دعم MAKAZOH من صفحة الحجز.",
       ],
     },
     keywords: ["failed", "فشل", "rejected", "مرفوض", "retry", "إعادة"],
@@ -401,11 +401,11 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     },
     body: {
       en: [
-        "Cancellation is a guest action on StayOS: open the booking from Trips and choose Cancel when your reservation state allows it. Before you confirm, the page shows a cancellation preview — the refund you would receive under the listing's cancellation policy.",
+        "Cancellation is a guest action on MAKAZOH: open the booking from Trips and choose Cancel when your reservation state allows it. Before you confirm, the page shows a cancellation preview — the refund you would receive under the listing's cancellation policy.",
         "Cancellation is final once submitted: the booking is marked cancelled, the payment is settled per the policy, and both sides are notified.",
       ],
       ar: [
-        "الإلغاء إجراء للضيف في StayOS: افتح الحجز من الرحلات واختر إلغاء عندما تسمح حالة الحجز بذلك. قبل التأكيد، تعرض الصفحة معاينة الإلغاء — المبلغ الذي ستسترده بموجب سياسة الإلغاء للإعلان.",
+        "الإلغاء إجراء للضيف في MAKAZOH: افتح الحجز من الرحلات واختر إلغاء عندما تسمح حالة الحجز بذلك. قبل التأكيد، تعرض الصفحة معاينة الإلغاء — المبلغ الذي ستسترده بموجب سياسة الإلغاء للإعلان.",
         "الإلغاء نهائي بمجرد إرساله: يُسجَّل الحجز ملغيًا، وتُسوَّى الدفعة وفقًا للسياسة، ويُخطَر الطرفان.",
       ],
     },
@@ -446,17 +446,17 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     order: 1,
     title: { en: "Message safely", ar: "راسل بأمان" },
     summary: {
-      en: "Keep communication and payment inside StayOS.",
-      ar: "حافظ على التواصل والدفع داخل StayOS.",
+      en: "Keep communication and payment inside MAKAZOH.",
+      ar: "حافظ على التواصل والدفع داخل MAKAZOH.",
     },
     body: {
       en: [
-        "All booking communication should stay inside StayOS messages — it keeps a record for both sides and for support if something goes wrong.",
-        "Report inappropriate or suspicious messages to StayOS Support. Never share payment details or agree to pay outside the platform.",
+        "All booking communication should stay inside MAKAZOH messages — it keeps a record for both sides and for support if something goes wrong.",
+        "Report inappropriate or suspicious messages to MAKAZOH Support. Never share payment details or agree to pay outside the platform.",
       ],
       ar: [
-        "يجب أن يبقى كل تواصل الحجز داخل رسائل StayOS — فهو يحتفظ بسجل للطرفين وللدعم إذا حدث خطأ ما.",
-        "أبلغ دعم StayOS عن الرسائل غير اللائقة أو المشبوهة. لا تشارك أبدًا تفاصيل الدفع ولا توافق على الدفع خارج المنصة.",
+        "يجب أن يبقى كل تواصل الحجز داخل رسائل MAKAZOH — فهو يحتفظ بسجل للطرفين وللدعم إذا حدث خطأ ما.",
+        "أبلغ دعم MAKAZOH عن الرسائل غير اللائقة أو المشبوهة. لا تشارك أبدًا تفاصيل الدفع ولا توافق على الدفع خارج المنصة.",
       ],
     },
     keywords: ["message", "رسالة", "safe", "آمن", "report", "إبلاغ"],
@@ -491,7 +491,7 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     roles: ["guest", "host"],
     category: "verification",
     order: 1,
-    title: { en: "Why StayOS verifies identity", ar: "لماذا يتحقق StayOS من الهوية" },
+    title: { en: "Why MAKAZOH verifies identity", ar: "لماذا يتحقق MAKAZOH من الهوية" },
     summary: {
       en: "Verification keeps guests, hosts and payouts safe.",
       ar: "يحافظ التحقق على أمان الضيوف والمضيفين والمدفوعات.",
@@ -607,19 +607,19 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     roles: ["guest", "host"],
     category: "safety",
     order: 1,
-    title: { en: "Never pay outside StayOS", ar: "لا تدفع خارج StayOS أبدًا" },
+    title: { en: "Never pay outside MAKAZOH", ar: "لا تدفع خارج MAKAZOH أبدًا" },
     summary: {
       en: "Off-platform payments have no protection.",
       ar: "المدفوعات خارج المنصة ليس لها حماية.",
     },
     body: {
       en: [
-        "Every legitimate StayOS payment happens inside checkout. If anyone — guest or host — asks you to pay by direct transfer, cash or another app, decline and report it. Money sent outside the platform cannot be recovered or protected.",
-        "The same rule applies to hosts: never ask a guest to pay outside StayOS.",
+        "Every legitimate MAKAZOH payment happens inside checkout. If anyone — guest or host — asks you to pay by direct transfer, cash or another app, decline and report it. Money sent outside the platform cannot be recovered or protected.",
+        "The same rule applies to hosts: never ask a guest to pay outside MAKAZOH.",
       ],
       ar: [
-        "تتم كل مدفوعات StayOS المشروعة داخل صفحة الدفع. إذا طلب منك أي شخص — ضيف أو مضيف — الدفع بتحويل مباشر أو نقدًا أو تطبيق آخر، ارفض وأبلغ عن ذلك. لا يمكن استرداد أو حماية الأموال المُرسلة خارج المنصة.",
-        "تنطبق القاعدة نفسها على المضيفين: لا تطلب من الضيف الدفع خارج StayOS أبدًا.",
+        "تتم كل مدفوعات MAKAZOH المشروعة داخل صفحة الدفع. إذا طلب منك أي شخص — ضيف أو مضيف — الدفع بتحويل مباشر أو نقدًا أو تطبيق آخر، ارفض وأبلغ عن ذلك. لا يمكن استرداد أو حماية الأموال المُرسلة خارج المنصة.",
+        "تنطبق القاعدة نفسها على المضيفين: لا تطلب من الضيف الدفع خارج MAKAZOH أبدًا.",
       ],
     },
     keywords: ["pay", "دفع", "scam", "احتيال", "outside", "خارج", "safe"],
@@ -633,17 +633,17 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     order: 2,
     title: { en: "Report a problem or safety concern", ar: "الإبلاغ عن مشكلة أو مخاوف أمنية" },
     summary: {
-      en: "How to reach StayOS Support with concerns.",
-      ar: "كيفية الوصول إلى دعم StayOS بالمخاوف.",
+      en: "How to reach MAKAZOH Support with concerns.",
+      ar: "كيفية الوصول إلى دعم MAKAZOH بالمخاوف.",
     },
     body: {
       en: [
-        "Use Support in your account menu or from the booking page to report problems: listing accuracy, payment issues, safety concerns, or behavior that breaks the rules. Support threads are private between you and StayOS Support.",
-        "For emergencies, always contact local authorities first, then report to StayOS.",
+        "Use Support in your account menu or from the booking page to report problems: listing accuracy, payment issues, safety concerns, or behavior that breaks the rules. Support threads are private between you and MAKAZOH Support.",
+        "For emergencies, always contact local authorities first, then report to MAKAZOH.",
       ],
       ar: [
-        "استخدم الدعم في قائمة حسابك أو من صفحة الحجز للإبلاغ عن المشاكل: دقة الإعلان، مشاكل الدفع، المخاوف الأمنية، أو السلوك المخالف للقواعد. محادثات الدعم خاصة بينك وبين دعم StayOS.",
-        "في حالات الطوارئ، اتصل دائمًا بالسلطات المحلية أولًا، ثم أبلغ StayOS.",
+        "استخدم الدعم في قائمة حسابك أو من صفحة الحجز للإبلاغ عن المشاكل: دقة الإعلان، مشاكل الدفع، المخاوف الأمنية، أو السلوك المخالف للقواعد. محادثات الدعم خاصة بينك وبين دعم MAKAZOH.",
+        "في حالات الطوارئ، اتصل دائمًا بالسلطات المحلية أولًا، ثم أبلغ MAKAZOH.",
       ],
     },
     keywords: ["report", "إبلاغ", "safety", "أمان", "problem", "مشكلة", "emergency"],
@@ -656,7 +656,7 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     roles: ["guest", "host"],
     category: "safety",
     order: 3,
-    title: { en: "Your privacy on StayOS", ar: "خصوصيتك في StayOS" },
+    title: { en: "Your privacy on MAKAZOH", ar: "خصوصيتك في MAKAZOH" },
     summary: {
       en: "Control your data and privacy settings.",
       ar: "تحكم في بياناتك وإعدادات الخصوصية.",
@@ -771,18 +771,18 @@ export const GUEST_ARTICLES: HelpArticle[] = [
     roles: ["guest", "host", "staff"],
     category: "support",
     order: 1,
-    title: { en: "How StayOS Support works", ar: "كيف يعمل دعم StayOS" },
+    title: { en: "How MAKAZOH Support works", ar: "كيف يعمل دعم MAKAZOH" },
     summary: {
       en: "Start a private support conversation from the Support page.",
       ar: "ابدأ محادثة دعم خاصة من صفحة الدعم.",
     },
     body: {
       en: [
-        "Open Support from your account menu and start a conversation — your message goes straight to StayOS Support as a private thread. You can attach booking context when asking about a specific reservation.",
+        "Open Support from your account menu and start a conversation — your message goes straight to MAKAZOH Support as a private thread. You can attach booking context when asking about a specific reservation.",
         "Track replies and the conversation status (open, waiting, resolved) in the same place. Replies appear in your messages and notifications.",
       ],
       ar: [
-        "افتح الدعم من قائمة حسابك وابدأ محادثة — تصل رسالتك مباشرة إلى دعم StayOS كمحادثة خاصة. يمكنك إرفاق سياق الحجز عند السؤال عن حجز معين.",
+        "افتح الدعم من قائمة حسابك وابدأ محادثة — تصل رسالتك مباشرة إلى دعم MAKAZOH كمحادثة خاصة. يمكنك إرفاق سياق الحجز عند السؤال عن حجز معين.",
         "تتبع الردود وحالة المحادثة (مفتوحة، بانتظار، محلولة) في المكان نفسه. تظهر الردود في رسائلك وإشعاراتك.",
       ],
     },

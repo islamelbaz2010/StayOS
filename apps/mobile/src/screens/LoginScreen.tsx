@@ -18,6 +18,7 @@ import { isQaLoginEnabled } from "../lib/qa";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { Field, PrimaryButton } from "../components/UI";
+import { MakazohMark } from "../components/MakazohMark";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -162,7 +163,10 @@ export function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView style={styles.flex} contentContainerStyle={styles.container}>
-        <Text style={styles.appName}>{t("appName")}</Text>
+        <View style={styles.logoWrap}>
+          <MakazohMark fontSize={34} />
+          <Text style={styles.tagline}>{t("brandTagline")}</Text>
+        </View>
 
         <View style={styles.methodTabs}>
           <Pressable
@@ -291,12 +295,14 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   container: { flexGrow: 1, padding: spacing.xl, justifyContent: "center" },
-  appName: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: colors.primary,
-    textAlign: "center",
+  logoWrap: {
+    alignItems: "center",
     marginBottom: spacing.xl,
+  },
+  tagline: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   methodTabs: {
     flexDirection: "row",
@@ -315,7 +321,7 @@ const styles = StyleSheet.create({
   methodTabText: { fontSize: fontSize.sm, fontWeight: "600", color: colors.textSecondary },
   methodTabTextActive: { color: colors.text },
   linkWrap: { alignItems: "center", marginTop: spacing.lg },
-  link: { color: colors.primary, fontSize: fontSize.sm, fontWeight: "600" },
+  link: { color: colors.accentText, fontSize: fontSize.sm, fontWeight: "600" },
   error: { color: colors.error, fontSize: fontSize.sm, marginTop: spacing.md, textAlign: "center" },
   devButton: {
     marginTop: spacing.xl,
@@ -356,5 +362,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     alignItems: "center",
   },
-  qaButtonText: { color: colors.primary, fontSize: fontSize.sm, fontWeight: "600" },
+  qaButtonText: { color: colors.accentText, fontSize: fontSize.sm, fontWeight: "600" },
 });

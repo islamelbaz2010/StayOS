@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   unitChipTextActive: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontWeight: "600",
   },
   calendarScroll: {

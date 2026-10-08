@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   addButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   chipTextSelected: {
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
   },
   saveButton: {
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   coHostScope: {
     fontSize: fontSize.xs,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
     marginTop: 4,
   },

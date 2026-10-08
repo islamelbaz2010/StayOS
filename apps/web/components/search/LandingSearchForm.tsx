@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 
 import { useLocationAutocomplete, type LocationSuggestion } from "@/lib/queries/locations";
+import { useListings } from "@/lib/queries/listings";
 
 export function LandingSearchForm({ locale }: { locale: string }) {
   const t = useTranslations("search");
@@ -54,19 +55,34 @@ export function LandingSearchForm({ locale }: { locale: string }) {
     router.push(url);
   };
 
+  // Hero uses a real listing cover as its backdrop — the same cached feed
+  // as FeaturedListings, so no extra request and never mock imagery.
+  const { data: heroFeed } = useListings({ limit: "10" });
+  const heroImage = heroFeed?.listings?.find((l) => l.coverImage)?.coverImage;
+
   return (
-    <section className="bg-surface-page py-16 md:py-24">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden bg-brand-800">
+      {heroImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={heroImage}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+      <div className="absolute inset-0 bg-brand-900/50" />
+      <div className="container relative mx-auto px-4 pb-24 pt-16 sm:px-6 md:pt-24 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-balance text-3xl font-bold text-brand-900 md:text-5xl">
+          <h1 className="text-balance text-3xl font-bold text-white md:text-5xl">
             {t("heroTitle")}
           </h1>
-          <p className="mt-4 text-lg text-neutral-600 md:text-xl">
+          <p className="mt-4 text-lg text-white/90 md:text-xl">
             {t("heroSubtitle")}
           </p>
         </div>
-
-        <div className="mx-auto mt-10 max-w-4xl rounded-2xl bg-surface-card p-6 shadow-card md:p-8">
+      </div>
+      <div className="container relative mx-auto -mt-6 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl rounded-2xl bg-surface-card p-6 shadow-card md:p-8">
           <form
             onSubmit={handleSubmit}
             className="flex flex-col gap-4 md:flex-row md:items-end"

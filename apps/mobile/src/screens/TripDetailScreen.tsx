@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: fontSize.sm,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.accentText,
   },
   datesText: {
     fontSize: fontSize.md,
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: fontSize.md,
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "600",
     marginBottom: spacing.sm,
   },
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   secondaryButtonText: {
-    color: colors.primary,
+    color: colors.accentText,
     fontSize: fontSize.sm,
     fontWeight: "600",
   },

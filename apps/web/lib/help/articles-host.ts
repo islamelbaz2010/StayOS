@@ -1,7 +1,7 @@
 import type { HelpArticle } from "./catalog";
 
 /**
- * Host Help Center articles — StayOS Model B economics, listing
+ * Host Help Center articles — MAKAZOH Model B economics, listing
  * readiness, availability, reservations, earnings and payouts only.
  */
 export const HOST_ARTICLES: HelpArticle[] = [
@@ -13,8 +13,8 @@ export const HOST_ARTICLES: HelpArticle[] = [
     order: 1,
     title: { en: "Become a host", ar: "كن مضيفًا" },
     summary: {
-      en: "Start hosting on StayOS — verification and your first listing.",
-      ar: "ابدأ الاستضافة على StayOS — التحقق من الهوية وأول إعلان.",
+      en: "Start hosting on MAKAZOH — verification and your first listing.",
+      ar: "ابدأ الاستضافة على MAKAZOH — التحقق من الهوية وأول إعلان.",
     },
     body: {
       en: [
@@ -67,11 +67,11 @@ export const HOST_ARTICLES: HelpArticle[] = [
     body: {
       en: [
         "Keep listing information accurate — photos, amenities, rules and location must match reality. Keep your calendar current so guests only book dates you can honour, and respond to reservation requests and messages in good time.",
-        "Never request payment outside StayOS and never misrepresent the stay. These are enforced platform standards.",
+        "Never request payment outside MAKAZOH and never misrepresent the stay. These are enforced platform standards.",
       ],
       ar: [
         "حافظ على دقة معلومات الإعلان — يجب أن تطابق الصور والمرافق والقواعد والموقع الواقع. حافظ على تحديث تقويمك حتى يحجز الضيوف فقط التواريخ التي يمكنك الوفاء بها، ورد على طلبات الحجز والرسائل في الوقت المناسب.",
-        "لا تطلب الدفع خارج StayOS أبدًا ولا تقدم الإقامة بشكل مضلل. هذه معايير منصة مطبَّقة.",
+        "لا تطلب الدفع خارج MAKAZOH أبدًا ولا تقدم الإقامة بشكل مضلل. هذه معايير منصة مطبَّقة.",
       ],
     },
     keywords: ["responsibility", "مسؤولية", "rules", "قواعد", "standards"],
@@ -164,10 +164,10 @@ export const HOST_ARTICLES: HelpArticle[] = [
     },
     body: {
       en: [
-        "You set a gross nightly price and an optional per-stay cleaning fee. StayOS builds the guest-facing total on top — the guest always sees one all-inclusive price.",
+        "You set a gross nightly price and an optional per-stay cleaning fee. MAKAZOH builds the guest-facing total on top — the guest always sees one all-inclusive price.",
       ],
       ar: [
-        "تحدد سعر ليلة إجماليًا ورسوم تنظيف اختيارية لكل إقامة. يبني StayOS الإجمالي للضيف فوق ذلك — يرى الضيف دائمًا سعرًا شاملًا واحدًا.",
+        "تحدد سعر ليلة إجماليًا ورسوم تنظيف اختيارية لكل إقامة. يبني MAKAZOH الإجمالي للضيف فوق ذلك — يرى الضيف دائمًا سعرًا شاملًا واحدًا.",
       ],
     },
     keywords: ["price", "سعر", "nightly", "ليلة", "cleaning", "تنظيف"],
@@ -208,11 +208,11 @@ export const HOST_ARTICLES: HelpArticle[] = [
     },
     body: {
       en: [
-        "StayOS takes a host-side service fee of 6% of the accommodation amount only, deducted from your payout — never from cleaning. The guest pays a separate guest-side fee and VAT as part of the all-inclusive total; those do not come out of your share.",
+        "MAKAZOH takes a host-side service fee of 6% of the accommodation amount only, deducted from your payout — never from cleaning. The guest pays a separate guest-side fee and VAT as part of the all-inclusive total; those do not come out of your share.",
         "Your host net for a stay is: accommodation + cleaning fee − 6% of accommodation. Earnings shows this math on every reservation.",
       ],
       ar: [
-        "يأخذ StayOS رسوم خدمة من جانب المضيف بنسبة 6% من مبلغ الإقامة فقط، تُخصم من مدفوعاتك — وليس من التنظيف أبدًا. يدفع الضيف رسومًا منفصلة من جانب الضيف وضريبة القيمة المضافة ضمن الإجمالي الشامل؛ هذه لا تُخصم من حصتك.",
+        "يأخذ MAKAZOH رسوم خدمة من جانب المضيف بنسبة 6% من مبلغ الإقامة فقط، تُخصم من مدفوعاتك — وليس من التنظيف أبدًا. يدفع الضيف رسومًا منفصلة من جانب الضيف وضريبة القيمة المضافة ضمن الإجمالي الشامل؛ هذه لا تُخصم من حصتك.",
         "صافي أرباح المضيف للإقامة هو: الإقامة + رسوم التنظيف − 6% من الإقامة. تعرض الأرباح هذه الحسبة في كل حجز.",
       ],
     },
@@ -281,11 +281,11 @@ export const HOST_ARTICLES: HelpArticle[] = [
     body: {
       en: [
         "Reservations lists every booking on your listings with its status — requested, accepted, confirmed, completed, rejected, cancelled and no-show. From a requested booking you can accept or decline; the guest's payment verification completes the confirmation.",
-        "Cancellation is a guest action — guests cancel their own bookings under the listing's cancellation policy. Operational cancellations (for example by StayOS staff) follow the operations process, not the host UI.",
+        "Cancellation is a guest action — guests cancel their own bookings under the listing's cancellation policy. Operational cancellations (for example by MAKAZOH staff) follow the operations process, not the host UI.",
       ],
       ar: [
         "تعرض الحجوزات كل حجز على إعلاناتك مع حالته — مطلوب ومقبول ومؤكد ومكتمل ومرفوض وملغي وعدم حضور. من الحجز المطلوب يمكنك القبول أو الرفض؛ يكمل التحقق من دفع الضيف التأكيد.",
-        "الإلغاء إجراء للضيف — يلغي الضيوف حجوزاتهم بموجب سياسة الإلغاء للإعلان. الإلغاءات التشغيلية (مثلًا من قبل فريق StayOS) تتبع عملية العمليات وليس واجهة المضيف.",
+        "الإلغاء إجراء للضيف — يلغي الضيوف حجوزاتهم بموجب سياسة الإلغاء للإعلان. الإلغاءات التشغيلية (مثلًا من قبل فريق MAKAZOH) تتبع عملية العمليات وليس واجهة المضيف.",
       ],
     },
     keywords: ["reservation", "حجز", "accept", "قبول", "decline", "cancel", "إلغاء"],
@@ -494,10 +494,10 @@ export const HOST_ARTICLES: HelpArticle[] = [
     },
     body: {
       en: [
-        "Keep the property honest and safe: accurate photos and amenities, working basics, and clear house rules. If an incident happens during a stay, document it and report it to StayOS Support promptly.",
+        "Keep the property honest and safe: accurate photos and amenities, working basics, and clear house rules. If an incident happens during a stay, document it and report it to MAKAZOH Support promptly.",
       ],
       ar: [
-        "حافظ على صدق العقار وأمانه: صور ومرافق دقيقة، وأساسيات عاملة، وقواعد منزل واضحة. إذا حدثت حادثة أثناء الإقامة، وثّقها وأبلغ دعم StayOS عنها فورًا.",
+        "حافظ على صدق العقار وأمانه: صور ومرافق دقيقة، وأساسيات عاملة، وقواعد منزل واضحة. إذا حدثت حادثة أثناء الإقامة، وثّقها وأبلغ دعم MAKAZOH عنها فورًا.",
       ],
     },
     keywords: ["safety", "أمان", "incident", "حادثة", "property", "عقار"],

@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarImg: { width: 72, height: 72, borderRadius: 36 },
-  avatarText: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.white },
+  avatarText: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.onPrimary },
   avatarBtn: { flex: 1, marginTop: 0 },
   groupLabel: {
     fontSize: fontSize.sm,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   langChipActive: {
     backgroundColor: colors.primary,
-    color: colors.white,
+    color: colors.onPrimary,
     borderColor: colors.primary,
   },
 });

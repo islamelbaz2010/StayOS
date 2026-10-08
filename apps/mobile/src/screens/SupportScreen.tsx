@@ -24,7 +24,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 function getSupportWhatsAppLink(phone: string): string {
   const cleaned = phone.replace(/\D/g, "");
-  const message = encodeURIComponent("Hello StayOS support");
+  const message = encodeURIComponent("Hello MAKAZOH support");
   return `https://wa.me/${cleaned}?text=${message}`;
 }
 

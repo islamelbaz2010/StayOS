@@ -54,16 +54,16 @@ function buildHtml(center: { lat: number; lng: number }, zoom: number): string {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     padding: 0 8px; border-radius: 9999px; box-sizing: border-box;
     font: 700 12px system-ui, sans-serif;
-    background: #0F766E; color: #fff; border: 1px solid #fff;
+    background: #84CC16; color: #1A2E05; border: 1px solid #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.25);
   }
   .stayos-price-pill.selected {
-    background: #0D5A54; border: 2px solid #14B8A6;
+    background: #65A30D; border: 2px solid #A3E635;
     transform: scale(1.15);
   }
   .stayos-dot {
     width: 100%; height: 100%; border-radius: 9999px;
-    background: #0F766E; border: 2px solid #fff;
+    background: #65A30D; border: 2px solid #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.35);
   }
 </style>

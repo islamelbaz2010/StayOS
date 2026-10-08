@@ -194,7 +194,7 @@
     "changesRejected": "Changes rejected",
     "pendingChangesTitle": "Changes pending review",
     "pendingSubmittedAt": "Submitted {date}",
-    "pendingNextAction": "StayOS is reviewing these changes. They will go live once approved — no further action is needed unless they are rejected.",
+    "pendingNextAction": "MAKAZOH is reviewing these changes. They will go live once approved — no further action is needed unless they are rejected.",
     "pendingFields": {
       "basePrice": "Nightly price",
       "cleaningFee": "Cleaning fee",
@@ -417,7 +417,8 @@
     "eventListingRejected": "Listing rejected",
     "photoPendingAdd": "New photo",
     "photoPendingRemove": "Removed",
-    "cover": "Cover"
+    "cover": "Cover",
+    "viewOnWebsite": "View on website"
   },
   "search": {
     "title": "Search",
@@ -1263,7 +1264,7 @@
     "payByCardTitle": "Pay by card",
     "payByCardHint": "Pay securely online — your booking is confirmed instantly once the payment succeeds.",
     "payByCardCta": "Pay {amount} EGP securely",
-    "payByCardSecure": "Processed by Paymob — your card details never touch StayOS.",
+    "payByCardSecure": "Processed by Paymob — your card details never touch MAKAZOH.",
     "payByCardError": "Card checkout is unavailable right now. Try again or use bank transfer below.",
     "manualTransferTitle": "Or pay by bank transfer / Vodafone Cash",
     "manualTransferHint": "Transfer the amount to the account below, then upload your receipt. Manual payments are reviewed within 24 hours.",
@@ -1465,7 +1466,7 @@
     "email": "Email address",
     "memberSince": "Member since",
     "becomeHostTitle": "Become a host",
-    "becomeHostDesc": "Verify your identity and start hosting guests and your property on StayOS.",
+    "becomeHostDesc": "Verify your identity and start hosting guests and your property on MAKAZOH.",
     "startKyc": "Start identity verification",
     "kycVerifiedTitle": "Your identity is verified!",
     "kycVerifiedDesc": "You can now upgrade to a host account and start adding your properties.",
@@ -1603,7 +1604,7 @@
       "cancelled": "Cancelled",
       "refunded": "Refunded"
     },
-    "methodsNote": "StayOS does not store card details — secure card checkout is hosted by the payment provider each time you pay."
+    "methodsNote": "MAKAZOH does not store card details — secure card checkout is hosted by the payment provider each time you pay."
   },
   "hostEarnings": {
     "title": "Earnings",
@@ -1638,7 +1639,7 @@
     "noPayments": "No payments in this category.",
     "disclaimer": "Earnings are released after payment verification and stay completion.",
     "yourEarnings": "Your earnings",
-    "stayosFee": "StayOS fee",
+    "stayosFee": "MAKAZOH fee",
     "fundsStatus": "Funds status",
     "fundsStatuses": {
       "created": "Held",
@@ -1661,8 +1662,8 @@
     "expectedPayout": "Expected payout",
     "paidOn": "Paid on",
     "collected": "Guest payments collected",
-    "collectedHint": "Verified guest payments, before refunds and the StayOS fee",
-    "yourEarningsHint": "Your share after the StayOS fee",
+    "collectedHint": "Verified guest payments, before refunds and the MAKAZOH fee",
+    "yourEarningsHint": "Your share after the MAKAZOH fee",
     "fundsHeld": "Funds held",
     "fundsHeldHint": "Your share currently held in escrow",
     "payoutReady": "Ready for payout",
@@ -1810,7 +1811,7 @@
     "faqTitle": "Frequently asked questions",
     "browseFaq": "Browse frequently asked questions",
     "reportSafety": "Report a safety issue",
-    "supportTeam": "StayOS Support",
+    "supportTeam": "MAKAZOH Support",
     "you": "You",
     "typeMessage": "Type a message…",
     "statusOpen": "Open",
@@ -1821,7 +1822,7 @@
     "markResolved": "Mark as resolved",
     "reopen": "Reopen conversation",
     "linkedBooking": "Linked booking",
-    "signInTitle": "Contact StayOS Support",
+    "signInTitle": "Contact MAKAZOH Support",
     "signInHint": "Sign in to start a private conversation with our support team.",
     "signIn": "Sign in",
     "loadError": "Could not load your conversations.",
@@ -1895,7 +1896,7 @@
     "markContacted": "Mark Contacted",
     "ownerInterested": "Owner Interested",
     "readyForImport": "Ready for Import",
-    "importToStayOS": "Import to StayOS",
+    "importToMAKAZOH": "Import to MAKAZOH",
     "reject": "Reject",
     "importTitle": "Import Candidate",
     "importDescription": "This will create a new listing in PENDING_VERIFICATION status via the existing import pipeline.",
@@ -1904,7 +1905,7 @@
     "hostNamePlaceholder": "Contact person name",
     "hostPhone": "Contact Phone",
     "hostEmail": "Contact Email",
-    "contactNote": "Contact details are used for outreach only — no StayOS host account is created by this import.",
+    "contactNote": "Contact details are used for outreach only — no MAKAZOH host account is created by this import.",
     "selectPropertyType": "Select property type",
     "propertyTypeRequired": "Property type is required before import.",
     "nightlyPriceEgp": "Nightly Price (EGP)",
@@ -2003,7 +2004,7 @@
       "vat": "VAT",
       "guestTotal": "Guest total",
       "hostNet": "Host net",
-      "platformRevenue": "StayOS revenue",
+      "platformRevenue": "MAKAZOH revenue",
       "paymentTitle": "Payment",
       "paymentStatus": "Payment status",
       "paymentMethod": "Method",
@@ -2136,7 +2137,7 @@
   },
   "fees": {
     "popupTitle": "See your full stay price upfront",
-    "popupBody": "StayOS shows the complete price for your stay from the start. What you see is what you'll pay at checkout.",
+    "popupBody": "MAKAZOH shows the complete price for your stay from the start. What you see is what you'll pay at checkout.",
     "popupCta": "Got it",
     "line": "Prices include all fees"
   },
@@ -2182,7 +2183,7 @@
     "tasksOverdue": "Overdue tasks",
     "egp": "EGP",
     "loadError": "Could not load the overview.",
-    "platformRevenue": "StayOS revenue",
+    "platformRevenue": "MAKAZOH revenue",
     "hostPayable": "Host payable",
     "escrowsHeldAmount": "Funds held",
     "payoutsPaid": "Paid out",
@@ -2228,10 +2229,10 @@
     "egp": "EGP",
     "financialBreakdown": "Financial breakdown",
     "guestPaid": "Guest paid",
-    "stayosFeeAllocation": "StayOS fee allocation",
+    "stayosFeeAllocation": "MAKAZOH fee allocation",
     "hostSide": "Host side",
     "guestSide": "Guest side",
-    "stayosRevenue": "StayOS revenue",
+    "stayosRevenue": "MAKAZOH revenue",
     "hostPayable": "Host payable",
     "payout": "Payout",
     "fundsStatus": "Funds status",
@@ -2248,7 +2249,7 @@
     "loading": "Loading…",
     "drill": {
       "collected": "Collected — verified payments",
-      "revenue": "StayOS revenue — ledger entries",
+      "revenue": "MAKAZOH revenue — ledger entries",
       "vat": "VAT payable — recognised, reversed, payable",
       "funds_held": "Funds held — escrow accounts",
       "host_payable": "Host payable — payout-eligible ledger entries",
@@ -2264,7 +2265,7 @@
       "vatRecognised": "VAT recognised",
       "vatPayable": "VAT payable (net)",
       "hostNet": "Host net",
-      "stayosShare": "StayOS share",
+      "stayosShare": "MAKAZOH share",
       "vatAmount": "VAT",
       "escrowTotal": "Escrow total:",
       "host_funds_held": "Host funds held — restricted host share in escrow",
@@ -2272,7 +2273,7 @@
       "hostFundsHeld": "Host funds held — restricted until check-in + 24h",
       "hostFundsHeldTotal": "Host funds held (restricted)",
       "totalHostObligation": "Total host obligation",
-      "recognitionNote": "StayOS revenue is recognised at successful payment capture. Host payout timing never gates recognition.",
+      "recognitionNote": "MAKAZOH revenue is recognised at successful payment capture. Host payout timing never gates recognition.",
       "hostHoldNote": "The host share is a recognised obligation that stays restricted inside escrow until the guest checks in and the 24-hour protection window passes."
     },
     "adjustments": {
@@ -2375,7 +2376,7 @@
       },
       "becomeHost": {
         "title": "Become a host",
-        "body": "Verify your identity and list your property on StayOS."
+        "body": "Verify your identity and list your property on MAKAZOH."
       }
     },
     "personalPage": {
@@ -2407,7 +2408,7 @@
       "readReceiptsBody": "When off, people you message can't see when you've read their messages.",
       "saveError": "Could not save. Try again.",
       "dataTitle": "Your data",
-      "dataBody": "Download a copy of your StayOS account data, or permanently deactivate your account.",
+      "dataBody": "Download a copy of your MAKAZOH account data, or permanently deactivate your account.",
       "export": "Download my data",
       "exporting": "Preparing…",
       "deactivate": "Deactivate account",
@@ -2478,7 +2479,7 @@
       "language": "Language",
       "languageBody": "Your language is saved to your account and applies across devices.",
       "currency": "Currency",
-      "currencyBody": "All StayOS prices and payments are in Egyptian pounds. Multi-currency pricing is not available.",
+      "currencyBody": "All MAKAZOH prices and payments are in Egyptian pounds. Multi-currency pricing is not available.",
       "egp": "EGP — Egyptian pound",
       "saveError": "Could not save. Try again."
     },
@@ -2486,7 +2487,7 @@
       "back": "Account settings",
       "title": "Payments & payouts",
       "history": "Payment history",
-      "historyBody": "View all your payments. StayOS never stores card details — card checkout is hosted by the payment provider.",
+      "historyBody": "View all your payments. MAKAZOH never stores card details — card checkout is hosted by the payment provider.",
       "viewPayments": "View payments",
       "payouts": "Payout destination",
       "payoutsBody": "Where host earnings are sent. Account details are shown masked.",
@@ -2505,8 +2506,8 @@
     }
   },
   "becomeHost": {
-    "title": "Become a host on StayOS",
-    "subtitle": "Share your place with guests across Egypt. StayOS walks with you from identity verification to your first published listing — with a manual review at every step that matters.",
+    "title": "Become a host on MAKAZOH",
+    "subtitle": "Share your place with guests across Egypt. MAKAZOH walks with you from identity verification to your first published listing — with a manual review at every step that matters.",
     "stepsTitle": "How hosting works",
     "stepStatus": {
       "done": "Done",
@@ -2515,7 +2516,7 @@
     },
     "steps": {
       "account": {
-        "title": "Create your StayOS account",
+        "title": "Create your MAKAZOH account",
         "body": "Sign up with your phone number and set up your profile. Your account is the base for hosting, messaging, and payouts."
       },
       "verify": {
@@ -2536,11 +2537,11 @@
       }
     },
     "earningsTitle": "How earnings work",
-    "earningsBody": "You set your nightly accommodation price and an optional cleaning fee. StayOS shows every charge clearly before a guest books.",
+    "earningsBody": "You set your nightly accommodation price and an optional cleaning fee. MAKAZOH shows every charge clearly before a guest books.",
     "earningsPoints": {
       "setPrice": "You set the nightly accommodation price and cleaning fee for each listing.",
-      "commission": "StayOS charges hosts a 6% service commission on the accommodation amount of each confirmed booking.",
-      "allInclusive": "Guests see one all-inclusive price that already includes the StayOS guest fee and VAT — no surprise charges at checkout.",
+      "commission": "MAKAZOH charges hosts a 6% service commission on the accommodation amount of each confirmed booking.",
+      "allInclusive": "Guests see one all-inclusive price that already includes the MAKAZOH guest fee and VAT — no surprise charges at checkout.",
       "net": "Your net earnings per booking equal accommodation plus cleaning, minus the 6% host commission.",
       "payouts": "Set your payout preference under Payments & payouts; payout status is tracked on your Earnings page."
     },
@@ -2548,8 +2549,8 @@
     "expectations": {
       "accurate": "Keep your listing accurate: photos, amenities, location, and house rules must match the real stay.",
       "photos": "Clear, honest photos help guests book with confidence and reduce disputes.",
-      "review": "Listings and identity documents are reviewed manually by the StayOS team — approval is not automatic.",
-      "communication": "Respond to guest messages and reservation requests promptly through StayOS messaging."
+      "review": "Listings and identity documents are reviewed manually by the MAKAZOH team — approval is not automatic.",
+      "communication": "Respond to guest messages and reservation requests promptly through MAKAZOH messaging."
     },
     "cta": {
       "signIn": "Sign in to start",
@@ -2566,7 +2567,7 @@
   },
   "hostGuide": {
     "title": "Hosting guide",
-    "subtitle": "Everything you need to run your stay on StayOS — what each tool does, why it matters, and where to use it.",
+    "subtitle": "Everything you need to run your stay on MAKAZOH — what each tool does, why it matters, and where to use it.",
     "readGuide": "Read guide",
     "back": "Back to the hosting guide",
     "notFoundTitle": "Guide not found",
@@ -2607,7 +2608,7 @@
     "sections": {
       "start": {
         "title": "Getting started",
-        "body": "Set yourself up to host on StayOS."
+        "body": "Set yourself up to host on MAKAZOH."
       },
       "manage": {
         "title": "Manage your stay",
@@ -2629,10 +2630,10 @@
     "topics": {
       "verification": {
         "title": "Identity verification",
-        "intro": "StayOS reviews every host's identity manually. A verified host builds trust with guests before the first booking.",
+        "intro": "MAKAZOH reviews every host's identity manually. A verified host builds trust with guests before the first booking.",
         "points": {
           "p1": "Upload a photo of your national ID and a selfie from the verification page.",
-          "p2": "Documents are stored securely and reviewed by the StayOS team — nothing is automated or instant.",
+          "p2": "Documents are stored securely and reviewed by the MAKAZOH team — nothing is automated or instant.",
           "p3": "Once approved, activate hosting from the verification page to unlock host tools.",
           "p4": "If a submission is rejected you'll see the reason and can submit again."
         }
@@ -2674,13 +2675,13 @@
         "points": {
           "p1": "New requests show the guest, dates, and price — respond before they expire.",
           "p2": "Track upcoming check-ins and current stays from the host dashboard.",
-          "p3": "Payment status is tracked on each booking — StayOS collects payment from the guest.",
+          "p3": "Payment status is tracked on each booking — MAKAZOH collects payment from the guest.",
           "p4": "Cancellations follow your listing's cancellation policy automatically."
         }
       },
       "messaging": {
         "title": "Guest communication",
-        "intro": "All guest communication happens inside StayOS messaging so both sides have a record.",
+        "intro": "All guest communication happens inside MAKAZOH messaging so both sides have a record.",
         "points": {
           "p1": "Reply promptly — fast answers turn questions into confirmed bookings.",
           "p2": "Share check-in details in the message thread before arrival.",
@@ -2720,20 +2721,20 @@
       },
       "reviews": {
         "title": "Reviews",
-        "intro": "Reviews are how hosts and guests build trust on StayOS after every completed stay.",
+        "intro": "Reviews are how hosts and guests build trust on MAKAZOH after every completed stay.",
         "points": {
           "p1": "Guests can review a stay after check-out; their reviews appear on your listing.",
           "p2": "You can leave a review for your guest from the reservation page.",
           "p3": "Respond to reviews politely — future guests read your responses.",
-          "p4": "If a review breaks StayOS rules, report it — reports go to the admin moderation queue."
+          "p4": "If a review breaks MAKAZOH rules, report it — reports go to the admin moderation queue."
         }
       },
       "pricing": {
         "title": "Pricing",
-        "intro": "You control what guests pay per night. StayOS calculates fees and taxes automatically on every booking.",
+        "intro": "You control what guests pay per night. MAKAZOH calculates fees and taxes automatically on every booking.",
         "points": {
           "p1": "Your nightly accommodation price and cleaning fee are set per listing.",
-          "p2": "StayOS takes a 6% host commission on the accommodation amount only.",
+          "p2": "MAKAZOH takes a 6% host commission on the accommodation amount only.",
           "p3": "Guests pay a 6% service fee on accommodation plus VAT — already included in the price they see.",
           "p4": "Your net earnings equal accommodation plus cleaning minus the 6% commission.",
           "p5": "Listing, weekly, and monthly discounts plus weekend and peak multipliers live in the listing editor — use the earnings page to simulate the math."
@@ -2741,11 +2742,11 @@
       },
       "earnings": {
         "title": "Earnings",
-        "intro": "Your earnings page shows what you've made across bookings — calculated by StayOS, not estimated.",
+        "intro": "Your earnings page shows what you've made across bookings — calculated by MAKAZOH, not estimated.",
         "points": {
           "p1": "Each booking shows accommodation, cleaning, the 6% host commission, and your net.",
           "p2": "Earnings are grouped by period so you can track income over time.",
-          "p3": "Any manual adjustment by the StayOS team appears as an audited entry — never applied silently.",
+          "p3": "Any manual adjustment by the MAKAZOH team appears as an audited entry — never applied silently.",
           "p4": "Totals always come from the server — the numbers you see are the numbers that count."
         }
       },
@@ -2765,9 +2766,9 @@
         "points": {
           "p1": "Keep a working smoke detector and clear exits; share emergency numbers in your check-in instructions.",
           "p2": "Confirm the booking details before sharing access information.",
-          "p3": "Keep communication and payments on StayOS — moving off-platform removes your protection.",
+          "p3": "Keep communication and payments on MAKAZOH — moving off-platform removes your protection.",
           "p4": "If something feels wrong — suspicious requests, pressure, or unsafe situations — contact support immediately.",
-          "p5": "StayOS does not provide insurance; you are responsible for your own property and liability arrangements."
+          "p5": "MAKAZOH does not provide insurance; you are responsible for your own property and liability arrangements."
         }
       },
       "responsible-hosting": {
@@ -2776,9 +2777,9 @@
         "points": {
           "p1": "Keep noise reasonable and set quiet-hour expectations in your house rules.",
           "p2": "Make sure your listing information stays accurate — guests rely on it.",
-          "p3": "Price transparently and never ask guests to pay outside StayOS.",
+          "p3": "Price transparently and never ask guests to pay outside MAKAZOH.",
           "p4": "Know your local obligations — rules for short-term rentals vary, so check what applies to your property.",
-          "p5": "Treat every guest with respect; discrimination has no place on StayOS."
+          "p5": "Treat every guest with respect; discrimination has no place on MAKAZOH."
         }
       }
     },
@@ -2854,7 +2855,7 @@
       "cancelled_bookings": "Cancelled Bookings",
       "rebooked_bookings": "Rebooked Bookings",
       "booking_financials": "Booking Financials",
-      "stayos_revenue": "StayOS Revenue",
+      "stayos_revenue": "MAKAZOH Revenue",
       "host_commission": "Host Commission",
       "guest_commission": "Guest Commission",
       "host_earnings": "Host Earnings",
@@ -2953,7 +2954,7 @@
       "reviews_count": "Reviews",
       "role": "Role",
       "stay_phase": "Stay Phase",
-      "stayos_revenue_egp": "StayOS Revenue (EGP)",
+      "stayos_revenue_egp": "MAKAZOH Revenue (EGP)",
       "status": "Status",
       "taxable_amount_egp": "Taxable (EGP)",
       "transaction_id": "Transaction",
@@ -3105,10 +3106,10 @@
       "host_net": "Host net (booking economics)",
       "host_payable": "Host payable (ledger balance)",
       "net_activity": "Net financial activity (collected − refunded)",
-      "net_recognised_revenue": "Net recognised StayOS revenue",
+      "net_recognised_revenue": "Net recognised MAKAZOH revenue",
       "recognised_bookings": "Recognised bookings",
       "refunded": "Refunded",
-      "stayos_economics": "StayOS economics (booking-level share)",
+      "stayos_economics": "MAKAZOH economics (booking-level share)",
       "vat_calculated": "VAT calculated on bookings",
       "vat_payable": "VAT payable (calculated − reversed)",
       "vat_reversed": "VAT reversed on refunds"
@@ -3141,7 +3142,7 @@
     },
     "kpi": {
       "collected": "Collected",
-      "stayosRevenue": "StayOS Revenue",
+      "stayosRevenue": "MAKAZOH Revenue",
       "vatPayable": "VAT Payable",
       "hostPayable": "Host Payable",
       "fundsHeld": "Funds Held",
@@ -3150,7 +3151,7 @@
     },
     "sections": {
       "composition": "Financial composition",
-      "revenue": "StayOS revenue",
+      "revenue": "MAKAZOH revenue",
       "vat": "VAT",
       "bookings": "Bookings",
       "settlement": "Host settlement",
@@ -3172,7 +3173,7 @@
       "net": "Net recognised",
       "byMonth": "Recognised revenue by month",
       "withinHeldFunds": "Within held funds",
-      "recognitionNote": "StayOS revenue is recognised at successful payment capture. The within-held-funds figure is recognised revenue whose cash still sits under escrow control — never extra revenue on top."
+      "recognitionNote": "MAKAZOH revenue is recognised at successful payment capture. The within-held-funds figure is recognised revenue whose cash still sits under escrow control — never extra revenue on top."
     },
     "vat": {
       "calculated": "Calculated",
@@ -3208,7 +3209,7 @@
       "status": "Status",
       "guestTotal": "Guest total",
       "hostNet": "Host net",
-      "stayos": "StayOS",
+      "stayos": "MAKAZOH",
       "vat": "VAT"
     },
     "appendix": {
@@ -3251,12 +3252,12 @@
     "articles": "{count} articles",
     "faqTitle": "Frequently asked questions",
     "browseFaq": "Browse frequently asked questions",
-    "contactTitle": "Contact StayOS Support",
+    "contactTitle": "Contact MAKAZOH Support",
     "contactHint": "Can't find what you need? Start a private conversation with our support team.",
     "startConversation": "Start a conversation",
     "searchResultsFor": "Results for \"{q}\"",
     "noResults": "No articles match your search.",
-    "noResultsHint": "Try different words, or ask StayOS Support directly.",
+    "noResultsHint": "Try different words, or ask MAKAZOH Support directly.",
     "clearSearch": "Clear search",
     "relatedArticles": "Related articles",
     "backToHelp": "Back to Help Center",

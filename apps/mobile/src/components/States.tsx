@@ -5,7 +5,7 @@ import { useLocale } from "../lib/LocaleContext";
 export function LoadingSpinner() {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color={colors.primary} />
+      <ActivityIndicator size="large" color={colors.accentText} />
     </View>
   );
 }
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontSize: fontSize.sm,
-    color: colors.white,
+    color: colors.onPrimary,
     fontWeight: "700",
   },
   emptyIcon: {
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: fontSize.sm,
-    color: colors.white,
+    color: colors.onPrimary,
     fontWeight: "700",
   },
   skeleton: {

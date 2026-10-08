@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   addButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",
   },
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   coverBadgeText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.xs,
     fontWeight: "700",
   },

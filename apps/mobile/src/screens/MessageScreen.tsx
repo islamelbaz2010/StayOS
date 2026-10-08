@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   myBubbleText: {
-    color: colors.white,
+    color: colors.onPrimary,
   },
   theirBubbleText: {
     color: colors.text,
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   sendButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontWeight: "700",
   },
   offerCard: {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   offerTitle: {
     fontSize: fontSize.md,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
   },
   offerStatus: {
     fontSize: fontSize.xs,
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   offerAcceptText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontWeight: "700",
   },
   offerDecline: {
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   offerToggleText: {
-    color: colors.primary,
+    color: colors.accentText,
     fontWeight: "700",
     fontSize: fontSize.sm,
   },

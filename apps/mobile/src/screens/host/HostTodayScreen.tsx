@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   badgeValue: {
     fontSize: fontSize.xl,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accentText,
   },
   badgeLabel: {
     fontSize: fontSize.xs,

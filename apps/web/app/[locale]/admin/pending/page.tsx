@@ -341,6 +341,17 @@ export default function AdminPendingListingsPage() {
                     />
                   )}
 
+                  <div className="mt-3">
+                    <a
+                      href={`/${locale}/listings/${selected.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-700 hover:text-accent-800"
+                    >
+                      {t("viewOnWebsite")} ↗
+                    </a>
+                  </div>
+
                   <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="font-medium text-neutral-700">

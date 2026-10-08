@@ -63,7 +63,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div>
-            <p className="text-sm font-semibold text-neutral-900">StayOS</p>
+            <p className="text-sm font-semibold text-neutral-900">MAKAZOH</p>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
@@ -171,7 +171,7 @@ export function Footer() {
         </div>
         <div className="mt-8 border-t border-neutral-200 pt-8">
           <p className="text-xs text-neutral-400">
-            © {new Date().getFullYear()} StayOS. {t("rights")}
+            © {new Date().getFullYear()} MAKAZOH. {t("rights")}
           </p>
         </div>
       </div>

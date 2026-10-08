@@ -125,6 +125,7 @@ export function AccountScreen() {
       {!isStaff && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("stays")}</Text>
+          <MenuRow label={t("favorites")} onPress={() => navigation.navigate("Favorites")} />
           <MenuRow label={t("notifications")} badge={unread || undefined} onPress={() => navigation.navigate("Notifications")} />
           <MenuRow label={t("myPayments")} onPress={() => navigation.navigate("Payments")} />
           <MenuRow label={t("myDisputes")} onPress={() => navigation.navigate("Disputes", {})} />

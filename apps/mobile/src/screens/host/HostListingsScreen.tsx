@@ -118,7 +118,14 @@ function ListingCard({
           </Text>
           {!isReady && readiness.missing_items.length > 0 && (
             <Text style={styles.missingItems} numberOfLines={1}>
-              {readiness.missing_items.join(", ")}
+              {readiness.missing_items
+                .map((key: string) => {
+                  const localized = t(`ready_${key}`);
+                  return localized !== `ready_${key}`
+                    ? localized
+                    : readiness.missing_item_labels?.[key] ?? key;
+                })
+                .join(", ")}
             </Text>
           )}
         </View>

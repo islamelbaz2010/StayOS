@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -7,14 +8,36 @@ import { useTranslations } from "next-intl";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { GuestLayout } from "@/components/layouts";
 import { useAuth } from "@/lib/auth/useAuth";
-import { useAccount } from "@/lib/queries/account";
+import { useAccount, useUpdateAccount } from "@/lib/queries/account";
+import { getApiErrorMessage } from "@/lib/utils";
 
 export default function PaymentsSettingsPage() {
   const { locale = "ar" } = useParams<{ locale: string }>();
   const t = useTranslations("settings.paymentsPage");
+  const tc = useTranslations("common");
   const { user } = useAuth();
   const { data: account } = useAccount();
+  const updateAccount = useUpdateAccount();
   const isHost = user?.role === "host";
+
+  const [taxId, setTaxId] = useState("");
+  const [taxSaving, setTaxSaving] = useState(false);
+  const [taxError, setTaxError] = useState<string | null>(null);
+  useEffect(() => {
+    setTaxId(account?.tax_id ?? "");
+  }, [account?.tax_id]);
+
+  async function saveTaxId() {
+    setTaxSaving(true);
+    setTaxError(null);
+    try {
+      await updateAccount.mutateAsync({ tax_id: taxId.trim() || null });
+    } catch (err) {
+      setTaxError(getApiErrorMessage(err, tc("error")));
+    } finally {
+      setTaxSaving(false);
+    }
+  }
 
   const payoutRows: { label: string; value: string | null | undefined }[] = [
     { label: t("payoutMethod"), value: account?.payout_method },
@@ -100,18 +123,32 @@ export default function PaymentsSettingsPage() {
                 {t("taxes")}
               </h2>
               <p className="mt-1 text-sm text-neutral-600">{t("taxesBody")}</p>
-              <div className="mt-3 flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">{t("taxId")}</span>
-                <span className="font-medium text-neutral-900">
-                  {account?.tax_id || t("notConfigured")}
-                </span>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-neutral-700">
+                  {t("taxId")}
+                  <input
+                    type="text"
+                    value={taxId}
+                    onChange={(e) => setTaxId(e.target.value)}
+                    maxLength={64}
+                    placeholder={t("notConfigured")}
+                    className="input mt-1 w-full text-sm"
+                  />
+                </label>
               </div>
-              <Link
-                href={`/${locale}/account-settings/personal`}
-                className="mt-4 inline-block text-sm font-semibold text-accent-600 hover:text-accent-700"
+              {taxError && (
+                <p className="mt-2 text-sm text-danger-600" role="alert">
+                  {taxError}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => void saveTaxId()}
+                disabled={taxSaving}
+                className="btn-secondary mt-3 text-sm disabled:opacity-50"
               >
-                {t("editTax")} →
-              </Link>
+                {taxSaving ? tc("loading") : t("editTax")}
+              </button>
             </div>
           </div>
         </main>

@@ -35,7 +35,6 @@ export default function PersonalInfoPage() {
           <div className="mt-6">
             <PersonalInfoEditor kycVerified={kycVerified} />
           </div>
-          <p className="mt-4 text-xs text-neutral-500">{t("taxNote")}</p>
         </main>
       </GuestLayout>
     </ProtectedRoute>

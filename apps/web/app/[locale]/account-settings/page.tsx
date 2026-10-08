@@ -142,7 +142,7 @@ export default function AccountSettingsPage() {
             <Card
               title={t("cards.taxes.title")}
               body={t("cards.taxes.body")}
-              href={`/${locale}/account-settings/personal`}
+              href={`/${locale}/account-settings/payments`}
               action={t("open")}
             >
               <p className="mt-3 text-xs text-neutral-500">

@@ -72,6 +72,7 @@ import { AdminStaffScreen } from "./src/screens/ops/AdminStaffScreen";
 import { AdminAdjustmentsScreen } from "./src/screens/ops/AdminAdjustmentsScreen";
 import { AdminFinanceScreen } from "./src/screens/ops/AdminFinanceScreen";
 import { AdminListingsScreen } from "./src/screens/ops/AdminListingsScreen";
+import { MenuGroupScreen } from "./src/screens/MenuGroupScreen";
 
 export type RootStackParamList = {
   Home: { screen?: "TripsTab" } | undefined;
@@ -132,6 +133,10 @@ export type RootStackParamList = {
   AdminListings: undefined;
   // Shared
   Support: undefined;
+  MenuGroup: {
+    title: string;
+    items: { key: string; label: string; route: string; icon?: string }[];
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -195,6 +200,7 @@ const linking = {
       AdminAdjustments: "admin/adjustments",
       AdminFinance: "admin/finance",
       AdminListings: "admin/listings",
+      MenuGroup: "menu",
     },
   },
 };
@@ -214,7 +220,7 @@ function getGuestTabIconName(routeName: string, focused: boolean): keyof typeof 
     case "HomeTab":
       return focused ? "home" : "home-outline";
     case "SearchTab":
-      return focused ? "search" : "search-outline";
+      return focused ? "compass" : "compass-outline";
     case "FavoritesTab":
       return focused ? "heart" : "heart-outline";
     case "TripsTab":
@@ -279,18 +285,17 @@ function GuestTabs() {
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: t("home") }} />
-      <Tab.Screen name="SearchTab" component={SearchScreen} options={{ tabBarLabel: t("search") }} />
-      <Tab.Screen name="FavoritesTab" component={FavoritesScreen} options={{ tabBarLabel: t("favorites") }} />
+      <Tab.Screen name="SearchTab" component={SearchScreen} options={{ tabBarLabel: t("explore") }} />
       <Tab.Screen name="TripsTab" component={TripsScreen} options={{ tabBarLabel: t("trips") }} />
       <Tab.Screen
         name="MessagesTab"
         component={InboxScreen}
         options={{
-          tabBarLabel: t("messages"),
+          tabBarLabel: t("inbox"),
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
         }}
       />
-      <Tab.Screen name="AccountTab" component={AccountScreen} options={{ tabBarLabel: t("account") }} />
+      <Tab.Screen name="AccountTab" component={AccountScreen} options={{ tabBarLabel: t("profile") }} />
     </Tab.Navigator>
   );
 }
@@ -360,7 +365,7 @@ function OpsTabs() {
 }
 
 function AppContent() {
-  const { isRTL, loaded } = useLocale();
+  const { isRTL, loaded, t } = useLocale();
   const { data: user } = useMe();
   const authed = useHasTokens();
   const queryClient = useQueryClient();
@@ -437,7 +442,7 @@ function AppContent() {
         <Stack.Screen
           name="Search"
           component={SearchScreen}
-          options={{ title: "Search" }}
+          options={{ title: t("search") }}
         />
         <Stack.Screen
           name="ListingDetail"
@@ -447,72 +452,72 @@ function AppContent() {
         <Stack.Screen
           name="Booking"
           component={BookingScreen}
-          options={{ title: "Booking" }}
+          options={{ title: t("titleBooking") }}
         />
         <Stack.Screen
           name="HostProfile"
           component={GuestHostProfileScreen}
-          options={{ title: "Host" }}
+          options={{ title: t("titleHost") }}
         />
         <Stack.Screen
           name="TripDetail"
           component={TripDetailScreen}
-          options={{ title: "Trip" }}
+          options={{ title: t("titleTrip") }}
         />
         <Stack.Screen
           name="Payment"
           component={PaymentScreen}
-          options={{ title: "Payment" }}
+          options={{ title: t("titlePayment") }}
         />
         <Stack.Screen
           name="Payments"
           component={PaymentsScreen}
-          options={{ title: "Payments" }}
+          options={{ title: t("paymentsTitle") }}
         />
         <Stack.Screen
           name="Kyc"
           component={KycScreen}
-          options={{ title: "Identity verification" }}
+          options={{ title: t("verifyIdentity") }}
         />
         <Stack.Screen
           name="Message"
           component={MessageScreen}
-          options={{ title: "Messages" }}
+          options={{ title: t("messages") }}
         />
         <Stack.Screen
           name="Login"
           component={LoginScreen}
-          options={{ title: "Login" }}
+          options={{ title: t("login") }}
         />
         <Stack.Screen
           name="Register"
           component={RegisterScreen}
-          options={{ title: "Create account" }}
+          options={{ title: t("createAccount") }}
         />
         <Stack.Screen
           name="ForgotPassword"
           component={ForgotPasswordScreen}
-          options={{ title: "Reset password" }}
+          options={{ title: t("titleResetPassword") }}
         />
         <Stack.Screen
           name="Notifications"
           component={NotificationsScreen}
-          options={{ title: "Notifications" }}
+          options={{ title: t("notifications") }}
         />
         <Stack.Screen
           name="Trips"
           component={TripsScreen}
-          options={{ title: "Trips" }}
+          options={{ title: t("trips") }}
         />
         <Stack.Screen
           name="Favorites"
           component={FavoritesScreen}
-          options={{ title: "Favorites" }}
+          options={{ title: t("favorites") }}
         />
         <Stack.Screen
           name="HelpCenter"
           component={HelpCenterScreen}
-          options={{ title: "Help Center" }}
+          options={{ title: t("helpCenter") }}
         />
         <Stack.Screen
           name="HelpArticle"
@@ -522,157 +527,162 @@ function AppContent() {
         <Stack.Screen
           name="Disputes"
           component={DisputesScreen}
-          options={{ title: "Disputes" }}
+          options={{ title: t("disputes") }}
         />
         <Stack.Screen
           name="ProfileSettings"
           component={ProfileScreen}
-          options={{ title: "Profile" }}
+          options={{ title: t("profile") }}
         />
         <Stack.Screen
           name="PersonalData"
           component={PersonalDataScreen}
-          options={{ title: "Personal information" }}
+          options={{ title: t("personalInfo") }}
         />
         <Stack.Screen
           name="SecuritySettings"
           component={SecurityScreen}
-          options={{ title: "Login & security" }}
+          options={{ title: t("loginSecurity") }}
         />
         <Stack.Screen
           name="PrivacySettings"
           component={PrivacyScreen}
-          options={{ title: "Privacy & notifications" }}
+          options={{ title: t("privacyNotifications") }}
         />
         <Stack.Screen
           name="HostReservationDetail"
           component={HostReservationDetailScreen}
-          options={{ title: "Reservation" }}
+          options={{ title: t("titleReservation") }}
         />
         <Stack.Screen
           name="HostEarnings"
           component={HostEarningsScreen}
-          options={{ title: "Earnings" }}
+          options={{ title: t("hostEarnings") }}
         />
         <Stack.Screen
           name="HostListingDetail"
           component={HostListingDetailScreen}
-          options={{ title: "Listing" }}
+          options={{ title: t("titleListing") }}
         />
         <Stack.Screen
           name="HostListingEditor"
           component={HostListingEditorScreen}
-          options={{ title: "Edit listing" }}
+          options={{ title: t("titleEditListing") }}
         />
         <Stack.Screen
           name="HostListingPhotos"
           component={HostListingPhotosScreen}
-          options={{ title: "Photos" }}
+          options={{ title: t("titlePhotos") }}
         />
         <Stack.Screen
           name="HostListingAvailability"
           component={HostListingAvailabilityScreen}
-          options={{ title: "Availability" }}
+          options={{ title: t("titleAvailability") }}
         />
         <Stack.Screen
           name="HostListingCoHosts"
           component={HostListingCoHostsScreen}
-          options={{ title: "Co-hosts" }}
+          options={{ title: t("titleCoHosts") }}
         />
         <Stack.Screen
           name="HostCreateListing"
           component={HostCreateListingScreen}
-          options={{ title: "New listing" }}
+          options={{ title: t("hostNewListing") }}
         />
         <Stack.Screen
           name="HostBookings"
           component={HostBookingsScreen}
-          options={{ title: "Bookings" }}
+          options={{ title: t("hostBookings") }}
         />
         <Stack.Screen
           name="HostPayments"
           component={HostPaymentsScreen}
-          options={{ title: "Payments" }}
+          options={{ title: t("paymentsTitle") }}
         />
         <Stack.Screen
           name="OpsKyc"
           component={OpsKycScreen}
-          options={{ title: "KYC queue" }}
+          options={{ title: t("titleKycQueue") }}
         />
         <Stack.Screen
           name="OpsPayments"
           component={OpsPaymentsScreen}
-          options={{ title: "Payments queue" }}
+          options={{ title: t("titlePaymentsQueue") }}
         />
         <Stack.Screen
           name="OpsSupport"
           component={OpsSupportScreen}
-          options={{ title: "Support queue" }}
+          options={{ title: t("titleSupportQueue") }}
         />
         <Stack.Screen
           name="OpsTasks"
           component={OpsTasksScreen}
-          options={{ title: "Operations" }}
+          options={{ title: t("titleOperations") }}
         />
         <Stack.Screen
           name="OpsDisputes"
           component={OpsDisputesScreen}
-          options={{ title: "Disputes" }}
+          options={{ title: t("disputes") }}
         />
         <Stack.Screen
           name="OpsListings"
           component={OpsListingsScreen}
-          options={{ title: "Listing moderation" }}
+          options={{ title: t("titleListingModeration") }}
         />
         <Stack.Screen
           name="OpsReviewReports"
           component={OpsReviewReportsScreen}
-          options={{ title: "Review reports" }}
+          options={{ title: t("titleReviewReports") }}
         />
         <Stack.Screen
           name="AdminUsers"
           component={AdminUsersScreen}
-          options={{ title: "Users" }}
+          options={{ title: t("titleUsers") }}
         />
         <Stack.Screen
           name="AdminBookings"
           component={AdminBookingsScreen}
-          options={{ title: "Bookings" }}
+          options={{ title: t("hostBookings") }}
         />
         <Stack.Screen
           name="AdminDiscovery"
           component={AdminDiscoveryScreen}
-          options={{ title: "Discovery" }}
+          options={{ title: t("titleDiscovery") }}
         />
         <Stack.Screen
           name="AdminReports"
           component={AdminReportsScreen}
-          options={{ title: "Reports" }}
+          options={{ title: t("titleReports") }}
         />
         <Stack.Screen
           name="AdminStaff"
           component={AdminStaffScreen}
-          options={{ title: "Staff" }}
+          options={{ title: t("titleStaff") }}
         />
         <Stack.Screen
           name="AdminAdjustments"
           component={AdminAdjustmentsScreen}
-          options={{ title: "Adjustments" }}
+          options={{ title: t("titleAdjustments") }}
         />
         <Stack.Screen
           name="AdminFinance"
           component={AdminFinanceScreen}
-          options={{ title: "Finance" }}
+          options={{ title: t("titleFinance") }}
         />
         <Stack.Screen
           name="AdminListings"
           component={AdminListingsScreen}
-          options={{ title: "Listings" }}
+          options={{ title: t("titleListings") }}
         />
         <Stack.Screen
           name="Support"
           component={SupportScreen}
-          options={{ title: "Support" }}
+          options={{ title: t("support") }}
+        />
+        <Stack.Screen
+          name="MenuGroup"
+          component={MenuGroupScreen}
+          options={({ route }) => ({ title: route.params?.title ?? t("titleMenuGroup") })}
         />
       </Stack.Navigator>
     </NavigationContainer>

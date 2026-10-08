@@ -91,9 +91,10 @@ const tAr = arMessages.nav as Record<string, string>;
 describe("Header role visibility", () => {
   beforeEach(() => as(null));
 
-  it("anonymous sees search/support/sign-in, no account or admin links", () => {
+  it("anonymous sees stays/explore/sign-in, no account or admin links", () => {
     renderWith(<Header />);
-    expect(screen.getAllByText(t.search).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t.stays).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t.explore).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.signIn).length).toBeGreaterThan(0);
     expect(screen.queryByText(t.adminConsole)).toBeNull();
     expect(screen.queryByText(t.account)).toBeNull();
@@ -343,10 +344,10 @@ describe("Account menu information architecture", () => {
     const entries = menuRootEntries(container);
     expect(entries).toEqual([
       `GROUP:${t.account}`,
-      "/en/become-a-host",
       `GROUP:${t.preferences}`,
       `GROUP:${t.helpSupport}`,
     ]);
+    // Become-a-host lives in the header pill for guests, not the menu.
     // The root level renders no deep destinations — that's the point of
     // the hierarchical redesign.
     for (const deep of [

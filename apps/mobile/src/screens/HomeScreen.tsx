@@ -185,11 +185,13 @@ export function HomeScreen() {
               style={({ pressed }) => [styles.categoryCard, pressed && styles.cardPressed]}
               onPress={() => goToSearch(undefined, category)}
             >
-              <Ionicons
-                name={CATEGORY_ICONS[category]}
-                size={26}
-                color={colors.accentText}
-              />
+              <View style={styles.categoryIconWrap}>
+                <Ionicons
+                  name={CATEGORY_ICONS[category]}
+                  size={24}
+                  color={colors.accentText}
+                />
+              </View>
               <Text style={styles.categoryLabel}>{t(`ptype_${category}`)}</Text>
             </Pressable>
           ))}
@@ -422,19 +424,33 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     alignItems: "center",
-    gap: spacing.xs,
+    gap: spacing.sm,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minWidth: 96,
+    paddingHorizontal: spacing.sm,
+    width: 104,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  categoryIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary50,
+    alignItems: "center",
+    justifyContent: "center",
   },
   categoryLabel: {
     fontSize: fontSize.xs,
     fontWeight: "600",
-    color: colors.textSecondary,
+    color: colors.text,
+    textAlign: "center",
   },
   destinationRow: {
     gap: spacing.sm,

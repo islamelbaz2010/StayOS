@@ -22,6 +22,8 @@
   "nav": {
     "home": "Home",
     "search": "Search",
+    "stays": "Stays",
+    "explore": "Explore",
     "host": "List your property",
     "hostDashboard": "Host dashboard",
     "trips": "My trips",

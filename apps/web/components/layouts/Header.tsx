@@ -299,9 +299,9 @@ export function Header() {
     };
   }, [accountOpen]);
 
-  // Anonymous visitors get the standalone Become-a-host CTA; authenticated
-  // guests get it inside the account menu items instead.
-  const showBecomeHost = !isAuthenticated;
+  // The public header keeps the standalone Become-a-host CTA for visitors
+  // and guests; hosts/staff reach hosting via the account menu instead.
+  const showBecomeHost = !isAuthenticated || user?.role === "guest";
 
   // FD-17 + hierarchical redesign: the root level shows only navigation
   // categories (Account / Hosting / Preferences / Help & Support); each
@@ -402,15 +402,8 @@ export function Header() {
           ])
         );
       }
-      if (user?.role === "guest") {
-        accountMenuRows.push(
-          link({
-            href: `/${locale}/become-a-host`,
-            label: t("becomeHost"),
-            accent: true,
-          })
-        );
-      }
+      // Guests get Become-a-host as the header pill — no duplicate inside
+      // the account menu.
       accountMenuRows.push(preferencesGroup, helpSupportGroup);
     }
   }
@@ -452,13 +445,13 @@ export function Header() {
               href={`/${locale}/search`}
               className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             >
-              {t("search")}
+              {t("stays")}
             </Link>
             <Link
-              href={`/${locale}/support`}
+              href={`/${locale}#popular-destinations`}
               className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             >
-              {t("support")}
+              {t("explore")}
             </Link>
           </nav>
         </div>
@@ -602,7 +595,14 @@ export function Header() {
               className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
               onClick={() => setMobileOpen(false)}
             >
-              {t("search")}
+              {t("stays")}
+            </Link>
+            <Link
+              href={`/${locale}#popular-destinations`}
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+              onClick={() => setMobileOpen(false)}
+            >
+              {t("explore")}
             </Link>
             <AccountMenuLevels
               open={mobileOpen}

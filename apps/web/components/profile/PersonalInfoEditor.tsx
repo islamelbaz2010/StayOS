@@ -43,7 +43,6 @@ export function PersonalInfoEditor({ kycVerified }: { kycVerified: boolean }) {
   const [displayName, setDisplayName] = useState("");
   const [legalName, setLegalName] = useState("");
   const [dob, setDob] = useState("");
-  const [taxId, setTaxId] = useState("");
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
   const [governorate, setGovernorate] = useState("");
@@ -69,7 +68,6 @@ export function PersonalInfoEditor({ kycVerified }: { kycVerified: boolean }) {
     setDisplayName(user?.display_name ?? "");
     setLegalName(account?.legal_name ?? "");
     setDob(account?.date_of_birth ?? "");
-    setTaxId(account?.tax_id ?? "");
     setStreet(String(account?.address?.street ?? ""));
     setCity(String(account?.address?.city ?? ""));
     setGovernorate(String(account?.address?.governorate ?? ""));
@@ -113,7 +111,6 @@ export function PersonalInfoEditor({ kycVerified }: { kycVerified: boolean }) {
           : null;
       const payload: AccountUpdate = {
         date_of_birth: dob || null,
-        tax_id: taxId.trim() || null,
         address: buildAddress(street, city, governorate),
         mailing_address: buildAddress(mail.street, mail.city, mail.governorate, mail.postalCode),
         emergency_contact: emergencyContact,
@@ -137,7 +134,6 @@ export function PersonalInfoEditor({ kycVerified }: { kycVerified: boolean }) {
     { label: t("address"), value: addressStr || t("notSet") },
     { label: t("mailingAddress"), value: mailingStr || t("notSet") },
     { label: t("emergencyContact"), value: emergencyStr || t("notSet") },
-    { label: t("taxId"), value: account?.tax_id || t("notSet") },
   ];
 
   const textField = (
@@ -195,7 +191,6 @@ export function PersonalInfoEditor({ kycVerified }: { kycVerified: boolean }) {
             hint: kycVerified ? t("legalNameLocked") : undefined,
           })}
           {textField(t("dateOfBirth"), dob, setDob, { type: "date" })}
-          {textField(t("taxId"), taxId, setTaxId)}
 
           <fieldset>
             <legend className="text-sm font-medium text-neutral-700">

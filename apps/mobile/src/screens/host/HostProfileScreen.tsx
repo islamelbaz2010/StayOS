@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import {
   useHostOwnProfile,
   useUpdateHostProfile,
@@ -18,6 +19,42 @@ import { LoadingSpinner, ErrorView } from "../../components/States";
 import type { RootStackParamList } from "../../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+function MenuCard({
+  icon,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  const { isRTL } = useLocale();
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.menuCard, pressed && styles.menuCardPressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
+      <View style={styles.menuCardIcon}>
+        <Ionicons name={icon} size={20} color={colors.accentText} />
+      </View>
+      <View style={styles.menuCardText}>
+        <Text style={styles.menuCardTitle}>{title}</Text>
+        <Text style={styles.menuCardSubtitle} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      </View>
+      <Ionicons
+        name={isRTL ? "chevron-back" : "chevron-forward"}
+        size={18}
+        color={colors.textTertiary}
+      />
+    </Pressable>
+  );
+}
 
 export function HostProfileScreen() {
   const { locale, setLocale, t } = useLocale();
@@ -155,93 +192,70 @@ export function HostProfileScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("hosting")}</Text>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("HostToday")}
-        >
-          <Text style={styles.linkText}>{t("hostToday")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("HostListings")}
-        >
-          <Text style={styles.linkText}>{t("hostListings")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("HostCreateListing")}
-        >
-          <Text style={styles.linkText}>{t("hostNewListing")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("HostCalendar")}
-        >
-          <Text style={styles.linkText}>{t("hostCalendar")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("HostBookings")}
-        >
-          <Text style={styles.linkText}>{t("hostBookings")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("HostPayments")}
-        >
-          <Text style={styles.linkText}>{t("hostPayments")} {arrow}</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("travelerSection")}</Text>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("Trips")}
-        >
-          <Text style={styles.linkText}>{t("trips")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("Favorites")}
-        >
-          <Text style={styles.linkText}>{t("favorites")} {arrow}</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("account")}</Text>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("Notifications")}
-        >
-          <Text style={styles.linkText}>{t("notifications")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("ProfileSettings")}
-        >
-          <Text style={styles.linkText}>{t("editProfile")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("PersonalData")}
-        >
-          <Text style={styles.linkText}>{t("personalInfo")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("SecuritySettings")}
-        >
-          <Text style={styles.linkText}>{t("loginSecurity")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("PrivacySettings")}
-        >
-          <Text style={styles.linkText}>{t("privacyNotifications")} {arrow}</Text>
-        </Pressable>
+        <MenuCard
+          icon="business-outline"
+          title={t("hosting")}
+          subtitle={t("menuHostingDesc")}
+          onPress={() =>
+            navigation.navigate("MenuGroup", {
+              title: t("hosting"),
+              items: [
+                { key: "today", label: t("hostToday"), route: "HostToday", icon: "today-outline" },
+                { key: "listings", label: t("hostListings"), route: "HostListings", icon: "business-outline" },
+                { key: "newListing", label: t("hostNewListing"), route: "HostCreateListing", icon: "add-circle-outline" },
+                { key: "calendar", label: t("hostCalendar"), route: "HostCalendar", icon: "calendar-outline" },
+                { key: "bookings", label: t("hostBookings"), route: "HostBookings", icon: "clipboard-outline" },
+                { key: "payments", label: t("hostPayments"), route: "HostPayments", icon: "card-outline" },
+                { key: "earnings", label: t("hostEarnings"), route: "HostEarnings", icon: "stats-chart-outline" },
+              ],
+            })
+          }
+        />
+        <MenuCard
+          icon="airplane-outline"
+          title={t("travelerSection")}
+          subtitle={t("menuTravelerDesc")}
+          onPress={() =>
+            navigation.navigate("MenuGroup", {
+              title: t("travelerSection"),
+              items: [
+                { key: "trips", label: t("trips"), route: "Trips", icon: "airplane-outline" },
+                { key: "favorites", label: t("favorites"), route: "Favorites", icon: "heart-outline" },
+              ],
+            })
+          }
+        />
+        <MenuCard
+          icon="person-outline"
+          title={t("account")}
+          subtitle={t("menuAccountDesc")}
+          onPress={() =>
+            navigation.navigate("MenuGroup", {
+              title: t("account"),
+              items: [
+                { key: "notifications", label: t("notifications"), route: "Notifications", icon: "notifications-outline" },
+                { key: "editProfile", label: t("editProfile"), route: "ProfileSettings", icon: "create-outline" },
+                { key: "personalInfo", label: t("personalInfo"), route: "PersonalData", icon: "id-card-outline" },
+                { key: "loginSecurity", label: t("loginSecurity"), route: "SecuritySettings", icon: "lock-closed-outline" },
+                { key: "privacy", label: t("privacyNotifications"), route: "PrivacySettings", icon: "shield-checkmark-outline" },
+              ],
+            })
+          }
+        />
+        <MenuCard
+          icon="help-circle-outline"
+          title={t("helpSupport")}
+          subtitle={t("menuSupportDesc")}
+          onPress={() =>
+            navigation.navigate("MenuGroup", {
+              title: t("helpSupport"),
+              items: [
+                { key: "help", label: t("helpCenter"), route: "HelpCenter", icon: "help-circle-outline" },
+                { key: "support", label: t("contactSupport"), route: "Support", icon: "chatbubble-outline" },
+              ],
+            })
+          }
+        />
       </View>
 
       <View style={styles.section}>
@@ -264,22 +278,6 @@ export function HostProfileScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("support")}</Text>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("HelpCenter")}
-        >
-          <Text style={styles.linkText}>{t("helpCenter")} {arrow}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("Support")}
-        >
-          <Text style={styles.linkText}>{t("contactSupport")} {arrow}</Text>
-        </Pressable>
       </View>
 
       <View style={styles.section}>
@@ -424,6 +422,39 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.accentText,
     fontWeight: "600",
+  },
+  menuCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  menuCardPressed: {
+    backgroundColor: colors.surface,
+  },
+  menuCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuCardText: { flex: 1 },
+  menuCardTitle: {
+    fontSize: fontSize.md,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  menuCardSubtitle: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   langRow: {
     flexDirection: "row",

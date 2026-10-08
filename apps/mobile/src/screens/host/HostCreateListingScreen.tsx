@@ -222,7 +222,7 @@ export function HostCreateListingScreen() {
               onPress={() => setField("property_type", pt)}
             >
               <Text style={[styles.chipText, form.property_type === pt && styles.chipTextSelected]}>
-                {pt}
+                {t(`ptype_${pt.toUpperCase()}`)}
               </Text>
             </Pressable>
           ))}

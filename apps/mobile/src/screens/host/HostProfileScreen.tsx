@@ -56,6 +56,13 @@ function MenuCard({
   );
 }
 
+const KYC_STATUS_LABELS: Record<string, string> = {
+  verified: "verified",
+  pending: "kycStatusPending",
+  rejected: "kycStatusRejected",
+  unverified: "kycStatusUnverified",
+};
+
 export function HostProfileScreen() {
   const { locale, setLocale, t } = useLocale();
   const arrow = locale === "ar" ? "←" : "→";
@@ -164,7 +171,7 @@ export function HostProfileScreen() {
         <Text style={styles.sectionTitle}>{t("hostProfileTitle")}</Text>
         <StatRow label={t("hostProfileListings")} value={`${profile.total_listings} (${profile.listed_listings} ${t("listingsListed").replace("{count} ", "")})`} />
         <StatRow label={t("hostProfileCoHostUnits")} value={String(profile.co_host_units)} />
-        <StatRow label={t("hostProfileKyc")} value={profile.kyc_status === "verified" ? t("verified") : profile.kyc_status} />
+        <StatRow label={t("hostProfileKyc")} value={KYC_STATUS_LABELS[profile.kyc_status ?? "unverified"] ? t(KYC_STATUS_LABELS[profile.kyc_status ?? "unverified"]) : (profile.kyc_status ?? "—")} />
         {profile.kyc_status !== "verified" && (
           <Pressable
             style={styles.linkButton}

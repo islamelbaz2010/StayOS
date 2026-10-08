@@ -66,6 +66,8 @@ export interface HostListing {
     submitted_by?: string;
     submitted_at?: string;
   } | null;
+  /** Listing creation timestamp (present on admin/moderation payloads). */
+  created_at?: string | null;
   /** Photos awaiting moderation (only present for owner/admin viewers). */
   pending_photos?: {
     id: string;

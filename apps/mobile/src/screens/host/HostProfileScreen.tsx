@@ -16,45 +16,10 @@ import { api, clearTokens, getRefreshToken } from "../../lib/api";
 import { colors, fontSize, radius, spacing } from "../../lib/theme";
 import { formatMoney } from "../../lib/money";
 import { LoadingSpinner, ErrorView } from "../../components/States";
+import { MenuCard } from "../../components/UI";
 import type { RootStackParamList } from "../../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
-function MenuCard({
-  icon,
-  title,
-  subtitle,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-}) {
-  const { isRTL } = useLocale();
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.menuCard, pressed && styles.menuCardPressed]}
-      onPress={onPress}
-      accessibilityRole="button"
-    >
-      <View style={styles.menuCardIcon}>
-        <Ionicons name={icon} size={20} color={colors.accentText} />
-      </View>
-      <View style={styles.menuCardText}>
-        <Text style={styles.menuCardTitle}>{title}</Text>
-        <Text style={styles.menuCardSubtitle} numberOfLines={1}>
-          {subtitle}
-        </Text>
-      </View>
-      <Ionicons
-        name={isRTL ? "chevron-back" : "chevron-forward"}
-        size={18}
-        color={colors.textTertiary}
-      />
-    </Pressable>
-  );
-}
 
 const KYC_STATUS_LABELS: Record<string, string> = {
   verified: "verified",
@@ -429,39 +394,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.accentText,
     fontWeight: "600",
-  },
-  menuCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.white,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    gap: spacing.sm,
-  },
-  menuCardPressed: {
-    backgroundColor: colors.surface,
-  },
-  menuCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary50,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  menuCardText: { flex: 1 },
-  menuCardTitle: {
-    fontSize: fontSize.md,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  menuCardSubtitle: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
   },
   langRow: {
     flexDirection: "row",

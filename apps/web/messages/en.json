@@ -370,7 +370,10 @@
     "weeklyDiscount": "Weekly discount",
     "weeklyDiscountHint": "Applied to stays of 7+ nights",
     "monthlyDiscount": "Monthly discount",
-    "monthlyDiscountHint": "Applied to stays of 28+ nights"
+    "monthlyDiscountHint": "Applied to stays of 28+ nights",
+    "photosTitle": "Photos",
+    "photosHint": "Add photos of the property — listings with photos get more bookings.",
+    "photosSaveAndAdd": "Save draft & add photos"
   },
   "adminListings": {
     "pendingTitle": "Pending Listings Review",
@@ -385,6 +388,7 @@
     "confirmRejectMessage": "Are you sure you want to reject this listing? The host will need to edit and resubmit.",
     "propertyType": "Type",
     "category": "Category",
+    "created": "Created",
     "guests": "Guests",
     "bedrooms": "Bedrooms",
     "beds": "Beds",

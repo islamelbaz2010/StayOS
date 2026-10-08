@@ -75,13 +75,10 @@ const ACCESSIBILITY_FEATURES = [
   { value: "CEILING_HOIST", key: "accCeilingHoist" },
 ];
 
-const HOST_LANGUAGES = [
-  "ar", "en", "fr", "de", "ru", "it", "es", "tr",
-  "zh", "ja", "ko", "pt", "nl", "fi", "el", "he",
-  "hi", "hu", "id", "ms", "sv", "th", "be", "bg",
-  "gu", "ht", "fa", "pa", "tl", "uk", "ur", "vi",
-  "sign",
-];
+// Product languages are Arabic and English only (DEC-019 allows more in
+// the backend enum, but the filter surface is limited to supported UI
+// languages).
+const HOST_LANGUAGES = ["ar", "en"];
 
 const SORT_OPTIONS = [
   { value: undefined, key: "sortRecommended" },
@@ -177,11 +174,16 @@ export function SearchScreen() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showDates, setShowDates] = useState(false);
-  const [checkIn, setCheckIn] = useState<Date | null>(null);
-  const [checkOut, setCheckOut] = useState<Date | null>(null);
+  const [checkIn, setCheckIn] = useState<Date | null>(
+    route.params?.checkIn ? new Date(route.params.checkIn) : null
+  );
+  const [checkOut, setCheckOut] = useState<Date | null>(
+    route.params?.checkOut ? new Date(route.params.checkOut) : null
+  );
   const [filters, setFilters] = useState<DraftFilters>({
     ...EMPTY_FILTERS,
     propertyType: route.params?.propertyType,
+    guests: route.params?.guests,
   });
   const [sort, setSort] = useState<string | undefined>(undefined);
   const [mapBounds, setMapBounds] = useState<OsmMapBounds | null>(null);
@@ -393,6 +395,7 @@ export function SearchScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.chipsScroll}
           contentContainerStyle={styles.chipsRow}
         >
           <Chip
@@ -436,6 +439,7 @@ export function SearchScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.chipsScroll}
           contentContainerStyle={styles.chipsRow}
         >
           {SORT_OPTIONS.map((opt) => (
@@ -1157,10 +1161,14 @@ const styles = StyleSheet.create({
     color: colors.accentText,
     fontWeight: "600",
   },
+  chipsScroll: {
+    marginHorizontal: -spacing.lg,
+  },
   chipsRow: {
     flexDirection: "row",
     gap: spacing.xs,
     paddingTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
   },
   chip: {
     paddingHorizontal: spacing.md,

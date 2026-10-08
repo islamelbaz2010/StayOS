@@ -65,7 +65,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
             </ul>
           </nav>
         </aside>
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="min-w-0 flex-1 p-4 sm:p-6">
           <nav className="mb-4 flex gap-2 overflow-x-auto md:hidden">
             {navItems.map((item) => {
               const isActive = pathname === item.href;

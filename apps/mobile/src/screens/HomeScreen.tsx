@@ -5,8 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
+import { format } from "date-fns";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -19,6 +21,7 @@ import { ListingRail } from "../components/ListingRail";
 import { MakazohMark } from "../components/MakazohMark";
 import { CardSkeleton } from "../components/States";
 import { usePopularLocations, useMe, useUnreadCount } from "../lib/hooks";
+import { DateRangeCalendar } from "../components/DateRangeCalendar";
 import { getRecentlyViewed } from "../lib/recentlyViewed";
 import type { Listing, LocationSuggestion } from "../lib/types";
 import type { RootStackParamList } from "../../App";
@@ -53,6 +56,11 @@ export function HomeScreen() {
   const { data: unread } = useUnreadCount();
   const unreadCount = unread?.total_unread ?? 0;
   const [recentlyViewed, setRecentlyViewed] = useState<Listing[]>([]);
+  const [destination, setDestination] = useState("");
+  const [checkIn, setCheckIn] = useState<Date | null>(null);
+  const [checkOut, setCheckOut] = useState<Date | null>(null);
+  const [guests, setGuests] = useState(1);
+  const [showDates, setShowDates] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -92,6 +100,15 @@ export function HomeScreen() {
 
   const goToSearch = (city?: string, propertyType?: string) => {
     navigation.navigate("Search", { city, propertyType });
+  };
+
+  const runSearch = () => {
+    navigation.navigate("Search", {
+      city: destination.trim() || undefined,
+      checkIn: checkIn ? format(checkIn, "yyyy-MM-dd") : undefined,
+      checkOut: checkOut ? format(checkOut, "yyyy-MM-dd") : undefined,
+      guests,
+    });
   };
 
   const goToDetail = (unitId: string) => {
@@ -137,45 +154,103 @@ export function HomeScreen() {
       </View>
 
       <View style={styles.searchCard}>
-        <Pressable style={styles.searchRow} onPress={() => goToSearch()}>
+        <View style={styles.searchRow}>
           <Ionicons name="location-outline" size={18} color={colors.accentText} />
           <View style={styles.searchRowText}>
             <Text style={styles.searchLabel}>{t("whereTo")}</Text>
-            <Text style={styles.searchPlaceholder}>{t("searchDestination")}</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t("searchDestination")}
+              placeholderTextColor={colors.textSecondary}
+              value={destination}
+              onChangeText={setDestination}
+              returnKeyType="search"
+              onSubmitEditing={runSearch}
+            />
           </View>
-        </Pressable>
+        </View>
         <View style={styles.searchRowPair}>
-          <Pressable style={[styles.searchRow, styles.searchRowHalf]} onPress={() => goToSearch()}>
+          <Pressable
+            style={[styles.searchRow, styles.searchRowHalf]}
+            onPress={() => setShowDates(true)}
+          >
             <Ionicons name="calendar-outline" size={18} color={colors.accentText} />
             <View style={styles.searchRowText}>
               <Text style={styles.searchLabel}>{t("checkIn")}</Text>
-              <Text style={styles.searchPlaceholder}>{t("addDates")}</Text>
+              <Text style={styles.searchPlaceholder} numberOfLines={1}>
+                {checkIn ? format(checkIn, "d MMM yyyy") : t("addDates")}
+              </Text>
             </View>
           </Pressable>
-          <Pressable style={[styles.searchRow, styles.searchRowHalf]} onPress={() => goToSearch()}>
+          <Pressable
+            style={[styles.searchRow, styles.searchRowHalf]}
+            onPress={() => setShowDates(true)}
+          >
             <Ionicons name="calendar-outline" size={18} color={colors.accentText} />
             <View style={styles.searchRowText}>
               <Text style={styles.searchLabel}>{t("checkOut")}</Text>
-              <Text style={styles.searchPlaceholder}>{t("addDates")}</Text>
+              <Text style={styles.searchPlaceholder} numberOfLines={1}>
+                {checkOut ? format(checkOut, "d MMM yyyy") : t("addDates")}
+              </Text>
             </View>
           </Pressable>
         </View>
-        <Pressable style={styles.searchRow} onPress={() => goToSearch()}>
+        <View style={styles.searchRow}>
           <Ionicons name="people-outline" size={18} color={colors.accentText} />
           <View style={styles.searchRowText}>
             <Text style={styles.searchLabel}>{t("guests")}</Text>
-            <Text style={styles.searchPlaceholder}>1</Text>
+            <Text style={styles.searchPlaceholder}>{guests}</Text>
           </View>
-        </Pressable>
+          <View style={styles.stepper}>
+            <Pressable
+              style={styles.stepperButton}
+              onPress={() => setGuests((g) => Math.max(1, g - 1))}
+              disabled={guests <= 1}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
+              <Ionicons
+                name="remove"
+                size={18}
+                color={guests <= 1 ? colors.border : colors.accentText}
+              />
+            </Pressable>
+            <Pressable
+              style={styles.stepperButton}
+              onPress={() => setGuests((g) => Math.min(16, g + 1))}
+              disabled={guests >= 16}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
+              <Ionicons
+                name="add"
+                size={18}
+                color={guests >= 16 ? colors.border : colors.accentText}
+              />
+            </Pressable>
+          </View>
+        </View>
         <Pressable
           style={({ pressed }) => [styles.searchButton, pressed && styles.searchButtonPressed]}
-          onPress={() => goToSearch()}
+          onPress={runSearch}
           accessibilityRole="button"
         >
           <Ionicons name="search" size={18} color={colors.onPrimary} />
           <Text style={styles.searchButtonText}>{t("search")}</Text>
         </Pressable>
       </View>
+
+      <DateRangeCalendar
+        visible={showDates}
+        initialCheckIn={checkIn}
+        initialCheckOut={checkOut}
+        onClose={() => setShowDates(false)}
+        onConfirm={(start, end) => {
+          setCheckIn(start);
+          setCheckOut(end);
+          setShowDates(false);
+        }}
+      />
 
       <View style={styles.section}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
@@ -377,6 +452,25 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginTop: 1,
+  },
+  searchInput: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+    marginTop: 1,
+    padding: 0,
+  },
+  stepper: {
+    flexDirection: "row",
+    gap: spacing.xs,
+  },
+  stepperButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   searchButton: {
     flexDirection: "row",

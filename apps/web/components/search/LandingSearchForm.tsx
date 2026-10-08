@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
@@ -63,11 +64,13 @@ export function LandingSearchForm({ locale }: { locale: string }) {
   return (
     <section className="relative overflow-hidden bg-brand-800">
       {heroImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={heroImage}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
         />
       )}
       <div className="absolute inset-0 bg-brand-900/50" />

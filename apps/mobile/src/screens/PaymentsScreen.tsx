@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -6,6 +7,7 @@ import { usePayments } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { LoadingSpinner, ErrorView, EmptyView } from "../components/States";
+import { FilterChips } from "../components/UI";
 import type { PaymentListItem } from "../lib/types";
 import type { RootStackParamList } from "../../App";
 import { formatMoney } from "../lib/money";
@@ -22,6 +24,21 @@ const STATUS_COLORS: Record<string, string> = {
   refunded: colors.success,
 };
 
+const STATUS_FILTERS = [
+  "",
+  "pending",
+  "proof_uploaded",
+  "verified",
+  "rejected",
+  "cancelled",
+  "refund_pending",
+  "refunded",
+] as const;
+
+function statusLabelKey(status: string): string {
+  return `paymentStatus${status.replace(/(^|_)([a-z])/g, (_, __, l) => l.toUpperCase())}`;
+}
+
 function formatDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -36,12 +53,17 @@ export function PaymentsScreen() {
   const { t, locale } = useLocale();
   const navigation = useNavigation<Nav>();
   const { data: payments, isLoading, isError, refetch } = usePayments();
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   if (isLoading) return <LoadingSpinner />;
   if (isError) return <ErrorView message={t("error")} onRetry={refetch} />;
   if (!payments || payments.length === 0) {
     return <EmptyView title={t("noPayments")} subtitle={t("noPaymentsHint")} />;
   }
+
+  const visiblePayments = statusFilter
+    ? payments.filter((p: PaymentListItem) => p.status === statusFilter)
+    : payments;
 
   const renderItem = ({ item }: { item: PaymentListItem }) => {
     const statusColor = STATUS_COLORS[item.status] ?? colors.textSecondary;
@@ -59,7 +81,7 @@ export function PaymentsScreen() {
           </Text>
           <View style={[styles.badge, { backgroundColor: statusColor }]}>
             <Text style={styles.badgeText}>
-              {t(`paymentStatus${item.status.replace(/(^|_)([a-z])/g, (_, __, l) => l.toUpperCase())}`)}
+              {t(statusLabelKey(item.status))}
             </Text>
           </View>
         </View>
@@ -77,11 +99,24 @@ export function PaymentsScreen() {
   return (
     <FlatList
       style={styles.container}
-      data={payments}
+      data={visiblePayments}
       renderItem={renderItem}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.content}
-      ListHeaderComponent={<Text style={styles.title}>{t("paymentsTitle")}</Text>}
+      ListHeaderComponent={
+        <>
+          <Text style={styles.title}>{t("paymentsTitle")}</Text>
+          <FilterChips
+            options={STATUS_FILTERS.map((s) => ({
+              key: s,
+              label: s === "" ? t("all") : t(statusLabelKey(s)),
+            }))}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+        </>
+      }
+      ListEmptyComponent={<EmptyView title={t("noResults")} />}
     />
   );
 }

@@ -30,6 +30,11 @@ export function AdminListingsScreen() {
     status: status ?? undefined,
   });
   const dateLocale = locale === "ar" ? "ar-EG" : "en-EG";
+  const fmtDate = (value: string | null | undefined) => {
+    if (!value) return "—";
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? "—" : d.toLocaleDateString(dateLocale);
+  };
 
   return (
     <View style={styles.container}>
@@ -54,9 +59,9 @@ export function AdminListingsScreen() {
                 <ListRow
                   key={l.id}
                   title={l.title}
-                  subtitle={`${l.city}, ${l.governorate} · ${new Date(
+                  subtitle={`${l.city}, ${l.governorate} · ${fmtDate(
                     l.created_at
-                  ).toLocaleDateString(dateLocale)}${l.has_pending_changes ? ` · ${t("pendingChanges")}` : ""}`}
+                  )}${l.has_pending_changes ? ` · ${t("pendingChanges")}` : ""}`}
                   right={<StatusBadge label={l.status} tone={TONE[l.status] ?? "info"} />}
                 />
               ))

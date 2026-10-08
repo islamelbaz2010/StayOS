@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -45,7 +46,7 @@ function Card({
 export default function AccountSettingsPage() {
   const { locale = "ar" } = useParams<{ locale: string }>();
   const t = useTranslations("settings");
-  const tp = useTranslations("profile");
+  const th = useTranslations("host");
   const { user, refreshUser } = useAuth();
   const { data: account } = useAccount();
   const deactivateHosting = useDeactivateHosting();
@@ -80,6 +81,44 @@ export default function AccountSettingsPage() {
         <main className="container mx-auto max-w-5xl px-4 py-10 sm:px-6">
           <h1 className="text-3xl font-bold text-brand-900">{t("title")}</h1>
           <p className="mt-2 text-neutral-600">{t("subtitle")}</p>
+          {user && (
+            <div className="mt-6 flex items-center gap-4 rounded-xl bg-white p-5 shadow-card">
+              {user.avatar_url ? (
+                <Image
+                  src={user.avatar_url}
+                  alt={user.display_name ?? ""}
+                  width={64}
+                  height={64}
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-2xl font-bold text-white">
+                  {user.display_name?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-lg font-bold text-brand-900">
+                    {user.display_name}
+                  </p>
+                  {user.kyc_status === "verified" && (
+                    <span className="rounded-full bg-success-100 px-2 py-0.5 text-xs font-semibold text-success-700">
+                      ✓ {th("kycStatus.verified")}
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-sm text-neutral-500">
+                  {user.email ?? user.phone_number}
+                </p>
+              </div>
+              <Link
+                href={`/${locale}/profile`}
+                className="text-sm font-semibold text-accent-600 hover:text-accent-700"
+              >
+                {t("open")}
+              </Link>
+            </div>
+          )}
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             <Card
               title={t("cards.personal.title")}
@@ -94,7 +133,16 @@ export default function AccountSettingsPage() {
                 </div>
                 <div className="flex justify-between">
                   <dt>{t("verified")}</dt>
-                  <dd>{user?.kyc_status || t("notConfigured")}</dd>
+                  <dd>
+                    {user?.kyc_status
+                      ? th(
+                          `kycStatus.${user.kyc_status}` as Parameters<
+                            typeof th
+                          >[0],
+                          { default: user.kyc_status }
+                        )
+                      : t("notConfigured")}
+                  </dd>
                 </div>
               </dl>
             </Card>
@@ -144,11 +192,7 @@ export default function AccountSettingsPage() {
               body={t("cards.taxes.body")}
               href={`/${locale}/account-settings/payments`}
               action={t("open")}
-            >
-              <p className="mt-3 text-xs text-neutral-500">
-                {tp("taxId")}: {account?.tax_id || t("notConfigured")}
-              </p>
-            </Card>
+            />
             {isHost ? (
               <Card
                 title={t("cards.hosting.title")}

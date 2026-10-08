@@ -1,11 +1,33 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
 import { useListings } from "@/lib/queries/listings";
 import { usePopularLocations } from "@/lib/queries/locations";
+
+// Reference destinations from the approved MAKAZOH mockup — shown first
+// when the location exists in real data with a real cover image.
+const REFERENCE_DESTINATIONS = [
+  "cairo",
+  "alexandria",
+  "ain sokhna",
+  "hurghada",
+  "el gouna",
+  "sharm el sheikh",
+];
+
+const MAX_CARDS = 6;
+
+function referenceRank(name: string): number {
+  const normalized = name.trim().toLowerCase();
+  const idx = REFERENCE_DESTINATIONS.findIndex(
+    (ref) => normalized === ref || normalized.includes(ref)
+  );
+  return idx === -1 ? REFERENCE_DESTINATIONS.length : idx;
+}
 
 export function PopularDestinations() {
   const t = useTranslations("search");
@@ -13,7 +35,8 @@ export function PopularDestinations() {
   const router = useRouter();
   const { data, isLoading } = usePopularLocations();
   // Real listing covers power the destination imagery — no fabricated
-  // visuals; a place with no cover falls back to the branded pin tile.
+  // visuals; destinations without a real cover stay reachable via
+  // "View all" instead of showing an empty card.
   const { data: feed } = useListings({ limit: "40" });
 
   const coverByPlace = useMemo(() => {
@@ -28,7 +51,28 @@ export function PopularDestinations() {
     return map;
   }, [feed]);
 
-  if (isLoading || !data || data.length === 0) return null;
+  const places = useMemo(
+    () =>
+      (data ?? [])
+        .map((s) => ({
+          place: s,
+          cover:
+            coverByPlace.get(`c:${s.city}`) ??
+            coverByPlace.get(`g:${s.governorate}`),
+        }))
+        .filter(
+          (p): p is typeof p & { cover: string } => typeof p.cover === "string"
+        )
+        .sort(
+          (a, b) =>
+            referenceRank(a.place.canonical_name_en) -
+            referenceRank(b.place.canonical_name_en)
+        )
+        .slice(0, MAX_CARDS),
+    [data, coverByPlace]
+  );
+
+  if (isLoading || places.length === 0) return null;
 
   return (
     <section
@@ -48,12 +92,9 @@ export function PopularDestinations() {
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {data.map((s, i) => {
+        {places.map(({ place: s, cover }, i) => {
           const name =
             locale === "ar" ? s.canonical_name_ar : s.canonical_name_en;
-          const cover =
-            coverByPlace.get(`c:${s.city}`) ??
-            coverByPlace.get(`g:${s.governorate}`);
           return (
             <button
               key={`${s.canonical_name_en}:${s.city}:${i}`}
@@ -65,35 +106,13 @@ export function PopularDestinations() {
               }
               className="group relative h-40 overflow-hidden rounded-2xl bg-accent-100 text-start shadow-sm transition hover:shadow-md"
             >
-              {cover ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={cover}
-                  alt={name}
-                  className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                />
-              ) : (
-                <span className="absolute inset-0 flex items-center justify-center text-accent-600">
-                  <svg
-                    className="h-8 w-8"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-                    />
-                  </svg>
-                </span>
-              )}
+              <Image
+                src={cover}
+                alt={name}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                className="object-cover transition duration-300 group-hover:scale-105"
+              />
               <span className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
               <span className="absolute bottom-0 start-0 p-3">
                 <span className="block text-sm font-bold text-white drop-shadow">

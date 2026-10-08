@@ -3,29 +3,18 @@ import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useMe, useNotifications, useUpgradeRole, useHasTokens } from "../lib/hooks";
 import { useLocale } from "../lib/LocaleContext";
 import { api, clearTokens, getRefreshToken } from "../lib/api";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
+import { MenuCard } from "../components/UI";
 import { LoadingSpinner } from "../components/States";
+import { OPS_GROUPS } from "../lib/opsGroups";
 import type { RootStackParamList } from "../../App";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
-function MenuRow({ label, onPress, badge }: { label: string; onPress: () => void; badge?: number }) {
-  return (
-    <Pressable style={styles.menuRow} onPress={onPress}>
-      <Text style={styles.menuText}>{label}</Text>
-      {badge ? (
-        <View style={styles.menuBadge}>
-          <Text style={styles.menuBadgeText}>{badge}</Text>
-        </View>
-      ) : null}
-      <Text style={styles.chevron}>›</Text>
-    </Pressable>
-  );
-}
 
 export function AccountScreen() {
   const { locale, setLocale, t } = useLocale();
@@ -37,31 +26,8 @@ export function AccountScreen() {
   const upgradeRole = useUpgradeRole();
   const authed = useHasTokens();
 
-  if (!authed) {
-    return (
-      <View style={styles.container}>
-        <Pressable style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
-          <Text style={styles.loginButtonText}>{t("login")}</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.loginButton, styles.registerButton]}
-          onPress={() => navigation.navigate("Register")}
-        >
-          <Text style={styles.loginButtonText}>{t("createAccount")}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.helpLink}
-          onPress={() => navigation.navigate("HelpCenter")}
-        >
-          <Text style={styles.helpLinkText}>{t("helpCenter")} ›</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  if (isLoading) return <LoadingSpinner />;
-
-  if (!user) {
+  if (!authed || !user) {
+    if (authed && isLoading) return <LoadingSpinner />;
     return (
       <View style={styles.container}>
         <Pressable style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
@@ -98,6 +64,20 @@ export function AccountScreen() {
 
   const unread = notifs?.unread_count ?? 0;
   const isStaff = user.role === "staff" || user.role === "admin";
+  const isAdmin = user.role === "admin";
+  const permissions = user.staff_permissions ?? [];
+
+  const openGroup = (
+    title: string,
+    items: { key: string; label: string; route: string; icon?: string; params?: Record<string, unknown> }[]
+  ) => navigation.navigate("MenuGroup", { title, items });
+
+  const visibleOpsGroups = OPS_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter(
+      (s) => isAdmin || (s.permission !== null && permissions.includes(s.permission))
+    ),
+  })).filter((g) => g.items.length > 0);
 
   return (
     <ScrollView
@@ -105,89 +85,166 @@ export function AccountScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
       showsVerticalScrollIndicator={false}
     >
-      <Pressable style={styles.profileSection} onPress={() => navigation.navigate("ProfileSettings")}>
-        {user.avatar_url ? (
-          <Image source={{ uri: user.avatar_url }} style={styles.avatarImg} />
-        ) : (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user.display_name?.charAt(0).toUpperCase() || "?"}
-            </Text>
-          </View>
+      <View style={styles.profileSection}>
+        {isStaff && (
+          <Pressable
+            style={styles.bellButton}
+            onPress={() => navigation.navigate("Notifications")}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t("notifications")}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.text} />
+            {unread > 0 && (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>
+                  {unread > 9 ? "9+" : unread}
+                </Text>
+              </View>
+            )}
+          </Pressable>
         )}
-        <Text style={styles.displayName}>{user.display_name}</Text>
-        <Text style={styles.phone}>{user.email ?? user.phone_number}</Text>
-        {user.kyc_status === "verified" && (
-          <Text style={styles.verifiedBadge}>✓ {t("verified")}</Text>
-        )}
-      </Pressable>
-
-      {!isStaff && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("stays")}</Text>
-          <MenuRow label={t("favorites")} onPress={() => navigation.navigate("Favorites")} />
-          <MenuRow label={t("notifications")} badge={unread || undefined} onPress={() => navigation.navigate("Notifications")} />
-          <MenuRow label={t("myPayments")} onPress={() => navigation.navigate("Payments")} />
-          <MenuRow label={t("myDisputes")} onPress={() => navigation.navigate("Disputes", {})} />
-        </View>
-      )}
-      {isStaff && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("account")}</Text>
-          <MenuRow label={t("adminConsole")} onPress={() => navigation.navigate("Home")} />
-          <MenuRow label={t("notifications")} badge={unread || undefined} onPress={() => navigation.navigate("Notifications")} />
-        </View>
-      )}
-      {isStaff && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("stays")}</Text>
-          <MenuRow label={t("trips")} onPress={() => navigation.navigate("Trips")} />
-          <MenuRow label={t("favorites")} onPress={() => navigation.navigate("Favorites")} />
-        </View>
-      )}
-
-      {user.role === "guest" && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("hosting")}</Text>
-          {user.kyc_status !== "verified" ? (
-            <>
-              <Text style={styles.hintText}>{t("verifyIdentityHint")}</Text>
-              <MenuRow label={t("verifyIdentity")} onPress={() => navigation.navigate("Kyc")} />
-            </>
+        <Pressable onPress={() => navigation.navigate("ProfileSettings")} style={styles.profileBody}>
+          {user.avatar_url ? (
+            <Image source={{ uri: user.avatar_url }} style={styles.avatarImg} />
           ) : (
-            <Pressable
-              style={styles.menuRow}
-              onPress={async () => {
-                try {
-                  await upgradeRole.mutateAsync();
-                  Alert.alert("", t("becomeHostSuccess"));
-                } catch {
-                  Alert.alert("", t("becomeHostError"));
-                }
-              }}
-              disabled={upgradeRole.isPending}
-            >
-              <Text style={styles.menuText}>
-                {upgradeRole.isPending ? t("loading") : t("becomeHost")}
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {user.display_name?.charAt(0).toUpperCase() || "?"}
               </Text>
-            </Pressable>
+            </View>
           )}
-        </View>
-      )}
-
-      {user.role !== "guest" && user.kyc_status !== "verified" && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("verification")}</Text>
-          <MenuRow label={t("verifyIdentity")} onPress={() => navigation.navigate("Kyc")} />
-        </View>
-      )}
+          <Text style={styles.displayName}>{user.display_name}</Text>
+          <Text style={styles.phone}>{user.email ?? user.phone_number}</Text>
+          {user.kyc_status === "verified" && (
+            <Text style={styles.verifiedBadge}>✓ {t("verified")}</Text>
+          )}
+        </Pressable>
+      </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("preferences")}</Text>
-        <MenuRow label={t("editProfile")} onPress={() => navigation.navigate("ProfileSettings")} />
-        <MenuRow label={t("personalInfo")} onPress={() => navigation.navigate("PersonalData")} />
-        <MenuRow label={t("loginSecurity")} onPress={() => navigation.navigate("SecuritySettings")} />
-        <MenuRow label={t("privacyNotifications")} onPress={() => navigation.navigate("PrivacySettings")} />
+        {isStaff && (
+          <>
+            <MenuCard
+              icon="speedometer-outline"
+              title={t("adminConsole")}
+              subtitle={t("menuConsoleDesc")}
+              onPress={() =>
+                navigation.navigate("Home", { screen: "OpsHomeTab" })
+              }
+            />
+            {visibleOpsGroups.map((group) => (
+              <MenuCard
+                key={group.key}
+                icon={group.icon}
+                title={t(group.labelKey)}
+                subtitle={t(group.descKey)}
+                onPress={() =>
+                  openGroup(
+                    t(group.labelKey),
+                    group.items.map((s) => ({
+                      key: s.key,
+                      label: locale === "ar" ? s.labelAr : s.labelEn,
+                      route: s.route,
+                      icon: s.icon,
+                    }))
+                  )
+                }
+              />
+            ))}
+            <MenuCard
+              icon="airplane-outline"
+              title={t("travelerSection")}
+              subtitle={t("menuTravelerDesc")}
+              onPress={() =>
+                openGroup(t("travelerSection"), [
+                  { key: "trips", label: t("trips"), route: "Trips", icon: "airplane-outline" },
+                  { key: "favorites", label: t("favorites"), route: "Favorites", icon: "heart-outline" },
+                ])
+              }
+            />
+          </>
+        )}
+
+        {!isStaff && (
+          <>
+            <MenuCard
+              icon="airplane-outline"
+              title={t("stays")}
+              subtitle={t("menuStaysDesc")}
+              badge={unread || undefined}
+              onPress={() =>
+                openGroup(t("stays"), [
+                  { key: "trips", label: t("trips"), route: "Trips", icon: "airplane-outline" },
+                  { key: "favorites", label: t("favorites"), route: "Favorites", icon: "heart-outline" },
+                  { key: "notifications", label: t("notifications"), route: "Notifications", icon: "notifications-outline" },
+                  { key: "payments", label: t("myPayments"), route: "Payments", icon: "card-outline" },
+                  { key: "disputes", label: t("myDisputes"), route: "Disputes", icon: "alert-circle-outline" },
+                ])
+              }
+            />
+            {user.role === "guest" && (
+              user.kyc_status !== "verified" ? (
+                <MenuCard
+                  icon="shield-checkmark-outline"
+                  title={t("verifyIdentity")}
+                  subtitle={t("verifyIdentityHint")}
+                  onPress={() => navigation.navigate("Kyc")}
+                />
+              ) : (
+                <MenuCard
+                  icon="home-outline"
+                  title={upgradeRole.isPending ? t("loading") : t("becomeHost")}
+                  subtitle={t("menuBecomeHostDesc")}
+                  onPress={async () => {
+                    try {
+                      await upgradeRole.mutateAsync();
+                      Alert.alert("", t("becomeHostSuccess"));
+                    } catch {
+                      Alert.alert("", t("becomeHostError"));
+                    }
+                  }}
+                />
+              )
+            )}
+            {user.role !== "guest" && user.kyc_status !== "verified" && (
+              <MenuCard
+                icon="shield-checkmark-outline"
+                title={t("verifyIdentity")}
+                subtitle={t("verifyIdentityHint")}
+                onPress={() => navigation.navigate("Kyc")}
+              />
+            )}
+          </>
+        )}
+
+        <MenuCard
+          icon="person-outline"
+          title={t("account")}
+          subtitle={t("menuAccountDesc")}
+          onPress={() =>
+            openGroup(t("account"), [
+              ...(isStaff
+                ? [{ key: "notifications", label: t("notifications"), route: "Notifications", icon: "notifications-outline" }]
+                : []),
+              { key: "editProfile", label: t("editProfile"), route: "ProfileSettings", icon: "create-outline" },
+              { key: "personalInfo", label: t("personalInfo"), route: "PersonalData", icon: "id-card-outline" },
+              { key: "loginSecurity", label: t("loginSecurity"), route: "SecuritySettings", icon: "lock-closed-outline" },
+              { key: "privacy", label: t("privacyNotifications"), route: "PrivacySettings", icon: "shield-checkmark-outline" },
+            ])
+          }
+        />
+        <MenuCard
+          icon="help-circle-outline"
+          title={t("helpSupport")}
+          subtitle={t("menuSupportDesc")}
+          onPress={() =>
+            openGroup(t("helpSupport"), [
+              { key: "help", label: t("helpCenter"), route: "HelpCenter", icon: "help-circle-outline" },
+              { key: "support", label: t("contactSupport"), route: "Support", icon: "chatbubble-outline" },
+            ])
+          }
+        />
       </View>
 
       <View style={styles.section}>
@@ -213,12 +270,6 @@ export function AccountScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("helpSupport")}</Text>
-        <MenuRow label={t("helpCenter")} onPress={() => navigation.navigate("HelpCenter")} />
-        <MenuRow label={t("contactSupport")} onPress={() => navigation.navigate("Support")} />
-      </View>
-
-      <View style={styles.section}>
         <Pressable style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>{t("logout")}</Text>
         </Pressable>
@@ -234,8 +285,43 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   profileSection: {
-    alignItems: "center",
     paddingVertical: spacing.xl,
+  },
+  profileBody: {
+    alignItems: "center",
+  },
+  bellButton: {
+    position: "absolute",
+    top: spacing.md,
+    end: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  bellBadge: {
+    position: "absolute",
+    top: -4,
+    end: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: colors.white,
+  },
+  bellBadgeText: {
+    color: colors.onPrimary,
+    fontSize: 10,
+    fontWeight: "700",
   },
   avatar: {
     width: 80,
@@ -277,32 +363,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.sm,
   },
-  hintText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    lineHeight: 20,
-  },
-  menuRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  menuText: { flex: 1, fontSize: fontSize.md, color: colors.text, fontWeight: "500" },
-  menuBadge: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-  menuBadgeText: { color: colors.onPrimary, fontSize: fontSize.xs, fontWeight: "700" },
-  chevron: { fontSize: 20, color: colors.textTertiary },
   langRow: {
     flexDirection: "row",
     gap: spacing.sm,

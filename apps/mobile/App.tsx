@@ -75,8 +75,16 @@ import { AdminListingsScreen } from "./src/screens/ops/AdminListingsScreen";
 import { MenuGroupScreen } from "./src/screens/MenuGroupScreen";
 
 export type RootStackParamList = {
-  Home: { screen?: "TripsTab" } | undefined;
-  Search: { city?: string; propertyType?: string } | undefined;
+  Home: { screen?: string } | undefined;
+  Search:
+    | {
+        city?: string;
+        propertyType?: string;
+        checkIn?: string;
+        checkOut?: string;
+        guests?: number;
+      }
+    | undefined;
   ListingDetail: { unitId: string };
   HostProfile: { hostId: string };
   Booking: { unitId: string; title: string; price: number; currency: string; maxGuests: number; instantBook?: boolean; hostId?: string };
@@ -291,7 +299,7 @@ function GuestTabs() {
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: t("home") }} />
-      <Tab.Screen name="SearchTab" component={SearchScreen} options={{ tabBarLabel: t("explore") }} />
+      <Tab.Screen name="SearchTab" component={SearchScreen} options={{ tabBarLabel: t("search") }} />
       <Tab.Screen name="TripsTab" component={TripsScreen} options={{ tabBarLabel: t("trips") }} />
       <Tab.Screen
         name="MessagesTab"

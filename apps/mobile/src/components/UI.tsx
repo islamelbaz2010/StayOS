@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Pressable,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
+import { useLocale } from "../lib/LocaleContext";
 
 export function Section({ title, children }: { title?: string; children: ReactNode }) {
   return (
@@ -75,6 +77,7 @@ export function ListRow({
 }
 
 export function StatusBadge({ label, tone }: { label: string; tone?: "ok" | "warn" | "err" | "info" }) {
+  const { t } = useLocale();
   const bg =
     tone === "ok"
       ? colors.success
@@ -84,9 +87,13 @@ export function StatusBadge({ label, tone }: { label: string; tone?: "ok" | "war
           ? colors.error
           : colors.surface;
   const fg = tone ? colors.white : colors.accentText;
+  const key = `status_${label}`;
+  const localized = t(key);
   return (
     <View style={[styles.statusBadge, { backgroundColor: bg }]}>
-      <Text style={[styles.statusBadgeText, { color: fg }]}>{label}</Text>
+      <Text style={[styles.statusBadgeText, { color: fg }]}>
+        {localized === key ? label : localized}
+      </Text>
     </View>
   );
 }
@@ -101,7 +108,12 @@ export function FilterChips({
   onChange: (key: string | null) => void;
 }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.chips}
+      contentContainerStyle={styles.chipsContent}
+    >
       {options.map((o) => {
         const active = value === o.key || (value === null && o.key === "");
         return (
@@ -115,6 +127,55 @@ export function FilterChips({
         );
       })}
     </ScrollView>
+  );
+}
+
+/**
+ * Hub-style menu card used across all account surfaces (guest, host,
+ * staff, admin) so every role shares the same MAKAZOH account design.
+ */
+export function MenuCard({
+  icon,
+  title,
+  subtitle,
+  badge,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle?: string;
+  badge?: number;
+  onPress: () => void;
+}) {
+  const { isRTL } = useLocale();
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.menuCard, pressed && styles.menuCardPressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
+      <View style={styles.menuCardIcon}>
+        <Ionicons name={icon} size={20} color={colors.accentText} />
+      </View>
+      <View style={styles.menuCardText}>
+        <Text style={styles.menuCardTitle}>{title}</Text>
+        {subtitle ? (
+          <Text style={styles.menuCardSubtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      {badge ? (
+        <View style={styles.menuCardBadge}>
+          <Text style={styles.menuCardBadgeText}>{badge}</Text>
+        </View>
+      ) : null}
+      <Ionicons
+        name={isRTL ? "chevron-back" : "chevron-forward"}
+        size={18}
+        color={colors.textTertiary}
+      />
+    </Pressable>
   );
 }
 
@@ -256,6 +317,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: { fontSize: fontSize.xs, fontWeight: "700" },
   chips: { flexGrow: 0, marginBottom: spacing.sm },
+  chipsContent: { paddingEnd: spacing.sm },
   chip: {
     borderRadius: radius.full,
     borderWidth: 1,
@@ -263,11 +325,56 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    marginRight: spacing.sm,
+    marginEnd: spacing.sm,
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: fontSize.sm, color: colors.text, fontWeight: "600" },
   chipTextActive: { color: colors.onPrimary },
+  menuCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  menuCardPressed: { backgroundColor: colors.surface },
+  menuCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuCardText: { flex: 1 },
+  menuCardTitle: {
+    fontSize: fontSize.md,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  menuCardSubtitle: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  menuCardBadge: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  menuCardBadgeText: {
+    color: colors.onPrimary,
+    fontSize: fontSize.xs,
+    fontWeight: "700",
+  },
   field: { marginBottom: spacing.md },
   fieldLabel: {
     fontSize: fontSize.sm,

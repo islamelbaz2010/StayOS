@@ -78,6 +78,7 @@ export function HostCreateListingScreen() {
     options: { value: string; label: string }[];
     onSelect: (value: string) => void;
   } | null>(null);
+  const [createdUnitId, setCreatedUnitId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     property_type: "apartment",
@@ -169,11 +170,37 @@ export function HostCreateListingScreen() {
 
     try {
       const result = await createMut.mutateAsync(payload);
-      navigation.replace("HostListingDetail", { unitId: result.id });
+      setCreatedUnitId(result.id);
     } catch {
       Alert.alert(t("listingCreateError"));
     }
   };
+
+  if (createdUnitId) {
+    return (
+      <View style={styles.doneContainer}>
+        <Ionicons name="checkmark-circle" size={64} color={colors.success} />
+        <Text style={styles.doneTitle}>{t("listingCreatedTitle")}</Text>
+        <Text style={styles.doneSubtitle}>{t("listingCreatedPhotosHint")}</Text>
+        <Pressable
+          style={styles.createButton}
+          onPress={() =>
+            navigation.replace("HostListingPhotos", { unitId: createdUnitId })
+          }
+        >
+          <Text style={styles.createButtonText}>{t("listingAddPhotosNow")}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.doneSecondary}
+          onPress={() =>
+            navigation.replace("HostListingDetail", { unitId: createdUnitId })
+          }
+        >
+          <Text style={styles.doneSecondaryText}>{t("listingSkipForNow")}</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -738,6 +765,35 @@ const styles = StyleSheet.create({
   },
   createButtonDisabled: {
     opacity: 0.6,
+  },
+  doneContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.xl,
+  },
+  doneTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: "700",
+    color: colors.text,
+    marginTop: spacing.lg,
+    textAlign: "center",
+  },
+  doneSubtitle: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+    textAlign: "center",
+  },
+  doneSecondary: {
+    paddingVertical: spacing.md,
+  },
+  doneSecondaryText: {
+    fontSize: fontSize.md,
+    fontWeight: "600",
+    color: colors.accentText,
   },
   createButtonText: {
     color: colors.onPrimary,

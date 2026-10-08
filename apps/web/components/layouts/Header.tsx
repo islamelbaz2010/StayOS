@@ -448,10 +448,10 @@ export function Header() {
               {t("stays")}
             </Link>
             <Link
-              href={`/${locale}#popular-destinations`}
+              href={`/${locale}/search`}
               className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             >
-              {t("explore")}
+              {t("search")}
             </Link>
           </nav>
         </div>
@@ -598,11 +598,11 @@ export function Header() {
               {t("stays")}
             </Link>
             <Link
-              href={`/${locale}#popular-destinations`}
+              href={`/${locale}/search`}
               className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
               onClick={() => setMobileOpen(false)}
             >
-              {t("explore")}
+              {t("search")}
             </Link>
             <AccountMenuLevels
               open={mobileOpen}

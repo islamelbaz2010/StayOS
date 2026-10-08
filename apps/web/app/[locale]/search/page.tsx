@@ -73,14 +73,9 @@ const ACCESSIBILITY_FEATURES = [
   { value: "CEILING_HOIST", key: "ceilingHoist" },
 ];
 
-// Must match app.auth.constants.SpokenLanguage (DEC-019).
-const HOST_LANGUAGES = [
-  "ar", "en", "fr", "de", "ru", "it", "es", "tr",
-  "zh", "ja", "ko", "pt", "nl", "fi", "el", "he",
-  "hi", "hu", "id", "ms", "sv", "th", "be", "bg",
-  "gu", "ht", "fa", "pa", "tl", "uk", "ur", "vi",
-  "sign",
-];
+// Backend accepts the full SpokenLanguage enum (DEC-019); the filter UI
+// is intentionally limited to the product's supported languages.
+const HOST_LANGUAGES = ["ar", "en"];
 
 export default function SearchPage() {
   const t = useTranslations();

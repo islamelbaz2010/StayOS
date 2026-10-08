@@ -64,6 +64,12 @@ function formatDiffValue(value: unknown): string {
   return String(value);
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleString();
+}
+
 function ChangeHistory({ unitId }: { unitId: string }) {
   const t = useTranslations("adminListings");
   const { data: events, isLoading } = useListingChangeHistory(unitId);
@@ -104,7 +110,7 @@ function ChangeHistory({ unitId }: { unitId: string }) {
                 {eventLabel(event.event_type)}
               </span>
               <span className="ms-2 text-neutral-500">
-                {new Date(event.created_at).toLocaleString()}
+                {formatDateTime(event.created_at)}
               </span>
               {event.actor_name && (
                 <span className="ms-2 text-neutral-500">
@@ -438,6 +444,14 @@ export default function AdminPendingListingsPage() {
                           `${selected.city}, ${selected.governorate}`}
                       </span>
                     </div>
+                    <div>
+                      <span className="font-medium text-neutral-700">
+                        {t("created")}:
+                      </span>{" "}
+                      <span className="text-neutral-600">
+                        {formatDateTime(selected.created_at)}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="mt-4">
@@ -542,9 +556,7 @@ export default function AdminPendingListingsPage() {
                       </div>
                       {selected.pending_changes.submitted_at && (
                         <p className="mt-2 text-xs text-neutral-500">
-                          {new Date(
-                            selected.pending_changes.submitted_at
-                          ).toLocaleString()}
+                          {formatDateTime(selected.pending_changes.submitted_at)}
                         </p>
                       )}
                     </div>

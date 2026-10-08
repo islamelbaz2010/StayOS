@@ -370,7 +370,10 @@
     "weeklyDiscount": "خصم أسبوعي",
     "weeklyDiscountHint": "يُطبَّق على الإقامات من ٧ ليالٍ فأكثر",
     "monthlyDiscount": "خصم شهري",
-    "monthlyDiscountHint": "يُطبَّق على الإقامات من ٢٨ ليلة فأكثر"
+    "monthlyDiscountHint": "يُطبَّق على الإقامات من ٢٨ ليلة فأكثر",
+    "photosTitle": "الصور",
+    "photosHint": "أضف صور العقار — الإعلانات التي تحتوي على صور تحصل على حجوزات أكثر.",
+    "photosSaveAndAdd": "احفظ المسودة وأضف الصور"
   },
   "adminListings": {
     "pendingTitle": "مراجعة العقارات المعلقة",
@@ -385,6 +388,7 @@
     "confirmRejectMessage": "هل أنت متأكد من رفض هذا العقار؟ سيتعين على المضيف تعديله وإعادة إرساله.",
     "propertyType": "النوع",
     "category": "الفئة",
+    "created": "تاريخ الإنشاء",
     "guests": "الضيوف",
     "bedrooms": "غرف النوم",
     "beds": "الأسرة",

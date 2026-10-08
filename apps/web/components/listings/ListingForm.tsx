@@ -30,6 +30,7 @@ const LocationPicker = dynamic(
   },
 );
 import { useLocationTree } from "@/lib/queries/locations";
+import { PhotoUpload } from "@/components/listings/PhotoUpload";
 
 const PROPERTY_TYPES = [
   { value: "APARTMENT", labelKey: "apartment" },
@@ -205,6 +206,9 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   const formRef = useRef(form);
   const isDirtyRef = useRef(false);
   const createdIdRef = useRef<string | undefined>(undefined);
+  // Mirrors createdIdRef in state so the photos section can render the
+  // upload UI as soon as a draft unit exists (autosave or manual save).
+  const [savedUnitId, setSavedUnitId] = useState<string | null>(null);
 
   formRef.current = form;
 
@@ -324,16 +328,25 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   const handleSaveDraft = async () => {
     if (!validate()) return;
     try {
+      let savedId = unitId;
       if (isEdit && unitId) {
         await updateMutation.mutateAsync({ unitId, payload: buildUpdatePayload() });
       } else {
         const created = await createMutation.mutateAsync({ ...form, is_draft: true });
         createdIdRef.current = created.id;
+        setSavedUnitId(created.id);
+        savedId = created.id;
       }
       setIsDirty(false);
       isDirtyRef.current = false;
       setAutosave("saved");
-      router.push(`/${locale}/host/listings`);
+      // New drafts continue to the photo step — photo upload is part of
+      // the listing creation workflow.
+      router.push(
+        isEdit || !savedId
+          ? `/${locale}/host/listings`
+          : `/${locale}/host/listings/${savedId}/photos`
+      );
     } catch (err) {
       const detail = (
         err as { response?: { data?: { error?: { message?: string } } } }
@@ -353,6 +366,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
         });
         id = created.id;
         createdIdRef.current = created.id;
+        setSavedUnitId(created.id);
       } else if (isEdit && unitId) {
         await updateMutation.mutateAsync({ unitId, payload: buildUpdatePayload() });
       }
@@ -375,6 +389,35 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     updateMutation.isPending ||
     submitMutation.isPending;
 
+  // Save the draft in place (no navigation) so the photo section can
+  // render the uploader immediately — photos require a unit_id.
+  const [savingForPhotos, setSavingForPhotos] = useState(false);
+  const photosUnitId = unitId ?? savedUnitId ?? undefined;
+  const handleSaveForPhotos = async () => {
+    if (!validate()) return;
+    setSavingForPhotos(true);
+    try {
+      if (!isEdit && !createdIdRef.current) {
+        const created = await createMutation.mutateAsync({
+          ...form,
+          is_draft: true,
+        });
+        createdIdRef.current = created.id;
+        setSavedUnitId(created.id);
+      }
+      setIsDirty(false);
+      isDirtyRef.current = false;
+      setAutosave("saved");
+    } catch (err) {
+      const detail = (
+        err as { response?: { data?: { error?: { message?: string } } } }
+      )?.response?.data?.error?.message;
+      setErrors({ submit: detail || t("errors.saveFailed") });
+    } finally {
+      setSavingForPhotos(false);
+    }
+  };
+
   const doAutosave = useCallback(async () => {
     if (!isDirtyRef.current) return;
     const current = formRef.current;
@@ -394,6 +437,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           is_draft: true,
         });
         createdIdRef.current = created.id;
+        setSavedUnitId(created.id);
       }
       setIsDirty(false);
       isDirtyRef.current = false;
@@ -1199,6 +1243,28 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               {t("hints.preArrivalInfoReleaseHours")}
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Photos — part of the creation workflow; needs a saved draft id */}
+      <section className="card p-5 sm:p-6">
+        <h2 className="text-lg font-semibold text-brand-900">
+          {t("photosTitle")}
+        </h2>
+        <p className="mt-1 text-sm text-neutral-600">{t("photosHint")}</p>
+        <div className="mt-4">
+          {photosUnitId ? (
+            <PhotoUpload unitId={photosUnitId} />
+          ) : (
+            <button
+              type="button"
+              onClick={handleSaveForPhotos}
+              disabled={isLoading || savingForPhotos}
+              className="btn-secondary text-sm disabled:opacity-50"
+            >
+              {savingForPhotos ? tc("loading") : t("photosSaveAndAdd")}
+            </button>
+          )}
         </div>
       </section>
 

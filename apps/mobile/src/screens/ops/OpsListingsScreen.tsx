@@ -86,6 +86,12 @@ export function OpsListingsScreen() {
     return isNaN(d.getTime()) ? "—" : d.toLocaleDateString(dateLocale);
   };
 
+  const statusLabel = (status: string) => {
+    const key = `status_${status.toLowerCase()}`;
+    const localized = t(key);
+    return localized === key ? status : localized;
+  };
+
   if (selected) {
     const pending = selected.pending_changes;
     const diffEntries = pending
@@ -109,7 +115,7 @@ export function OpsListingsScreen() {
               <Text style={styles.statusBadgeText}>
                 {selected.status === "LISTED" && selected.has_pending_changes
                   ? t("pendingEdit")
-                  : selected.status}
+                  : statusLabel(selected.status)}
               </Text>
             </View>
           </View>
@@ -221,7 +227,7 @@ export function OpsListingsScreen() {
               key={l.id}
               title={l.title}
               subtitle={`${l.city}, ${l.governorate}${l.has_pending_changes ? ` · ${t("pendingChanges")}` : ""}`}
-              badge={l.status === "LISTED" && l.has_pending_changes ? t("pendingEdit") : l.status}
+              badge={l.status === "LISTED" && l.has_pending_changes ? t("pendingEdit") : statusLabel(l.status)}
               onPress={() => setSelected(l)}
             />
           ))

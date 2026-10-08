@@ -91,10 +91,10 @@ const tAr = arMessages.nav as Record<string, string>;
 describe("Header role visibility", () => {
   beforeEach(() => as(null));
 
-  it("anonymous sees stays/explore/sign-in, no account or admin links", () => {
+  it("anonymous sees stays/search/sign-in, no account or admin links", () => {
     renderWith(<Header />);
     expect(screen.getAllByText(t.stays).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(t.explore).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t.search).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.signIn).length).toBeGreaterThan(0);
     expect(screen.queryByText(t.adminConsole)).toBeNull();
     expect(screen.queryByText(t.account)).toBeNull();

@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -46,6 +47,7 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export function HomeScreen() {
   const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
   const { data: popular } = usePopularLocations();
   const { data: user } = useMe();
   const { data: unread } = useUnreadCount();
@@ -98,7 +100,7 @@ export function HomeScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm }]}>
         <Pressable
           onPress={() => navigation.navigate("Home", { screen: "AccountTab" } as never)}
           hitSlop={12}
@@ -280,7 +282,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
   topBarSide: {

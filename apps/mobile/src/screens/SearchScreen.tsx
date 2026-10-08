@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { format } from "date-fns";
 import { useSearchListings, useLocationAutocomplete, useToggleFavorite, useFavorites, usePriceDistribution, type PriceDistribution } from "../lib/hooks";
@@ -166,6 +167,7 @@ export function SearchScreen() {
   const { locale, t } = useLocale();
   const navigation = useNavigation<Nav>();
   const route = useRoute<SearchRoute>();
+  const insets = useSafeAreaInsets();
   const initialCity = route.params?.city;
 
   const [query, setQuery] = useState(initialCity || "");
@@ -315,7 +317,7 @@ export function SearchScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchSection}>
+      <View style={[styles.searchSection, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.searchInputRow}>
           <TextInput
             style={styles.searchInput}

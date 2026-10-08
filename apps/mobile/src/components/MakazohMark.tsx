@@ -34,6 +34,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
+    // Latin wordmark must stay LTR inside RTL layouts.
+    direction: "ltr",
   },
   word: {
     fontWeight: "900",

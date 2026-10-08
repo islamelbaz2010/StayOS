@@ -62,7 +62,7 @@ export function AdminListingsScreen() {
                   subtitle={`${l.city}, ${l.governorate} · ${fmtDate(
                     l.created_at
                   )}${l.has_pending_changes ? ` · ${t("pendingChanges")}` : ""}`}
-                  right={<StatusBadge label={l.status} tone={TONE[l.status] ?? "info"} />}
+                  right={<StatusBadge label={l.status} tone={TONE[l.status?.toLowerCase()] ?? "info"} />}
                 />
               ))
             )}

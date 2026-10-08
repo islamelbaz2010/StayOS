@@ -87,7 +87,7 @@ export function StatusBadge({ label, tone }: { label: string; tone?: "ok" | "war
           ? colors.error
           : colors.surface;
   const fg = tone ? colors.white : colors.accentText;
-  const key = `status_${label}`;
+  const key = `status_${label.toLowerCase()}`;
   const localized = t(key);
   return (
     <View style={[styles.statusBadge, { backgroundColor: bg }]}>

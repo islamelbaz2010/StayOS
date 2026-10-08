@@ -30,6 +30,12 @@ const PAYMENT_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 export function HostReservationDetailScreen() {
   const { t, locale } = useLocale();
   const arrow = locale === "ar" ? "←" : "→";
+  const statusLabel = (s: string | null | undefined) => {
+    if (!s) return "—";
+    const key = `status_${s}`;
+    const localized = t(key);
+    return localized === key ? s : localized;
+  };
   const navigation = useNavigation<Nav>();
   const route = useRoute();
   const bookingId = (route.params as { bookingId: string }).bookingId;
@@ -108,11 +114,11 @@ export function HostReservationDetailScreen() {
         )}
         <InfoRow
           label={t("reservationStatus")}
-          value={booking.status === "no_show" ? t("statusNoShow") : booking.status}
+          value={statusLabel(booking.status)}
         />
         <InfoRow
           label={t("stayStatus")}
-          value={booking.stay_phase === "no_show" ? t("statusNoShow") : booking.stay_phase}
+          value={statusLabel(booking.stay_phase)}
         />
       </View>
 
@@ -132,7 +138,18 @@ export function HostReservationDetailScreen() {
         <Text style={styles.sectionTitle}>{t("reservationProperty")}</Text>
         <InfoRow label={t("hostListings")} value={property.title || property.unit_id} />
         {property.address && <InfoRow label={t("location")} value={property.address} />}
-        <InfoRow label={t("propertyType")} value={property.property_type || "—"} />
+        <InfoRow
+          label={t("propertyType")}
+          value={
+            property.property_type
+              ? (() => {
+                  const key = `ptype_${property.property_type}`;
+                  const localized = t(key);
+                  return localized === key ? property.property_type : localized;
+                })()
+              : "—"
+          }
+        />
         <Pressable
           style={styles.linkButton}
           onPress={() => navigation.navigate("ListingDetail", { unitId: property.unit_id })}
@@ -159,7 +176,7 @@ export function HostReservationDetailScreen() {
                   { color: (PAYMENT_STATUS_COLORS[payment.status] || PAYMENT_STATUS_COLORS.PENDING).text },
                 ]}
               >
-                {payment.status}
+                {statusLabel(payment.status)}
               </Text>
             </View>
           </View>

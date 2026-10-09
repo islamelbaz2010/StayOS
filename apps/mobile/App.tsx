@@ -299,7 +299,7 @@ function GuestTabs() {
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: t("home") }} />
-      <Tab.Screen name="SearchTab" component={SearchScreen} options={{ tabBarLabel: t("search") }} />
+      <Tab.Screen name="SearchTab" component={SearchScreen} options={{ tabBarLabel: t("explore") }} />
       <Tab.Screen name="TripsTab" component={TripsScreen} options={{ tabBarLabel: t("trips") }} />
       <Tab.Screen
         name="MessagesTab"
@@ -331,7 +331,7 @@ function HostTabs() {
       })}
     >
       <Tab.Screen name="HostTodayTab" component={HostTodayScreen} options={{ tabBarLabel: t("hostToday") }} />
-      <Tab.Screen name="HostExploreTab" component={SearchScreen} options={{ tabBarLabel: t("search") }} />
+      <Tab.Screen name="HostExploreTab" component={SearchScreen} options={{ tabBarLabel: t("explore") }} />
       <Tab.Screen name="HostCalendarTab" component={HostCalendarScreen} options={{ tabBarLabel: t("hostCalendar") }} />
       <Tab.Screen name="HostListingsTab" component={HostListingsScreen} options={{ tabBarLabel: t("hostListings") }} />
       <Tab.Screen
@@ -364,7 +364,7 @@ function OpsTabs() {
       })}
     >
       <Tab.Screen name="OpsHomeTab" component={OpsHomeScreen} options={{ tabBarLabel: t("opsConsole") }} />
-      <Tab.Screen name="OpsExploreTab" component={SearchScreen} options={{ tabBarLabel: t("search") }} />
+      <Tab.Screen name="OpsExploreTab" component={SearchScreen} options={{ tabBarLabel: t("explore") }} />
       <Tab.Screen
         name="OpsMessagesTab"
         component={InboxScreen}

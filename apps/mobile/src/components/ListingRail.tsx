@@ -17,6 +17,7 @@ export function ListingRail({ listings, onPress, isFavorite, onToggleFavorite }:
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.bleed}
       contentContainerStyle={styles.rail}
     >
       {listings.map((listing) => (
@@ -34,8 +35,14 @@ export function ListingRail({ listings, onPress, isFavorite, onToggleFavorite }:
 }
 
 const styles = StyleSheet.create({
+  // Bleed out of the parent's horizontal padding so cards scroll to the
+  // screen edge; content padding keeps the first card aligned and the
+  // last card reachable.
+  bleed: {
+    marginHorizontal: -spacing.lg,
+  },
   rail: {
-    paddingRight: spacing.xl,
+    paddingHorizontal: spacing.lg,
   },
   cardWrapper: {
     width: CARD_WIDTH,

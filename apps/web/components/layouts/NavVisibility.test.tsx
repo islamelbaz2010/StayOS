@@ -94,7 +94,7 @@ describe("Header role visibility", () => {
   it("anonymous sees stays/search/sign-in, no account or admin links", () => {
     renderWith(<Header />);
     expect(screen.getAllByText(t.stays).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(t.search).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t.explore).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.signIn).length).toBeGreaterThan(0);
     expect(screen.queryByText(t.adminConsole)).toBeNull();
     expect(screen.queryByText(t.account)).toBeNull();

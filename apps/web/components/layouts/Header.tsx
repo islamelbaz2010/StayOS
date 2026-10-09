@@ -451,7 +451,7 @@ export function Header() {
               href={`/${locale}/search`}
               className="text-sm font-medium text-neutral-700 hover:text-accent-600"
             >
-              {t("search")}
+              {t("explore")}
             </Link>
           </nav>
         </div>
@@ -602,7 +602,7 @@ export function Header() {
               className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
               onClick={() => setMobileOpen(false)}
             >
-              {t("search")}
+              {t("explore")}
             </Link>
             <AccountMenuLevels
               open={mobileOpen}

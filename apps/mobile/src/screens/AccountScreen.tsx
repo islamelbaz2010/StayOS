@@ -10,6 +10,7 @@ import { useLocale } from "../lib/LocaleContext";
 import { api, clearTokens, getRefreshToken } from "../lib/api";
 import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { MenuCard } from "../components/UI";
+import { MakazohMark } from "../components/MakazohMark";
 import { LoadingSpinner } from "../components/States";
 import { OPS_GROUPS } from "../lib/opsGroups";
 import type { RootStackParamList } from "../../App";
@@ -29,7 +30,19 @@ export function AccountScreen() {
   if (!authed || !user) {
     if (authed && isLoading) return <LoadingSpinner />;
     return (
-      <View style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.guestContainer,
+          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl },
+        ]}
+      >
+        <View style={styles.guestHero}>
+          <MakazohMark fontSize={34} />
+          <Text style={styles.guestTitle}>{t("accountGuestTitle")}</Text>
+          <Text style={styles.guestSubtitle}>{t("accountGuestSubtitle")}</Text>
+        </View>
+
         <Pressable style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
           <Text style={styles.loginButtonText}>{t("login")}</Text>
         </Pressable>
@@ -45,7 +58,29 @@ export function AccountScreen() {
         >
           <Text style={styles.helpLinkText}>{t("helpCenter")} ›</Text>
         </Pressable>
-      </View>
+
+        <View style={[styles.section, styles.guestLangSection]}>
+          <Text style={styles.sectionTitle}>{t("language")}</Text>
+          <View style={styles.langRow}>
+            <Pressable
+              style={[styles.langButton, locale === "en" && styles.langButtonActive]}
+              onPress={() => setLocale("en")}
+            >
+              <Text style={[styles.langText, locale === "en" && styles.langTextActive]}>
+                {t("english")}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.langButton, locale === "ar" && styles.langButtonActive]}
+              onPress={() => setLocale("ar")}
+            >
+              <Text style={[styles.langText, locale === "ar" && styles.langTextActive]}>
+                {t("arabic")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
     );
   }
 
@@ -388,12 +423,37 @@ const styles = StyleSheet.create({
   langTextActive: {
     color: colors.onPrimary,
   },
+  guestContainer: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    justifyContent: "center",
+  },
+  guestHero: {
+    alignItems: "center",
+    marginBottom: spacing.xxl,
+  },
+  guestTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: "700",
+    color: colors.text,
+    marginTop: spacing.md,
+    textAlign: "center",
+  },
+  guestSubtitle: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    textAlign: "center",
+  },
+  guestLangSection: {
+    marginTop: spacing.xxl,
+    marginBottom: 0,
+  },
   loginButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.lg,
     borderRadius: radius.md,
     alignItems: "center",
-    marginHorizontal: spacing.xl,
   },
   registerButton: { marginTop: spacing.md },
   loginButtonText: {

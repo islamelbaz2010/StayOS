@@ -6,6 +6,7 @@ import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { useLocale } from "../lib/LocaleContext";
 import { RatingBadge } from "./RatingBadge";
 import { currencyLabel, formatMoney } from "../lib/money";
+import { usePrefersReducedMotion } from "../lib/motion";
 
 interface ListingCardProps {
   listing: Listing;
@@ -22,12 +23,15 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
 
   const showPlaceholder = !listing.cover_image || imageFailed;
   const heartScale = useRef(new Animated.Value(1)).current;
+  const reducedMotion = usePrefersReducedMotion();
 
   const handleToggleFavorite = () => {
-    Animated.sequence([
-      Animated.timing(heartScale, { toValue: 1.35, duration: 110, useNativeDriver: true }),
-      Animated.spring(heartScale, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start();
+    if (!reducedMotion) {
+      Animated.sequence([
+        Animated.timing(heartScale, { toValue: 1.35, duration: 110, useNativeDriver: true }),
+        Animated.spring(heartScale, { toValue: 1, friction: 4, useNativeDriver: true }),
+      ]).start();
+    }
     onToggleFavorite?.(listing.id);
   };
 

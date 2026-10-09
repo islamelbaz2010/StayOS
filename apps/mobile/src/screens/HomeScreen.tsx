@@ -21,6 +21,7 @@ import { ListingRail } from "../components/ListingRail";
 import { MakazohMark } from "../components/MakazohMark";
 import { CardSkeleton } from "../components/States";
 import { usePopularLocations, useMe, useUnreadCount } from "../lib/hooks";
+import { FadeIn } from "../lib/motion";
 import { DateRangeCalendar } from "../components/DateRangeCalendar";
 import { getRecentlyViewed } from "../lib/recentlyViewed";
 import type { Listing, LocationSuggestion } from "../lib/types";
@@ -261,7 +262,7 @@ export function HomeScreen() {
       />
 
       <View style={styles.section}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.railBleed} contentContainerStyle={styles.categoryRow}>
           {CATEGORIES.map((category) => (
             <Pressable
               key={category}
@@ -288,7 +289,8 @@ export function HomeScreen() {
             <Text style={styles.viewAll}>{t("viewAll")} →</Text>
           </Pressable>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinationRow}>
+        <FadeIn trigger={popular?.length}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.railBleed} contentContainerStyle={styles.destinationRow}>
           {(popular ?? []).map((place: LocationSuggestion, i: number) => {
             const name = locale === "ar" ? place.canonical_name_ar : place.canonical_name_en;
             const candidates = (
@@ -330,6 +332,7 @@ export function HomeScreen() {
             );
           })}
         </ScrollView>
+        </FadeIn>
       </View>
 
       <View style={styles.section}>
@@ -350,14 +353,18 @@ export function HomeScreen() {
             <Text style={styles.emptyText}>{t("noResults")}</Text>
           </View>
         ) : (
-          <ListingRail listings={featured} onPress={goToDetail} />
+          <FadeIn trigger={featured.length}>
+            <ListingRail listings={featured} onPress={goToDetail} />
+          </FadeIn>
         )}
       </View>
 
       {recentlyViewed.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("recentlyViewed")}</Text>
-          <ListingRail listings={recentlyViewed} onPress={goToDetail} />
+          <Text style={[styles.sectionTitle, styles.sectionTitleSolo]}>{t("recentlyViewed")}</Text>
+          <FadeIn trigger={recentlyViewed.length}>
+            <ListingRail listings={recentlyViewed} onPress={goToDetail} />
+          </FadeIn>
         </View>
       )}
 
@@ -522,22 +529,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: spacing.md,
+    gap: spacing.sm,
   },
   sectionTitle: {
     fontSize: fontSize.xl,
     fontWeight: "700",
     color: colors.text,
+    flexShrink: 1,
+  },
+  sectionTitleSolo: {
     marginBottom: spacing.md,
   },
   viewAll: {
     fontSize: fontSize.sm,
     fontWeight: "600",
     color: colors.accentText,
-    marginBottom: spacing.md,
   },
   categoryRow: {
     gap: spacing.sm,
-    paddingEnd: spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   categoryCard: {
     alignItems: "center",
@@ -569,9 +579,15 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: "center",
   },
+  // Horizontal rails bleed out of the section padding so cards scroll to
+  // the screen edge; content padding keeps the first card aligned with
+  // the section title and the last card fully reachable.
+  railBleed: {
+    marginHorizontal: -spacing.lg,
+  },
   destinationRow: {
     gap: spacing.sm,
-    paddingEnd: spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   destinationCard: {
     width: 132,

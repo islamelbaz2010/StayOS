@@ -4,6 +4,8 @@ const translations = {
   en: {
     appName: "MAKAZOH",
     brandTagline: "Find your place. Go.",
+    accountGuestTitle: "Your MAKAZOH account",
+    accountGuestSubtitle: "Sign in to manage trips, bookings and your profile.",
     home: "Home",
     search: "Search",
     favorites: "Favorites",
@@ -1132,6 +1134,8 @@ const translations = {
   ar: {
     appName: "MAKAZOH",
     brandTagline: "Find your place. Go.",
+    accountGuestTitle: "حساب MAKAZOH الخاص بك",
+    accountGuestSubtitle: "سجّل الدخول لإدارة رحلاتك وحجوزاتك وملفك الشخصي.",
     home: "الرئيسية",
     search: "بحث",
     favorites: "المفضلة",

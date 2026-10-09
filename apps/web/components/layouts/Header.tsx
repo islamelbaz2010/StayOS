@@ -441,18 +441,36 @@ export function Header() {
             </span>
           </Link>
           <nav className="hidden items-center gap-5 md:flex">
-            <Link
-              href={`/${locale}/search`}
-              className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-            >
-              {t("stays")}
-            </Link>
-            <Link
-              href={`/${locale}/search`}
-              className="text-sm font-medium text-neutral-700 hover:text-accent-600"
-            >
-              {t("explore")}
-            </Link>
+            {(() => {
+              // Stays → the homepage browsing experience; Explore → the
+              // search/discovery route. Intentionally distinct targets.
+              const isStays = pathname === `/${locale}` || pathname === `/${locale}/`;
+              const isExplore = pathname?.startsWith(`/${locale}/search`);
+              const linkClass = (active: boolean) =>
+                `text-sm font-medium ${
+                  active
+                    ? "text-accent-600"
+                    : "text-neutral-700 hover:text-accent-600"
+                }`;
+              return (
+                <>
+                  <Link
+                    href={`/${locale}`}
+                    aria-current={isStays ? "page" : undefined}
+                    className={linkClass(Boolean(isStays))}
+                  >
+                    {t("stays")}
+                  </Link>
+                  <Link
+                    href={`/${locale}/search`}
+                    aria-current={isExplore ? "page" : undefined}
+                    className={linkClass(Boolean(isExplore))}
+                  >
+                    {t("explore")}
+                  </Link>
+                </>
+              );
+            })()}
           </nav>
         </div>
 
@@ -591,7 +609,12 @@ export function Header() {
         <nav className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-neutral-200 bg-white px-4 pb-4 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
             <Link
-              href={`/${locale}/search`}
+              href={`/${locale}`}
+              aria-current={
+                pathname === `/${locale}` || pathname === `/${locale}/`
+                  ? "page"
+                  : undefined
+              }
               className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
               onClick={() => setMobileOpen(false)}
             >
@@ -599,6 +622,9 @@ export function Header() {
             </Link>
             <Link
               href={`/${locale}/search`}
+              aria-current={
+                pathname?.startsWith(`/${locale}/search`) ? "page" : undefined
+              }
               className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
               onClick={() => setMobileOpen(false)}
             >

@@ -160,33 +160,39 @@ export function AccountScreen() {
       <View style={styles.section}>
         {isStaff && (
           <>
+            {/* Admin Console is a single top-level entry: all operational
+                groups live inside its submenu, never duplicated here. */}
             <MenuCard
               icon="speedometer-outline"
               title={t("adminConsole")}
               subtitle={t("menuConsoleDesc")}
               onPress={() =>
-                navigation.navigate("Home", { screen: "OpsHomeTab" })
+                openGroup(t("adminConsole"), [
+                  {
+                    key: "console",
+                    label: t("opsConsole"),
+                    route: "Home",
+                    params: { screen: "OpsHomeTab" },
+                    icon: "speedometer-outline",
+                  },
+                  ...visibleOpsGroups.map((group) => ({
+                    key: group.key,
+                    label: t(group.labelKey),
+                    route: "MenuGroup" as const,
+                    params: {
+                      title: t(group.labelKey),
+                      items: group.items.map((s) => ({
+                        key: s.key,
+                        label: locale === "ar" ? s.labelAr : s.labelEn,
+                        route: s.route,
+                        icon: s.icon,
+                      })),
+                    },
+                    icon: group.icon,
+                  })),
+                ])
               }
             />
-            {visibleOpsGroups.map((group) => (
-              <MenuCard
-                key={group.key}
-                icon={group.icon}
-                title={t(group.labelKey)}
-                subtitle={t(group.descKey)}
-                onPress={() =>
-                  openGroup(
-                    t(group.labelKey),
-                    group.items.map((s) => ({
-                      key: s.key,
-                      label: locale === "ar" ? s.labelAr : s.labelEn,
-                      route: s.route,
-                      icon: s.icon,
-                    }))
-                  )
-                }
-              />
-            ))}
             <MenuCard
               icon="airplane-outline"
               title={t("travelerSection")}
@@ -195,6 +201,8 @@ export function AccountScreen() {
                 openGroup(t("travelerSection"), [
                   { key: "trips", label: t("trips"), route: "Trips", icon: "airplane-outline" },
                   { key: "favorites", label: t("favorites"), route: "Favorites", icon: "heart-outline" },
+                  { key: "payments", label: t("myPayments"), route: "Payments", icon: "card-outline" },
+                  { key: "disputes", label: t("myDisputes"), route: "Disputes", icon: "alert-circle-outline" },
                 ])
               }
             />

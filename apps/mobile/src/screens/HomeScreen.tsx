@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,7 +21,7 @@ import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { ListingRail } from "../components/ListingRail";
 import { MakazohMark } from "../components/MakazohMark";
 import { CardSkeleton } from "../components/States";
-import { usePopularLocations, useMe, useUnreadCount } from "../lib/hooks";
+import { usePopularLocations, useMe, useUnreadCount, useLocationAutocomplete } from "../lib/hooks";
 import { FadeIn } from "../lib/motion";
 import { DateRangeCalendar } from "../components/DateRangeCalendar";
 import { getRecentlyViewed } from "../lib/recentlyViewed";
@@ -62,6 +63,8 @@ export function HomeScreen() {
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   const [guests, setGuests] = useState(1);
   const [showDates, setShowDates] = useState(false);
+  const [destFocused, setDestFocused] = useState(false);
+  const [debouncedDest, setDebouncedDest] = useState("");
   const [brokenCovers, setBrokenCovers] = useState<ReadonlySet<string>>(
     () => new Set()
   );
@@ -71,6 +74,20 @@ export function HomeScreen() {
       getRecentlyViewed().then(setRecentlyViewed);
     }, [])
   );
+
+  // Debounce the destination query — react-query keys each request by the
+  // debounced value, so stale responses can never overwrite newer input.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedDest(destination.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [destination]);
+
+  const {
+    data: destSuggestions,
+    isFetching: destLoading,
+    isError: destError,
+    refetch: refetchDestinations,
+  } = useLocationAutocomplete(debouncedDest);
 
   // One feed powers both the featured rail and the destination cover
   // images — real listings only, no mock content.
@@ -124,6 +141,18 @@ export function HomeScreen() {
     navigation.navigate("ListingDetail", { unitId });
   };
 
+  const showDestPanel =
+    destFocused && debouncedDest.length >= 2;
+
+  const selectDestination = (suggestion: LocationSuggestion) => {
+    const name =
+      locale === "ar" ? suggestion.canonical_name_ar : suggestion.canonical_name_en;
+    setDestination(name);
+    setDebouncedDest(name);
+    setDestFocused(false);
+    Keyboard.dismiss();
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm }]}>
@@ -172,12 +201,68 @@ export function HomeScreen() {
               placeholder={t("searchDestination")}
               placeholderTextColor={colors.textSecondary}
               value={destination}
-              onChangeText={setDestination}
+              onChangeText={(text) => {
+                setDestination(text);
+                setDestFocused(true);
+              }}
+              onFocus={() => setDestFocused(true)}
               returnKeyType="search"
-              onSubmitEditing={runSearch}
+              onSubmitEditing={() => {
+                setDestFocused(false);
+                runSearch();
+              }}
             />
           </View>
+          {destination.length > 0 && (
+            <Pressable
+              onPress={() => {
+                setDestination("");
+                setDebouncedDest("");
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t("searchClearMapArea")}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
+            </Pressable>
+          )}
         </View>
+
+        {showDestPanel && (
+          <FadeIn trigger={debouncedDest} style={styles.destPanel}>
+            {destLoading ? (
+              <Text style={styles.destStatus}>{t("loading")}</Text>
+            ) : destError ? (
+              <Pressable onPress={() => refetchDestinations()} hitSlop={8}>
+                <Text style={[styles.destStatus, styles.destError]}>{t("retry")}</Text>
+              </Pressable>
+            ) : (destSuggestions ?? []).length === 0 ? (
+              <Text style={styles.destStatus}>{t("noResults")}</Text>
+            ) : (
+              (destSuggestions ?? []).map((s: LocationSuggestion, i: number) => (
+                <Pressable
+                  key={`${s.canonical_name_en}:${i}`}
+                  style={({ pressed }) => [
+                    styles.destItem,
+                    i > 0 && styles.destItemBorder,
+                    pressed && styles.destItemPressed,
+                  ]}
+                  onPress={() => selectDestination(s)}
+                >
+                  <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+                  <View style={styles.destItemText}>
+                    <Text style={styles.destItemName}>
+                      {locale === "ar" ? s.canonical_name_ar : s.canonical_name_en}
+                    </Text>
+                    <Text style={styles.destItemMeta}>
+                      {s.city}, {s.governorate}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </FadeIn>
+        )}
         <View style={styles.searchRowPair}>
           <Pressable
             style={[styles.searchRow, styles.searchRowHalf]}
@@ -455,6 +540,49 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
+  },
+  destPanel: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: "hidden",
+  },
+  destStatus: {
+    padding: spacing.md,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  destError: {
+    color: colors.accentText,
+    fontWeight: "600",
+  },
+  destItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  destItemBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  destItemPressed: {
+    backgroundColor: colors.surface,
+  },
+  destItemText: { flex: 1 },
+  destItemName: {
+    fontSize: fontSize.md,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  destItemMeta: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 1,
   },
   searchRow: {
     flexDirection: "row",

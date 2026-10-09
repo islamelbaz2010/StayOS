@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Keyboard,
   Modal,
   PanResponder,
   Pressable,
@@ -22,6 +23,7 @@ import { colors, fontSize, radius, spacing } from "../lib/theme";
 import { ListingCard } from "../components/ListingCard";
 import { EmptyView, ErrorView, CardSkeleton } from "../components/States";
 import { OsmMap, type OsmMapBounds } from "../components/OsmMap";
+import { FadeIn } from "../lib/motion";
 import { DateRangeCalendar } from "../components/DateRangeCalendar";
 import { Ionicons } from "@expo/vector-icons";
 import type { LocationSuggestion } from "../lib/types";
@@ -196,7 +198,7 @@ export function SearchScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const { data: suggestions, isFetching: isLoadingSuggestions } = useLocationAutocomplete(debouncedQuery);
+  const { data: suggestions, isFetching: isLoadingSuggestions, isError: suggestionsError, refetch: refetchSuggestions } = useLocationAutocomplete(debouncedQuery);
   const { data: favorites } = useFavorites();
   const toggleFav = useToggleFavorite();
 
@@ -248,6 +250,7 @@ export function SearchScreen() {
     setQuery(name);
     setDebouncedQuery(name);
     setShowAutocomplete(false);
+    Keyboard.dismiss();
   };
 
   const clearSelection = () => {
@@ -362,12 +365,23 @@ export function SearchScreen() {
           </Pressable>
         </View>
 
-        {isLoadingSuggestions && (
+        {isLoadingSuggestions && showAutocomplete && (
           <Text style={styles.loadingText}>{t("loading")}</Text>
         )}
 
-        {shouldShowSuggestions && suggestions && (
-          <View style={styles.autocomplete}>
+        {shouldShowSuggestions && suggestionsError && (
+          <Pressable
+            style={styles.autocomplete}
+            onPress={() => refetchSuggestions()}
+          >
+            <View style={styles.suggestionItem}>
+              <Text style={[styles.suggestionText, styles.suggestionError]}>{t("retry")}</Text>
+            </View>
+          </Pressable>
+        )}
+
+        {shouldShowSuggestions && !suggestionsError && suggestions && (
+          <FadeIn trigger={debouncedQuery} style={styles.autocomplete}>
             {suggestions.length === 0 ? (
               <View style={styles.suggestionItem}>
                 <Text style={styles.suggestionText}>{t("noResults")}</Text>
@@ -388,7 +402,7 @@ export function SearchScreen() {
                 </Pressable>
               ))
             )}
-          </View>
+          </FadeIn>
         )}
 
 
@@ -1146,6 +1160,9 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: "600",
     color: colors.text,
+  },
+  suggestionError: {
+    color: colors.accentText,
   },
   suggestionCity: {
     fontSize: fontSize.sm,

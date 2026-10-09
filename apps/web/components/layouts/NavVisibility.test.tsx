@@ -101,6 +101,18 @@ describe("Header role visibility", () => {
     expect(screen.queryByText(t.messages)).toBeNull();
   });
 
+  it("stays and explore resolve to intentionally distinct destinations", () => {
+    renderWith(<Header />);
+    const stays = screen.getAllByText(t.stays)[0].closest("a");
+    const explore = screen.getAllByText(t.explore)[0].closest("a");
+    // Stays → homepage browsing; Explore → the search/discovery route.
+    expect(stays).toHaveAttribute("href", "/en");
+    expect(explore).toHaveAttribute("href", "/en/search");
+    expect(stays?.getAttribute("href")).not.toBe(
+      explore?.getAttribute("href")
+    );
+  });
+
   it("guest sees account categories with trips/favorites inside, no admin link", () => {
     as("guest");
     const { container } = renderWith(<Header />);

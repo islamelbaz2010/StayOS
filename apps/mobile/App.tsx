@@ -250,6 +250,8 @@ function getGuestTabIconName(routeName: string, focused: boolean): keyof typeof 
 
 function getHostTabIconName(routeName: string, focused: boolean): keyof typeof Ionicons.glyphMap {
   switch (routeName) {
+    case "HostHomeTab":
+      return focused ? "home" : "home-outline";
     case "HostTodayTab":
       return focused ? "today" : "today-outline";
     case "HostExploreTab":
@@ -269,6 +271,8 @@ function getHostTabIconName(routeName: string, focused: boolean): keyof typeof I
 
 function getOpsTabIconName(routeName: string, focused: boolean): keyof typeof Ionicons.glyphMap {
   switch (routeName) {
+    case "OpsMarketTab":
+      return focused ? "home" : "home-outline";
     case "OpsHomeTab":
       return focused ? "briefcase" : "briefcase-outline";
     case "OpsExploreTab":
@@ -324,12 +328,17 @@ function HostTabs() {
         tabBarActiveTintColor: colors.accentText,
         tabBarInactiveTintColor: colors.textTertiary,
         headerShown: false,
+        // Seven destinations — slightly smaller labels keep every tab
+        // readable instead of hiding required items.
+        tabBarLabelStyle: { fontSize: 10 },
+        tabBarItemStyle: { paddingHorizontal: 0 },
         tabBarIcon: ({ focused, color, size }) => {
           const iconName = getHostTabIconName(route.name, focused);
           return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
     >
+      <Tab.Screen name="HostHomeTab" component={HomeScreen} options={{ tabBarLabel: t("home") }} />
       <Tab.Screen name="HostTodayTab" component={HostTodayScreen} options={{ tabBarLabel: t("hostToday") }} />
       <Tab.Screen name="HostExploreTab" component={SearchScreen} options={{ tabBarLabel: t("explore") }} />
       <Tab.Screen name="HostCalendarTab" component={HostCalendarScreen} options={{ tabBarLabel: t("hostCalendar") }} />
@@ -363,6 +372,7 @@ function OpsTabs() {
         },
       })}
     >
+      <Tab.Screen name="OpsMarketTab" component={HomeScreen} options={{ tabBarLabel: t("home") }} />
       <Tab.Screen name="OpsHomeTab" component={OpsHomeScreen} options={{ tabBarLabel: t("opsConsole") }} />
       <Tab.Screen name="OpsExploreTab" component={SearchScreen} options={{ tabBarLabel: t("explore") }} />
       <Tab.Screen

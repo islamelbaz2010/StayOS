@@ -259,6 +259,7 @@ export function BookingScreen() {
         <Text style={styles.messageHint}>{t("messageToHostHint")}</Text>
       </View>
 
+      {isQuoteLoading || quote ? (
       <View style={styles.summary}>
         {isQuoteLoading ? (
           <Text style={styles.summaryText}>{t("loading")}</Text>
@@ -276,6 +277,7 @@ export function BookingScreen() {
           </>
         ) : null}
       </View>
+      ) : null}
 
       <View style={styles.trustBox}>
         <Text style={styles.trustTitle}>{t("trustMessage")}</Text>

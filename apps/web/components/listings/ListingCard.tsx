@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -52,7 +53,9 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? "ar";
 
-  const imageUrl = listing.coverImage ?? PLACEHOLDER_IMAGE;
+  const [imgFailed, setImgFailed] = useState(false);
+  const imageUrl =
+    listing.coverImage && !imgFailed ? listing.coverImage : PLACEHOLDER_IMAGE;
   const detailQuery =
     checkin && checkout
       ? `?checkin=${encodeURIComponent(checkin)}&checkout=${encodeURIComponent(checkout)}`
@@ -80,6 +83,7 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
             sizes="(max-width: 768px) 100vw, 33vw"
             loading="lazy"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={() => setImgFailed(true)}
           />
           <FavoriteButton unitId={listing.id} className="absolute end-2 top-2" />
           {listing.instantBook && (

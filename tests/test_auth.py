@@ -2,9 +2,9 @@ import uuid
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
+import jwt
 import pytest
 from fastapi.testclient import TestClient
-import jwt
 
 from app.auth import repository as auth_repository
 from app.auth import services as auth_services

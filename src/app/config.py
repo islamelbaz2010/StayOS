@@ -10,6 +10,12 @@ class Settings(BaseSettings):
 
     ENVIRONMENT: Literal["development", "staging", "production", "test"] = "development"
     LOG_LEVEL: str = "INFO"
+    DEV_TOKEN_ENABLED: bool = Field(
+        default=False,
+        description="Explicit opt-in for POST /auth/dev-token. Effective only "
+        "when ENVIRONMENT is development or staging; the endpoint is always "
+        "404 in production regardless of this flag.",
+    )
 
     CORS_ORIGINS: str = Field(default="http://localhost:3000", description="Comma-separated CORS origins")
     CORS_ORIGIN_REGEX: str = Field(default="", description="Regex pattern for allowed CORS origins (e.g. Vercel preview URLs)")

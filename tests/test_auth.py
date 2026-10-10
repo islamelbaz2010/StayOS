@@ -609,6 +609,7 @@ def test_dev_token_success(auth_client: TestClient, monkeypatch) -> None:
     The acceptance Guest fixture (seed-accept-gues-0000-000000000001) is the
     local Dev Login target for Guest — not Layla (who was upgraded to host)."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
     user = _make_user(user_id="seed-accept-gues-0000-000000000001")
     token_pair = TokenPair(access_token="access", refresh_token="refresh", expires_in=900)
     monkeypatch.setattr(
@@ -632,6 +633,7 @@ def test_dev_token_success(auth_client: TestClient, monkeypatch) -> None:
 def test_dev_token_user_not_found(auth_client: TestClient, monkeypatch) -> None:
     """Dev-token returns 401 for an unknown user ID."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
     monkeypatch.setattr(
         auth_repository, "get_user_by_id", AsyncMock(return_value=None)
     )
@@ -647,6 +649,7 @@ def test_dev_token_user_not_found(auth_client: TestClient, monkeypatch) -> None:
 def test_dev_token_inactive_user(auth_client: TestClient, monkeypatch) -> None:
     """Dev-token rejects inactive users."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
     user = _make_user()
     user.is_active = False
     monkeypatch.setattr(
@@ -740,6 +743,7 @@ def test_dev_token_acceptance_guest_is_guest_role(
 ) -> None:
     """The acceptance Guest Dev Login target must have role=guest, not host."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
     user = _make_user(
         user_id="seed-accept-gues-0000-000000000001", role=UserRole.GUEST
     )
@@ -771,6 +775,7 @@ def test_dev_token_works_in_staging(auth_client: TestClient, monkeypatch) -> Non
     """Dev-token must be available in staging environment (used by Vercel
     Preview which talks to the Railway staging backend)."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "staging")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
     user = _make_user(user_id="seed-accept-gues-0000-000000000001", role=UserRole.GUEST)
     token_pair = TokenPair(access_token="access", refresh_token="refresh", expires_in=900)
     monkeypatch.setattr(
@@ -791,6 +796,49 @@ def test_dev_token_works_in_staging(auth_client: TestClient, monkeypatch) -> Non
 def test_dev_token_rejected_in_production_env(auth_client: TestClient, monkeypatch) -> None:
     """Dev-token must NOT be available in production environment."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "production")
+    response = auth_client.post(
+        "/api/v1/auth/dev-token",
+        json={"user_id": "seed-accept-gues-0000-000000000001"},
+    )
+    assert response.status_code == 404
+
+
+def test_dev_token_rejected_in_staging_without_opt_in(
+    auth_client: TestClient, monkeypatch
+) -> None:
+    """ENVIRONMENT=staging alone must NOT expose dev-token — a production
+    deployment mislabeled as staging still cannot mint dev tokens unless
+    DEV_TOKEN_ENABLED is explicitly set."""
+    monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "staging")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", False)
+    response = auth_client.post(
+        "/api/v1/auth/dev-token",
+        json={"user_id": "seed-accept-gues-0000-000000000001"},
+    )
+    assert response.status_code == 404
+
+
+def test_dev_token_rejected_in_development_without_opt_in(
+    auth_client: TestClient, monkeypatch
+) -> None:
+    """Dev-token is off by default even in development — requires the
+    explicit DEV_TOKEN_ENABLED opt-in."""
+    monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", False)
+    response = auth_client.post(
+        "/api/v1/auth/dev-token",
+        json={"user_id": "seed-accept-gues-0000-000000000001"},
+    )
+    assert response.status_code == 404
+
+
+def test_dev_token_production_overrides_flag(
+    auth_client: TestClient, monkeypatch
+) -> None:
+    """ENVIRONMENT=production must dominate: dev-token stays 404 even if
+    DEV_TOKEN_ENABLED is accidentally set."""
+    monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
     response = auth_client.post(
         "/api/v1/auth/dev-token",
         json={"user_id": "seed-accept-gues-0000-000000000001"},

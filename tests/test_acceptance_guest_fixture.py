@@ -157,6 +157,7 @@ def test_dev_login_guest_targets_acceptance_fixture(
     """Dev-token for the fixture id succeeds — Guest Dev Login resolves to
     the Acceptance Guest, not to Layla."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
     user = _make_user(user_id=FIXTURE_ID)
     monkeypatch.setattr(
         auth_repository, "get_user_by_id", AsyncMock(return_value=user)

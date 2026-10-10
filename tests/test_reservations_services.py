@@ -3,6 +3,8 @@ from datetime import UTC, date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from geoalchemy2.elements import WKTElement
+
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.config import settings
@@ -36,7 +38,6 @@ from app.shared.exceptions import (
     PaymentError,
     ValidationError,
 )
-from geoalchemy2.elements import WKTElement
 
 
 def _make_user(

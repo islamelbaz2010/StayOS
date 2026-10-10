@@ -12,7 +12,13 @@ from .schemas import (
     LocationAutocompleteResponse,
     LocationTreeResponse,
 )
-from .services import get_user_favorites, location_autocomplete, location_popular, location_tree, toggle_favorite
+from .services import (
+    get_user_favorites,
+    location_autocomplete,
+    location_popular,
+    location_tree,
+    toggle_favorite,
+)
 
 router = APIRouter(tags=["favorites", "locations"])
 

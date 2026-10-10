@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
 from app.auth import staff as staff_services
-from app.auth.models import User
 from app.auth.constants import STAFF_ROLE_GROUPS
+from app.auth.models import User
 from app.auth.staff_schemas import (
     RoleGroupResponse,
     StaffCreateRequest,

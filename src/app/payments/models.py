@@ -20,6 +20,7 @@ from .constants import PaymentMethod, PaymentStatus
 
 if TYPE_CHECKING:
     from app.bookings.models import Booking
+    from app.listings.models import Unit
 
 
 class Payment(UUIDMixin, TimestampMixin, Base):

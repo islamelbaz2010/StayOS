@@ -1,10 +1,11 @@
 from datetime import date, datetime
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 from app.auth.constants import SpokenLanguage
 from app.bookings.schemas import BookingResponse
-from app.shared.schemas import PaginatedResponse, Money
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from app.shared.schemas import Money, PaginatedResponse
 
 
 class CoHostResponse(BaseModel):

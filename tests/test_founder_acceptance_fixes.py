@@ -39,7 +39,7 @@ from app.listings import services as listings_services  # noqa: E402
 from app.listings.constants import UnitStatus  # noqa: E402
 from app.listings.models import Unit, UnitListing  # noqa: E402
 from app.listings.schemas import ListingUpdate  # noqa: E402
-from app.shared.exceptions import AuthorizationError, ValidationError  # noqa: E402
+from app.shared.exceptions import ValidationError  # noqa: E402
 
 
 def _make_user(

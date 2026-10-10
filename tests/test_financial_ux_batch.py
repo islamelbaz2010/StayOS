@@ -10,9 +10,9 @@
   accepting valid rows, and must skip exact duplicates on re-import.
 """
 
+import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
-import uuid
 
 import pytest
 
@@ -43,7 +43,6 @@ async def test_host_pending_filter_expands_unverified_statuses(
     from app.payments import services as payment_services
     from app.payments.constants import PaymentStatus
 
-    captured: dict = {}
     list_mock = AsyncMock(return_value=[])
     monkeypatch.setattr(payments_repository, "list_host_payments", list_mock)
 
@@ -126,9 +125,9 @@ def _make_escrow(status: str, hold_until=None) -> MagicMock:
 async def test_host_earnings_lifecycle_aggregates(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
+    from app.finance import commercial
     from app.finance import services as finance_services
     from app.finance.constants import EscrowStatus
-    from app.finance import commercial
     from app.host import repository as host_repository
     from app.host import services as host_services
 
@@ -286,9 +285,9 @@ def _make_payment_with_return_token(token: str = "tok-abc") -> MagicMock:
 async def test_payment_return_status_valid_token(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
+    from app.bookings import repository as bookings_repository
     from app.payments import repository as payments_repository
     from app.payments import services as payment_services
-    from app.bookings import repository as bookings_repository
 
     payment = _make_payment_with_return_token()
     booking = MagicMock()
@@ -392,20 +391,20 @@ async def test_payment_return_status_unknown_booking(
 
 def _import_csv_bytes() -> bytes:
     return (
-        "title,description,city,governorate,latitude,longitude,property_type,"
-        "price,address,district,bedrooms,beds,bathrooms,max_guests,amenities,"
-        "image_urls,host_name,host_phone,host_email,status\n"
-        "Valid Flat,A nice flat,Cairo,Cairo,30.04,31.23,APARTMENT,1800,"
-        "1 St,Downtown,2,2,1,4,wifi,https://example.com/a.jpg,"
-        "H1,201,H1@example.com,PENDING_VERIFICATION\n"
-        "House Row,A house,Dahab,South Sinai,28.49,34.51,HOUSE,1750,"
-        "2 St,Lighthouse,2,3,1,5,wifi,https://example.com/b.jpg,"
-        "H2,202,H2@example.com,PENDING_VERIFICATION\n"
-        "Dup One,First,Cairo,Cairo,30.1,31.2,VILLA,2000,3 St,D3,1,1,1,2,"
-        "wifi,,H3,203,H3@example.com,PENDING_VERIFICATION\n"
-        "Dup One,Second copy same title+gov,Cairo,Cairo,30.1,31.2,VILLA,"
-        "2100,4 St,D4,1,1,1,2,wifi,,H4,204,H4@example.com,PENDING_VERIFICATION\n"
-    ).encode()
+        b"title,description,city,governorate,latitude,longitude,property_type,"
+        b"price,address,district,bedrooms,beds,bathrooms,max_guests,amenities,"
+        b"image_urls,host_name,host_phone,host_email,status\n"
+        b"Valid Flat,A nice flat,Cairo,Cairo,30.04,31.23,APARTMENT,1800,"
+        b"1 St,Downtown,2,2,1,4,wifi,https://example.com/a.jpg,"
+        b"H1,201,H1@example.com,PENDING_VERIFICATION\n"
+        b"House Row,A house,Dahab,South Sinai,28.49,34.51,HOUSE,1750,"
+        b"2 St,Lighthouse,2,3,1,5,wifi,https://example.com/b.jpg,"
+        b"H2,202,H2@example.com,PENDING_VERIFICATION\n"
+        b"Dup One,First,Cairo,Cairo,30.1,31.2,VILLA,2000,3 St,D3,1,1,1,2,"
+        b"wifi,,H3,203,H3@example.com,PENDING_VERIFICATION\n"
+        b"Dup One,Second copy same title+gov,Cairo,Cairo,30.1,31.2,VILLA,"
+        b"2100,4 St,D4,1,1,1,2,wifi,,H4,204,H4@example.com,PENDING_VERIFICATION\n"
+    )
 
 
 def test_importer_rejects_noncanonical_property_type() -> None:

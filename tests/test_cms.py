@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
+
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.cms import repository, services

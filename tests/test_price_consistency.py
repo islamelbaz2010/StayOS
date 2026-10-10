@@ -17,14 +17,13 @@ internal components (cleaning, VAT, 6%/12% allocations, service fee).
 """
 
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from geoalchemy2.elements import WKTElement
 
-from app.bookings.models import Booking
 from app.finance import commercial
 from app.listings.models import Unit, UnitListing, UnitPhoto
 from app.listings.schemas import ListingSearchFilters
@@ -268,7 +267,7 @@ async def test_price_consistent_search_to_paymob(monkeypatch) -> None:
         payment_services.payments_repository, "update_payment",
         AsyncMock(return_value=payment_row),
     )
-    resp = await payment_services.create_card_checkout_session(
+    await payment_services.create_card_checkout_session(
         session, guest, "pay-1"
     )
     assert provider_amounts == [GUEST_TOTAL]

@@ -27,8 +27,8 @@ from app.auth.constants import KycStatus, UserRole  # noqa: E402
 from app.auth.dependencies import require_role  # noqa: E402
 from app.auth.models import User  # noqa: E402
 from app.auth.schemas import TokenPair  # noqa: E402
-from app.bookings import services as bookings_services  # noqa: E402
 from app.bookings import repository as bookings_repository  # noqa: E402
+from app.bookings import services as bookings_services  # noqa: E402
 from app.bookings.constants import BookingStatus  # noqa: E402
 from app.bookings.schemas import BookingUpdate  # noqa: E402
 from app.database import get_session  # noqa: E402

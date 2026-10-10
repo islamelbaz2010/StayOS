@@ -124,9 +124,10 @@ def test_generic_500_omits_acao_without_origin() -> None:
 
 
 def test_project_specific_regex_allows_current_preview() -> None:
+    from fastapi import FastAPI
+
     from app.main import _cors_headers_for_origin
     from app.shared.middleware import setup_cors
-    from fastapi import FastAPI
 
     origin = "https://stayos-814l6q390-islam-elbaz-s-projects.vercel.app"
     with patch.object(settings, "CORS_ORIGINS", ""), patch.object(

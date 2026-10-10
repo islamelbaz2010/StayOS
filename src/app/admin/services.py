@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth import services as auth_services
-from app.auth.constants import KycStatus, StaffPermission, UserRole
+from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
@@ -45,7 +45,6 @@ from app.operations.constants import MaintenanceRequestStatus, TaskStatus
 from app.operations.models import MaintenanceRequest, OperationTask
 from app.payments.constants import PaymentStatus
 from app.payments.models import Payment
-from app.reservations.models import Reservation
 from app.shared.exceptions import NotFoundError, ValidationError
 from app.shared.outbox import write_event
 

@@ -4,6 +4,7 @@
 # ordering satisfies both, so I001 is suppressed for this file only.
 from datetime import date, datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from app.listings.models import Unit
 from app.shared.models import Base, TimestampMixin, UUIDMixin
@@ -13,7 +14,6 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
-    Integer,
     Numeric,
     SmallInteger,
     String,
@@ -23,6 +23,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .constants import BookingStatus
+
+if TYPE_CHECKING:
+    from app.auth.models import User
 
 
 class Booking(UUIDMixin, TimestampMixin, Base):
@@ -84,7 +87,7 @@ class Booking(UUIDMixin, TimestampMixin, Base):
     )
     offer_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
-    unit: Mapped[Unit] = relationship("Unit")
+    unit: Mapped["Unit"] = relationship("Unit")
     guest: Mapped["User"] = relationship(
         "User",
         primaryjoin="Booking.guest_id == User.id",

@@ -2,8 +2,8 @@
 staff role groups (FD-18), earnings simulator (FD-21)."""
 
 import uuid
-from decimal import Decimal
 from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -503,8 +503,8 @@ def test_booking_infants_excluded_from_capacity() -> None:
 @pytest.mark.asyncio
 async def test_report_review_creates_open_report(monkeypatch) -> None:
     from app.reviews import services as review_services
-    from app.reviews.schemas import ReviewReportCreate
     from app.reviews.constants import ReviewReportReason
+    from app.reviews.schemas import ReviewReportCreate
 
     review = MagicMock()
     review.id = "r1"
@@ -547,8 +547,8 @@ async def test_report_review_creates_open_report(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_report_own_review_rejected(monkeypatch) -> None:
     from app.reviews import services as review_services
-    from app.reviews.schemas import ReviewReportCreate
     from app.reviews.constants import ReviewReportReason
+    from app.reviews.schemas import ReviewReportCreate
     from app.shared.exceptions import ValidationError
 
     user = _user(role=UserRole.HOST)
@@ -574,8 +574,8 @@ async def test_report_own_review_rejected(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_admin_hide_review_via_report(monkeypatch) -> None:
     from app.reviews import services as review_services
-    from app.reviews.schemas import ReviewReportAdminUpdate
     from app.reviews.constants import ReviewReportStatus
+    from app.reviews.schemas import ReviewReportAdminUpdate
 
     review = MagicMock()
     review.id = "r1"

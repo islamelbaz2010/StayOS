@@ -3,6 +3,7 @@ import json
 from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+
 from app.shared.schemas import Money
 
 from .constants import AccessibilityFeature, BedType, SelfCheckInMethod

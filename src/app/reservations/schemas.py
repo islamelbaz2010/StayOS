@@ -4,6 +4,7 @@ from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 from app.shared.schemas import Money
 
 from .constants import CancellationReason, PaymentMethod, PaymentProvider, ReservationStatus

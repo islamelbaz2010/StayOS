@@ -156,7 +156,7 @@ def test_initiate_kyc_presigns_with_requested_content_type(
 
     presign_client = MagicMock()
     presign_client.generate_presigned_url = (
-        lambda operation, Params, ExpiresIn: captured.append(Params)
+        lambda operation, Params, ExpiresIn: captured.append(Params)  # noqa: N803 — boto3 kwarg names
         or "https://s3.example.com/presigned"
     )
 

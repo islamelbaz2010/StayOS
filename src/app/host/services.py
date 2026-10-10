@@ -787,12 +787,11 @@ async def compute_listing_readiness(
     # (identity, availability, payout). Submission itself is NOT a
     # readiness check — counting it here deadlocked every draft behind
     # "Submit listing for review" while submit required READY.
-    _EXTRA_CHECKS = 3
+    extra_checks = 3
 
     if listing is None:
         missing_items.append("listing_details")
         missing_labels["listing_details"] = "Listing details"
-        total = len(_REQUIRED_FIELDS) + _EXTRA_CHECKS
         return host_schemas.ListingReadinessResponse(
             unit_id=unit.id,
             status=str(ListingReadinessStatus.ACTION_REQUIRED),
@@ -866,7 +865,7 @@ async def compute_listing_readiness(
         missing_items.append("payout_info")
         missing_labels["payout_info"] = "Payout preference"
 
-    total_checks = len(_REQUIRED_FIELDS) + _EXTRA_CHECKS
+    total_checks = len(_REQUIRED_FIELDS) + extra_checks
     # "listing_details" isn't one of the named checks — count it as all missing
     passed = total_checks - min(len(missing_items), total_checks)
     readiness_pct = max(0, min(100, int(passed * 100 / total_checks)))

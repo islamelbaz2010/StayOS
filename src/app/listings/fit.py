@@ -12,7 +12,6 @@ unsupported rather than guessed — adding them requires a real data source.
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

@@ -11,7 +11,6 @@ from app.security.rate_limit import listings_rate_limit
 from app.shared.exceptions import NotFoundError, StayOSError, to_http_exception
 
 from . import repository as listings_repository
-
 from .schemas import (
     AvailabilityResponse,
     BulkAvailabilityRequest,
@@ -31,12 +30,12 @@ from .schemas import (
     ListingSearchFilters,
     ListingSearchResponse,
     ListingUpdate,
-    PriceDistributionResponse,
     PhotoCreate,
     PhotoPresignRequest,
     PhotoPresignResponse,
     PhotoReorderRequest,
     PhotoResponse,
+    PriceDistributionResponse,
 )
 from .services import (
     approve_listing,

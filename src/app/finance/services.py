@@ -1247,9 +1247,9 @@ async def backfill_capture_recognition(
     Cancelled bookings/reservations are skipped (their economics belong
     to the refund path) and reported for manual review.
     """
+    from app.bookings.constants import BookingStatus
     from app.bookings.models import Booking
     from app.reservations.constants import ReservationStatus
-    from app.bookings.constants import BookingStatus
 
     escrows = await finance_repository.list_escrows(
         session,

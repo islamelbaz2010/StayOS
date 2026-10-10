@@ -483,8 +483,8 @@ async def get_host_earnings(
     refunded += int(card_refunded or 0)
 
     # Paid out: completed payout requests — actual cash disbursed to host.
-    from app.finance.models import PayoutRequest
     from app.finance.constants import PayoutStatus
+    from app.finance.models import PayoutRequest
 
     paid_out = await session.scalar(
         select(func.coalesce(func.sum(PayoutRequest.amount_egp), 0)).where(

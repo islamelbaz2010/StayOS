@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -72,7 +72,7 @@ async def set_host_response(
 ) -> Review:
     """Set the host's public response on a guest review."""
     review.host_response = response
-    review.host_response_at = datetime.now(timezone.utc)
+    review.host_response_at = datetime.now(UTC)
     await session.commit()
     await session.refresh(review)
     return review
@@ -98,7 +98,7 @@ def is_review_published(
         return True
     if has_counterpart:
         return True
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     window = timedelta(days=PUBLICATION_WINDOW_DAYS)
     return (now - review.created_at) >= window
 
@@ -144,7 +144,7 @@ async def list_reviews_for_unit(
         .group_by(Review.booking_id)
     )
     has_host_review = {row[0] for row in counterpart_result.all()}
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         (review, guest_name)
         for review, guest_name in rows

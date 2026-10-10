@@ -499,7 +499,6 @@ async def test_create_host_review_success(fake_session: AsyncMock, monkeypatch) 
     mock_guest_result.scalar_one_or_none.return_value = guest
     # Need a separate execute mock for the guest query
     call_count = [0]
-    original_execute = fake_session.execute
 
     async def _mock_execute(*args, **kwargs):
         call_count[0] += 1
@@ -608,7 +607,6 @@ def test_subratings_validation_accepts_none() -> None:
 
 def test_is_review_published_with_counterpart() -> None:
     """A review is published when the other party's review exists."""
-    from app.reviews.constants import PUBLICATION_WINDOW_DAYS
 
     guest = _make_user()
     unit = _make_unit()
@@ -819,7 +817,7 @@ async def test_create_host_response_rejects_host_review(fake_session: AsyncMock,
 @pytest.mark.asyncio
 async def test_create_host_response_rejects_non_owner(fake_session: AsyncMock, monkeypatch) -> None:
     """A host who doesn't own the unit cannot respond to a guest review."""
-    host = _make_user(user_id="host-1", role=UserRole.HOST)
+    _host = _make_user(user_id="host-1", role=UserRole.HOST)
     other_host = _make_user(user_id="host-2", role=UserRole.HOST)
     guest = _make_user(user_id="guest-1")
     unit = _make_unit(host_id="host-1")  # owned by host-1, not other_host

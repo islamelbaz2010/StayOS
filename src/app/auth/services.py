@@ -1,11 +1,13 @@
 import asyncio
 import hashlib
 import logging
+import re
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
+import bcrypt
 import firebase_admin
 import httpx
 from firebase_admin import auth as firebase_auth
@@ -16,9 +18,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import repository as auth_repository
+from app.auth import schemas as auth_schemas
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import Account, DeviceToken, RefreshToken, User
-from app.auth import schemas as auth_schemas
 from app.auth.schemas import (
     AccountUpdate,
     FirebaseAuthRequest,
@@ -45,6 +47,7 @@ from app.reviews.models import Review
 from app.shared import redis as redis_state
 from app.shared.exceptions import (
     AuthenticationError,
+    ConflictError,
     ServiceUnavailableError,
     StayOSError,
     ValidationError,
@@ -564,12 +567,6 @@ async def rotate_refresh_token(session: AsyncSession, token: str) -> TokenPair:
 # Conventional credentials alongside phone OTP and Firebase. Passwords are
 # stored as bcrypt hashes on auth.users.password_hash; the token/session
 # machinery (create_token_pair / refresh / logout) is unchanged.
-
-import re
-
-import bcrypt
-
-from app.shared.exceptions import ConflictError
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 

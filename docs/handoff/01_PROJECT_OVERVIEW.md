@@ -3,8 +3,8 @@
 ## Identity
 - **Product:** StayOS — Airbnb-like hospitality marketplace for Egypt / Arab markets.
 - **Repo:** `islamelbaz2010/StayOS` (monorepo: FastAPI backend + Next.js web + Expo mobile).
-- **Production web:** https://web-amber-pi-98.vercel.app (Vercel, tracks `main`)
-- **Production API:** https://stayos-demo-production.up.railway.app (Railway project `stayos-demo`)
+- **Production web:** <https://web-amber-pi-98.vercel.app> (Vercel, tracks `main`)
+- **Production API:** <https://stayos-demo-production.up.railway.app> (Railway project `stayos-demo`)
 
 ## Product purpose
 Marketplace connecting guests and hosts for short-term stays in Egypt.

@@ -6,7 +6,7 @@ submit transition, host earnings scoping, and photo reorder.
 """
 
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

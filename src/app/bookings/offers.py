@@ -7,7 +7,7 @@ offered total IS the guest price — economics are derived at payment time
 by the canonical commercial engine, so hosts never set fees and guests
 never see a breakdown.
 """
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -30,7 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import repository as bookings_repository
 from .constants import BookingStatus
-from .models import Booking, BookingOffer
+from .models import BookingOffer
 from .schemas import BookingOfferCreate, BookingOfferResponse, BookingResponse
 
 OFFER_TTL_HOURS = 24

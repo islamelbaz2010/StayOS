@@ -2,11 +2,11 @@ import asyncio
 import hashlib
 import hmac
 import time
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, cast
 from uuid import uuid4
 
 import httpx
-from decimal import Decimal, ROUND_HALF_UP
 
 from app.config import settings
 from app.finance import commercial

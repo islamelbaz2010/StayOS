@@ -27,8 +27,8 @@ from app.auth.constants import KycStatus, UserRole  # noqa: E402
 from app.auth.dependencies import require_role  # noqa: E402
 from app.auth.models import User  # noqa: E402
 from app.auth.schemas import TokenPair  # noqa: E402
-from app.bookings import services as bookings_services  # noqa: E402
 from app.bookings import repository as bookings_repository  # noqa: E402
+from app.bookings import services as bookings_services  # noqa: E402
 from app.bookings.constants import BookingStatus  # noqa: E402
 from app.bookings.schemas import BookingUpdate  # noqa: E402
 from app.database import get_session  # noqa: E402
@@ -157,6 +157,7 @@ def test_dev_login_guest_targets_acceptance_fixture(
     """Dev-token for the fixture id succeeds — Guest Dev Login resolves to
     the Acceptance Guest, not to Layla."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
     user = _make_user(user_id=FIXTURE_ID)
     monkeypatch.setattr(
         auth_repository, "get_user_by_id", AsyncMock(return_value=user)

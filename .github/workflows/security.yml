@@ -28,10 +28,9 @@ jobs:
 
       - name: Run bandit (static security analysis)
         run: |
+          bandit -r src/ -ll --format txt
           if [ -d "tools/" ] && [ "$(ls -A tools/*.py 2>/dev/null)" ]; then
             bandit -r tools/ -ll --format txt
-          else
-            echo "No Python files to scan in tools/"
           fi
         continue-on-error: true
 
@@ -54,7 +53,7 @@ jobs:
           fetch-depth: 0
 
       - name: Scan for hardcoded secrets
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3.93.4
         with:
           path: ./
           base: main

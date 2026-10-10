@@ -298,7 +298,7 @@ async def test_approve_pending_edit_applies_and_logs():
             )
         )
         session.scalar = AsyncMock(return_value=_host())
-        result = await approve_listing(session, _admin(), "unit-1")
+        await approve_listing(session, _admin(), "unit-1")
 
     events = _outbox_events(session)
     assert any(e.event_type == "listing.edit_approved" for e in events)
@@ -343,7 +343,7 @@ async def test_reject_pending_edit_discards_and_logs():
             )
         )
         session.scalar = AsyncMock(return_value=_host())
-        result = await reject_listing(
+        await reject_listing(
             session, _admin(), "unit-1", reason="Fix the title"
         )
 

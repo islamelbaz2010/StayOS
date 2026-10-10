@@ -12,7 +12,6 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin import router as admin_router
-from app.reports import router as reports_router
 from app.auth import router as auth_router
 from app.auth import services as auth_services
 from app.auth import staff_router as staff_router
@@ -34,6 +33,7 @@ from app.notifications import router as notifications_router
 from app.operations import metrics as ops_metrics
 from app.operations import router as operations_router
 from app.payments import router as payments_router
+from app.reports import router as reports_router
 from app.reservations import router as reservations_router
 from app.reviews import router as reviews_router
 from app.security import audit_middleware, security_headers_middleware

@@ -348,7 +348,7 @@ PAYMENT CAPTURED (authoritative Paymob/payment success event)
 `GET /admin/reports/management` returns an executive aggregation —
 KPIs (collected, recognised StayOS revenue, VAT payable, host funds
 held, host payable, funds held, refunded), signed revenue decomposition
-+ monthly series, VAT calculated/recognised/reversed/payable plus the
+and monthly series, VAT calculated/recognised/reversed/payable plus the
 "within held funds" cash-position figures, bookings by status and
 governorate, settlement lifecycle, refunds/adjustments, top bookings —
 composed entirely from the canonical facts (identical aggregates to

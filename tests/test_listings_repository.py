@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from geoalchemy2.elements import WKTElement
 
-from app.listings.constants import CalendarStatus, UnitStatus
-from app.listings.models import CalendarRule, Unit, UnitListing
 from app.auth.models import User  # noqa: F401 — ensure mapper registry includes User
 from app.bookings.models import Booking  # noqa: F401 — ensure mapper registry includes Booking
+from app.listings.constants import CalendarStatus, UnitStatus
+from app.listings.models import CalendarRule, Unit, UnitListing
 from app.listings.repository import (
     create_listing,
     get_calendar_rules_in_range,

@@ -356,9 +356,7 @@ async def list_support_queue(
             ).where(UnitListing.unit_id.in_(unit_ids))
         )
         titles = {
-            row[0]: (row[1] or row[2])
-            for row in title_rows.all()
-            if row[1] or row[2]
+            row[0]: title for row in title_rows.all() if (title := row[1] or row[2])
         }
 
     items: list[ConversationListItem] = []
@@ -586,7 +584,7 @@ async def list_conversations(
             ).where(UnitListing.unit_id.in_(unit_ids))
         )
         titles = {
-            row[0]: (row[1] or row[2]) for row in title_rows.all() if row[1] or row[2]
+            row[0]: title for row in title_rows.all() if (title := row[1] or row[2])
         }
 
     items: list[ConversationListItem] = []

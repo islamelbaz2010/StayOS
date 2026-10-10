@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,8 +13,8 @@ from .constants import REVIEW_ELIGIBILITY_WINDOW_DAYS, ReviewReportStatus
 from .models import Review, ReviewReport
 from .schemas import (
     GuestReviewListResponse,
-    HostReviewResponse,
     HostResponseCreate,
+    HostReviewResponse,
     RatingAggregate,
     ReviewCreate,
     ReviewListResponse,
@@ -76,11 +76,11 @@ def _review_window_expired(booking) -> bool:
     if reference is None:
         return False
     if isinstance(reference, datetime):
-        reference_dt = reference if reference.tzinfo else reference.replace(tzinfo=timezone.utc)
+        reference_dt = reference if reference.tzinfo else reference.replace(tzinfo=UTC)
     else:
-        reference_dt = datetime.combine(reference, datetime.min.time(), tzinfo=timezone.utc)
+        reference_dt = datetime.combine(reference, datetime.min.time(), tzinfo=UTC)
     deadline = reference_dt + timedelta(days=REVIEW_ELIGIBILITY_WINDOW_DAYS)
-    return datetime.now(timezone.utc) > deadline
+    return datetime.now(UTC) > deadline
 
 
 async def create_review(
@@ -260,7 +260,7 @@ async def get_guest_reviews(
     )
     # For host reviews of a guest, publication depends on whether the
     # guest also left a review for the same booking.
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     data: list[HostReviewResponse] = []
     for review, host_name in rows:
         guest_review = await reviews_repository.get_guest_review_by_booking(
@@ -396,11 +396,11 @@ async def update_review_report_admin(
         report.status = request.status.value
         if request.status != ReviewReportStatus.OPEN:
             report.resolved_by = admin.id
-            report.resolved_at = datetime.now(timezone.utc)
+            report.resolved_at = datetime.now(UTC)
     elif request.hide_review:
         report.status = ReviewReportStatus.RESOLVED.value
         report.resolved_by = admin.id
-        report.resolved_at = datetime.now(timezone.utc)
+        report.resolved_at = datetime.now(UTC)
     if request.admin_notes is not None:
         report.admin_notes = request.admin_notes
 

@@ -14,7 +14,7 @@ Rules enforced here:
   total, not the page size.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
@@ -48,8 +48,8 @@ from app.listings.models import Unit, UnitListing
 from app.payments.constants import PaymentStatus
 from app.payments.models import Payment
 from app.reports.registry import BY_KEY, ReportDef
-from app.reservations.models import Reservation
 from app.reports.schemas import ReportResult
+from app.reservations.models import Reservation
 from app.reviews.models import Review, ReviewReport
 
 MAX_SCAN = 5_000
@@ -163,8 +163,8 @@ _Host = User
 
 
 def _booking_base():
-    Guest = _Guest.__table__.alias("guest_u")
-    Host = _Host.__table__.alias("host_u")
+    guest_u = _Guest.__table__.alias("guest_u")
+    host_u = _Host.__table__.alias("host_u")
     return (
         select(
             Booking,
@@ -173,13 +173,13 @@ def _booking_base():
             Unit.host_id,
             UnitListing.title_en,
             UnitListing.title_ar,
-            Guest.c.display_name.label("guest_name"),
-            Host.c.display_name.label("host_name"),
+            guest_u.c.display_name.label("guest_name"),
+            host_u.c.display_name.label("host_name"),
         )
         .join(Unit, Unit.id == Booking.unit_id)
         .outerjoin(UnitListing, UnitListing.unit_id == Unit.id)
-        .outerjoin(Guest, Guest.c.id == Booking.guest_id)
-        .outerjoin(Host, Host.c.id == Unit.host_id)
+        .outerjoin(guest_u, guest_u.c.id == Booking.guest_id)
+        .outerjoin(host_u, host_u.c.id == Unit.host_id)
     )
 
 
@@ -815,13 +815,13 @@ async def host_earnings(
 async def payments_list(
     session: AsyncSession, report: ReportDef, params: ReportParams
 ) -> ReportResult:
-    Guest = _Guest.__table__.alias("guest_u")
-    Host = _Host.__table__.alias("host_u")
+    guest_u = _Guest.__table__.alias("guest_u")
+    host_u = _Host.__table__.alias("host_u")
     q = (
         select(
             Payment,
-            Guest.c.display_name.label("guest_name"),
-            Host.c.display_name.label("host_name"),
+            guest_u.c.display_name.label("guest_name"),
+            host_u.c.display_name.label("host_name"),
             UnitListing.title_en,
             UnitListing.title_ar,
             Booking.id.label("booking_ref"),
@@ -829,8 +829,8 @@ async def payments_list(
         .join(Booking, Booking.id == Payment.booking_id)
         .join(Unit, Unit.id == Booking.unit_id)
         .outerjoin(UnitListing, UnitListing.unit_id == Unit.id)
-        .outerjoin(Guest, Guest.c.id == Payment.guest_id)
-        .outerjoin(Host, Host.c.id == Payment.host_id)
+        .outerjoin(guest_u, guest_u.c.id == Payment.guest_id)
+        .outerjoin(host_u, host_u.c.id == Payment.host_id)
         .where(*_window(Payment.created_at, params))
     )
     fixed = report.fixed

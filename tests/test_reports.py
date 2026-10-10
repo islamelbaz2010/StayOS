@@ -14,7 +14,7 @@ from app.auth import services as auth_services
 from app.auth.constants import KycStatus
 from app.auth.models import User
 from app.database import get_session
-from app.reports.queries import EXPORT_MAX, ReportParams, _BUILDERS, _finalize
+from app.reports.queries import _BUILDERS, EXPORT_MAX, ReportParams, _finalize
 from app.reports.registry import BY_KEY, CATALOG
 
 
@@ -422,13 +422,13 @@ def test_marketplace_overview_metrics_shape(
 # Financial-truth reconciliation — signed ledger totals, VAT semantics
 # ---------------------------------------------------------------------------
 
-from decimal import Decimal
-from types import SimpleNamespace
+from decimal import Decimal  # noqa: E402
+from types import SimpleNamespace  # noqa: E402
 
-from app.finance.constants import LedgerAccount, LedgerEntryType
-from app.finance.models import EscrowAccount
-from app.payments.models import Payment
-from app.reports.queries import (
+from app.finance.constants import LedgerAccount, LedgerEntryType  # noqa: E402
+from app.finance.models import EscrowAccount  # noqa: E402
+from app.payments.models import Payment  # noqa: E402
+from app.reports.queries import (  # noqa: E402
     _apply_booking_filters,  # noqa: F401  (kept for fixture clarity)
     ledger_account_report,
     vat_by_booking,
@@ -637,8 +637,8 @@ def test_management_admin_ok(reports_client, fake_session, monkeypatch) -> None:
 # VAT reversal helper + escrow decomposition + ledger nets
 # ---------------------------------------------------------------------------
 
-from app.reports.queries import _ledger_nets, _refund_vat_reversal
-from app.finance import services as finance_services
+from app.finance import services as finance_services  # noqa: E402
+from app.reports.queries import _ledger_nets, _refund_vat_reversal  # noqa: E402
 
 
 def _eco(vat: str, guest_total: str = "2295.96"):

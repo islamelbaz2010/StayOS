@@ -20,7 +20,7 @@ The benchmark closure register (`FINAL_AIRBNB_BENCHMARK_CLOSURE.md`) is the sole
 
 > One block per idea. Do not populate from engineering imagination — founder entries only.
 
-### IDEA ID: (blank)
+### IDEA ID: (blank) — Template 1
 
 | Field | Entry |
 |-------|-------|
@@ -37,7 +37,7 @@ The benchmark closure register (`FINAL_AIRBNB_BENCHMARK_CLOSURE.md`) is the sole
 | MVP / FUTURE | |
 | FOUNDER DECISION | ☐ Approved ☐ Rejected ☐ Deferred — signature/date: |
 
-### IDEA ID: (blank)
+### IDEA ID: (blank) — Template 2
 
 | Field | Entry |
 |-------|-------|
@@ -54,7 +54,7 @@ The benchmark closure register (`FINAL_AIRBNB_BENCHMARK_CLOSURE.md`) is the sole
 | MVP / FUTURE | |
 | FOUNDER DECISION | ☐ Approved ☐ Rejected ☐ Deferred — signature/date: |
 
-### IDEA ID: (blank)
+### IDEA ID: (blank) — Template 3
 
 | Field | Entry |
 |-------|-------|

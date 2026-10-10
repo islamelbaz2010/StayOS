@@ -249,8 +249,8 @@ def _build_search_statement(
 
         # Also exclude units with active bookings for the requested interval.
         # Cancelled/rejected bookings no longer occupy inventory.
-        from app.bookings.models import Booking
         from app.bookings.constants import BookingStatus
+        from app.bookings.models import Booking
 
         booking_exists = exists().where(
             Booking.unit_id == Unit.id,

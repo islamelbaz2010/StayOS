@@ -35,7 +35,7 @@ E2E_DATABASE_URL = os.environ.get(
     "postgresql+asyncpg://ahmed@localhost:5432/stayos_e2e",
 )
 
-from decimal import Decimal
+from decimal import Decimal  # noqa: E402
 
 NIGHTLY_EGP = 1000
 CLEANING_EGP = 200
@@ -172,15 +172,15 @@ async def test_full_booking_lifecycle_12pct_economics(monkeypatch) -> None:
     engine = await _engine()
     factory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    from app.bookings.schemas import BookingCreate
+    from app.auth.models import User
     from app.bookings import services as booking_services
+    from app.bookings.schemas import BookingCreate
     from app.finance import services as finance_services
     from app.finance.constants import EscrowStatus, LedgerAccount, LedgerEntryType
     from app.finance.models import EscrowAccount, LedgerEntry
+    from app.listings.models import Unit
     from app.payments import services as payment_services
     from app.payments.models import Payment
-    from app.auth.models import User
-    from app.listings.models import Unit
 
     # The check-in consumer schedules a Celery release task — no broker here.
     monkeypatch.setattr(

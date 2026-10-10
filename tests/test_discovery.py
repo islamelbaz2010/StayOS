@@ -604,8 +604,9 @@ class TestSourceConfidenceUpdates:
 async def test_list_candidates_default_sort_no_typeerror():
     """Regression: list_candidates with default sort_by must not raise
     TypeError from the `or` operator on SQLAlchemy clauses."""
-    from app.discovery import services as discovery_services
     from unittest.mock import AsyncMock, MagicMock
+
+    from app.discovery import services as discovery_services
 
     session = MagicMock()
     mock_result = MagicMock()
@@ -623,8 +624,9 @@ async def test_list_candidates_default_sort_no_typeerror():
 @pytest.mark.asyncio
 async def test_list_candidates_all_sort_options_no_typeerror():
     """Regression: all sort_by options must work without TypeError."""
-    from app.discovery import services as discovery_services
     from unittest.mock import AsyncMock, MagicMock
+
+    from app.discovery import services as discovery_services
 
     session = MagicMock()
     mock_result = MagicMock()

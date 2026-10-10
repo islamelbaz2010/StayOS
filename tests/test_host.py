@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from app.auth import repository as auth_repository
 from app.auth.constants import UserRole
 from app.auth.models import User
 from app.bookings.constants import BookingStatus
@@ -20,7 +21,6 @@ from app.host import repository as host_repository
 from app.host import schemas as host_schemas
 from app.host import services as host_services
 from app.listings.constants import UnitStatus
-from app.auth import repository as auth_repository
 from app.shared.exceptions import AuthorizationError, ConflictError, ValidationError
 
 

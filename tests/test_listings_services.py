@@ -1,6 +1,6 @@
 import uuid
-from decimal import Decimal
 from datetime import UTC, date, datetime
+from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -648,8 +648,8 @@ async def test_create_photo_rejects_foreign_storage_key(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
     from app import listings
-    from app.shared.exceptions import ValidationError
     from app.listings.services import create_photo
+    from app.shared.exceptions import ValidationError
 
     monkeypatch.setattr(
         listings.repository, "get_unit_with_listing", AsyncMock(return_value=_make_unit())
@@ -668,8 +668,8 @@ async def test_create_photo_fails_closed_when_object_missing(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
     from app import listings
-    from app.shared.exceptions import ValidationError
     from app.listings.services import create_photo
+    from app.shared.exceptions import ValidationError
 
     monkeypatch.setattr(
         listings.repository, "get_unit_with_listing", AsyncMock(return_value=_make_unit())

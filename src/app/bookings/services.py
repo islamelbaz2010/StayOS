@@ -39,6 +39,7 @@ from .schemas import (
     BookingCancellationPreview,
     BookingCreate,
     BookingResponse,
+    BookingTimelineResponse,
     BookingUpdate,
     StayArrivalInfo,
     StayHostInfo,

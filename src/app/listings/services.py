@@ -15,7 +15,6 @@ from app.auth import services as auth_services
 from app.auth.constants import KycStatus, UserRole
 from app.auth.models import User
 from app.bookings import repository as bookings_repository
-from app.bookings.constants import BookingStatus
 from app.bookings.models import Booking
 from app.config import settings
 from app.finance import commercial
@@ -31,17 +30,17 @@ from app.listings.models import Unit, UnitListing
 from app.messages.constants import ConversationType, ParticipantRole
 from app.messages.models import Conversation, ConversationParticipant, Message
 from app.reviews import repository as reviews_repository
-from app.shared.storage import (
-    private_object_reference,
-    resolve_object_url,
-    s3_client,
-    verify_image_upload,
-)
 from app.shared.exceptions import (
     AuthorizationError,
     NotFoundError,
     ServiceUnavailableError,
     ValidationError,
+)
+from app.shared.storage import (
+    private_object_reference,
+    resolve_object_url,
+    s3_client,
+    verify_image_upload,
 )
 
 from . import configuration as listing_configuration
@@ -67,13 +66,13 @@ from .schemas import (
     ListingSearchResult,
     ListingUpdate,
     PaginationInfo,
-    PriceBucket,
-    PriceDistributionResponse,
+    PendingPhotoRef,
     PhotoCreate,
     PhotoPresignResponse,
     PhotoReorderRequest,
-    PendingPhotoRef,
     PhotoResponse,
+    PriceBucket,
+    PriceDistributionResponse,
 )
 
 logger = logging.getLogger(__name__)

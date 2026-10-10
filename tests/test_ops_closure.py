@@ -27,7 +27,6 @@ from app.listings.models import Unit, UnitListing, UnitPhoto
 from app.listings.schemas import ListingUpdate, PhotoCreate
 from app.shared.exceptions import (
     AuthorizationError,
-    NotFoundError,
     ValidationError,
 )
 
@@ -463,8 +462,8 @@ async def test_discard_pending_changes_restores_photos(
 @pytest.mark.asyncio
 async def test_create_dispute_as_guest(fake_session: AsyncMock) -> None:
     from app.disputes import services as dispute_services
-    from app.disputes.schemas import DisputeCreate
     from app.disputes.constants import DisputeCategory
+    from app.disputes.schemas import DisputeCreate
 
     guest = _make_user(role=UserRole.GUEST)
     unit = _make_unit()
@@ -493,8 +492,8 @@ async def test_create_dispute_as_guest(fake_session: AsyncMock) -> None:
 @pytest.mark.asyncio
 async def test_create_dispute_as_host(fake_session: AsyncMock) -> None:
     from app.disputes import services as dispute_services
-    from app.disputes.schemas import DisputeCreate
     from app.disputes.constants import DisputeCategory
+    from app.disputes.schemas import DisputeCreate
 
     host = _make_user(user_id="host-1", role=UserRole.HOST)
     guest = _make_user(role=UserRole.GUEST)
@@ -525,8 +524,8 @@ async def test_create_dispute_denied_for_stranger(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
     from app.disputes import services as dispute_services
-    from app.disputes.schemas import DisputeCreate
     from app.disputes.constants import DisputeCategory
+    from app.disputes.schemas import DisputeCreate
 
     stranger = _make_user(user_id="stranger", role=UserRole.GUEST)
     guest = _make_user(role=UserRole.GUEST)
@@ -1003,7 +1002,6 @@ async def test_list_candidates_governorate_and_zone_filters():
     """zone and governorate params must produce real persisted-field
     filters, not frontend-only decoration."""
     from app.discovery import services as discovery_services
-    from app.discovery.models import DiscoveryCandidate
 
     fake_session = MagicMock()
     captured: list = []
@@ -1091,10 +1089,10 @@ async def test_attribute_geo_far_point_untouched():
 async def test_trigger_run_passes_max_candidates(monkeypatch):
     """A config's max_candidates_per_run must reach the adapter search
     config — previously dropped, silently capping every run at 50."""
+    from app.discovery import services as discovery_services
+    from app.discovery.adapters.base import registry
     from app.discovery.router import trigger_run
     from app.discovery.schemas import DiscoveryRunTriggerRequest
-    from app.discovery.adapters.base import registry
-    from app.discovery import services as discovery_services
 
     adapter = registry.get("overpass_osm") or registry.get("json_api")
     assert adapter is not None

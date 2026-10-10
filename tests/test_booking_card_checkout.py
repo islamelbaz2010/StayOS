@@ -811,8 +811,8 @@ def test_derive_payout_state_lifecycle() -> None:
 async def test_host_payments_attach_earnings(
     fake_session: AsyncMock, monkeypatch
 ) -> None:
-    from app.finance import services as finance_services
     from app.finance import commercial
+    from app.finance import services as finance_services
 
     host = _make_user(role=UserRole.HOST)
     guest = _make_user()

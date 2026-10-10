@@ -21,7 +21,7 @@ import pytest
 from app.config import Settings
 from app.finance import commercial
 from app.finance import services as fs
-from app.finance.constants import EscrowStatus, LedgerAccount, LedgerEntryType
+from app.finance.constants import EscrowStatus, LedgerAccount
 
 
 def _s(**kw) -> Settings:

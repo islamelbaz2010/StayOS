@@ -472,13 +472,17 @@ async def dev_token(
     """Issue a JWT token pair for a given user ID — development only.
 
     This endpoint bypasses Firebase/Twilio so the founder can validate UI
-    and user journeys locally without external credentials. It is guarded
-    by an ENVIRONMENT check and will 404 in any non-development deployment.
+    and user journeys locally without external credentials. It requires
+    both an allowed ENVIRONMENT and the explicit DEV_TOKEN_ENABLED opt-in,
+    and will 404 in production regardless of configuration.
     """
     from app.config import settings
     from app.shared.exceptions import AuthenticationError, NotFoundError
 
-    if settings.ENVIRONMENT not in ("development", "staging"):
+    if (
+        settings.ENVIRONMENT not in ("development", "staging")
+        or not settings.DEV_TOKEN_ENABLED
+    ):
         raise NotFoundError("Not available in this environment")
 
     user = await auth_repository.get_user_by_id(session, request.user_id)

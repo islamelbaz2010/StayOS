@@ -18,7 +18,7 @@ const PAYOUT_TONE: Record<string, "ok" | "warn" | "err" | "info"> = {
   ready: "ok",
   held: "warn",
   waiting_checkin: "warn",
-  refunded: "info",
+  refunded: "err",
   disputed: "err",
 };
 
@@ -180,6 +180,11 @@ function BookingEarningRow({
           {t("paymentStatusRefunded")}: {formatMoney(payment.refund_amount_egp, egp)}
         </Text>
       ) : null}
+      {payment.funds_held_egp !== null && payment.funds_held_egp !== undefined ? (
+        <Text style={styles.bookingHeld}>
+          {t("earningsFundsHeld")}: {formatMoney(payment.funds_held_egp, egp)}
+        </Text>
+      ) : null}
       {payment.expected_payout_at && payment.payout_status === "held" ? (
         <Text style={styles.bookingExpected}>
           {t("earningsExpectedPayout")}:{" "}
@@ -304,6 +309,11 @@ const styles = StyleSheet.create({
   bookingRefund: {
     fontSize: fontSize.sm,
     color: colors.error,
+    marginTop: 2,
+  },
+  bookingHeld: {
+    fontSize: fontSize.sm,
+    color: colors.warning,
     marginTop: 2,
   },
   bookingExpected: {

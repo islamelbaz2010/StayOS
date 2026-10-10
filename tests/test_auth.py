@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
-from jose import jwt as jose_jwt
+import jwt
 
 from app.auth import repository as auth_repository
 from app.auth import services as auth_services
@@ -359,7 +359,7 @@ def test_public_key(auth_client: TestClient) -> None:
 def test_jwt_round_trip() -> None:
     user = _make_user()
     token = auth_services.create_access_token(user)
-    payload = jose_jwt.decode(
+    payload = jwt.decode(
         token, settings.JWT_PUBLIC_KEY, algorithms=[settings.JWT_ALGORITHM]
     )
     assert payload["sub"] == user.id

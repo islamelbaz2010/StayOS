@@ -10,10 +10,10 @@ from typing import Any, cast
 import bcrypt
 import firebase_admin
 import httpx
+import jwt
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
-from jose import JWTError
-from jose import jwt as jose_jwt
+from jwt import InvalidTokenError
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -179,7 +179,7 @@ def create_access_token(user: User) -> str:
         "iat": now,
         "exp": now + settings.JWT_ACCESS_TOKEN_TTL_MINUTES * 60,
     }
-    return jose_jwt.encode(
+    return jwt.encode(
         payload, settings.JWT_PRIVATE_KEY, algorithm=settings.JWT_ALGORITHM
     )
 
@@ -193,17 +193,17 @@ def create_refresh_token(user_id: str) -> str:
         "iat": now,
         "exp": now + settings.JWT_REFRESH_TOKEN_TTL_DAYS * 86400,
     }
-    return jose_jwt.encode(
+    return jwt.encode(
         payload, settings.JWT_PRIVATE_KEY, algorithm=settings.JWT_ALGORITHM
     )
 
 
 def decode_token(token: str, expected_type: str | None = None) -> dict[str, Any]:
     try:
-        payload = jose_jwt.decode(
+        payload = jwt.decode(
             token, settings.JWT_PUBLIC_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         raise AuthenticationError("Invalid or expired token") from exc
 
     if expected_type and payload.get("type") != expected_type:

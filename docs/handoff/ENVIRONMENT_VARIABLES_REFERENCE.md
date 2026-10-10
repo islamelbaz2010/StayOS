@@ -9,8 +9,8 @@ safe placeholders only.
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
-| `DATABASE_URL` | required | `` | PostgreSQL database URL |
-| `REDIS_URL` | required | `` | Redis URL |
+| `DATABASE_URL` | required | — | PostgreSQL database URL |
+| `REDIS_URL` | required | — | Redis URL |
 | `ENVIRONMENT` | optional | `"development"` |  |
 | `LOG_LEVEL` | optional | `"INFO"` |  |
 | `CORS_ORIGINS` | optional | `"http://localhost:3000"` | Comma-separated CORS origins |
@@ -72,8 +72,8 @@ safe placeholders only.
 | `OTP_MAX_ATTEMPTS` | optional | `3` |  |
 | `OTP_RATE_LIMIT_WINDOW` | optional | `900` |  |
 | `IMAGE_HOST_ALLOWLIST` | optional | `Field(` |  |
-| `JWT_PRIVATE_KEY` | required | `` | RSA private key PEM for JWT signing **⚠ secret** |
-| `JWT_PUBLIC_KEY` | required | `` | RSA public key PEM for JWT verification **⚠ secret** |
+| `JWT_PRIVATE_KEY` | required | — | RSA private key PEM for JWT signing **⚠ secret** |
+| `JWT_PUBLIC_KEY` | required | — | RSA public key PEM for JWT verification **⚠ secret** |
 | `JWT_ALGORITHM` | optional | `"RS256"` |  |
 | `JWT_ACCESS_TOKEN_TTL_MINUTES` | optional | `15` |  **⚠ secret** |
 | `JWT_REFRESH_TOKEN_TTL_DAYS` | optional | `7` |  **⚠ secret** |

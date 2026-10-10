@@ -73,7 +73,7 @@
 ## Build & device
 
 - EAS preview build `1eaf8560-7d3e-4746-8839-78e51b7c47ad` (Android APK, SDK 51, package `com.stayos.mobile`)
-- APK: https://expo.dev/artifacts/eas/VH6MV7L9jHgq-y6w20b7JUN3j2W_Vkw7F2UrRwxuILY.apk
+- APK: <https://expo.dev/artifacts/eas/VH6MV7L9jHgq-y6w20b7JUN3j2W_Vkw7F2UrRwxuILY.apk>
 - API URL baked: `https://stayos-demo-production.up.railway.app/api/v1`
 - Device acceptance (automated smoke): install ✓, launch ✓, guest home with live Railway data ✓, listing images ✓, Arabic RTL ✓, login screen (email/password default, OTP tab, forgot-password, no dev-login leak) ✓
 - Device: CPH2481 / TKINR8IJ5D9DSKQK

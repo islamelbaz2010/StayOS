@@ -498,7 +498,7 @@ export default function AdminEarningsPage() {
                     {ctx.data.transactions.map((txn) => (
                       <div
                         key={txn.id}
-                        className="rounded-lg border border-neutral-200 p-3"
+                        className="rounded-lg border border-neutral-150 p-3"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                           <span className="font-semibold text-neutral-800">
@@ -898,7 +898,7 @@ function LedgerDrill({
       <LedgerRows rows={rows} egp={egp} fmtDate={fmtDate} />
 
       {view === "vat" && (
-        <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
+        <dl className="mt-4 space-y-1 border-t border-neutral-150 pt-3 text-sm">
           <Row label={t("drill.vatRecognised")} value={egp(credits)} />
           <Row label={t("drill.vatReversed")} value={egp(-debits)} />
           <Row
@@ -912,7 +912,7 @@ function LedgerDrill({
 
       {view === "revenue" && (
         <>
-          <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
+          <dl className="mt-4 space-y-1 border-t border-neutral-150 pt-3 text-sm">
             <Row label={t("drill.grossCredits")} value={egp(credits)} />
             <Row label={t("drill.grossDebits")} value={egp(-debits)} />
             <Row
@@ -939,7 +939,7 @@ function LedgerDrill({
             egp={egp}
             fmtDate={fmtDate}
           />
-          <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
+          <dl className="mt-4 space-y-1 border-t border-neutral-150 pt-3 text-sm">
             <Row
               label={t("drill.hostFundsHeldTotal")}
               value={egp(hostHeld)}
@@ -988,7 +988,7 @@ function HostFundsHeldRows({
         egp={egp}
         fmtDate={fmtDate}
       />
-      <dl className="mt-4 space-y-1 border-t border-neutral-200 pt-3 text-sm">
+      <dl className="mt-4 space-y-1 border-t border-neutral-150 pt-3 text-sm">
         <Row
           label={t("drill.hostFundsHeldTotal")}
           value={<span className="font-bold text-brand-900">{egp(held)}</span>}

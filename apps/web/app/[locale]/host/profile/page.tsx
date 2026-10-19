@@ -207,7 +207,7 @@ export default function HostProfilePage() {
                             className="input w-full text-sm"
                           />
                           {langSearch.trim() && (
-                            <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white py-1 shadow-lg">
+                            <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-150 bg-white py-1 shadow-lg">
                               {SPOKEN_LANGUAGES.filter(
                                 (lang) =>
                                   !languages.includes(lang) &&

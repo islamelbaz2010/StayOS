@@ -34,7 +34,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col bg-surface-page">
       <Header />
       <div className="flex flex-1">
-        <aside className="hidden w-64 shrink-0 border-e border-neutral-200 bg-surface-card md:block">
+        <aside className="hidden w-64 shrink-0 border-e border-neutral-150 bg-surface-card md:block">
           <nav className="p-4">
             <ul className="space-y-1">
               {navItems.map((item) => {

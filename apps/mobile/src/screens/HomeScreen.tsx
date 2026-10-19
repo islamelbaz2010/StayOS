@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useLocale } from "../lib/LocaleContext";
-import { colors, fontSize, radius, spacing } from "../lib/theme";
+import { colors, fontSize, radius, shadow, spacing, typeScale } from "../lib/theme";
 import { ListingRail } from "../components/ListingRail";
 import { MakazohMark } from "../components/MakazohMark";
 import { CardSkeleton } from "../components/States";
@@ -358,7 +358,7 @@ export function HomeScreen() {
                 <Ionicons
                   name={CATEGORY_ICONS[category]}
                   size={24}
-                  color={colors.accentText}
+                  color={colors.text}
                 />
               </View>
               <Text style={styles.categoryLabel}>{t(`ptype_${category}`)}</Text>
@@ -535,11 +535,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    ...shadow.capsule,
   },
   destPanel: {
     marginTop: spacing.xs,
@@ -636,7 +632,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing.sm,
     backgroundColor: colors.primary,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     paddingVertical: spacing.md,
     marginTop: spacing.sm,
   },
@@ -660,8 +656,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sectionTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: "700",
+    ...typeScale.sectionTitle,
+    fontWeight: "600",
     color: colors.text,
     flexShrink: 1,
   },
@@ -679,33 +675,23 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    width: 104,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    width: 76,
   },
   categoryIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary50,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
   },
   categoryLabel: {
     fontSize: fontSize.xs,
-    fontWeight: "600",
-    color: colors.text,
+    color: colors.textSecondary,
     textAlign: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+    paddingBottom: 2,
   },
   // Horizontal rails bleed out of the section padding so cards scroll to
   // the screen edge; content padding keeps the first card aligned with

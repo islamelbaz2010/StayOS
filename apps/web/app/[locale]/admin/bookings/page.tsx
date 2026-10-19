@@ -122,12 +122,12 @@ function AdminBookingOps({ booking }: { booking: BookingResponse }) {
         )}
       </div>
 
-      <div className="border-t border-neutral-200 pt-4">
+      <div className="border-t border-neutral-150 pt-4">
         <p className="text-sm font-semibold text-neutral-700">{t("timeline")}</p>
         {!timeline || timeline.events.length === 0 ? (
           <p className="mt-2 text-xs text-neutral-500">{t("noEvents")}</p>
         ) : (
-          <ol className="mt-3 space-y-3 border-s-2 border-neutral-200 ps-4">
+          <ol className="mt-3 space-y-3 border-s-2 border-neutral-150 ps-4">
             {timeline.events.map((event) => (
               <li key={event.id} className="relative">
                 <span className="absolute -start-[21px] top-1 h-2.5 w-2.5 rounded-full bg-accent-500" />

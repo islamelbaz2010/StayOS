@@ -792,7 +792,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           {t("sleepingArrangementsHint")}
         </p>
         {(form.sleeping_arrangements ?? []).map((room, idx) => (
-          <div key={idx} className="mb-3 rounded-lg border border-neutral-200 p-3">
+          <div key={idx} className="mb-3 rounded-lg border border-neutral-150 p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-medium text-neutral-700">
                 {t("bedroomLabel", { number: idx + 1 })}
@@ -904,7 +904,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             return (
               <label
                 key={amenity}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-neutral-50"
               >
                 <input
                   type="checkbox"
@@ -928,7 +928,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
         </h2>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-4">
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-neutral-50">
               <input
                 type="checkbox"
                 checked={form.allows_pets ?? false}
@@ -937,7 +937,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               />
               <span className="text-neutral-700">{t("allowsPets")}</span>
             </label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-neutral-50">
               <input
                 type="checkbox"
                 checked={form.self_check_in ?? false}
@@ -959,7 +959,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
                   return (
                     <label
                       key={method.value}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-neutral-50"
                     >
                       <input
                         type="checkbox"
@@ -987,7 +987,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
                 return (
                   <label
                     key={feature.value}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-neutral-50"
                   >
                     <input
                       type="checkbox"
@@ -1147,7 +1147,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           </div>
         </div>
 
-        <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+        <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-neutral-50">
           <input
             type="checkbox"
             checked={form.instant_book ?? false}

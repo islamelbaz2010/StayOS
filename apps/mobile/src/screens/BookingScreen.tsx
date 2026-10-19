@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
   confirmButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.lg,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     alignItems: "center",
     marginBottom: spacing.xxl,
   },
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
   },
   gateButton: {
     backgroundColor: colors.primary,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xl,
     marginTop: spacing.xs,

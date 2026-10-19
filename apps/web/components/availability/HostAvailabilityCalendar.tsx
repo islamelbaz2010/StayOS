@@ -292,7 +292,7 @@ export function HostAvailabilityCalendar({
                     ${STATUS_COLORS[info.status] || STATUS_COLORS.available}
                     ${
                       occupied
-                        ? "cursor-not-allowed border-neutral-200 opacity-70"
+                        ? "cursor-not-allowed border-neutral-150 opacity-70"
                         : "border-neutral-300"
                     }
                     ${selected ? "ring-2 ring-accent-500" : ""}

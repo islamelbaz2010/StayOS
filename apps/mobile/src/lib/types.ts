@@ -196,6 +196,19 @@ export interface PaymentListItem {
   proof_rejection_count: number;
   proof_url: string | null;
   proof_uploaded_at: string | null;
+  // Stay context + host-facing earnings — populated only by /payments/host.
+  unit_title: string | null;
+  check_in: string | null;
+  check_out: string | null;
+  booking_status: string | null;
+  host_net_egp: number | null;
+  platform_fee_egp: number | null;
+  funds_status: string | null;
+  funds_held_egp: number | null;
+  expected_payout_at: string | null;
+  payout_status: string | null;
+  paid_at: string | null;
+  refund_amount_egp: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -940,10 +953,16 @@ export interface HostEarningsSummary {
   total_bookings: number;
   confirmed_bookings: number;
   completed_stays: number;
+  cancelled_bookings: number;
   total_revenue_egp: number;
   pending_verification_egp: number;
   refund_pending_egp: number;
+  refunded_egp: number;
   net_earnings_egp: number;
+  host_earnings_egp: number;
+  funds_held_egp: number;
+  payout_ready_egp: number;
+  paid_out_egp: number;
   per_unit: Array<{
     unit_id: string;
     unit_title: string | null;

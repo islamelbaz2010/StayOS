@@ -405,7 +405,7 @@ export default function SearchPage() {
               className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-card bg-surface-card shadow-lg"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
+              <div className="flex items-center justify-between border-b border-neutral-150 px-6 py-4">
                 <h2 className="text-lg font-bold text-brand-900">
                   {t("search.filters")}
                 </h2>
@@ -549,7 +549,7 @@ export default function SearchPage() {
           </div>
         </div>
 
-        <div className="mt-6 border-t border-neutral-200 pt-4">
+        <div className="mt-6 border-t border-neutral-150 pt-4">
           <h3 className="text-sm font-semibold text-brand-900">
             {t("search.amenities")}
           </h3>
@@ -579,7 +579,7 @@ export default function SearchPage() {
         </div>
 
         {/* Booking options */}
-        <div className="mt-6 border-t border-neutral-200 pt-4">
+        <div className="mt-6 border-t border-neutral-150 pt-4">
           <h3 className="text-sm font-semibold text-brand-900">
             {t("search.bookingOptions")}
           </h3>
@@ -634,7 +634,7 @@ export default function SearchPage() {
         </div>
 
         {ACCESSIBILITY_FEATURES.length > 0 && (
-          <div className="mt-6 border-t border-neutral-200 pt-4">
+          <div className="mt-6 border-t border-neutral-150 pt-4">
             <h3 className="text-sm font-semibold text-brand-900">
               {t("search.accessibility")}
             </h3>
@@ -664,7 +664,7 @@ export default function SearchPage() {
           </div>
         )}
 
-        <div className="mt-6 border-t border-neutral-200 pt-4">
+        <div className="mt-6 border-t border-neutral-150 pt-4">
           <h3 className="text-sm font-semibold text-brand-900">
             {t("search.hostLanguage")}
           </h3>
@@ -702,7 +702,7 @@ export default function SearchPage() {
         </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-neutral-200 px-6 py-4">
+              <div className="flex items-center justify-between border-t border-neutral-150 px-6 py-4">
                 {hasActiveFilters ? (
                   <button
                     type="button"

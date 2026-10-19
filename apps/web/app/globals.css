@@ -13,27 +13,29 @@
     @apply bg-surface-page text-neutral-900;
   }
 
+  /* Airbnb-reference type scale: page titles 28px/700, section titles
+     22px/500 with tight -0.02em tracking, subheads 20px/600. */
   h1,
   h2,
   h3,
   h4 {
-    @apply font-sans font-semibold tracking-tight text-brand-900;
+    @apply font-sans tracking-title-tight text-brand-900;
   }
 
   h1 {
-    @apply text-4xl md:text-5xl;
+    @apply text-[28px] font-bold leading-[1.43] md:text-4xl;
   }
 
   h2 {
-    @apply text-2xl md:text-3xl;
+    @apply text-[22px] font-medium leading-[1.3] md:text-[26px];
   }
 
   h3 {
-    @apply text-xl md:text-2xl;
+    @apply text-xl font-semibold;
   }
 
   h4 {
-    @apply text-lg md:text-xl;
+    @apply text-base font-semibold;
   }
 
   p {
@@ -50,24 +52,49 @@
 }
 
 @layer components {
+  /* Pill primary action — the single lime accent per surface, in the
+     Airbnb-reference pattern of rounded-full CTAs on quiet canvases. */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-accent-400 px-5 py-3 text-sm font-semibold text-brand-900 transition hover:bg-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-brand-900 transition hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98];
   }
 
+  /* Ghost-outline secondary: transparent fill, near-black hairline. */
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-brand-900 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-lg border border-brand-600 bg-transparent px-5 py-3 text-sm font-medium text-brand-900 transition hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98];
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center rounded-md bg-danger-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-danger-700 focus:outline-none focus:ring-2 focus:ring-danger-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-lg bg-danger-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-danger-700 focus:outline-none focus:ring-2 focus:ring-danger-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
+  /* Flat content card — hairline border, no shadow (separation comes
+     from the off-white canvas, matching the reference card pattern). */
   .card {
-    @apply overflow-hidden rounded-card bg-surface-card shadow-card transition-shadow duration-200 hover:shadow-card-hover;
+    @apply overflow-hidden rounded-card border border-neutral-150 bg-surface-card;
   }
 
   .input {
-    @apply w-full rounded-md border border-neutral-300 bg-surface-input px-4 py-3 text-neutral-900 transition placeholder:text-neutral-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20;
+    @apply w-full rounded-lg border border-neutral-300 bg-surface-input px-4 py-3 text-neutral-900 transition placeholder:text-neutral-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20;
+  }
+
+  /* Section title + trailing arrow — the reference pattern for rail
+     headings (22px/500, tight tracking, arrow implies navigability). */
+  .section-title {
+    @apply text-[22px] font-medium leading-[1.3] tracking-title-tight text-brand-900;
+  }
+
+  /* Circular icon button for nav utilities and carousel arrows. */
+  .icon-btn {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface-hover text-brand-900 transition hover:bg-neutral-150 focus:outline-none focus:ring-2 focus:ring-accent-400 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  /* Filter chip — pill with hairline; selected inverts to near-black. */
+  .chip {
+    @apply inline-flex items-center whitespace-nowrap rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:border-brand-600;
+  }
+
+  .chip-active {
+    @apply border-brand-600 bg-brand-600 text-white;
   }
 
   .badge {

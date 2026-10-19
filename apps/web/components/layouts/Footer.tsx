@@ -59,16 +59,16 @@ export function Footer() {
         : t("becomeHost");
 
   return (
-    <footer className="border-t border-neutral-200 bg-white">
+    <footer className="border-t border-neutral-150 bg-surface-page">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div>
-            <p className="text-sm font-semibold text-neutral-900">MAKAZOH</p>
+            <p className="text-sm font-semibold text-brand-900">MAKAZOH</p>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
                   href={`/${locale}/search`}
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                  className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                 >
                   {t("search")}
                 </Link>
@@ -77,7 +77,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/bookings`}
-                    className="text-sm text-neutral-500 hover:text-neutral-900"
+                    className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                   >
                     {t("trips")}
                   </Link>
@@ -87,7 +87,7 @@ export function Footer() {
           </div>
           {workspaceLinks.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-neutral-900">
+              <p className="text-sm font-semibold text-brand-900">
                 {workspaceHeading}
               </p>
               <ul className="mt-4 space-y-2">
@@ -95,7 +95,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-neutral-500 hover:text-neutral-900"
+                      className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                     >
                       {link.label}
                     </Link>
@@ -105,14 +105,14 @@ export function Footer() {
             </div>
           )}
           <div>
-            <p className="text-sm font-semibold text-neutral-900">
+            <p className="text-sm font-semibold text-brand-900">
               {t("account")}
             </p>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
                   href={user ? `/${locale}/profile` : `/${locale}/auth/login`}
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                  className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                 >
                   {user ? t("account") : t("signIn")}
                 </Link>
@@ -121,7 +121,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`/${locale}/messages`}
-                    className="text-sm text-neutral-500 hover:text-neutral-900"
+                    className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                   >
                     {t("messages")}
                   </Link>
@@ -130,14 +130,14 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <p className="text-sm font-semibold text-neutral-900">
+            <p className="text-sm font-semibold text-brand-900">
               {t("support")}
             </p>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link
                   href={`/${locale}/support`}
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                  className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                 >
                   {t("support")}
                 </Link>
@@ -145,7 +145,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/help`}
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                  className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                 >
                   {t("helpCenter")}
                 </Link>
@@ -153,7 +153,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/p/privacy`}
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                  className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                 >
                   {t("privacy")}
                 </Link>
@@ -161,7 +161,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/p/terms`}
-                  className="text-sm text-neutral-500 hover:text-neutral-900"
+                  className="text-sm text-neutral-500 transition-colors hover:text-brand-900"
                 >
                   {t("terms")}
                 </Link>
@@ -169,7 +169,7 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div className="mt-8 border-t border-neutral-200 pt-8">
+        <div className="mt-8 border-t border-neutral-150 pt-8">
           <p className="text-xs text-neutral-400">
             © {new Date().getFullYear()} MAKAZOH. {t("rights")}
           </p>

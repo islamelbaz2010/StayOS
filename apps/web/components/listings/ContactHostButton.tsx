@@ -59,7 +59,7 @@ export function ContactHostButton({ unitId, locale, hostId, className }: Contact
   }
 
   return (
-    <div className={`rounded-xl border border-neutral-200 bg-white p-4 shadow-card ${className ?? ""}`}>
+    <div className={`rounded-xl border border-neutral-150 bg-white p-4 shadow-card ${className ?? ""}`}>
       <form onSubmit={handleSubmit}>
         <label
           htmlFor="contact-host-message"

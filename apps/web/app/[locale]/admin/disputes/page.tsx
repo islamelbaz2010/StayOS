@@ -35,7 +35,7 @@ function DisputeContextPanel({ disputeId }: { disputeId: string }) {
 
   const b = data.booking;
   return (
-    <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+    <div className="mt-4 rounded-lg border border-neutral-150 bg-neutral-50 p-3">
       <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">
         {t("context")}
       </p>

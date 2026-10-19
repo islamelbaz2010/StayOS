@@ -444,7 +444,7 @@ export default function AdminDiscoveryPage() {
             )}
 
             {!isLoading && !isError && candidates.length > 0 && (
-              <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-200 bg-surface-card">
+              <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-150 bg-surface-card">
                 <table className="min-w-full divide-y divide-neutral-200">
                   <thead className="bg-neutral-50">
                     <tr>

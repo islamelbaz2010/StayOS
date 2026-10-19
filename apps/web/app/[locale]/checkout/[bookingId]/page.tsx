@@ -337,7 +337,7 @@ function CheckoutContent({
               </dd>
             </div>
           )}
-          <div className="flex justify-between border-t border-neutral-200 pt-3">
+          <div className="flex justify-between border-t border-neutral-150 pt-3">
             <dt className="text-base font-bold text-brand-900">
               {t("totalAmount")}
             </dt>
@@ -416,7 +416,7 @@ function CheckoutContent({
         <p className="mb-4 text-sm text-neutral-600">{t("uploadProofHint")}</p>
 
         {payment.proof_s3_key && (
-          <div className="mb-4 rounded-md border border-neutral-200 bg-neutral-50 p-4">
+          <div className="mb-4 rounded-md border border-neutral-150 bg-neutral-50 p-4">
             <p className="mb-2 text-sm font-medium text-neutral-700">
               {t("currentProof")}
             </p>
@@ -596,7 +596,7 @@ function PaymentReturnView({
               {data.reference_number}
             </dd>
           </div>
-          <div className="flex justify-between border-t border-neutral-200 pt-3">
+          <div className="flex justify-between border-t border-neutral-150 pt-3">
             <dt className="text-base font-bold text-brand-900">
               {t("totalAmount")}
             </dt>

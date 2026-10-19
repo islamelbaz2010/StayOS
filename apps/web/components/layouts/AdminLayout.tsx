@@ -117,8 +117,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col bg-surface-page">
       <Header />
       <div className="flex flex-1">
-        <aside className="hidden w-56 shrink-0 border-e border-neutral-200 bg-surface-card md:block">
-          <div className="border-b border-neutral-200 px-4 py-3">
+        <aside className="hidden w-56 shrink-0 border-e border-neutral-150 bg-surface-card md:block">
+          <div className="border-b border-neutral-150 px-4 py-3">
             <span className="text-xs font-bold uppercase tracking-wider text-accent-600">
               {t("adminConsole")}
             </span>

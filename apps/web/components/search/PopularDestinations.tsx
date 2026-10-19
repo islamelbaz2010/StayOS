@@ -91,15 +91,18 @@ export function PopularDestinations() {
       className="mx-auto max-w-7xl scroll-mt-20 px-4 py-10 sm:px-6 lg:px-8"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-neutral-900">
+        <h2 className="section-title">
           {t("popularDestinations")}
         </h2>
         <button
           type="button"
           onClick={() => router.push(`/${locale}/search`)}
-          className="text-sm font-semibold text-accent-600 hover:text-accent-700"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-brand-900 underline-offset-4 hover:underline"
         >
-          {t("viewAll")} →
+          {t("viewAll")}
+          <svg className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -115,7 +118,7 @@ export function PopularDestinations() {
                   `/${locale}/search?q=${encodeURIComponent(name)}`
                 )
               }
-              className="group relative h-40 overflow-hidden rounded-2xl bg-accent-100 text-start shadow-sm transition hover:shadow-md"
+              className="group relative h-40 overflow-hidden rounded-xl bg-accent-100 text-start transition"
             >
               {cover ? (
                 <Image

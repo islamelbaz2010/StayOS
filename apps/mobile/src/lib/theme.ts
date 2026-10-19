@@ -49,3 +49,49 @@ export const fontSize = {
   xxl: 24,
   xxxl: 30,
 };
+
+/**
+ * Airbnb-reference type scale on top of the existing scale:
+ * caption 12 / ui 16 / subheading 20 / section-title 22 / page-title 28,
+ * with the reference's tight -0.02em tracking on titles.
+ */
+export const typeScale = {
+  caption: { fontSize: 12, lineHeight: 14 },
+  meta: { fontSize: 14, lineHeight: 20 },
+  ui: { fontSize: 16, lineHeight: 20 },
+  subheading: { fontSize: 20, lineHeight: 24 },
+  sectionTitle: { fontSize: 22, lineHeight: 26, letterSpacing: -0.44 },
+  pageTitle: { fontSize: 28, lineHeight: 40 },
+} as const;
+
+/**
+ * Reference elevation: content cards and list rows carry NO shadow —
+ * separation comes from the off-white canvas and hairlines. Shadows are
+ * reserved for floating overlays (search capsule, sheets, menus).
+ */
+export const shadow = {
+  /** Layered capsule/overlay shadow — search bars, floating menus. */
+  capsule: {
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  /** Elevated overlays — modals, sheets, dropdowns. */
+  overlay: {
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  /** Barely-there float for carousel arrows and pills over imagery. */
+  float: {
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+} as const;

@@ -113,13 +113,13 @@ function ThreadContent({ conversationId, locale }: { conversationId: string; loc
 
         {sendError && (
           <p
-            className="border-t border-neutral-200 px-4 pt-3 text-sm text-danger-600"
+            className="border-t border-neutral-150 px-4 pt-3 text-sm text-danger-600"
             role="alert"
           >
             {tc("error")}
           </p>
         )}
-        <div className="flex items-end gap-2 border-t border-neutral-200 p-4">
+        <div className="flex items-end gap-2 border-t border-neutral-150 p-4">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

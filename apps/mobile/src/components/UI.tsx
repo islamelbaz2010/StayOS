@@ -261,10 +261,12 @@ export function Empty({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
+  // Flat hairline section card — the reference surface pattern (white
+  // card on soft canvas, separation via hairline not shadow).
   section: {
     backgroundColor: colors.white,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: spacing.lg,
     marginBottom: spacing.md,
@@ -395,7 +397,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: fontSize.md,
@@ -405,7 +407,7 @@ const styles = StyleSheet.create({
   inputMulti: { minHeight: 100, textAlignVertical: "top" },
   inputDisabled: { backgroundColor: colors.surface, color: colors.textSecondary },
   btn: {
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     paddingVertical: spacing.md,
     alignItems: "center",
     marginTop: spacing.sm,

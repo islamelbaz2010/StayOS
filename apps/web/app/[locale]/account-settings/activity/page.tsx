@@ -133,7 +133,7 @@ export default function AccountActivityPage() {
                 </ul>
               )}
 
-              <div className="mt-8 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
+              <div className="mt-8 rounded-xl border border-neutral-150 bg-neutral-50 p-5">
                 <h2 className="text-sm font-semibold text-neutral-900">
                   {t("policiesTitle")}
                 </h2>

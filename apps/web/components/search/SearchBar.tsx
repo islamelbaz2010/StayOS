@@ -132,18 +132,26 @@ export function SearchBar({
     onSearch(nextParams.toString());
   };
 
+  const fieldLabel =
+    "block px-5 pt-3 text-xs font-semibold uppercase tracking-wide text-brand-900";
+  const fieldInput =
+    "w-full bg-transparent px-5 pb-3 pt-1 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none";
+  const segment =
+    "relative transition-colors hover:bg-neutral-100 focus-within:bg-neutral-100";
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl bg-surface-card p-4 shadow-card md:p-6"
       noValidate
       aria-label={t("title")}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-end">
-        <div className="flex-1">
+      {/* Floating capsule search — segmented fields, pill outline, layered
+          shadow, circular lime submit (Airbnb-reference search bar). */}
+      <div className="grid grid-cols-1 divide-y divide-neutral-150 rounded-2xl bg-white shadow-capsule md:grid-cols-[2fr_1fr_1fr_0.8fr_auto] md:divide-x md:divide-y-0 md:rounded-full rtl:md:divide-x-reverse">
+        <div className={`${segment} flex-1`}>
           <label
             htmlFor="search-destination"
-            className="mb-1 block text-sm font-medium text-neutral-700"
+            className={fieldLabel}
           >
             {t("destination")}
           </label>
@@ -158,11 +166,11 @@ export function SearchBar({
               }}
               onFocus={() => setShowSuggestions(true)}
               placeholder={t("placeholder")}
-              className="input w-full"
+              className={fieldInput}
               autoComplete="off"
             />
             {showSuggestions && suggestions && suggestions.length > 0 && (
-              <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
+              <ul className="absolute start-0 top-full z-50 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-neutral-150 bg-white py-1 shadow-menu">
                 {suggestions.map((s, i) => (
                   <li key={`${s.canonical_name_en}:${s.city}:${i}`}>
                     <button
@@ -189,58 +197,46 @@ export function SearchBar({
           </div>
         </div>
 
-        <div className="grid flex-1 grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="search-checkin"
-              className="mb-1 block text-sm font-medium text-neutral-700"
-            >
-              {t("checkin")}
-            </label>
-            <input
-              id="search-checkin"
-              type="date"
-              value={checkIn}
-              min={todayStr}
-              onChange={(e) => setCheckIn(e.target.value)}
-              className={`input w-full ${errors.checkIn ? "border-danger-500" : ""}`}
-              aria-invalid={!!errors.checkIn}
-            />
-            {errors.checkIn && (
-              <p className="mt-1 text-sm text-danger-600" role="alert">
-                {errors.checkIn}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="search-checkout"
-              className="mb-1 block text-sm font-medium text-neutral-700"
-            >
-              {t("checkout")}
-            </label>
-            <input
-              id="search-checkout"
-              type="date"
-              value={checkOut}
-              min={checkIn ? checkIn : todayStr}
-              onChange={(e) => setCheckOut(e.target.value)}
-              className={`input w-full ${errors.checkOut ? "border-danger-500" : ""}`}
-              aria-invalid={!!errors.checkOut}
-            />
-            {errors.checkOut && (
-              <p className="mt-1 text-sm text-danger-600" role="alert">
-                {errors.checkOut}
-              </p>
-            )}
-          </div>
+        <div className={segment}>
+          <label
+            htmlFor="search-checkin"
+            className={fieldLabel}
+          >
+            {t("checkin")}
+          </label>
+          <input
+            id="search-checkin"
+            type="date"
+            value={checkIn}
+            min={todayStr}
+            onChange={(e) => setCheckIn(e.target.value)}
+            className={fieldInput}
+            aria-invalid={!!errors.checkIn}
+          />
         </div>
 
-        <div className="w-full md:w-28">
+        <div className={segment}>
+          <label
+            htmlFor="search-checkout"
+            className={fieldLabel}
+          >
+            {t("checkout")}
+          </label>
+          <input
+            id="search-checkout"
+            type="date"
+            value={checkOut}
+            min={checkIn ? checkIn : todayStr}
+            onChange={(e) => setCheckOut(e.target.value)}
+            className={fieldInput}
+            aria-invalid={!!errors.checkOut}
+          />
+        </div>
+
+        <div className={segment}>
           <label
             htmlFor="search-guests"
-            className="mb-1 block text-sm font-medium text-neutral-700"
+            className={fieldLabel}
           >
             {t("guests")}
           </label>
@@ -248,7 +244,7 @@ export function SearchBar({
             id="search-guests"
             value={guestsCount}
             onChange={(e) => setGuestsCount(e.target.value)}
-            className="input w-full"
+            className={`${fieldInput} appearance-none`}
           >
             {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
               <option key={n} value={n}>
@@ -258,24 +254,46 @@ export function SearchBar({
           </select>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 p-2 md:p-1.5">
           <button
             type="submit"
-            className="w-full rounded-md bg-accent-400 px-6 py-3 text-center text-base font-semibold text-brand-900 transition hover:bg-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 md:w-auto"
+            aria-label={t("button")}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-accent-500 px-6 text-sm font-semibold text-brand-900 transition hover:bg-accent-600 active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 md:h-12 md:w-12 md:px-0"
           >
-            {t("button")}
+            <svg
+              className="h-4 w-4 md:h-5 md:w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+              />
+            </svg>
+            <span className="md:hidden">{t("button")}</span>
           </button>
           {hasPrimarySearch && (
             <button
               type="button"
               onClick={handleClear}
-              className="w-full rounded-md bg-neutral-100 px-4 py-3 text-center text-sm font-semibold text-neutral-700 transition hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 md:w-auto"
+              aria-label={t("clearSearch")}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-hover text-neutral-600 transition hover:bg-neutral-150 focus:outline-none focus:ring-2 focus:ring-neutral-400 md:h-10 md:w-10"
             >
-              {t("clearSearch")}
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           )}
         </div>
       </div>
+      {(errors.checkIn || errors.checkOut) && (
+        <p className="mt-2 px-4 text-sm text-danger-600" role="alert">
+          {errors.checkIn || errors.checkOut}
+        </p>
+      )}
     </form>
   );
 }

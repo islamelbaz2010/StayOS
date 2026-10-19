@@ -66,26 +66,31 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
         )}
         {listing.host_kyc_status === "verified" && (
           <View style={styles.verifiedBadge}>
-            <Ionicons name="checkmark-circle" size={12} color={colors.onPrimary} />
+            <Ionicons name="checkmark-circle" size={12} color={colors.accentText} />
             <Text style={styles.verifiedText}>{t("verified")}</Text>
           </View>
         )}
         {listing.available_for_dates && (
-          <View style={styles.availableBadge}>
-            <Text style={styles.availableText}>{t("availableForDates")}</Text>
+          <View style={[styles.verifiedBadge, styles.availableBadge]}>
+            <Text style={styles.verifiedText}>{t("availableForDates")}</Text>
           </View>
         )}
         {onToggleFavorite && (
           <Pressable
             style={styles.heartButton}
             onPress={handleToggleFavorite}
-            hitSlop={12}
+            hitSlop={14}
             accessibilityRole="button"
             accessibilityLabel={t("favorites")}
           >
-            <Animated.Text style={[styles.heart, { transform: [{ scale: heartScale }] }]}>
-              {isFavorite ? "♥" : "♡"}
-            </Animated.Text>
+            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+              <Ionicons
+                name={isFavorite ? "heart" : "heart"}
+                size={24}
+                color={isFavorite ? colors.primary : colors.white}
+                style={styles.heartIcon}
+              />
+            </Animated.View>
           </Pressable>
         )}
       </View>
@@ -99,22 +104,21 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
         <Text style={styles.location} numberOfLines={1}>
           {listing.city}, {listing.governorate}
         </Text>
-        <View style={styles.stats}>
-          <Text style={styles.stat}>{listing.max_guests} {t("guests")}</Text>
-          <Text style={styles.statDot}>·</Text>
-          <Text style={styles.stat}>{listing.bedrooms} {t("bedrooms")}</Text>
-          {listing.beds != null && listing.beds > 0 && (
-            <>
-              <Text style={styles.statDot}>·</Text>
-              <Text style={styles.stat}>{listing.beds} {t("bedsLabel")}</Text>
-            </>
-          )}
-        </View>
-        <View style={styles.stats}>
-          <Text style={styles.stat}>{listing.bathrooms} {t("bathrooms")}</Text>
-        </View>
-        <Text style={styles.price}>
-          {formatMoney(listing.price, currencyLabel(listing.currency, t("egp")))} / {t("perNight")}
+        <Text style={styles.stat} numberOfLines={1}>
+          {[
+            `${listing.max_guests} ${t("guests")}`,
+            `${listing.bedrooms} ${t("bedrooms")}`,
+            listing.beds != null && listing.beds > 0 ? `${listing.beds} ${t("bedsLabel")}` : null,
+            `${listing.bathrooms} ${t("bathrooms")}`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </Text>
+        <Text style={styles.priceLine} numberOfLines={1}>
+          <Text style={styles.priceAmount}>
+            {formatMoney(listing.price, currencyLabel(listing.currency, t("egp")))}
+          </Text>
+          <Text style={styles.priceUnit}> {t("perNight")}</Text>
         </Text>
       </View>
     </Pressable>
@@ -122,11 +126,10 @@ export function ListingCard({ listing, onPress, isFavorite, onToggleFavorite }: 
 }
 
 const styles = StyleSheet.create({
+  // Flat photo-first card (Airbnb reference): no container chrome, no
+  // shadow — the image and whitespace carry the card.
   card: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    marginBottom: spacing.md,
-    overflow: "hidden",
+    marginBottom: spacing.lg,
   },
   cardPressed: {
     opacity: 0.92,
@@ -135,9 +138,9 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: "relative",
     aspectRatio: 4 / 3,
+    borderRadius: radius.md,
+    overflow: "hidden",
     backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
   },
   image: {
     ...StyleSheet.absoluteFillObject,
@@ -158,21 +161,23 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     fontSize: fontSize.lg,
   },
+  // Reference wishlist heart: transparent hit-area, white heart with a
+  // soft photo-legibility shadow, lime fill when saved.
   heartButton: {
     position: "absolute",
-    top: spacing.sm,
-    end: spacing.sm,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderRadius: radius.full,
-    width: 36,
-    height: 36,
+    top: spacing.xs,
+    end: spacing.xs,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  heart: {
-    fontSize: 20,
-    color: colors.error,
+  heartIcon: {
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: 1 },
   },
+  // White overlay pill — the reference "Guest favorite" badge pattern.
   verifiedBadge: {
     position: "absolute",
     top: spacing.sm,
@@ -180,32 +185,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
     borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  availableBadge: {
+    top: spacing.sm + 32,
   },
   verifiedText: {
     fontSize: fontSize.xs,
-    fontWeight: "700",
-    color: colors.onPrimary,
-  },
-  availableBadge: {
-    position: "absolute",
-    bottom: spacing.sm,
-    start: spacing.sm,
-    backgroundColor: colors.success,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-  },
-  availableText: {
-    fontSize: fontSize.xs,
     fontWeight: "600",
-    color: colors.white,
+    color: colors.text,
   },
+  // Metadata sits directly under the image — tight, no padding chrome.
   info: {
-    padding: spacing.md,
+    paddingTop: spacing.md,
+    paddingHorizontal: 2,
   },
   titleRow: {
     flexDirection: "row",
@@ -216,32 +217,29 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: "600",
     color: colors.text,
   },
   location: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  stats: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    marginBottom: spacing.xs,
   },
   stat: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
+    marginTop: 2,
   },
-  statDot: {
+  priceLine: {
+    marginTop: spacing.xs,
+  },
+  priceAmount: {
     fontSize: fontSize.sm,
-    color: colors.textTertiary,
-  },
-  price: {
-    fontSize: fontSize.md,
     fontWeight: "700",
     color: colors.text,
+  },
+  priceUnit: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
 });

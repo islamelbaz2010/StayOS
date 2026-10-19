@@ -104,14 +104,24 @@ const config: Config = {
         "4xl": "128px",
       },
       boxShadow: {
-        xs: "0 1px 2px rgba(0,0,0,0.05)",
-        sm: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
-        md: "0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)",
-        lg: "0 10px 15px rgba(0,0,0,0.10), 0 4px 6px rgba(0,0,0,0.05)",
-        xl: "0 20px 25px rgba(0,0,0,0.10), 0 10px 10px rgba(0,0,0,0.04)",
-        card: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
-        "card-hover": "0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)",
-        "focus-ring": "0 0 0 3px rgba(44,95,255,0.3)",
+        // Airbnb-reference elevation: cards and list items carry no shadow —
+        // separation comes from the off-white canvas and hairlines. Shadows
+        // are reserved for floating overlays (search capsule, menus, modals).
+        xs: "0 1px 2px rgba(0,0,0,0.04)",
+        sm: "0 0 0 1px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.10)",
+        md: "0 6px 20px rgba(0,0,0,0.10)",
+        lg: "0 8px 28px rgba(0,0,0,0.16)",
+        xl: "0 8px 28px rgba(0,0,0,0.22)",
+        card: "0 0 0 1px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.04)",
+        "card-hover": "0 0 0 1px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.08)",
+        menu: "0 6px 20px rgba(0,0,0,0.20)",
+        overlay: "0 8px 28px rgba(0,0,0,0.28)",
+        capsule:
+          "0 0 0 1px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.10)",
+        "focus-ring": "0 0 0 3px rgba(132,204,22,0.35)",
+      },
+      letterSpacing: {
+        "title-tight": "-0.02em",
       },
       borderRadius: {
         xs: "4px",

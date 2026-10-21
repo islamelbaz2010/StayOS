@@ -75,7 +75,7 @@ export function AboutSection() {
     user?.bio || user?.location || userLanguages.length > 0 || userInterests.length > 0;
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-card">
+    <div className="card p-6">
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-lg font-bold text-neutral-900">{t("aboutYou")}</h2>
         {!editing && (

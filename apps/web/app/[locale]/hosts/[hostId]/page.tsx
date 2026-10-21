@@ -16,7 +16,7 @@ function HostProfileSkeleton() {
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-        <div className="rounded-xl bg-white p-8 shadow-card">
+        <div className="rounded-xl bg-white p-8 border border-neutral-150">
           <div className="flex items-center gap-4">
             <div className="h-20 w-20 animate-pulse rounded-full bg-neutral-200" />
             <div className="space-y-2">
@@ -54,7 +54,7 @@ export default function HostProfilePage() {
             <HostProfileSkeleton />
           ) : (
             <>
-              <div className="rounded-xl bg-white p-6 shadow-card sm:p-8">
+              <div className="card p-6 sm:p-8">
                 <div className="flex items-center gap-4">
                   <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full bg-brand-100 sm:h-20 sm:w-20">
                     {host.avatarUrl ? (
@@ -152,7 +152,7 @@ export default function HostProfilePage() {
                   {t("listings", { name: host.displayName || t("title") })}
                 </h2>
                 {host.listings.length === 0 ? (
-                  <div className="rounded-xl bg-white p-12 text-center shadow-card">
+                  <div className="rounded-xl bg-white p-12 text-center border border-neutral-150">
                     <p className="text-neutral-500">{t("noListings")}</p>
                   </div>
                 ) : (

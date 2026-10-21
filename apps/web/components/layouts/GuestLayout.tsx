@@ -6,7 +6,7 @@ import { Header } from "./Header";
 
 export function GuestLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-50">
+    <div className="flex min-h-screen flex-col bg-surface-page">
       <Header />
       <main className="flex-1">{children}</main>
       <FeesIncludedPopup />

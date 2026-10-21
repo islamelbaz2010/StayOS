@@ -138,7 +138,7 @@ export default function HostPage() {
                   <button
                     type="button"
                     onClick={reopen}
-                    className="flex w-full items-center justify-between rounded-card border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-700 shadow-card transition hover:bg-neutral-50"
+                    className="flex w-full items-center justify-between rounded-card border border-neutral-150 bg-white px-4 py-3 text-sm font-medium text-neutral-700 border border-neutral-150 transition hover:bg-surface-hover"
                   >
                     <span>{t("attentionCollapsed", { count: items.length })}</span>
                     <span className="text-accent-600">{t("show")}</span>
@@ -153,7 +153,7 @@ export default function HostPage() {
                         type="button"
                         onClick={dismiss}
                         aria-label={t("dismiss")}
-                        className="rounded-md p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600"
+                        className="rounded-md p-1 text-neutral-400 transition hover:bg-surface-soft hover:text-neutral-600"
                       >
                         <svg
                           className="h-5 w-5"
@@ -225,7 +225,7 @@ function TodayItem({
 
   return (
     <div
-      className={`rounded-card border border-neutral-200 p-4 ${variant.border} ${variant.bg} border-s-4`}
+      className={`rounded-card border border-neutral-150 p-4 ${variant.border} ${variant.bg} border-s-4`}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>

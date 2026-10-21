@@ -63,7 +63,7 @@ export default function PaymentsSettingsPage() {
           </h1>
 
           <div className="mt-6 space-y-6">
-            <div className="rounded-xl bg-white p-6 shadow-card">
+            <div className="card p-6">
               <h2 className="text-lg font-bold text-neutral-900">
                 {t("history")}
               </h2>
@@ -79,7 +79,7 @@ export default function PaymentsSettingsPage() {
             </div>
 
             {isHost && (
-              <div className="rounded-xl bg-white p-6 shadow-card">
+              <div className="card p-6">
                 <h2 className="text-lg font-bold text-neutral-900">
                   {t("payouts")}
                 </h2>
@@ -118,7 +118,7 @@ export default function PaymentsSettingsPage() {
               </div>
             )}
 
-            <div className="rounded-xl bg-white p-6 shadow-card">
+            <div className="card p-6">
               <h2 className="text-lg font-bold text-neutral-900">
                 {t("taxes")}
               </h2>

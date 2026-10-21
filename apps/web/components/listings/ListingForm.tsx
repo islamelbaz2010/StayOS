@@ -472,7 +472,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   return (
     <div className="space-y-6">
       {/* Basic Info */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.basic")}
         </h2>
@@ -560,7 +560,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Location */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.location")}
         </h2>
@@ -722,7 +722,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Capacity */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.capacity")}
         </h2>
@@ -784,7 +784,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Sleeping arrangements */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-1 text-lg font-semibold text-brand-900">
           {t("sleepingArrangements")}
         </h2>
@@ -792,7 +792,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           {t("sleepingArrangementsHint")}
         </p>
         {(form.sleeping_arrangements ?? []).map((room, idx) => (
-          <div key={idx} className="mb-3 rounded-lg border border-neutral-200 p-3">
+          <div key={idx} className="mb-3 rounded-lg border border-neutral-150 p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-medium text-neutral-700">
                 {t("bedroomLabel", { number: idx + 1 })}
@@ -894,7 +894,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Amenities */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.amenities")}
         </h2>
@@ -904,7 +904,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             return (
               <label
                 key={amenity}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover"
               >
                 <input
                   type="checkbox"
@@ -922,13 +922,13 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Discovery attributes (DEC-019): pets, self check-in, accessibility */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.discovery")}
         </h2>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-4">
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover">
               <input
                 type="checkbox"
                 checked={form.allows_pets ?? false}
@@ -937,7 +937,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               />
               <span className="text-neutral-700">{t("allowsPets")}</span>
             </label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover">
               <input
                 type="checkbox"
                 checked={form.self_check_in ?? false}
@@ -959,7 +959,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
                   return (
                     <label
                       key={method.value}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover"
                     >
                       <input
                         type="checkbox"
@@ -987,7 +987,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
                 return (
                   <label
                     key={feature.value}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover"
                   >
                     <input
                       type="checkbox"
@@ -1007,7 +1007,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Pricing */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.pricing")}
         </h2>
@@ -1147,7 +1147,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           </div>
         </div>
 
-        <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+        <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover">
           <input
             type="checkbox"
             checked={form.instant_book ?? false}
@@ -1162,7 +1162,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Rules */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.rules")}
         </h2>

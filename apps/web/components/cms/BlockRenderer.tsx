@@ -94,7 +94,7 @@ function FeatureCards({ content }: { content: BlockContent }) {
         {cards.map((card, i) => (
           <div
             key={i}
-            className="rounded-xl border border-neutral-200 bg-white p-5"
+            className="rounded-xl border border-neutral-150 bg-white p-5"
           >
             <h3 className="font-semibold text-brand-900">
               {str(card.title)}
@@ -118,7 +118,7 @@ function Cta({ content }: { content: BlockContent }) {
       {str(content.cta_label) && str(content.cta_href) && (
         <a
           href={str(content.cta_href)}
-          className="mt-6 inline-block rounded-md bg-white px-6 py-3 font-medium text-brand-900 hover:bg-neutral-100"
+          className="mt-6 inline-block rounded-md bg-white px-6 py-3 font-medium text-brand-900 hover:bg-surface-soft"
         >
           {str(content.cta_label)}
         </a>
@@ -140,7 +140,7 @@ function Faq({ content }: { content: BlockContent }) {
         {items.map((item, i) => (
           <details
             key={i}
-            className="rounded-lg border border-neutral-200 bg-white p-4"
+            className="rounded-lg border border-neutral-150 bg-white p-4"
           >
             <summary className="cursor-pointer font-medium text-neutral-800">
               {str(item.question)}
@@ -162,7 +162,7 @@ function Testimonial({ content }: { content: BlockContent }) {
       {items.map((item, i) => (
         <figure
           key={i}
-          className="rounded-xl border border-neutral-200 bg-white p-5"
+          className="rounded-xl border border-neutral-150 bg-white p-5"
         >
           <blockquote className="text-neutral-700">
             “{str(item.quote)}”

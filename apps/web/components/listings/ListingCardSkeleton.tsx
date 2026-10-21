@@ -8,7 +8,7 @@ export function ListingCardSkeleton() {
   const t = useTranslations("common");
   return (
     <div
-      className="overflow-hidden rounded-card bg-white shadow-card"
+      className="card"
       aria-label={t("loadingListing")}
     >
       <div className="relative aspect-[4/3] w-full bg-neutral-100">

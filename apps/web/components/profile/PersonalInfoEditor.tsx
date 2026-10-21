@@ -161,7 +161,7 @@ export function PersonalInfoEditor({ kycVerified }: { kycVerified: boolean }) {
   );
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-card">
+    <div className="card p-6">
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-lg font-bold text-neutral-900">
           {t("personalInfo")}

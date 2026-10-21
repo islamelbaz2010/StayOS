@@ -82,7 +82,7 @@ function groupContiguousDates(
 
 const STATUS_COLORS: Record<string, string> = {
   available:
-    "bg-surface-card text-brand-900 hover:bg-neutral-50",
+    "bg-surface-card text-brand-900 hover:bg-surface-hover",
   blocked:
     "bg-danger-100 text-danger-700 hover:bg-danger-200",
   booked:
@@ -292,7 +292,7 @@ export function HostAvailabilityCalendar({
                     ${STATUS_COLORS[info.status] || STATUS_COLORS.available}
                     ${
                       occupied
-                        ? "cursor-not-allowed border-neutral-200 opacity-70"
+                        ? "cursor-not-allowed border-neutral-150 opacity-70"
                         : "border-neutral-300"
                     }
                     ${selected ? "ring-2 ring-accent-500" : ""}

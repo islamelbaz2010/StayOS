@@ -187,7 +187,7 @@ export default function AdminImportPage() {
                   />
                 </div>
 
-                <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-200 bg-surface-card">
+                <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-150 bg-surface-card">
                   <table className="min-w-full divide-y divide-neutral-200">
                     <thead className="bg-neutral-50">
                       <tr>
@@ -291,7 +291,7 @@ export default function AdminImportPage() {
             {phase === "importing" && (
               <div className="flex min-h-[300px] items-center justify-center">
                 <div className="text-center">
-                  <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-neutral-200 border-t-accent-500" />
+                  <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-neutral-150 border-t-accent-500" />
                   <p className="mt-4 text-sm text-neutral-600">{t("importing")}</p>
                 </div>
               </div>
@@ -323,7 +323,7 @@ export default function AdminImportPage() {
                 </div>
 
                 {summary.results.length > 0 && (
-                  <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-200 bg-surface-card">
+                  <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-150 bg-surface-card">
                     <table className="min-w-full divide-y divide-neutral-200">
                       <thead className="bg-neutral-50">
                         <tr>

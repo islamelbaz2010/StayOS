@@ -405,7 +405,7 @@ export default function SearchPage() {
               className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-card bg-surface-card shadow-lg"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
+              <div className="flex items-center justify-between border-b border-neutral-150 px-6 py-4">
                 <h2 className="text-lg font-bold text-brand-900">
                   {t("search.filters")}
                 </h2>
@@ -549,7 +549,7 @@ export default function SearchPage() {
           </div>
         </div>
 
-        <div className="mt-6 border-t border-neutral-200 pt-4">
+        <div className="mt-6 border-t border-neutral-150 pt-4">
           <h3 className="text-sm font-semibold text-brand-900">
             {t("search.amenities")}
           </h3>
@@ -579,7 +579,7 @@ export default function SearchPage() {
         </div>
 
         {/* Booking options */}
-        <div className="mt-6 border-t border-neutral-200 pt-4">
+        <div className="mt-6 border-t border-neutral-150 pt-4">
           <h3 className="text-sm font-semibold text-brand-900">
             {t("search.bookingOptions")}
           </h3>
@@ -634,7 +634,7 @@ export default function SearchPage() {
         </div>
 
         {ACCESSIBILITY_FEATURES.length > 0 && (
-          <div className="mt-6 border-t border-neutral-200 pt-4">
+          <div className="mt-6 border-t border-neutral-150 pt-4">
             <h3 className="text-sm font-semibold text-brand-900">
               {t("search.accessibility")}
             </h3>
@@ -664,7 +664,7 @@ export default function SearchPage() {
           </div>
         )}
 
-        <div className="mt-6 border-t border-neutral-200 pt-4">
+        <div className="mt-6 border-t border-neutral-150 pt-4">
           <h3 className="text-sm font-semibold text-brand-900">
             {t("search.hostLanguage")}
           </h3>
@@ -702,7 +702,7 @@ export default function SearchPage() {
         </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-neutral-200 px-6 py-4">
+              <div className="flex items-center justify-between border-t border-neutral-150 px-6 py-4">
                 {hasActiveFilters ? (
                   <button
                     type="button"
@@ -777,7 +777,7 @@ export default function SearchPage() {
               ${
                 viewMode === "list"
                   ? "bg-brand-600 text-white"
-                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+                  : "bg-white text-neutral-700 hover:bg-surface-soft"
               }
             `}
             aria-pressed={viewMode === "list"}
@@ -792,7 +792,7 @@ export default function SearchPage() {
               ${
                 viewMode === "split"
                   ? "bg-brand-600 text-white"
-                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+                  : "bg-white text-neutral-700 hover:bg-surface-soft"
               }
             `}
             aria-pressed={viewMode === "split"}
@@ -807,7 +807,7 @@ export default function SearchPage() {
               ${
                 viewMode === "map"
                   ? "bg-brand-600 text-white"
-                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+                  : "bg-white text-neutral-700 hover:bg-surface-soft"
               }
             `}
             aria-pressed={viewMode === "map"}
@@ -825,7 +825,7 @@ export default function SearchPage() {
             ))}
           </div>
         ) : allListings.length === 0 ? (
-          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center border border-neutral-150">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
               <svg className="h-8 w-8 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />

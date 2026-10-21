@@ -170,7 +170,7 @@ export default function HostCalendarPage() {
                 className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition ${
                   selectedUnitId === null
                     ? "bg-brand-900 text-white"
-                    : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                    : "bg-surface-card text-neutral-700 hover:bg-surface-soft"
                 }`}
               >
                 {t("allListings")}
@@ -183,7 +183,7 @@ export default function HostCalendarPage() {
                   className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition ${
                     selectedUnitId === l.id
                       ? "bg-brand-900 text-white"
-                      : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                      : "bg-surface-card text-neutral-700 hover:bg-surface-soft"
                   }`}
                 >
                   {l.title}

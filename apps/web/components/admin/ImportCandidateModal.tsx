@@ -194,7 +194,7 @@ export function ImportCandidateModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+            className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
           >
             {t("cancel")}
           </button>

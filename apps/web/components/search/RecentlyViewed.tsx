@@ -81,7 +81,7 @@ export function RecentlyViewed({ locale }: { locale: string }) {
             href={`/${locale}/listings/${item.id}`}
             className="group flex flex-col gap-2"
           >
-            <div className="relative aspect-square overflow-hidden rounded-xl bg-neutral-100">
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-hairline">
               {item.coverImage ? (
                 <Image
                   src={item.coverImage}

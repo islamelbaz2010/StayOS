@@ -227,7 +227,7 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
             {uploads.map((item, index) => (
               <div
                 key={`${item.file.name}-${index}`}
-                className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white"
+                className="relative overflow-hidden rounded-lg border border-neutral-150 bg-white"
               >
                 <div className="relative aspect-square bg-neutral-100">
                   <img
@@ -326,7 +326,7 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
                   "relative overflow-hidden rounded-lg border-2 bg-white transition-all",
                   photo.is_cover
                     ? "border-brand-500 ring-1 ring-brand-500"
-                    : "border-neutral-200",
+                    : "border-neutral-150",
                   dragIndex === index && "opacity-50",
                   dragOverIndex === index && dragIndex !== null && "border-accent-400 ring-2 ring-accent-400"
                 )}
@@ -408,7 +408,7 @@ export function PhotoUpload({ unitId }: PhotoUploadProps) {
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
               >
                 {t("cancel")}
               </button>

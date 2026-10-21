@@ -63,7 +63,7 @@ export default function HostGuideTopicPage() {
             {points.map((p) => (
               <li
                 key={p}
-                className="flex items-start gap-3 rounded-xl bg-white p-4 shadow-card"
+                className="flex items-start gap-3 card p-4"
               >
                 <span
                   aria-hidden="true"

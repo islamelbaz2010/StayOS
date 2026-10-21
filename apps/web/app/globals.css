@@ -13,61 +13,99 @@
     @apply bg-surface-page text-neutral-900;
   }
 
+  /* Reference type ladder (compact — nothing exceeds 26px; hierarchy
+     comes from weight steps 400/500/600/700, not size):
+     h1 display-lg 26/500, h2 title-lg 22/500 -0.44px, h3 title-md
+     20/600 -0.18px, h4 title-sm 16/500. */
   h1,
   h2,
   h3,
   h4 {
-    @apply font-sans font-semibold tracking-tight text-brand-900;
+    @apply font-sans text-brand-900;
   }
 
   h1 {
-    @apply text-4xl md:text-5xl;
+    @apply text-[26px] font-medium leading-[1.15];
   }
 
   h2 {
-    @apply text-2xl md:text-3xl;
+    @apply text-[22px] font-medium leading-[1.2] tracking-title-tight;
   }
 
   h3 {
-    @apply text-xl md:text-2xl;
+    @apply text-[20px] font-semibold leading-[1.2] tracking-title-md;
   }
 
   h4 {
-    @apply text-lg md:text-xl;
+    @apply text-base font-medium;
   }
 
   p {
     @apply text-neutral-600;
   }
 
+  /* Reference keyboard focus: double ring — 2px canvas-white inner +
+     4px ink outer, built from box-shadow (never outline). */
   a:focus-visible,
   button:focus-visible,
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    @apply outline-none ring-2 ring-offset-2 ring-accent-500;
+    @apply outline-none;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #111827;
   }
 }
 
 @layer components {
+  /* Full-pill primary — 48px, 14/500 label, 14px/24px padding (the
+     measured button-primary-2 recipe). MAKAZOH lime replaces the
+     reference coral as the single saturated fill. */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-accent-400 px-5 py-3 text-sm font-semibold text-brand-900 transition hover:bg-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex h-12 items-center justify-center rounded-full bg-accent-500 px-6 text-sm font-medium text-brand-900 transition hover:bg-accent-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98];
   }
 
+  /* Secondary nav pill — 20px radius, transparent, hover #F7F7F7
+     (the measured button-secondary recipe). */
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-brand-900 transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-[20px] border border-neutral-hairline bg-transparent px-5 py-2.5 text-sm font-medium text-brand-900 transition hover:bg-surface-hover focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98];
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center rounded-md bg-danger-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-danger-700 focus:outline-none focus:ring-2 focus:ring-danger-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-full bg-danger-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-danger-700 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50;
   }
 
+  /* Flat content card — hairline border, 14px secondary-container
+     radius, no shadow (shadows belong to floating chrome only). */
   .card {
-    @apply overflow-hidden rounded-card bg-surface-card shadow-card transition-shadow duration-200 hover:shadow-card-hover;
+    @apply overflow-hidden rounded-card border border-neutral-150 bg-surface-card;
   }
 
+  /* 48px input, 8px radius, hairline border; focus inverts to ink
+     border + soft ink ring. */
   .input {
-    @apply w-full rounded-md border border-neutral-300 bg-surface-input px-4 py-3 text-neutral-900 transition placeholder:text-neutral-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20;
+    @apply h-12 w-full rounded-lg border border-neutral-hairline bg-surface-input px-4 text-neutral-900 transition placeholder:text-neutral-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/10;
+  }
+
+  /* Carousel/rail heading — title-md 20px/600 with -0.18px tracking,
+     the reference's section-heading step. */
+  .section-title {
+    @apply text-[20px] font-semibold leading-[1.2] tracking-title-md text-brand-900;
+  }
+
+  /* 40px circular icon button on surface-soft — the measured
+     icon-button/menu-toggle recipe (hover #EBEBEB). */
+  .icon-btn {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface-soft text-brand-900 transition hover:bg-neutral-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  /* Filter chip — full pill, hairline border, quiet hover; selected
+     inverts to near-black ink. */
+  .chip {
+    @apply inline-flex items-center whitespace-nowrap rounded-full border border-neutral-hairline bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-surface-hover hover:border-neutral-mutedSoft;
+  }
+
+  .chip-active {
+    @apply border-brand-600 bg-brand-600 text-white hover:bg-brand-600;
   }
 
   .badge {

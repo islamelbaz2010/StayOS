@@ -124,7 +124,7 @@ function MenuLink({
     <Link
       href={item.href}
       onClick={onNavigate}
-      className={`flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-neutral-100 ${
+      className={`flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-surface-soft ${
         item.accent ? "text-accent-600" : "text-neutral-700"
       }`}
     >
@@ -170,7 +170,7 @@ function AccountMenuLevels({
         <button
           type="button"
           onClick={() => setLevel(null)}
-          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-semibold text-neutral-700 hover:bg-neutral-100"
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-semibold text-neutral-700 hover:bg-surface-soft"
         >
           <BackChevron />
           {backLabel}
@@ -196,7 +196,7 @@ function AccountMenuLevels({
             key={row.group.id}
             type="button"
             onClick={() => setLevel(row.group.id)}
-            className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-start text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+            className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-start text-sm font-medium text-neutral-700 hover:bg-surface-soft"
           >
             <span className="truncate">{row.group.label}</span>
             <span className="flex items-center gap-1.5">
@@ -416,69 +416,69 @@ export function Header() {
         await logout();
         router.push(`/${locale}`);
       }}
-      className={`${extraClass} text-start text-sm font-medium text-neutral-700 hover:bg-neutral-100`}
+      className={`${extraClass} text-start text-sm font-medium text-neutral-700 hover:bg-surface-soft`}
     >
       {t("signOut")}
     </button>
   );
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-neutral-200 bg-white">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-6">
-          <Link href={`/${locale}`} className="flex items-center gap-2">
-            <span dir="ltr" className="text-xl font-extrabold tracking-tight text-neutral-900">
-              MAKAZ
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="inline-block h-[1.15em] w-[0.85em] -translate-y-[0.05em] text-accent-500"
-                fill="currentColor"
-              >
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
-              </svg>
-              H
-            </span>
-          </Link>
-          <nav className="hidden items-center gap-5 md:flex">
-            {(() => {
-              // Stays → the homepage browsing experience; Explore → the
-              // search/discovery route. Intentionally distinct targets.
-              const isStays = pathname === `/${locale}` || pathname === `/${locale}/`;
-              const isExplore = pathname?.startsWith(`/${locale}/search`);
-              const linkClass = (active: boolean) =>
-                `text-sm font-medium ${
-                  active
-                    ? "text-accent-600"
-                    : "text-neutral-700 hover:text-accent-600"
-                }`;
-              return (
-                <>
-                  <Link
-                    href={`/${locale}`}
-                    aria-current={isStays ? "page" : undefined}
-                    className={linkClass(Boolean(isStays))}
-                  >
-                    {t("stays")}
-                  </Link>
-                  <Link
-                    href={`/${locale}/search`}
-                    aria-current={isExplore ? "page" : undefined}
-                    className={linkClass(Boolean(isExplore))}
-                  >
-                    {t("explore")}
-                  </Link>
-                </>
-              );
-            })()}
-          </nav>
-        </div>
+    <header className="sticky top-0 z-40 w-full border-b border-neutral-150 bg-white">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <Link href={`/${locale}`} className="flex items-center gap-2">
+          <span dir="ltr" className="text-[22px] font-extrabold tracking-title-tight text-brand-900">
+            MAKAZ
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="inline-block h-[1.15em] w-[0.85em] -translate-y-[0.05em] text-accent-500"
+              fill="currentColor"
+            >
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
+            </svg>
+            H
+          </span>
+        </Link>
+        {/* Center tabs — the reference nav pattern: quiet labels, active
+            tab carries a 2px near-black underline. */}
+        <nav className="absolute start-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex rtl:translate-x-1/2">
+          {(() => {
+            // Stays → the homepage browsing experience; Explore → the
+            // search/discovery route. Intentionally distinct targets.
+            const isStays = pathname === `/${locale}` || pathname === `/${locale}/`;
+            const isExplore = pathname?.startsWith(`/${locale}/search`);
+            const linkClass = (active: boolean) =>
+              `relative py-2 text-sm font-medium transition-colors after:absolute after:bottom-0 after:start-0 after:h-0.5 after:w-full after:rounded-full after:transition-colors ${
+                active
+                  ? "text-brand-900 after:bg-brand-900"
+                  : "text-neutral-500 after:bg-transparent hover:text-brand-900"
+              }`;
+            return (
+              <>
+                <Link
+                  href={`/${locale}`}
+                  aria-current={isStays ? "page" : undefined}
+                  className={linkClass(Boolean(isStays))}
+                >
+                  {t("stays")}
+                </Link>
+                <Link
+                  href={`/${locale}/search`}
+                  aria-current={isExplore ? "page" : undefined}
+                  className={linkClass(Boolean(isExplore))}
+                >
+                  {t("explore")}
+                </Link>
+              </>
+            );
+          })()}
+        </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {showBecomeHost && (
             <Link
               href={`/${locale}/become-a-host`}
-              className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-accent-600 hover:bg-neutral-100 sm:inline-block"
+              className="hidden rounded-full px-4 py-2 text-sm font-medium text-brand-900 transition hover:bg-surface-hover sm:inline-block"
             >
               {t("becomeHost")}
             </Link>
@@ -492,7 +492,7 @@ export function Header() {
                 aria-expanded={accountOpen}
                 aria-haspopup="menu"
                 onClick={() => setAccountOpen((prev) => !prev)}
-                className="inline-flex items-center gap-2 rounded-full border border-neutral-200 py-1 pl-2 pr-1.5 text-sm text-neutral-700 shadow-sm transition hover:shadow-md"
+                className="inline-flex items-center gap-2 rounded-full border border-neutral-150 py-1 pl-2 pr-1.5 text-sm text-neutral-700 shadow-sm transition hover:bg-surface-hover"
               >
                 <svg
                   className="h-4 w-4 text-neutral-500"
@@ -540,7 +540,7 @@ export function Header() {
 
               <div
                 role="menu"
-                className={`absolute end-0 top-full z-50 mt-2 w-60 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-xl border border-neutral-200 bg-white py-1.5 shadow-lg ${
+                className={`absolute end-0 top-full z-50 mt-2 w-60 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-xl border border-neutral-150 bg-white py-1.5 shadow-menu ${
                   accountOpen ? "" : "hidden"
                 }`}
               >
@@ -577,7 +577,7 @@ export function Header() {
           ) : (
             <Link
               href={`/${locale}/auth/login`}
-              className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+              className="rounded-full px-4 py-2 text-sm font-medium text-brand-900 transition hover:bg-surface-hover"
             >
               {t("signIn")}
             </Link>
@@ -586,7 +586,7 @@ export function Header() {
           {/* Mobile menu button */}
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-neutral-700 hover:bg-neutral-100 md:hidden"
+            className="icon-btn md:hidden"
             aria-label={t("toggleMenu")}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((prev) => !prev)}
@@ -606,7 +606,7 @@ export function Header() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <nav className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-neutral-200 bg-white px-4 pb-4 pt-2 md:hidden">
+        <nav className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-neutral-150 bg-white px-4 pb-4 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
             <Link
               href={`/${locale}`}
@@ -615,7 +615,7 @@ export function Header() {
                   ? "page"
                   : undefined
               }
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
               onClick={() => setMobileOpen(false)}
             >
               {t("stays")}
@@ -625,7 +625,7 @@ export function Header() {
               aria-current={
                 pathname?.startsWith(`/${locale}/search`) ? "page" : undefined
               }
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
               onClick={() => setMobileOpen(false)}
             >
               {t("explore")}
@@ -640,7 +640,7 @@ export function Header() {
                   {showBecomeHost && (
                     <Link
                       href={`/${locale}/become-a-host`}
-                      className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-neutral-100"
+                      className="rounded-md px-3 py-2.5 text-sm font-medium text-accent-600 hover:bg-surface-soft"
                       onClick={() => setMobileOpen(false)}
                     >
                       {t("becomeHost")}
@@ -649,7 +649,7 @@ export function Header() {
                   {!isAuthenticated && (
                     <Link
                       href={`/${locale}/support`}
-                      className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                      className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
                       onClick={() => setMobileOpen(false)}
                     >
                       {t("support")}

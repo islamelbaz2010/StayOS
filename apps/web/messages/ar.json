@@ -597,7 +597,10 @@
       "entire_place": "سكن كامل",
       "private_room": "غرفة",
       "shared_room": "غرفة مشتركة"
-    }
+    },
+    "suggestionsLoading": "جارٍ البحث…",
+    "suggestionsError": "تعذّر تحميل الوجهات المقترحة. حاول مرة أخرى.",
+    "retry": "إعادة المحاولة"
   },
   "favorites": {
     "title": "المفضلة",

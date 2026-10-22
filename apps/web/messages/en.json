@@ -597,7 +597,10 @@
       "entire_place": "Entire home",
       "private_room": "Room",
       "shared_room": "Shared room"
-    }
+    },
+    "suggestionsLoading": "Searching…",
+    "suggestionsError": "Suggestions couldn't be loaded. Please try again.",
+    "retry": "Retry"
   },
   "favorites": {
     "title": "Favorites",

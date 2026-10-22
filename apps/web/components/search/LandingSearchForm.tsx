@@ -4,9 +4,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
+import { DestinationSuggestions } from "@/components/search/DestinationSuggestions";
 import { GuestSelector } from "@/components/search/GuestSelector";
 import { RangeCalendar } from "@/components/search/RangeCalendar";
-import { useLocationAutocomplete, type LocationSuggestion } from "@/lib/queries/locations";
+import type { LocationSuggestion } from "@/lib/queries/locations";
 import { cn } from "@/lib/utils";
 
 type Segment = "where" | "checkin" | "checkout" | "who" | null;
@@ -39,11 +40,6 @@ export function LandingSearchForm({ locale }: { locale: string }) {
   const [guests, setGuests] = useState(1);
   const [active, setActive] = useState<Segment>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-
-  const { data: suggestions } = useLocationAutocomplete(
-    destination,
-    active === "where"
-  );
 
   // Outside click / Escape closes the open panel — reference dismissal.
   useEffect(() => {
@@ -217,69 +213,12 @@ export function LandingSearchForm({ locale }: { locale: string }) {
           {/* Panels — anchored under the capsule per the reference. */}
           {active === "where" && (
             <div className="absolute start-0 top-full z-50 mt-3 w-full max-w-md rounded-3xl border border-neutral-150 bg-white p-4 shadow-menu">
-              <input
-                type="text"
+              <DestinationSuggestions
                 value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                placeholder={t("placeholder")}
-                autoComplete="off"
-                autoFocus
-                className={cn(inputClass, "px-4 py-2")}
+                onChange={setDestination}
+                onSelect={selectSuggestion}
+                inputClassName={cn(inputClass, "px-4 py-2")}
               />
-              <p className="px-2 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                {t("suggestedDestinations")}
-              </p>
-              <ul className="max-h-72 overflow-auto">
-                {(suggestions ?? []).map((s, i) => (
-                  <li key={`${s.canonical_name_en}:${s.city}:${i}`}>
-                    <button
-                      type="button"
-                      onClick={() => selectSuggestion(s)}
-                      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-start transition-colors hover:bg-surface-soft"
-                    >
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-neutral-100">
-                        <svg
-                          className="h-5 w-5 text-neutral-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={1.8}
-                          aria-hidden
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-                          />
-                        </svg>
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-neutral-900">
-                          {activeLocale === "ar"
-                            ? s.canonical_name_ar
-                            : s.canonical_name_en}
-                        </span>
-                        <span className="block truncate text-xs text-neutral-500">
-                          {s.governorate}
-                          {s.city && s.city !== s.canonical_name_en
-                            ? ` · ${s.city}`
-                            : ""}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-                {suggestions && suggestions.length === 0 && (
-                  <li className="px-2 py-3 text-sm text-neutral-500">
-                    {t("noSuggestions")}
-                  </li>
-                )}
-              </ul>
             </div>
           )}
 

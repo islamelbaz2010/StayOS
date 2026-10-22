@@ -51,7 +51,7 @@ export function PasswordSection({
   }
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-card">
+    <div className="card p-6">
       <h2 className="text-lg font-bold text-neutral-900">
         {hasPassword ? t("changePassword") : t("setPassword")}
       </h2>

@@ -109,7 +109,7 @@ function ReviewCard({
       )}
 
       {hasSubratings && (
-        <div className="mt-3 space-y-1.5 border-t border-neutral-200 pt-3">
+        <div className="mt-3 space-y-1.5 border-t border-neutral-150 pt-3">
           {SUBRATING_KEYS.map((key) => {
             const value = (review.subratings as Subratings)[key];
             if (value === undefined) return null;
@@ -125,7 +125,7 @@ function ReviewCard({
       )}
 
       {review.hostResponse && (
-        <div className="mt-3 border-t border-neutral-200 pt-3">
+        <div className="mt-3 border-t border-neutral-150 pt-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
             {t("hostResponse")}
           </p>
@@ -146,7 +146,7 @@ function ReviewCard({
       )}
 
       {canRespond && showResponseForm && (
-        <form onSubmit={handleSubmitResponse} className="mt-3 space-y-2 border-t border-neutral-200 pt-3">
+        <form onSubmit={handleSubmitResponse} className="mt-3 space-y-2 border-t border-neutral-150 pt-3">
           <textarea
             value={responseText}
             onChange={(e) => setResponseText(e.target.value)}
@@ -226,7 +226,7 @@ export function ReviewsSection({ unitId, locale, hostId }: { unitId: string; loc
 
   if (isError) {
     return (
-      <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+      <section className="card p-4 sm:p-6">
         <p className="text-sm text-danger-600">{tc("error")}</p>
         <button
           type="button"
@@ -241,14 +241,14 @@ export function ReviewsSection({ unitId, locale, hostId }: { unitId: string; loc
 
   if (isPending) {
     return (
-      <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+      <section className="card p-4 sm:p-6">
         <div className="h-5 w-32 animate-pulse rounded bg-neutral-100" />
       </section>
     );
   }
 
   return (
-    <section className="rounded-xl bg-white p-4 shadow-card sm:p-6">
+    <section className="card p-4 sm:p-6">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-semibold text-neutral-900 sm:text-lg">
           {t("reviews", { count: totalReviewCount })}
@@ -341,7 +341,7 @@ export function ReviewsSection({ unitId, locale, hostId }: { unitId: string; loc
               type="button"
               onClick={handleLoadMore}
               disabled={loadingMore}
-              className="mt-4 w-full rounded-lg border border-neutral-200 py-2.5 text-sm font-semibold text-brand-900 transition-colors hover:bg-neutral-50 disabled:opacity-50"
+              className="mt-4 w-full rounded-lg border border-neutral-150 py-2.5 text-sm font-semibold text-brand-900 transition-colors hover:bg-surface-hover disabled:opacity-50"
             >
               {loadingMore ? tc("loading") : t("showMoreReviews")}
             </button>

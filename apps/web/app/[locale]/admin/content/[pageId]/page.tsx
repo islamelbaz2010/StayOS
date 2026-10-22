@@ -78,7 +78,7 @@ function BlockEditor({
   };
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4">
+    <div className="rounded-lg border border-neutral-150 bg-white p-4">
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={block.block_type}
@@ -312,7 +312,7 @@ export default function AdminContentEditorPage() {
                 </p>
               )}
 
-              <div className="rounded-lg border border-neutral-200 bg-white p-4">
+              <div className="rounded-lg border border-neutral-150 bg-white p-4">
                 <h2 className="text-sm font-semibold text-neutral-800">
                   Page metadata
                 </h2>
@@ -403,7 +403,7 @@ export default function AdminContentEditorPage() {
                 )}
               </div>
 
-              <div className="mt-8 rounded-lg border border-neutral-200 bg-white p-4">
+              <div className="mt-8 rounded-lg border border-neutral-150 bg-white p-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-neutral-800">
                     Preview (draft working copy — not public)
@@ -422,7 +422,7 @@ export default function AdminContentEditorPage() {
                     <button
                       type="button"
                       onClick={loadPreview}
-                      className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+                      className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-surface-hover"
                     >
                       Load preview
                     </button>
@@ -441,7 +441,7 @@ export default function AdminContentEditorPage() {
                 )}
               </div>
 
-              <div className="mt-8 rounded-lg border border-neutral-200 bg-white p-4">
+              <div className="mt-8 rounded-lg border border-neutral-150 bg-white p-4">
                 <h2 className="text-sm font-semibold text-neutral-800">
                   Revision history
                 </h2>
@@ -466,7 +466,7 @@ export default function AdminContentEditorPage() {
                             `Restored v${rev.version} to draft`
                           )
                         }
-                        className="rounded-md border border-neutral-300 px-3 py-1 text-xs hover:bg-neutral-50"
+                        className="rounded-md border border-neutral-300 px-3 py-1 text-xs hover:bg-surface-hover"
                       >
                         Restore to draft
                       </button>

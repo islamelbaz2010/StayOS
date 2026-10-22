@@ -319,7 +319,7 @@ export default function HostBookingsPage() {
                   className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition ${
                     status === f
                       ? "bg-brand-900 text-white"
-                      : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                      : "bg-surface-card text-neutral-700 hover:bg-surface-soft"
                   }`}
                 >
                   {t(`filter.${f}`)}

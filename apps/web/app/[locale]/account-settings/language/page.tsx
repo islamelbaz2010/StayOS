@@ -52,7 +52,7 @@ export default function LanguageCurrencyPage() {
           </h1>
 
           <div className="mt-6 space-y-6">
-            <div className="rounded-xl bg-white p-6 shadow-card">
+            <div className="card p-6">
               <h2 className="text-lg font-bold text-neutral-900">
                 {t("language")}
               </h2>
@@ -84,7 +84,7 @@ export default function LanguageCurrencyPage() {
               )}
             </div>
 
-            <div className="rounded-xl bg-white p-6 shadow-card">
+            <div className="card p-6">
               <h2 className="text-lg font-bold text-neutral-900">
                 {t("currency")}
               </h2>

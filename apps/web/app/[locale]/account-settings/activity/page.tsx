@@ -57,7 +57,7 @@ export default function AccountActivityPage() {
           )}
 
           {error && (
-            <div className="mt-6 rounded-xl bg-white p-8 text-center shadow-card">
+            <div className="mt-6 rounded-xl bg-white p-8 text-center border border-neutral-150">
               <p className="text-danger-600">{t("loadError")}</p>
               <button
                 type="button"
@@ -102,7 +102,7 @@ export default function AccountActivityPage() {
               </div>
 
               {items.length === 0 ? (
-                <div className="mt-6 rounded-xl bg-white p-8 text-center shadow-card">
+                <div className="mt-6 rounded-xl bg-white p-8 text-center border border-neutral-150">
                   <p className="text-neutral-600">{t("empty")}</p>
                 </div>
               ) : (
@@ -110,7 +110,7 @@ export default function AccountActivityPage() {
                   {items.map((item) => (
                     <li
                       key={item.id}
-                      className="rounded-xl bg-white p-5 shadow-card"
+                      className="card p-5"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600">
@@ -133,7 +133,7 @@ export default function AccountActivityPage() {
                 </ul>
               )}
 
-              <div className="mt-8 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
+              <div className="mt-8 rounded-xl border border-neutral-150 bg-neutral-50 p-5">
                 <h2 className="text-sm font-semibold text-neutral-900">
                   {t("policiesTitle")}
                 </h2>

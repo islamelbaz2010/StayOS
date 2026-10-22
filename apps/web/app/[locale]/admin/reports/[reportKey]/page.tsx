@@ -357,7 +357,7 @@ export default function AdminReportPage() {
                 <button
                   type="button"
                   onClick={reset}
-                  className="rounded-md px-3 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100"
+                  className="rounded-md px-3 py-2 text-xs font-medium text-neutral-600 hover:bg-surface-soft"
                 >
                   {t("resetFilters")}
                 </button>
@@ -417,7 +417,7 @@ export default function AdminReportPage() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {report.data.rows.map((row, i) => (
-                    <tr key={i} className="hover:bg-neutral-50">
+                    <tr key={i} className="hover:bg-surface-hover">
                       {report.data!.columns.map((c) => (
                         <td
                           key={c}

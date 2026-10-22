@@ -106,6 +106,117 @@ const SELF_CHECK_IN_METHODS = [
   { value: "BUILDING_STAFF", labelKey: "buildingStaff" },
 ];
 
+// Wizard steps group the existing sections per the listing-creation
+// reference (basic → location/capacity → details → pricing/rules →
+// photos/finish). Each entry lists the fields whose validation errors
+// belong to that step, so Next can validate per-step and save/submit
+// can jump to the earliest invalid step.
+const STEP_TITLES = [
+  "sections.basic",
+  "steps.locationCapacity",
+  "steps.details",
+  "steps.pricingRules",
+  "steps.finish",
+] as const;
+
+const STEP_FIELDS: (keyof ListingCreateInput)[][] = [
+  ["title_ar", "description_ar"],
+  ["governorate", "city", "max_guests", "bedrooms", "bathrooms"],
+  [],
+  ["base_price_egp"],
+  [],
+];
+
+/** Restrained 24px line icons for the property-type tile grid. */
+function PropertyTypeIcon({ type }: { type: string }) {
+  const props = {
+    className: "h-6 w-6 text-neutral-700",
+    fill: "none",
+    viewBox: "0 0 24 24",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    "aria-hidden": true as const,
+  };
+  let d: string;
+  switch (type) {
+    case "APARTMENT":
+      d = "M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M8.25 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6h1.5m-1.5 3h1.5m-1.5 3h1.5M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21";
+      break;
+    case "VILLA":
+      d = "M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75";
+      break;
+    case "CHALET":
+      d = "M3.75 21h16.5M12 3.75l8.25 8.25M12 3.75L3.75 12m14.25-4.5v13.5H6v-13.5M9.75 21v-6h4.5v6";
+      break;
+    case "HOTEL_ROOM":
+      d = "M3 21V5.25A2.25 2.25 0 015.25 3h8.5A2.25 2.25 0 0116 5.25V21m0 0V9.75h4.25c.621 0 1.125.504 1.125 1.125V21M3 21h18M6.75 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3.75-6h1.5m-1.5 3h1.5m-1.5 3h1.5";
+      break;
+    case "RESORT_UNIT":
+      d = "M12 3c2.485 0 4.5 2.015 4.5 4.5 0 .828-.224 1.604-.614 2.268M12 3C9.515 3 7.5 5.015 7.5 7.5c0 .828.224 1.604.614 2.268M12 7.5V21m0-13.5c-3.728 0-6.75 3.022-6.75 6.75m6.75-6.75c3.728 0 6.75 3.022 6.75 6.75M5.25 21h13.5";
+      break;
+    case "STUDIO":
+      d = "M2.25 18.75v-10.5A2.25 2.25 0 014.5 6h15a2.25 2.25 0 012.25 2.25V18.75M2.25 18.75h19.5M2.25 18.75V21m19.5-2.25V21M6 10.5h4.5M13.5 10.5H18";
+      break;
+    default:
+      return null;
+  }
+  return (
+    <svg {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d={d} />
+    </svg>
+  );
+}
+
+/** Circular −/count/+ stepper — the reference's capacity controls. */
+function CapacityStepper({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  const btn =
+    "flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-500 transition hover:border-neutral-900 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900";
+  return (
+    <div className="flex items-center justify-between gap-4 py-4">
+      <span className="text-sm font-semibold text-neutral-900">{label}</span>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => onChange(value - 1)}
+          disabled={value <= min}
+          aria-label={`Decrease ${label}`}
+          className={btn}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+          </svg>
+        </button>
+        <span className="w-6 text-center text-sm tabular-nums text-neutral-900">
+          {value}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(value + 1)}
+          disabled={value >= max}
+          aria-label={`Increase ${label}`}
+          className={btn}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const EGYPT_GOVERNORATES = [
   "Cairo",
   "Giza",
@@ -201,6 +312,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [step, setStep] = useState(0);
+  const formTopRef = useRef<HTMLDivElement>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [autosaveStatus, setAutosave] = useState<"idle" | "saving" | "saved">("idle");
   const formRef = useRef(form);
@@ -258,7 +371,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     }
   };
 
-  const validate = (forSubmit = false): boolean => {
+  const collectErrors = (): Record<string, string> => {
     const errs: Record<string, string> = {};
     if (!form.title_ar.trim()) errs.title_ar = t("errors.titleRequired");
     else if (form.title_ar.length > 255) errs.title_ar = t("errors.titleTooLong");
@@ -273,11 +386,53 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     if (form.max_guests < 1) errs.max_guests = t("errors.guestsMin");
     if (form.bedrooms < 0) errs.bedrooms = t("errors.bedroomsMin");
     if (form.bathrooms < 1) errs.bathrooms = t("errors.bathroomsMin");
+    return errs;
+  };
+
+  const validate = (forSubmit = false): boolean => {
+    const errs = collectErrors();
     if (forSubmit && (!form.title_ar.trim() || !form.description_ar.trim())) {
       errs.submit = t("errors.fillRequiredFields");
     }
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    if (Object.keys(errs).length === 0) return true;
+    // Jump to the earliest step containing an invalid field so the
+    // error is actually visible inside the wizard.
+    const idx = STEP_FIELDS.findIndex((fields) =>
+      fields.some((f) => errs[f])
+    );
+    if (idx >= 0) setStep(idx);
+    return false;
+  };
+
+  // Per-step gate for the Next control — only the current step's fields
+  // are checked; everything else validates on save/submit as before.
+  const validateStep = (): boolean => {
+    const fields = STEP_FIELDS[step] ?? [];
+    const errs = collectErrors();
+    const stepErrs = Object.fromEntries(
+      Object.entries(errs).filter(([k]) =>
+        (fields as string[]).includes(k)
+      )
+    );
+    setErrors(stepErrs);
+    return Object.keys(stepErrs).length === 0;
+  };
+
+  const scrollToTop = () =>
+    formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const goToStep = (next: number) => {
+    setStep(next);
+    scrollToTop();
+  };
+
+  const goNext = () => {
+    if (!validateStep()) {
+      scrollToTop();
+      return;
+    }
+    goToStep(step + 1);
   };
 
   const buildUpdatePayload = (): ListingUpdateInput => ({
@@ -470,9 +625,43 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   const errorClass = "mt-1 text-xs text-danger-600";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={formTopRef}>
+      {/* Reference wizard chrome — step label/title left, help +
+          save-and-exit pills right. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            {t("steps.stepOf", {
+              current: step + 1,
+              total: STEP_TITLES.length,
+            })}
+          </p>
+          <h2 className="mt-1 text-2xl font-bold text-brand-900">
+            {t(STEP_TITLES[step])}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/${locale}/help`}
+            className="chip text-sm"
+          >
+            {t("steps.questions")}
+          </Link>
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={isLoading}
+            className="chip text-sm disabled:opacity-50"
+          >
+            {t("steps.saveAndExit")}
+          </button>
+        </div>
+      </div>
+
+      {step === 0 && (
+      <>
       {/* Basic Info */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.basic")}
         </h2>
@@ -527,40 +716,69 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             />
           </div>
 
-          <div>
+          {/* Property type — icon-tile grid from the listing-creation
+              reference ("Which of these best describes your place?"). */}
+          <div className="sm:col-span-2">
             <label className={labelClass}>{t("propertyType")}</label>
-            <select
-              value={form.property_type}
-              onChange={(e) => update("property_type", e.target.value)}
-              className={inputClass}
-            >
-              {PROPERTY_TYPES.map((pt) => (
-                <option key={pt.value} value={pt.value}>
-                  {t(`propertyTypes.${pt.labelKey}`)}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {PROPERTY_TYPES.map((pt) => {
+                const selected = form.property_type === pt.value;
+                return (
+                  <button
+                    key={pt.value}
+                    type="button"
+                    onClick={() => update("property_type", pt.value)}
+                    aria-pressed={selected}
+                    className={`flex flex-col items-start gap-2 rounded-xl border p-3.5 text-start transition ${
+                      selected
+                        ? "border-2 border-neutral-900"
+                        : "border-neutral-hairline hover:border-neutral-mutedSoft"
+                    }`}
+                  >
+                    <PropertyTypeIcon type={pt.value} />
+                    <span className="text-sm font-medium text-neutral-900">
+                      {t(`propertyTypes.${pt.labelKey}`)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div>
+          <div className="sm:col-span-2">
             <label className={labelClass}>{t("category")}</label>
-            <select
-              value={form.category}
-              onChange={(e) => update("category", e.target.value)}
-              className={inputClass}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {t(`categories.${c.labelKey}`)}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1 grid grid-cols-3 overflow-hidden rounded-xl border border-neutral-150">
+              {CATEGORIES.map((c, i) => {
+                const selected = form.category === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => update("category", c.value)}
+                    aria-pressed={selected}
+                    className={`px-2 py-3 text-center text-sm font-medium transition ${
+                      i > 0 ? "border-s border-neutral-150" : ""
+                    } ${
+                      selected
+                        ? "bg-neutral-900 text-white"
+                        : "text-neutral-700 hover:bg-surface-soft"
+                    }`}
+                  >
+                    {t(`categories.${c.labelKey}`)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
+      </>
+      )}
 
+      {step === 1 && (
+      <>
       {/* Location */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.location")}
         </h2>
@@ -722,69 +940,51 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Capacity */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.capacity")}
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div>
-            <label className={labelClass}>{t("maxGuests")}</label>
-            <input
-              type="number"
-              min={1}
-              max={50}
-              value={form.max_guests}
-              onChange={(e) =>
-                update("max_guests", parseInt(e.target.value) || 1)
-              }
-              className={inputClass}
-            />
-            {errors.max_guests && (
-              <p className={errorClass}>{errors.max_guests}</p>
-            )}
-          </div>
-
-          <div>
-            <label className={labelClass}>{t("bedrooms")}</label>
-            <input
-              type="number"
-              min={0}
-              value={form.bedrooms}
-              onChange={(e) =>
-                update("bedrooms", parseInt(e.target.value) || 0)
-              }
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>{t("beds")}</label>
-            <input
-              type="number"
-              min={0}
-              value={form.beds ?? 1}
-              onChange={(e) => update("beds", parseInt(e.target.value) || 0)}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>{t("bathrooms")}</label>
-            <input
-              type="number"
-              min={1}
-              value={form.bathrooms}
-              onChange={(e) =>
-                update("bathrooms", parseInt(e.target.value) || 1)
-              }
-              className={inputClass}
-            />
-          </div>
+        <div className="max-w-md divide-y divide-neutral-150">
+          <CapacityStepper
+            label={t("maxGuests")}
+            value={form.max_guests}
+            min={1}
+            max={50}
+            onChange={(v) => update("max_guests", v)}
+          />
+          <CapacityStepper
+            label={t("bedrooms")}
+            value={form.bedrooms}
+            min={0}
+            max={50}
+            onChange={(v) => update("bedrooms", v)}
+          />
+          <CapacityStepper
+            label={t("beds")}
+            value={form.beds ?? 1}
+            min={0}
+            max={50}
+            onChange={(v) => update("beds", v)}
+          />
+          <CapacityStepper
+            label={t("bathrooms")}
+            value={form.bathrooms}
+            min={1}
+            max={50}
+            onChange={(v) => update("bathrooms", v)}
+          />
         </div>
+        {errors.max_guests && (
+          <p className={errorClass}>{errors.max_guests}</p>
+        )}
       </section>
+      </>
+      )}
 
+      {step === 2 && (
+      <>
       {/* Sleeping arrangements */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-1 text-lg font-semibold text-brand-900">
           {t("sleepingArrangements")}
         </h2>
@@ -792,7 +992,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           {t("sleepingArrangementsHint")}
         </p>
         {(form.sleeping_arrangements ?? []).map((room, idx) => (
-          <div key={idx} className="mb-3 rounded-lg border border-neutral-200 p-3">
+          <div key={idx} className="mb-3 rounded-lg border border-neutral-150 p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-medium text-neutral-700">
                 {t("bedroomLabel", { number: idx + 1 })}
@@ -894,7 +1094,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Amenities */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.amenities")}
         </h2>
@@ -904,7 +1104,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             return (
               <label
                 key={amenity}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover"
               >
                 <input
                   type="checkbox"
@@ -922,13 +1122,13 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Discovery attributes (DEC-019): pets, self check-in, accessibility */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.discovery")}
         </h2>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-4">
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover">
               <input
                 type="checkbox"
                 checked={form.allows_pets ?? false}
@@ -937,7 +1137,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               />
               <span className="text-neutral-700">{t("allowsPets")}</span>
             </label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover">
               <input
                 type="checkbox"
                 checked={form.self_check_in ?? false}
@@ -959,7 +1159,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
                   return (
                     <label
                       key={method.value}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover"
                     >
                       <input
                         type="checkbox"
@@ -987,7 +1187,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
                 return (
                   <label
                     key={feature.value}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover"
                   >
                     <input
                       type="checkbox"
@@ -1005,9 +1205,13 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           </div>
         </div>
       </section>
+      </>
+      )}
 
+      {step === 3 && (
+      <>
       {/* Pricing */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.pricing")}
         </h2>
@@ -1147,7 +1351,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           </div>
         </div>
 
-        <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+        <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-150 px-3 py-2 text-sm hover:bg-surface-hover">
           <input
             type="checkbox"
             checked={form.instant_book ?? false}
@@ -1162,7 +1366,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Rules */}
-      <section className="rounded-card bg-surface-card p-5 sm:p-6 shadow-card">
+      <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.rules")}
         </h2>
@@ -1245,6 +1449,98 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           </div>
         </div>
       </section>
+      </>
+      )}
+
+      {step === 4 && (
+      <>
+      {/* Review — real entered values before the final actions. */}
+      <section className="card p-5 sm:p-6">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
+          {t("steps.review")}
+        </h2>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("propertyType")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t(
+                `propertyTypes.${
+                  PROPERTY_TYPES.find((p) => p.value === form.property_type)
+                    ?.labelKey ?? "apartment"
+                }`
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("category")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t(
+                `categories.${
+                  CATEGORIES.find((c) => c.value === form.category)?.labelKey ??
+                  "entirePlace"
+                }`
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("sections.location")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {[form.city, form.governorate].filter(Boolean).join(", ") || "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("sections.capacity")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t("steps.capacitySummary", {
+                guests: form.max_guests,
+                bedrooms: form.bedrooms,
+                beds: form.beds,
+                bathrooms: form.bathrooms,
+              })}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("basePrice")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {form.base_price_egp} {form.currency}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("cancellationPolicy")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t(
+                `cancellationPolicies.${
+                  CANCELLATION_POLICIES.find(
+                    (p) => p.value === form.cancellation_policy
+                  )?.labelKey ?? "flexible"
+                }`
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("sections.amenities")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t("steps.amenitiesCount", {
+                count: (form.amenities ?? []).length,
+              })}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       {/* Photos — part of the creation workflow; needs a saved draft id */}
       <section className="card p-5 sm:p-6">
@@ -1269,42 +1565,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Actions */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-sm">
-          {autosaveStatus === "saving" && (
-            <span className="flex items-center gap-1.5 text-neutral-500">
-              <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-500" />
-              {t("autosaving")}
-            </span>
-          )}
-          {autosaveStatus === "saved" && (
-            <span className="flex items-center gap-1.5 text-success-600">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-              {t("autosaved")}
-            </span>
-          )}
-          {isDirty && autosaveStatus === "idle" && (
-            <span className="text-warning-600">{t("unsavedChanges")}</span>
-          )}
-          {errors.submit && (
-            <span className="text-danger-600">
-              {errors.submit}
-              {errors.submit.toLowerCase().includes("payout") && (
-                <>
-                  {" "}
-                  <Link
-                    href={`/${locale}/host/profile`}
-                    className="font-semibold underline hover:no-underline"
-                  >
-                    {t("setPayoutCta")}
-                  </Link>
-                </>
-              )}
-            </span>
-          )}
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex gap-3">
           <button
             type="button"
@@ -1322,6 +1583,79 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               className="btn-primary text-sm disabled:opacity-50"
             >
               {isLoading ? tc("loading") : t("submitForReview")}
+            </button>
+          )}
+        </div>
+      </div>
+      </>
+      )}
+
+      {/* Reference wizard bar — segmented progress + Back/Next on a
+          sticky hairline rail; status lives here so it's visible on
+          every step. */}
+      <div className="sticky bottom-0 z-20 -mx-1 border-t border-neutral-150 bg-white px-1 pb-1 pt-3">
+        <div className="mb-3 flex gap-1.5" aria-hidden>
+          {STEP_TITLES.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1 flex-1 rounded-full transition-colors ${
+                i <= step ? "bg-neutral-900" : "bg-neutral-150"
+              }`}
+            />
+          ))}
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3 text-sm">
+            {step > 0 ? (
+              <button
+                type="button"
+                onClick={() => goToStep(step - 1)}
+                className="shrink-0 font-semibold text-neutral-700 underline underline-offset-4 transition hover:text-brand-900"
+              >
+                {tc("back")}
+              </button>
+            ) : null}
+            {autosaveStatus === "saving" && (
+              <span className="flex items-center gap-1.5 text-neutral-500">
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-500" />
+                {t("autosaving")}
+              </span>
+            )}
+            {autosaveStatus === "saved" && (
+              <span className="flex items-center gap-1.5 text-success-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                {t("autosaved")}
+              </span>
+            )}
+            {isDirty && autosaveStatus === "idle" && (
+              <span className="text-warning-600">{t("unsavedChanges")}</span>
+            )}
+            {errors.submit && (
+              <span className="truncate text-danger-600">
+                {errors.submit}
+                {errors.submit.toLowerCase().includes("payout") && (
+                  <>
+                    {" "}
+                    <Link
+                      href={`/${locale}/host/profile`}
+                      className="font-semibold underline hover:no-underline"
+                    >
+                      {t("setPayoutCta")}
+                    </Link>
+                  </>
+                )}
+              </span>
+            )}
+          </div>
+          {step < STEP_TITLES.length - 1 && (
+            <button
+              type="button"
+              onClick={goNext}
+              className="shrink-0 rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 active:scale-[0.98]"
+            >
+              {tc("next")}
             </button>
           )}
         </div>

@@ -86,7 +86,7 @@ export function HelpArticleClient({ slug }: { slug: string }) {
               <Link
                 key={rel.slug}
                 href={`/${locale}/help/article/${rel.slug}`}
-                className="block rounded-xl bg-white p-4 shadow-card transition hover:shadow-md"
+                className="block card p-4 transition hover:bg-surface-hover"
               >
                 <p className="font-medium text-brand-900">
                   {rel.title[locale]}

@@ -162,7 +162,7 @@ export default function LoginPage() {
           type="button"
           onClick={() => handleSocialSignIn("google")}
           disabled={socialLoading !== null || !isFirebaseConfigured}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 font-semibold text-neutral-800 transition hover:bg-neutral-50 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 font-semibold text-neutral-800 transition hover:bg-surface-hover disabled:opacity-60"
         >
           {socialLoading === "google" ? t("signingIn") : t("continueWithGoogle")}
         </button>
@@ -170,16 +170,16 @@ export default function LoginPage() {
           type="button"
           onClick={() => handleSocialSignIn("apple")}
           disabled={socialLoading !== null || !isFirebaseConfigured}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 font-semibold text-neutral-800 transition hover:bg-neutral-50 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 font-semibold text-neutral-800 transition hover:bg-surface-hover disabled:opacity-60"
         >
           {socialLoading === "apple" ? t("signingIn") : t("continueWithApple")}
         </button>
       </div>
 
       <div className="relative my-6 flex items-center">
-        <div className="grow border-t border-neutral-200" />
+        <div className="grow border-t border-neutral-150" />
         <span className="mx-4 text-sm text-neutral-500">{t("or")}</span>
-        <div className="grow border-t border-neutral-200" />
+        <div className="grow border-t border-neutral-150" />
       </div>
 
       <div className="mt-2 flex rounded-lg bg-neutral-100 p-1" role="tablist">
@@ -256,7 +256,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-brand-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="w-full rounded-full bg-accent-500 px-4 py-3 text-center font-semibold text-brand-900 transition hover:bg-accent-600 disabled:opacity-60"
           >
             {submitting ? t("signingIn") : t("signIn")}
           </button>
@@ -293,7 +293,7 @@ export default function LoginPage() {
             id="sign-in-button"
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-brand-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="w-full rounded-full bg-accent-500 px-4 py-3 text-center font-semibold text-brand-900 transition hover:bg-accent-600 disabled:opacity-60"
           >
             {submitting ? t("signingIn") : t("sendOtp")}
           </button>
@@ -326,7 +326,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-brand-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="w-full rounded-full bg-accent-500 px-4 py-3 text-center font-semibold text-brand-900 transition hover:bg-accent-600 disabled:opacity-60"
           >
             {submitting ? t("signingIn") : t("verifyOtp")}
           </button>
@@ -339,7 +339,7 @@ export default function LoginPage() {
               setConfirmation(null);
               setError(null);
             }}
-            className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-center font-medium text-neutral-700 transition hover:bg-neutral-50"
+            className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-center font-medium text-neutral-700 transition hover:bg-surface-hover"
           >
             {t("resend")}
           </button>
@@ -361,7 +361,7 @@ export default function LoginPage() {
       </p>
 
       {!isFirebaseConfigured && (
-        <div className="mt-6 border-t border-neutral-200 pt-6">
+        <div className="mt-6 border-t border-neutral-150 pt-6">
           <p className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-neutral-500">
             {t("devLogin")}
           </p>
@@ -372,7 +372,7 @@ export default function LoginPage() {
                 type="button"
                 disabled={devLoading !== null}
                 onClick={() => handleDevLogin(u.id)}
-                className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-center text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-60"
+                className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-center text-sm font-medium text-neutral-700 transition hover:bg-surface-hover disabled:opacity-60"
               >
                 {devLoading === u.id ? tc("loading") : t("loginAs", { label: u.label })}
               </button>

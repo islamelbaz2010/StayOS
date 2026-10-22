@@ -373,7 +373,19 @@
     "monthlyDiscountHint": "يُطبَّق على الإقامات من ٢٨ ليلة فأكثر",
     "photosTitle": "الصور",
     "photosHint": "أضف صور العقار — الإعلانات التي تحتوي على صور تحصل على حجوزات أكثر.",
-    "photosSaveAndAdd": "احفظ المسودة وأضف الصور"
+    "photosSaveAndAdd": "احفظ المسودة وأضف الصور",
+    "steps": {
+      "stepOf": "الخطوة {current} من {total}",
+      "locationCapacity": "الموقع والسعة",
+      "details": "المرافق والتفاصيل",
+      "pricingRules": "التسعير والقواعد",
+      "finish": "الصور والإنهاء",
+      "questions": "أسئلة؟",
+      "saveAndExit": "حفظ والخروج",
+      "review": "مراجعة إعلانك",
+      "capacitySummary": "{guests} ضيوف · {bedrooms} غرف نوم · {beds} أسرة · {bathrooms} حمامات",
+      "amenitiesCount": "{count, plural, =0 {لا شيء محدد} one {مرفق واحد} two {مرفقان} few {# مرافق} many {# مرفقًا} other {# مرفق}}"
+    }
   },
   "adminListings": {
     "pendingTitle": "مراجعة العقارات المعلقة",
@@ -433,7 +445,7 @@
     "guests": "الضيوف",
     "adults": "بالغين",
     "children": "أطفال",
-    "infants": "رضع",
+    "infants": "رضّع",
     "noResults": "لا توجد نتائج",
     "noResultsHint": "حاول تعديل عوامل التصفية أو التواريخ.",
     "resultsCount": "{count} عقار",
@@ -562,7 +574,33 @@
       "max": "الحد الأقصى",
       "histogramLabel": "توزيع الأسعار من {min} إلى {max}",
       "summary": "{min} – {max} لليلة · {count} مكان"
-    }
+    },
+    "adultsHint": "من 13 سنة فأكثر",
+    "childrenHint": "من 2 إلى 12 سنة",
+    "infantsHint": "أقل من سنتين",
+    "pets": "حيوانات أليفة",
+    "petsHint": "هل تصطحب حيوانًا أليفًا؟",
+    "suggestedDestinations": "وجهات مقترحة",
+    "showPlaces": "عرض {count} مكان",
+    "bedsLabel": "أسرّة",
+    "bathsLabel": "حمامات",
+    "addDates": "أضف التواريخ",
+    "addGuests": "أضف الضيوف",
+    "guestsCount": "{count, plural, zero {# ضيوف} one {ضيف واحد} two {ضيفان} few {# ضيوف} many {# ضيفًا} other {# ضيوف}}",
+    "noSuggestions": "لا توجد وجهات مطابقة",
+    "typeOfPlace": "نوع المكان",
+    "priceRangeTitle": "نطاق السعر",
+    "roomsAndBeds": "الغرف والأسرّة",
+    "recommended": "مقترح لك",
+    "categories": {
+      "anyType": "أي نوع",
+      "entire_place": "سكن كامل",
+      "private_room": "غرفة",
+      "shared_room": "غرفة مشتركة"
+    },
+    "suggestionsLoading": "جارٍ البحث…",
+    "suggestionsError": "تعذّر تحميل الوجهات المقترحة. حاول مرة أخرى.",
+    "retry": "إعادة المحاولة"
   },
   "favorites": {
     "title": "المفضلة",

@@ -103,7 +103,7 @@ export default function HostGuidePage() {
           </header>
 
           <section
-            className="mt-8 rounded-xl bg-white p-5 shadow-card sm:p-6"
+            className="mt-8 card p-5 sm:p-6"
             aria-labelledby="host-readiness"
           >
             <div className="flex items-center justify-between gap-4">
@@ -176,7 +176,7 @@ export default function HostGuidePage() {
                   <Link
                     key={topic.id}
                     href={`/${locale}/host/guide/${topic.id}`}
-                    className="group rounded-xl bg-white p-5 shadow-card transition-shadow hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                    className="group card p-5 transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                   >
                     <h3 className="font-semibold text-brand-900 group-hover:text-accent-700">
                       {t(`topics.${topic.id}.title`)}
@@ -207,19 +207,19 @@ export default function HostGuidePage() {
             <div className="mt-4 flex flex-wrap gap-3 text-sm font-semibold">
               <Link
                 href={`/${locale}/help`}
-                className="rounded-lg bg-white px-4 py-2 text-accent-700 shadow-card hover:text-accent-800"
+                className="rounded-lg bg-white px-4 py-2 text-accent-700 border border-neutral-150 hover:text-accent-800"
               >
                 {t("actions.help")}
               </Link>
               <Link
                 href={`/${locale}/support`}
-                className="rounded-lg bg-white px-4 py-2 text-accent-700 shadow-card hover:text-accent-800"
+                className="rounded-lg bg-white px-4 py-2 text-accent-700 border border-neutral-150 hover:text-accent-800"
               >
                 {t("actions.support")}
               </Link>
               <Link
                 href={`/${locale}/host-standards`}
-                className="rounded-lg bg-white px-4 py-2 text-accent-700 shadow-card hover:text-accent-800"
+                className="rounded-lg bg-white px-4 py-2 text-accent-700 border border-neutral-150 hover:text-accent-800"
               >
                 {t("actions.standards")}
               </Link>

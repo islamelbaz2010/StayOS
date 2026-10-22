@@ -260,7 +260,7 @@ export default function AdminStaffPage() {
                     <button
                       type="button"
                       onClick={() => setShowCreate(false)}
-                      className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                      className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
                     >
                       {tc("cancel")}
                     </button>
@@ -314,7 +314,7 @@ export default function AdminStaffPage() {
                   <button
                     type="button"
                     onClick={() => setEditTarget(null)}
-                    className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                    className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
                   >
                     {tc("cancel")}
                   </button>

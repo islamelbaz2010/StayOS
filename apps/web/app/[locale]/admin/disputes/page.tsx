@@ -35,7 +35,7 @@ function DisputeContextPanel({ disputeId }: { disputeId: string }) {
 
   const b = data.booking;
   return (
-    <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+    <div className="mt-4 rounded-lg border border-neutral-150 bg-neutral-50 p-3">
       <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">
         {t("context")}
       </p>
@@ -172,7 +172,7 @@ export default function AdminDisputesPage() {
                 "rounded-full px-4 py-2 text-sm font-medium transition",
                 !statusFilter
                   ? "bg-brand-900 text-white"
-                  : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                  : "bg-surface-card text-neutral-700 hover:bg-surface-soft"
               )}
             >
               {t("all")}
@@ -186,7 +186,7 @@ export default function AdminDisputesPage() {
                   "rounded-full px-4 py-2 text-sm font-medium transition",
                   statusFilter === s
                     ? "bg-brand-900 text-white"
-                    : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                    : "bg-surface-card text-neutral-700 hover:bg-surface-soft"
                 )}
               >
                 {t(`status.${s}`)}
@@ -215,7 +215,7 @@ export default function AdminDisputesPage() {
                     setNotes(d.admin_notes ?? "");
                     setReply("");
                   }}
-                  className="card w-full p-4 text-start transition hover:shadow-md"
+                  className="card w-full p-4 text-start transition hover:bg-surface-hover"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -333,7 +333,7 @@ export default function AdminDisputesPage() {
                   <button
                     type="button"
                     onClick={() => setSelected(null)}
-                    className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                    className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
                   >
                     {tc("cancel")}
                   </button>

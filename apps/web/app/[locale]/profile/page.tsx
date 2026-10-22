@@ -42,7 +42,7 @@ export default function ProfilePage() {
           <div className="mx-auto max-w-2xl space-y-6">
             <h1 className="text-2xl font-bold text-neutral-900">{t("title")}</h1>
 
-            <div className="rounded-xl bg-white p-6 shadow-card">
+            <div className="card p-6">
               <div className="flex items-center gap-4">
                 <Avatar
                   url={user?.avatar_url}

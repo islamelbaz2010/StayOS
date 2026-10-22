@@ -9,33 +9,18 @@ import { GuestLayout } from "@/components/layouts";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ListingCardSkeleton } from "@/components/listings/ListingCardSkeleton";
 import { FeesIncludedLine } from "@/components/search/FeesIncludedNotice";
-import { PriceRangeFilter } from "@/components/search/PriceRangeFilter";
+import {
+  FiltersDialog,
+  type FilterDraft,
+} from "@/components/search/FiltersDialog";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ErrorState } from "@/components/ui/ErrorState";
-import {
-  usePriceDistribution,
-  useSearchListings,
-} from "@/lib/queries/listings";
+import { useSearchListings } from "@/lib/queries/listings";
 
 const SearchMap = dynamic(
   () => import("@/components/search/SearchMap").then((mod) => mod.SearchMap),
   { ssr: false }
 );
-
-const PROPERTY_TYPES = [
-  "APARTMENT",
-  "VILLA",
-  "CHALET",
-  "STUDIO",
-  "HOTEL_ROOM",
-  "RESORT_UNIT",
-];
-
-const LISTING_CATEGORIES = [
-  "ENTIRE_PLACE",
-  "PRIVATE_ROOM",
-  "SHARED_ROOM",
-];
 
 const CULTURAL_TAGS = [
   { value: "FAMILY_ONLY", key: "familyOnly" },
@@ -43,39 +28,16 @@ const CULTURAL_TAGS = [
   { value: "COUPLES_WELCOME", key: "couplesWelcome" },
 ];
 
-const AMENITIES = [
+// Horizontal quick-filter strip — the reference's amenity chips that
+// toggle instantly, ahead of the staged Filters dialog.
+const QUICK_AMENITIES = [
+  "washer",
   "wifi",
-  "air_conditioning",
-  "heating",
   "kitchen",
   "parking",
-  "pool",
-  "gym",
-  "washer",
-  "tv",
-  "elevator",
+  "air_conditioning",
+  "self_check_in",
 ];
-
-// Must match app.listings.constants.AccessibilityFeature (DEC-019).
-const ACCESSIBILITY_FEATURES = [
-  { value: "STEP_FREE_ENTRANCE", key: "stepFreeEntrance" },
-  { value: "WIDE_ENTRANCE", key: "wideEntrance" },
-  { value: "ACCESSIBLE_PARKING", key: "accessibleParking" },
-  { value: "STEP_FREE_PATH", key: "stepFreePath" },
-  { value: "STEP_FREE_BEDROOM", key: "stepFreeBedroom" },
-  { value: "WIDE_BEDROOM", key: "wideBedroom" },
-  { value: "ACCESSIBLE_BATHROOM", key: "accessibleBathroom" },
-  { value: "WIDE_BATHROOM", key: "wideBathroom" },
-  { value: "SHOWER_GRAB_BAR", key: "showerGrabBar" },
-  { value: "TOILET_GRAB_BAR", key: "toiletGrabBar" },
-  { value: "STEP_FREE_SHOWER", key: "stepFreeShower" },
-  { value: "SHOWER_CHAIR", key: "showerChair" },
-  { value: "CEILING_HOIST", key: "ceilingHoist" },
-];
-
-// Backend accepts the full SpokenLanguage enum (DEC-019); the filter UI
-// is intentionally limited to the product's supported languages.
-const HOST_LANGUAGES = ["ar", "en"];
 
 export default function SearchPage() {
   const t = useTranslations();
@@ -163,24 +125,6 @@ export default function SearchPage() {
     router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
   };
 
-  const toggleAccessibility = (feature: string) => {
-    const next = new Set(selectedAccessibility);
-    if (next.has(feature)) {
-      next.delete(feature);
-    } else {
-      next.add(feature);
-    }
-
-    const nextParams = new URLSearchParams(searchParams.toString());
-    if (next.size > 0) {
-      nextParams.set("accessibility", Array.from(next).join(","));
-    } else {
-      nextParams.delete("accessibility");
-    }
-
-    router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
-  };
-
   const updateParam = (key: string, value: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     if (value) {
@@ -193,38 +137,44 @@ export default function SearchPage() {
     });
   };
 
-  const applyPriceRange = (min: number | null, max: number | null) => {
+  // Staged dialog apply: writes the whole draft into the URL at once,
+  // matching the reference's "Show N places" confirmation step.
+  const applyDraft = (draft: FilterDraft) => {
     const nextParams = new URLSearchParams(searchParams.toString());
-    if (min != null) {
-      nextParams.set("min_price", String(min));
-    } else {
-      nextParams.delete("min_price");
+    const scalarKeys = [
+      "property_type",
+      "category",
+      "min_price",
+      "max_price",
+      "bedrooms",
+      "beds",
+      "bathrooms",
+      "free_cancellation",
+      "pets",
+      "self_check_in",
+      "instant_book",
+      "host_language",
+    ] as const;
+    for (const key of scalarKeys) {
+      const value = draft[key];
+      if (value) nextParams.set(key, value);
+      else nextParams.delete(key);
     }
-    if (max != null) {
-      nextParams.set("max_price", String(max));
+    if (draft.amenities.length) {
+      nextParams.set("amenities", draft.amenities.join(","));
     } else {
-      nextParams.delete("max_price");
+      nextParams.delete("amenities");
     }
+    if (draft.accessibility.length) {
+      nextParams.set("accessibility", draft.accessibility.join(","));
+    } else {
+      nextParams.delete("accessibility");
+    }
+    nextParams.delete("offset");
     router.push(`/${locale}/search?${nextParams.toString()}`, {
       scroll: false,
     });
   };
-
-  const hasActiveFilters = Boolean(
-    filters.property_type ||
-      filters.category ||
-      filters.min_price ||
-      filters.max_price ||
-      filters.bedrooms ||
-      filters.beds ||
-      filters.bathrooms ||
-      filters.amenities ||
-      filters.pets ||
-      filters.self_check_in ||
-      filters.accessibility ||
-      filters.host_language ||
-      filters.instant_book
-  );
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -260,8 +210,6 @@ export default function SearchPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
-  const priceDistribution = usePriceDistribution(filters);
-
   const allListings = useMemo(
     () => data?.pages.flatMap((page) => page.listings) ?? [],
     [data]
@@ -294,84 +242,20 @@ export default function SearchPage() {
             checkin={filters.checkin}
             checkout={filters.checkout}
             guests={filters.guests}
+            pets={filters.pets}
             onSearch={(queryString) =>
               router.push(`/${locale}/search?${queryString}`, { scroll: false })
             }
           />
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {CULTURAL_TAGS.map((tag) => {
-            const selected = selectedTags.includes(tag.value);
-            return (
-              <button
-                key={tag.value}
-                type="button"
-                onClick={() => toggleTag(tag.value)}
-                className={`
-                  rounded-full border px-4 py-2 text-sm font-medium transition
-                  ${
-                    selected
-                      ? "border-brand-600 bg-brand-600 text-white"
-                      : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-                  }
-                `}
-                aria-pressed={selected}
-              >
-                {t(`search.tags.${tag.key}`)}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => {
-              const nextParams = new URLSearchParams(searchParams.toString());
-              if (filters.free_cancellation) {
-                nextParams.delete("free_cancellation");
-              } else {
-                nextParams.set("free_cancellation", "true");
-              }
-              router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
-            }}
-            className={`
-              rounded-full border px-4 py-2 text-sm font-medium transition
-              ${
-                filters.free_cancellation
-                  ? "border-brand-600 bg-brand-600 text-white"
-                  : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-              }
-            `}
-            aria-pressed={Boolean(filters.free_cancellation)}
-          >
-            {t("search.freeCancellation")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const nextParams = new URLSearchParams(searchParams.toString());
-              if (filters.instant_book) {
-                nextParams.delete("instant_book");
-              } else {
-                nextParams.set("instant_book", "true");
-              }
-              router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
-            }}
-            className={`
-              rounded-full border px-4 py-2 text-sm font-medium transition
-              ${
-                filters.instant_book
-                  ? "border-brand-600 bg-brand-600 text-white"
-                  : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-              }
-            `}
-            aria-pressed={Boolean(filters.instant_book)}
-          >
-            {t("search.instantBook")}
-          </button>
+        {/* Reference filter strip — Filters trigger first, then
+            instant-toggle quick chips on a hairline rail. */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowFilters(true)}
-            className="flex items-center gap-1.5 rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:border-brand-400 hover:text-brand-600"
+            className="chip gap-1.5"
           >
             <svg
               className="h-4 w-4"
@@ -388,363 +272,109 @@ export default function SearchPage() {
             </svg>
             {t("search.filters")}
             {activeFilterCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">
                 {activeFilterCount}
               </span>
             )}
           </button>
-        </div>
-
-        {/* Filters modal — grouped by intent (Airbnb pattern) */}
-        {showFilters && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            onClick={() => setShowFilters(false)}
-          >
-            <div
-              className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-card bg-surface-card shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
-                <h2 className="text-lg font-bold text-brand-900">
-                  {t("search.filters")}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(false)}
-                  className="text-neutral-400 hover:text-neutral-600"
-                  aria-label={t("common.close")}
-                >
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-6 py-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-36 flex-1 sm:flex-none">
-            <label
-              htmlFor="filter-property-type"
-              className="block text-xs font-medium text-neutral-500"
-            >
-              {t("search.propertyType")}
-            </label>
-            <select
-              id="filter-property-type"
-              value={filters.property_type ?? ""}
-              onChange={(e) => updateParam("property_type", e.target.value)}
-              className="input mt-1 w-full text-sm"
-            >
-              <option value="">{t("search.anyType")}</option>
-              {PROPERTY_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {t(`search.types.${type}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="min-w-36 flex-1 sm:flex-none">
-            <label
-              htmlFor="filter-category"
-              className="block text-xs font-medium text-neutral-500"
-            >
-              {t("search.category")}
-            </label>
-            <select
-              id="filter-category"
-              value={filters.category ?? ""}
-              onChange={(e) => updateParam("category", e.target.value)}
-              className="input mt-1 w-full text-sm"
-            >
-              <option value="">{t("search.anyCategory")}</option>
-              {LISTING_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {t(`listing.categoryLabel.${cat.toLowerCase()}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full">
-            <PriceRangeFilter
-              distribution={priceDistribution.data}
-              isLoading={priceDistribution.isPending}
-              minPrice={filters.min_price}
-              maxPrice={filters.max_price}
-              onApply={applyPriceRange}
-            />
-          </div>
-          <div className="w-24">
-            <label
-              htmlFor="filter-bedrooms"
-              className="block text-xs font-medium text-neutral-500"
-            >
-              {t("search.bedrooms")}
-            </label>
-            <select
-              id="filter-bedrooms"
-              value={filters.bedrooms ?? ""}
-              onChange={(e) => updateParam("bedrooms", e.target.value)}
-              className="input mt-1 w-full text-sm"
-            >
-              <option value="">{t("search.any")}</option>
-              {Array.from({ length: 6 }, (_, i) => i).map((n) => (
-                <option key={n} value={String(n)}>
-                  {n}+
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="w-24">
-            <label
-              htmlFor="filter-beds"
-              className="block text-xs font-medium text-neutral-500"
-            >
-              {t("search.beds")}
-            </label>
-            <select
-              id="filter-beds"
-              value={filters.beds ?? ""}
-              onChange={(e) => updateParam("beds", e.target.value)}
-              className="input mt-1 w-full text-sm"
-            >
-              <option value="">{t("search.any")}</option>
-              {Array.from({ length: 8 }, (_, i) => i).map((n) => (
-                <option key={n} value={String(n)}>
-                  {n}+
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="w-24">
-            <label
-              htmlFor="filter-bathrooms"
-              className="block text-xs font-medium text-neutral-500"
-            >
-              {t("search.bathrooms")}
-            </label>
-            <select
-              id="filter-bathrooms"
-              value={filters.bathrooms ?? ""}
-              onChange={(e) => updateParam("bathrooms", e.target.value)}
-              className="input mt-1 w-full text-sm"
-            >
-              <option value="">{t("search.any")}</option>
-              {Array.from({ length: 5 }, (_, i) => i).map((n) => (
-                <option key={n} value={String(n)}>
-                  {n}+
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-6 border-t border-neutral-200 pt-4">
-          <h3 className="text-sm font-semibold text-brand-900">
-            {t("search.amenities")}
-          </h3>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-          {AMENITIES.map((amenity) => {
-            const selected = selectedAmenities.includes(amenity);
+          {QUICK_AMENITIES.map((amenity) => {
+            const selected =
+              amenity === "self_check_in"
+                ? Boolean(filters.self_check_in)
+                : selectedAmenities.includes(amenity);
             return (
               <button
                 key={amenity}
                 type="button"
-                onClick={() => toggleAmenity(amenity)}
-                className={`
-                  rounded-full border px-3 py-1 text-xs font-medium transition
-                  ${
-                    selected
-                      ? "border-brand-600 bg-brand-600 text-white"
-                      : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-                  }
-                `}
+                onClick={() =>
+                  amenity === "self_check_in"
+                    ? updateParam(
+                        "self_check_in",
+                        filters.self_check_in ? "" : "true"
+                      )
+                    : toggleAmenity(amenity)
+                }
+                className={`chip ${selected ? "chip-active" : ""}`}
                 aria-pressed={selected}
               >
-                {t(`listingForm.amenities.${amenity}`)}
+                {amenity === "self_check_in"
+                  ? t("search.selfCheckIn")
+                  : t(`listingForm.amenities.${amenity}`)}
               </button>
             );
           })}
-          </div>
-        </div>
-
-        {/* Booking options */}
-        <div className="mt-6 border-t border-neutral-200 pt-4">
-          <h3 className="text-sm font-semibold text-brand-900">
-            {t("search.bookingOptions")}
-          </h3>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              const nextParams = new URLSearchParams(searchParams.toString());
-              if (filters.pets) {
-                nextParams.delete("pets");
-              } else {
-                nextParams.set("pets", "true");
-              }
-              router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
-            }}
-            className={`
-              rounded-full border px-3 py-1 text-xs font-medium transition
-              ${
-                filters.pets
-                  ? "border-brand-600 bg-brand-600 text-white"
-                  : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-              }
-            `}
-            aria-pressed={Boolean(filters.pets)}
-          >
-            {t("search.petsAllowed")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const nextParams = new URLSearchParams(searchParams.toString());
-              if (filters.self_check_in) {
-                nextParams.delete("self_check_in");
-              } else {
-                nextParams.set("self_check_in", "true");
-              }
-              router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
-            }}
-            className={`
-              rounded-full border px-3 py-1 text-xs font-medium transition
-              ${
-                filters.self_check_in
-                  ? "border-brand-600 bg-brand-600 text-white"
-                  : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-              }
-            `}
-            aria-pressed={Boolean(filters.self_check_in)}
-          >
-            {t("search.selfCheckIn")}
-          </button>
-          </div>
-        </div>
-
-        {ACCESSIBILITY_FEATURES.length > 0 && (
-          <div className="mt-6 border-t border-neutral-200 pt-4">
-            <h3 className="text-sm font-semibold text-brand-900">
-              {t("search.accessibility")}
-            </h3>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-            {ACCESSIBILITY_FEATURES.map((feature) => {
-              const selected = selectedAccessibility.includes(feature.value);
-              return (
-                <button
-                  key={feature.value}
-                  type="button"
-                  onClick={() => toggleAccessibility(feature.value)}
-                  className={`
-                    rounded-full border px-3 py-1 text-xs font-medium transition
-                    ${
-                      selected
-                        ? "border-brand-600 bg-brand-600 text-white"
-                        : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-                    }
-                  `}
-                  aria-pressed={selected}
-                >
-                  {t(`search.accessibilityFeatures.${feature.key}`)}
-                </button>
-              );
-            })}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-6 border-t border-neutral-200 pt-4">
-          <h3 className="text-sm font-semibold text-brand-900">
-            {t("search.hostLanguage")}
-          </h3>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-          {HOST_LANGUAGES.map((lang) => {
-            const selected = filters.host_language === lang;
+          {CULTURAL_TAGS.map((tag) => {
+            const selected = selectedTags.includes(tag.value);
             return (
               <button
-                key={lang}
+                key={tag.value}
                 type="button"
-                onClick={() => {
-                  const nextParams = new URLSearchParams(searchParams.toString());
-                  if (selected) {
-                    nextParams.delete("host_language");
-                  } else {
-                    nextParams.set("host_language", lang);
-                  }
-                  router.push(`/${locale}/search?${nextParams.toString()}`, { scroll: false });
-                }}
-                className={`
-                  rounded-full border px-3 py-1 text-xs font-medium transition
-                  ${
-                    selected
-                      ? "border-brand-600 bg-brand-600 text-white"
-                      : "border-neutral-300 bg-white text-neutral-700 hover:border-brand-400 hover:text-brand-600"
-                  }
-                `}
+                onClick={() => toggleTag(tag.value)}
+                className={`chip ${selected ? "chip-active" : ""}`}
                 aria-pressed={selected}
               >
-                {t(`search.languages.${lang}`)}
+                {t(`search.tags.${tag.key}`)}
               </button>
             );
           })}
-          </div>
+          <button
+            type="button"
+            onClick={() =>
+              updateParam(
+                "free_cancellation",
+                filters.free_cancellation ? "" : "true"
+              )
+            }
+            className={`chip ${filters.free_cancellation ? "chip-active" : ""}`}
+            aria-pressed={Boolean(filters.free_cancellation)}
+          >
+            {t("search.freeCancellation")}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              updateParam("instant_book", filters.instant_book ? "" : "true")
+            }
+            className={`chip ${filters.instant_book ? "chip-active" : ""}`}
+            aria-pressed={Boolean(filters.instant_book)}
+          >
+            {t("search.instantBook")}
+          </button>
         </div>
-              </div>
 
-              <div className="flex items-center justify-between border-t border-neutral-200 px-6 py-4">
-                {hasActiveFilters ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextParams = new URLSearchParams(
-                        searchParams.toString()
-                      );
-                      nextParams.delete("property_type");
-                      nextParams.delete("category");
-                      nextParams.delete("min_price");
-                      nextParams.delete("max_price");
-                      nextParams.delete("bedrooms");
-                      nextParams.delete("beds");
-                      nextParams.delete("bathrooms");
-                      nextParams.delete("amenities");
-                      nextParams.delete("pets");
-                      nextParams.delete("self_check_in");
-                      nextParams.delete("accessibility");
-                      nextParams.delete("host_language");
-                      nextParams.delete("instant_book");
-                      router.push(`/${locale}/search?${nextParams.toString()}`, {
-                        scroll: false,
-                      });
-                    }}
-                    className="text-sm font-semibold text-accent-600 hover:text-accent-700"
-                  >
-                    {t("search.clearFilters")}
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(false)}
-                  className="btn-primary text-sm"
-                >
-                  {t("search.showResults", { count: total })}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <FiltersDialog
+          open={showFilters}
+          onClose={() => setShowFilters(false)}
+          baseFilters={{
+            q: filters.q,
+            checkin: filters.checkin,
+            checkout: filters.checkout,
+            guests: filters.guests,
+            cultural_tags: filters.cultural_tags,
+            sw_lat: filters.sw_lat,
+            sw_lng: filters.sw_lng,
+            ne_lat: filters.ne_lat,
+            ne_lng: filters.ne_lng,
+            sort: filters.sort,
+          }}
+          initial={{
+            property_type: filters.property_type,
+            category: filters.category,
+            min_price: filters.min_price,
+            max_price: filters.max_price,
+            bedrooms: filters.bedrooms,
+            beds: filters.beds,
+            bathrooms: filters.bathrooms,
+            amenities: selectedAmenities,
+            accessibility: selectedAccessibility,
+            free_cancellation: filters.free_cancellation,
+            pets: filters.pets,
+            self_check_in: filters.self_check_in,
+            instant_book: filters.instant_book,
+            host_language: filters.host_language,
+          }}
+          onApply={applyDraft}
+        />
 
         <div className="mt-3 flex items-center justify-end">
           <div className="flex items-center gap-2">
@@ -777,7 +407,7 @@ export default function SearchPage() {
               ${
                 viewMode === "list"
                   ? "bg-brand-600 text-white"
-                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+                  : "bg-white text-neutral-700 hover:bg-surface-soft"
               }
             `}
             aria-pressed={viewMode === "list"}
@@ -792,7 +422,7 @@ export default function SearchPage() {
               ${
                 viewMode === "split"
                   ? "bg-brand-600 text-white"
-                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+                  : "bg-white text-neutral-700 hover:bg-surface-soft"
               }
             `}
             aria-pressed={viewMode === "split"}
@@ -807,7 +437,7 @@ export default function SearchPage() {
               ${
                 viewMode === "map"
                   ? "bg-brand-600 text-white"
-                  : "bg-white text-neutral-700 hover:bg-neutral-100"
+                  : "bg-white text-neutral-700 hover:bg-surface-soft"
               }
             `}
             aria-pressed={viewMode === "map"}
@@ -825,7 +455,7 @@ export default function SearchPage() {
             ))}
           </div>
         ) : allListings.length === 0 ? (
-          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center border border-neutral-150">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
               <svg className="h-8 w-8 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />

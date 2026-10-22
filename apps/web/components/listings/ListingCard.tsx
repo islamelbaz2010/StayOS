@@ -63,10 +63,17 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
   const detailHref = `/${locale}/listings/${listing.id}${detailQuery}`;
   const isVerified = listing.hostKycStatus === "verified";
 
+  const metaParts = [
+    `${listing.maxGuests} ${t("guests")}`,
+    listing.bedrooms != null ? `${listing.bedrooms} ${t("bedrooms")}` : null,
+    listing.beds != null && listing.beds > 0 ? `${listing.beds} ${t("beds")}` : null,
+    listing.bathrooms != null ? `${listing.bathrooms} ${t("bathrooms")}` : null,
+  ].filter(Boolean);
+
   return (
     <article
       className={cn(
-        "group overflow-hidden rounded-card bg-white shadow-card transition-shadow duration-200 hover:shadow-card-hover focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2",
+        "group focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2",
         className
       )}
     >
@@ -75,19 +82,21 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
         className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
         aria-label={`${listing.title}, ${listing.city}`}
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+        {/* Photo-first card: square image, 12px radius, no border, no
+            shadow — separation comes from whitespace (reference pattern). */}
+        <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-hairline">
           <Image
             src={imageUrl}
             alt={listing.title}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
             loading="lazy"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             onError={() => setImgFailed(true)}
           />
-          <FavoriteButton unitId={listing.id} className="absolute end-2 top-2" />
+          <FavoriteButton unitId={listing.id} className="absolute end-2.5 top-2.5" />
           {listing.instantBook && (
-            <span className="absolute end-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-medium text-white shadow-sm">
+            <span className="absolute bottom-2.5 end-2.5 inline-flex items-center gap-1 rounded-full bg-brand-900/85 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -95,16 +104,16 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
             </span>
           )}
           {listing.availableForDates && (
-            <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-success-100 px-2 py-0.5 text-xs font-medium text-success-700 shadow-sm">
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <span className="absolute start-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-brand-900 shadow-sm">
+              <svg className="h-3.5 w-3.5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {t("availableForDates")}
             </span>
           )}
           {isVerified && (
-            <span className={`absolute start-2 ${listing.availableForDates ? "top-8" : "top-2"} inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-success-700 shadow-sm backdrop-blur-sm`}>
-              <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <span className={`absolute start-2.5 ${listing.availableForDates ? "top-11" : "top-2.5"} inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-brand-900 shadow-sm`}>
+              <svg className="h-3.5 w-3.5 text-accent-600" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               {t("verified")}
@@ -112,16 +121,11 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
           )}
         </div>
 
-        <div className="p-4">
-          {listing.category && (
-            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
-              {t(`categoryLabel.${listing.category.toLowerCase()}`, {
-                default: listing.category.replace(/_/g, " ").toLowerCase(),
-              })}
-            </p>
-          )}
+        {/* Tight metadata under the image — 14/500 title, 14/400 muted
+            meta lines, price in semibold. No padding chrome. */}
+        <div className="pt-3">
           <div className="flex items-start justify-between gap-2">
-            <h2 className="text-lg font-semibold text-neutral-900 line-clamp-1">
+            <h2 className="text-sm font-medium leading-snug text-neutral-900 line-clamp-1">
               {listing.title}
             </h2>
             <RatingBadge
@@ -131,69 +135,42 @@ export function ListingCard({ listing, className, checkin, checkout }: ListingCa
             />
           </div>
 
-          <p className="mt-1 text-sm text-neutral-600 line-clamp-1">
-            {listing.city}, {listing.governorate}, {listing.country || "Egypt"}
+          <p className="mt-0.5 line-clamp-1 text-sm text-neutral-500">
+            {listing.city}, {listing.governorate}
           </p>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-600">
-            <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5">
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-              </svg>
-              {listing.maxGuests} {t("guests")}
-            </span>
-            {listing.bedrooms != null && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69 6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 012.25 18v-2.25c0-.596.237-1.176.659-1.6m0 0L9 9.75m0 0l3 3m-3-3l-1.5-1.5M21 18.75V12A2.25 2.25 0 0018.75 9.75h-1.5a1.5 1.5 0 00-1.06.44l-2.12 2.12m4.74 4.74l-2.12-2.12a1.5 1.5 0 00-1.06-.44h-1.5A2.25 2.25 0 0011.25 18v2.25c0 .596-.237 1.176-.659 1.6m0 0L9 21" />
-                </svg>
-                {listing.bedrooms} {t("bedrooms")}
-              </span>
-            )}
-            {listing.beds != null && listing.beds > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69 6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 012.25 18v-2.25c0-.596.237-1.176.659-1.6m0 0L9 9.75m0 0l3 3m-3-3l-1.5-1.5M21 18.75V12A2.25 2.25 0 0018.75 9.75h-1.5a1.5 1.5 0 00-1.06.44l-2.12 2.12m4.74 4.74l-2.12-2.12a1.5 1.5 0 00-1.06-.44h-1.5A2.25 2.25 0 0011.25 18v2.25c0 .596-.237 1.176-.659 1.6m0 0L9 21" />
-                </svg>
-                {listing.beds} {t("beds")}
-              </span>
-            )}
-            {listing.bathrooms != null && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 3.75v6m0-6h.008v6H9V3.75zM9 3.75h3.75M9 3.75H5.25M9 9.75v3m0 0H6.75m2.25 0h3.75M21 12a8.4 8.4 0 01-.836 3.677 8.4 8.4 0 01-2.547 2.93A8.4 8.4 0 0115 19.748a8.4 8.4 0 01-3.677.836 8.4 8.4 0 01-3.677-.836 8.4 8.4 0 01-2.93-2.547A8.4 8.4 0 012.25 12c0-1.617.487-3.196 1.4-4.55A8.4 8.4 0 016.4 4.4 8.4 8.4 0 019 3.75" />
-                </svg>
-                {listing.bathrooms} {t("bathrooms")}
-              </span>
-            )}
-          </div>
+          <p className="mt-0.5 line-clamp-1 text-sm text-neutral-500">
+            {metaParts.join(" · ")}
+          </p>
 
-          <p className="mt-3 text-lg font-bold text-brand-900">
+          <p className="mt-1.5 text-sm text-neutral-900">
             {listing.discounted && listing.effectiveNightlyEgp != null ? (
               <>
-                <span className="me-1.5 text-sm font-normal text-neutral-400 line-through">
+                <span className="me-1.5 text-neutral-400 line-through">
                   {formatMoney(listing.price, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}
                 </span>
-                {formatMoney(listing.effectiveNightlyEgp, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}{" "}
-                <span className="me-1.5 inline-flex items-center rounded-full bg-accent-100 px-2 py-0.5 align-middle text-xs font-semibold text-accent-700">
+                <span className="font-semibold">
+                  {formatMoney(listing.effectiveNightlyEgp, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}
+                </span>
+                <span className="ms-1.5 inline-flex items-center rounded-full bg-accent-100 px-2 py-0.5 align-middle text-xs font-semibold text-accent-700">
                   {t("offer")}
                 </span>
               </>
             ) : (
-              formatMoney(listing.price, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")
+              <span className="font-semibold">
+                {formatMoney(listing.price, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}
+              </span>
             )}{" "}
-            <span className="text-sm font-normal text-neutral-600">
+            <span className="text-neutral-500">
               {t("perNight")}
             </span>
           </p>
           {listing.nights != null && listing.totalEgp != null && (
-            <p className="mt-1 text-sm text-neutral-700">
-              <span className="font-semibold">
+            <p className="mt-0.5 text-sm text-neutral-500">
+              <span className="font-medium text-neutral-700">
                 {formatMoney(listing.totalEgp, listing.currency || "EGP", locale === "ar" ? "ar-EG" : "en-EG")}
               </span>{" "}
-              <span className="text-neutral-500">
-                {t("total")} · {listing.nights} {t("nights")} · {t("includesAllFees")}
-              </span>
+              {t("total")} · {listing.nights} {t("nights")} · {t("includesAllFees")}
             </p>
           )}
         </div>

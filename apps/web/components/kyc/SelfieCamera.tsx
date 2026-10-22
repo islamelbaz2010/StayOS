@@ -129,7 +129,7 @@ export function SelfieCamera({ onCapture, onClose }: SelfieCameraProps) {
           <button
             type="button"
             onClick={close}
-            className="rounded-lg px-2 py-1 text-sm font-semibold text-neutral-500 hover:bg-neutral-100"
+            className="rounded-lg px-2 py-1 text-sm font-semibold text-neutral-500 hover:bg-surface-soft"
           >
             {tc("close")}
           </button>

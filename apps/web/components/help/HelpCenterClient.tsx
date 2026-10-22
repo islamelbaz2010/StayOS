@@ -95,7 +95,7 @@ export function HelpCenterClient() {
             </button>
           </div>
           {results.length === 0 ? (
-            <div className="rounded-xl bg-white p-10 text-center shadow-card">
+            <div className="rounded-xl bg-white p-10 text-center border border-neutral-150">
               <p className="font-medium text-neutral-700">{t("noResults")}</p>
               <p className="mt-1 text-sm text-neutral-500">
                 {t("noResultsHint")}
@@ -113,7 +113,7 @@ export function HelpCenterClient() {
                 <Link
                   key={article.slug}
                   href={`/${locale}/help/article/${article.slug}`}
-                  className="block rounded-xl bg-white p-5 shadow-card transition hover:shadow-md"
+                  className="block card p-5 transition hover:bg-surface-hover"
                 >
                   <p className="font-semibold text-brand-900">
                     {article.title[locale]}
@@ -139,7 +139,7 @@ export function HelpCenterClient() {
                   <Link
                     key={article.slug}
                     href={`/${locale}/help/article/${article.slug}`}
-                    className="rounded-xl bg-white p-5 shadow-card transition hover:shadow-md"
+                    className="card p-5 transition hover:bg-surface-hover"
                   >
                     <p className="font-semibold text-brand-900">
                       {article.title[locale]}
@@ -169,7 +169,7 @@ export function HelpCenterClient() {
                 return (
                   <div
                     key={category.key}
-                    className="rounded-xl bg-white p-5 shadow-card"
+                    className="card p-5"
                   >
                     <h3 className="font-semibold text-brand-900">
                       {category.title[locale]}
@@ -197,7 +197,7 @@ export function HelpCenterClient() {
 
           {/* ----------------- FAQ + Contact Support ---------------- */}
           <section className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl bg-white p-6 shadow-card">
+            <div className="card p-6">
               <h2 className="font-semibold text-brand-900">{t("faqTitle")}</h2>
               <Link
                 href={`/${locale}/faq`}

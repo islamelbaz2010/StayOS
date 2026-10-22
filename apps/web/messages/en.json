@@ -373,7 +373,19 @@
     "monthlyDiscountHint": "Applied to stays of 28+ nights",
     "photosTitle": "Photos",
     "photosHint": "Add photos of the property — listings with photos get more bookings.",
-    "photosSaveAndAdd": "Save draft & add photos"
+    "photosSaveAndAdd": "Save draft & add photos",
+    "steps": {
+      "stepOf": "Step {current} of {total}",
+      "locationCapacity": "Location & capacity",
+      "details": "Amenities & details",
+      "pricingRules": "Pricing & rules",
+      "finish": "Photos & finish",
+      "questions": "Questions?",
+      "saveAndExit": "Save & exit",
+      "review": "Review your listing",
+      "capacitySummary": "{guests} guests · {bedrooms} bedrooms · {beds} beds · {bathrooms} baths",
+      "amenitiesCount": "{count, plural, =0 {None selected} one {# amenity} other {# amenities}}"
+    }
   },
   "adminListings": {
     "pendingTitle": "Pending Listings Review",
@@ -562,7 +574,33 @@
       "max": "Maximum",
       "histogramLabel": "Price distribution from {min} to {max}",
       "summary": "{min} – {max} per night · {count} places"
-    }
+    },
+    "adultsHint": "Ages 13 or above",
+    "childrenHint": "Ages 2 – 12",
+    "infantsHint": "Under 2",
+    "pets": "Pets",
+    "petsHint": "Bringing a service animal?",
+    "suggestedDestinations": "Suggested destinations",
+    "showPlaces": "Show {count} places",
+    "bedsLabel": "Beds",
+    "bathsLabel": "Baths",
+    "addDates": "Add dates",
+    "addGuests": "Add guests",
+    "guestsCount": "{count, plural, one {# guest} other {# guests}}",
+    "noSuggestions": "No matching destinations",
+    "typeOfPlace": "Type of place",
+    "priceRangeTitle": "Price range",
+    "roomsAndBeds": "Rooms and beds",
+    "recommended": "Recommended for you",
+    "categories": {
+      "anyType": "Any type",
+      "entire_place": "Entire home",
+      "private_room": "Room",
+      "shared_room": "Shared room"
+    },
+    "suggestionsLoading": "Searching…",
+    "suggestionsError": "Suggestions couldn't be loaded. Please try again.",
+    "retry": "Retry"
   },
   "favorites": {
     "title": "Favorites",

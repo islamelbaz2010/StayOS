@@ -91,9 +91,11 @@ const tAr = arMessages.nav as Record<string, string>;
 describe("Header role visibility", () => {
   beforeEach(() => as(null));
 
-  it("anonymous sees stays/search/sign-in, no account or admin links", () => {
+  it("anonymous sees explore/sign-in but no Stays link, account or admin links", () => {
     renderWith(<Header />);
-    expect(screen.getAllByText(t.stays).length).toBeGreaterThan(0);
+    // The global "Stays" header item was removed (founder direction) —
+    // the homepage stays reachable via the MAKAZOH logo.
+    expect(screen.queryByText(t.stays)).toBeNull();
     expect(screen.getAllByText(t.explore).length).toBeGreaterThan(0);
     expect(screen.getAllByText(t.signIn).length).toBeGreaterThan(0);
     expect(screen.queryByText(t.adminConsole)).toBeNull();
@@ -101,16 +103,14 @@ describe("Header role visibility", () => {
     expect(screen.queryByText(t.messages)).toBeNull();
   });
 
-  it("stays and explore resolve to intentionally distinct destinations", () => {
+  it("explore is the only global nav item; homepage reachable via logo", () => {
     renderWith(<Header />);
-    const stays = screen.getAllByText(t.stays)[0].closest("a");
+    expect(screen.queryByText(t.stays)).toBeNull();
     const explore = screen.getAllByText(t.explore)[0].closest("a");
-    // Stays → homepage browsing; Explore → the search/discovery route.
-    expect(stays).toHaveAttribute("href", "/en");
     expect(explore).toHaveAttribute("href", "/en/search");
-    expect(stays?.getAttribute("href")).not.toBe(
-      explore?.getAttribute("href")
-    );
+    // The brand logo still routes to the localized homepage.
+    const logo = screen.getByText(/MAKAZ/).closest("a");
+    expect(logo).toHaveAttribute("href", "/en");
   });
 
   it("guest sees account categories with trips/favorites inside, no admin link", () => {

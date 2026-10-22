@@ -562,6 +562,29 @@
       "max": "Maximum",
       "histogramLabel": "Price distribution from {min} to {max}",
       "summary": "{min} – {max} per night · {count} places"
+    },
+    "adultsHint": "Ages 13 or above",
+    "childrenHint": "Ages 2 – 12",
+    "infantsHint": "Under 2",
+    "pets": "Pets",
+    "petsHint": "Bringing a service animal?",
+    "suggestedDestinations": "Suggested destinations",
+    "showPlaces": "Show {count} places",
+    "bedsLabel": "Beds",
+    "bathsLabel": "Baths",
+    "addDates": "Add dates",
+    "addGuests": "Add guests",
+    "guestsCount": "{count, plural, one {# guest} other {# guests}}",
+    "noSuggestions": "No matching destinations",
+    "typeOfPlace": "Type of place",
+    "priceRangeTitle": "Price range",
+    "roomsAndBeds": "Rooms and beds",
+    "recommended": "Recommended for you",
+    "categories": {
+      "anyType": "Any type",
+      "entire_place": "Entire home",
+      "private_room": "Room",
+      "shared_room": "Shared room"
     }
   },
   "favorites": {

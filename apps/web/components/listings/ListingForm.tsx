@@ -106,6 +106,96 @@ const SELF_CHECK_IN_METHODS = [
   { value: "BUILDING_STAFF", labelKey: "buildingStaff" },
 ];
 
+/** Restrained 24px line icons for the property-type tile grid. */
+function PropertyTypeIcon({ type }: { type: string }) {
+  const props = {
+    className: "h-6 w-6 text-neutral-700",
+    fill: "none",
+    viewBox: "0 0 24 24",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    "aria-hidden": true as const,
+  };
+  let d: string;
+  switch (type) {
+    case "APARTMENT":
+      d = "M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M8.25 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6h1.5m-1.5 3h1.5m-1.5 3h1.5M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21";
+      break;
+    case "VILLA":
+      d = "M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75";
+      break;
+    case "CHALET":
+      d = "M3.75 21h16.5M12 3.75l8.25 8.25M12 3.75L3.75 12m14.25-4.5v13.5H6v-13.5M9.75 21v-6h4.5v6";
+      break;
+    case "HOTEL_ROOM":
+      d = "M3 21V5.25A2.25 2.25 0 015.25 3h8.5A2.25 2.25 0 0116 5.25V21m0 0V9.75h4.25c.621 0 1.125.504 1.125 1.125V21M3 21h18M6.75 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3.75-6h1.5m-1.5 3h1.5m-1.5 3h1.5";
+      break;
+    case "RESORT_UNIT":
+      d = "M12 3c2.485 0 4.5 2.015 4.5 4.5 0 .828-.224 1.604-.614 2.268M12 3C9.515 3 7.5 5.015 7.5 7.5c0 .828.224 1.604.614 2.268M12 7.5V21m0-13.5c-3.728 0-6.75 3.022-6.75 6.75m6.75-6.75c3.728 0 6.75 3.022 6.75 6.75M5.25 21h13.5";
+      break;
+    case "STUDIO":
+      d = "M2.25 18.75v-10.5A2.25 2.25 0 014.5 6h15a2.25 2.25 0 012.25 2.25V18.75M2.25 18.75h19.5M2.25 18.75V21m19.5-2.25V21M6 10.5h4.5M13.5 10.5H18";
+      break;
+    default:
+      return null;
+  }
+  return (
+    <svg {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d={d} />
+    </svg>
+  );
+}
+
+/** Circular −/count/+ stepper — the reference's capacity controls. */
+function CapacityStepper({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  const btn =
+    "flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-500 transition hover:border-neutral-900 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900";
+  return (
+    <div className="flex items-center justify-between gap-4 py-4">
+      <span className="text-sm font-semibold text-neutral-900">{label}</span>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => onChange(value - 1)}
+          disabled={value <= min}
+          aria-label={`Decrease ${label}`}
+          className={btn}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+          </svg>
+        </button>
+        <span className="w-6 text-center text-sm tabular-nums text-neutral-900">
+          {value}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(value + 1)}
+          disabled={value >= max}
+          aria-label={`Increase ${label}`}
+          className={btn}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const EGYPT_GOVERNORATES = [
   "Cairo",
   "Giza",
@@ -527,34 +617,59 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
             />
           </div>
 
-          <div>
+          {/* Property type — icon-tile grid from the listing-creation
+              reference ("Which of these best describes your place?"). */}
+          <div className="sm:col-span-2">
             <label className={labelClass}>{t("propertyType")}</label>
-            <select
-              value={form.property_type}
-              onChange={(e) => update("property_type", e.target.value)}
-              className={inputClass}
-            >
-              {PROPERTY_TYPES.map((pt) => (
-                <option key={pt.value} value={pt.value}>
-                  {t(`propertyTypes.${pt.labelKey}`)}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {PROPERTY_TYPES.map((pt) => {
+                const selected = form.property_type === pt.value;
+                return (
+                  <button
+                    key={pt.value}
+                    type="button"
+                    onClick={() => update("property_type", pt.value)}
+                    aria-pressed={selected}
+                    className={`flex flex-col items-start gap-2 rounded-xl border p-3.5 text-start transition ${
+                      selected
+                        ? "border-2 border-neutral-900"
+                        : "border-neutral-hairline hover:border-neutral-mutedSoft"
+                    }`}
+                  >
+                    <PropertyTypeIcon type={pt.value} />
+                    <span className="text-sm font-medium text-neutral-900">
+                      {t(`propertyTypes.${pt.labelKey}`)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div>
+          <div className="sm:col-span-2">
             <label className={labelClass}>{t("category")}</label>
-            <select
-              value={form.category}
-              onChange={(e) => update("category", e.target.value)}
-              className={inputClass}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {t(`categories.${c.labelKey}`)}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1 grid grid-cols-3 overflow-hidden rounded-xl border border-neutral-150">
+              {CATEGORIES.map((c, i) => {
+                const selected = form.category === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => update("category", c.value)}
+                    aria-pressed={selected}
+                    className={`px-2 py-3 text-center text-sm font-medium transition ${
+                      i > 0 ? "border-s border-neutral-150" : ""
+                    } ${
+                      selected
+                        ? "bg-neutral-900 text-white"
+                        : "text-neutral-700 hover:bg-surface-soft"
+                    }`}
+                  >
+                    {t(`categories.${c.labelKey}`)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
@@ -726,61 +841,39 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
         <h2 className="mb-4 text-lg font-bold text-brand-900">
           {t("sections.capacity")}
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div>
-            <label className={labelClass}>{t("maxGuests")}</label>
-            <input
-              type="number"
-              min={1}
-              max={50}
-              value={form.max_guests}
-              onChange={(e) =>
-                update("max_guests", parseInt(e.target.value) || 1)
-              }
-              className={inputClass}
-            />
-            {errors.max_guests && (
-              <p className={errorClass}>{errors.max_guests}</p>
-            )}
-          </div>
-
-          <div>
-            <label className={labelClass}>{t("bedrooms")}</label>
-            <input
-              type="number"
-              min={0}
-              value={form.bedrooms}
-              onChange={(e) =>
-                update("bedrooms", parseInt(e.target.value) || 0)
-              }
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>{t("beds")}</label>
-            <input
-              type="number"
-              min={0}
-              value={form.beds ?? 1}
-              onChange={(e) => update("beds", parseInt(e.target.value) || 0)}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>{t("bathrooms")}</label>
-            <input
-              type="number"
-              min={1}
-              value={form.bathrooms}
-              onChange={(e) =>
-                update("bathrooms", parseInt(e.target.value) || 1)
-              }
-              className={inputClass}
-            />
-          </div>
+        <div className="max-w-md divide-y divide-neutral-150">
+          <CapacityStepper
+            label={t("maxGuests")}
+            value={form.max_guests}
+            min={1}
+            max={50}
+            onChange={(v) => update("max_guests", v)}
+          />
+          <CapacityStepper
+            label={t("bedrooms")}
+            value={form.bedrooms}
+            min={0}
+            max={50}
+            onChange={(v) => update("bedrooms", v)}
+          />
+          <CapacityStepper
+            label={t("beds")}
+            value={form.beds ?? 1}
+            min={0}
+            max={50}
+            onChange={(v) => update("beds", v)}
+          />
+          <CapacityStepper
+            label={t("bathrooms")}
+            value={form.bathrooms}
+            min={1}
+            max={50}
+            onChange={(v) => update("bathrooms", v)}
+          />
         </div>
+        {errors.max_guests && (
+          <p className={errorClass}>{errors.max_guests}</p>
+        )}
       </section>
 
       {/* Sleeping arrangements */}

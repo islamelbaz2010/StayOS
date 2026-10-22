@@ -106,6 +106,27 @@ const SELF_CHECK_IN_METHODS = [
   { value: "BUILDING_STAFF", labelKey: "buildingStaff" },
 ];
 
+// Wizard steps group the existing sections per the listing-creation
+// reference (basic → location/capacity → details → pricing/rules →
+// photos/finish). Each entry lists the fields whose validation errors
+// belong to that step, so Next can validate per-step and save/submit
+// can jump to the earliest invalid step.
+const STEP_TITLES = [
+  "sections.basic",
+  "steps.locationCapacity",
+  "steps.details",
+  "steps.pricingRules",
+  "steps.finish",
+] as const;
+
+const STEP_FIELDS: (keyof ListingCreateInput)[][] = [
+  ["title_ar", "description_ar"],
+  ["governorate", "city", "max_guests", "bedrooms", "bathrooms"],
+  [],
+  ["base_price_egp"],
+  [],
+];
+
 /** Restrained 24px line icons for the property-type tile grid. */
 function PropertyTypeIcon({ type }: { type: string }) {
   const props = {
@@ -291,6 +312,8 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [step, setStep] = useState(0);
+  const formTopRef = useRef<HTMLDivElement>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [autosaveStatus, setAutosave] = useState<"idle" | "saving" | "saved">("idle");
   const formRef = useRef(form);
@@ -348,7 +371,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     }
   };
 
-  const validate = (forSubmit = false): boolean => {
+  const collectErrors = (): Record<string, string> => {
     const errs: Record<string, string> = {};
     if (!form.title_ar.trim()) errs.title_ar = t("errors.titleRequired");
     else if (form.title_ar.length > 255) errs.title_ar = t("errors.titleTooLong");
@@ -363,11 +386,53 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
     if (form.max_guests < 1) errs.max_guests = t("errors.guestsMin");
     if (form.bedrooms < 0) errs.bedrooms = t("errors.bedroomsMin");
     if (form.bathrooms < 1) errs.bathrooms = t("errors.bathroomsMin");
+    return errs;
+  };
+
+  const validate = (forSubmit = false): boolean => {
+    const errs = collectErrors();
     if (forSubmit && (!form.title_ar.trim() || !form.description_ar.trim())) {
       errs.submit = t("errors.fillRequiredFields");
     }
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    if (Object.keys(errs).length === 0) return true;
+    // Jump to the earliest step containing an invalid field so the
+    // error is actually visible inside the wizard.
+    const idx = STEP_FIELDS.findIndex((fields) =>
+      fields.some((f) => errs[f])
+    );
+    if (idx >= 0) setStep(idx);
+    return false;
+  };
+
+  // Per-step gate for the Next control — only the current step's fields
+  // are checked; everything else validates on save/submit as before.
+  const validateStep = (): boolean => {
+    const fields = STEP_FIELDS[step] ?? [];
+    const errs = collectErrors();
+    const stepErrs = Object.fromEntries(
+      Object.entries(errs).filter(([k]) =>
+        (fields as string[]).includes(k)
+      )
+    );
+    setErrors(stepErrs);
+    return Object.keys(stepErrs).length === 0;
+  };
+
+  const scrollToTop = () =>
+    formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const goToStep = (next: number) => {
+    setStep(next);
+    scrollToTop();
+  };
+
+  const goNext = () => {
+    if (!validateStep()) {
+      scrollToTop();
+      return;
+    }
+    goToStep(step + 1);
   };
 
   const buildUpdatePayload = (): ListingUpdateInput => ({
@@ -560,7 +625,41 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
   const errorClass = "mt-1 text-xs text-danger-600";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={formTopRef}>
+      {/* Reference wizard chrome — step label/title left, help +
+          save-and-exit pills right. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            {t("steps.stepOf", {
+              current: step + 1,
+              total: STEP_TITLES.length,
+            })}
+          </p>
+          <h2 className="mt-1 text-2xl font-bold text-brand-900">
+            {t(STEP_TITLES[step])}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/${locale}/help`}
+            className="chip text-sm"
+          >
+            {t("steps.questions")}
+          </Link>
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={isLoading}
+            className="chip text-sm disabled:opacity-50"
+          >
+            {t("steps.saveAndExit")}
+          </button>
+        </div>
+      </div>
+
+      {step === 0 && (
+      <>
       {/* Basic Info */}
       <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
@@ -673,7 +772,11 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           </div>
         </div>
       </section>
+      </>
+      )}
 
+      {step === 1 && (
+      <>
       {/* Location */}
       <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
@@ -875,7 +978,11 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           <p className={errorClass}>{errors.max_guests}</p>
         )}
       </section>
+      </>
+      )}
 
+      {step === 2 && (
+      <>
       {/* Sleeping arrangements */}
       <section className="card p-5 sm:p-6">
         <h2 className="mb-1 text-lg font-semibold text-brand-900">
@@ -1098,7 +1205,11 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           </div>
         </div>
       </section>
+      </>
+      )}
 
+      {step === 3 && (
+      <>
       {/* Pricing */}
       <section className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-brand-900">
@@ -1338,6 +1449,98 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
           </div>
         </div>
       </section>
+      </>
+      )}
+
+      {step === 4 && (
+      <>
+      {/* Review — real entered values before the final actions. */}
+      <section className="card p-5 sm:p-6">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
+          {t("steps.review")}
+        </h2>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("propertyType")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t(
+                `propertyTypes.${
+                  PROPERTY_TYPES.find((p) => p.value === form.property_type)
+                    ?.labelKey ?? "apartment"
+                }`
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("category")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t(
+                `categories.${
+                  CATEGORIES.find((c) => c.value === form.category)?.labelKey ??
+                  "entirePlace"
+                }`
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("sections.location")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {[form.city, form.governorate].filter(Boolean).join(", ") || "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("sections.capacity")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t("steps.capacitySummary", {
+                guests: form.max_guests,
+                bedrooms: form.bedrooms,
+                beds: form.beds,
+                bathrooms: form.bathrooms,
+              })}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("basePrice")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {form.base_price_egp} {form.currency}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("cancellationPolicy")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t(
+                `cancellationPolicies.${
+                  CANCELLATION_POLICIES.find(
+                    (p) => p.value === form.cancellation_policy
+                  )?.labelKey ?? "flexible"
+                }`
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">
+              {t("sections.amenities")}
+            </dt>
+            <dd className="mt-0.5 font-semibold text-neutral-900">
+              {t("steps.amenitiesCount", {
+                count: (form.amenities ?? []).length,
+              })}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       {/* Photos — part of the creation workflow; needs a saved draft id */}
       <section className="card p-5 sm:p-6">
@@ -1362,42 +1565,7 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
       </section>
 
       {/* Actions */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-sm">
-          {autosaveStatus === "saving" && (
-            <span className="flex items-center gap-1.5 text-neutral-500">
-              <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-500" />
-              {t("autosaving")}
-            </span>
-          )}
-          {autosaveStatus === "saved" && (
-            <span className="flex items-center gap-1.5 text-success-600">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-              {t("autosaved")}
-            </span>
-          )}
-          {isDirty && autosaveStatus === "idle" && (
-            <span className="text-warning-600">{t("unsavedChanges")}</span>
-          )}
-          {errors.submit && (
-            <span className="text-danger-600">
-              {errors.submit}
-              {errors.submit.toLowerCase().includes("payout") && (
-                <>
-                  {" "}
-                  <Link
-                    href={`/${locale}/host/profile`}
-                    className="font-semibold underline hover:no-underline"
-                  >
-                    {t("setPayoutCta")}
-                  </Link>
-                </>
-              )}
-            </span>
-          )}
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex gap-3">
           <button
             type="button"
@@ -1415,6 +1583,79 @@ export function ListingForm({ existingListing, unitId }: ListingFormProps) {
               className="btn-primary text-sm disabled:opacity-50"
             >
               {isLoading ? tc("loading") : t("submitForReview")}
+            </button>
+          )}
+        </div>
+      </div>
+      </>
+      )}
+
+      {/* Reference wizard bar — segmented progress + Back/Next on a
+          sticky hairline rail; status lives here so it's visible on
+          every step. */}
+      <div className="sticky bottom-0 z-20 -mx-1 border-t border-neutral-150 bg-white px-1 pb-1 pt-3">
+        <div className="mb-3 flex gap-1.5" aria-hidden>
+          {STEP_TITLES.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1 flex-1 rounded-full transition-colors ${
+                i <= step ? "bg-neutral-900" : "bg-neutral-150"
+              }`}
+            />
+          ))}
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3 text-sm">
+            {step > 0 ? (
+              <button
+                type="button"
+                onClick={() => goToStep(step - 1)}
+                className="shrink-0 font-semibold text-neutral-700 underline underline-offset-4 transition hover:text-brand-900"
+              >
+                {tc("back")}
+              </button>
+            ) : null}
+            {autosaveStatus === "saving" && (
+              <span className="flex items-center gap-1.5 text-neutral-500">
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-500" />
+                {t("autosaving")}
+              </span>
+            )}
+            {autosaveStatus === "saved" && (
+              <span className="flex items-center gap-1.5 text-success-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                {t("autosaved")}
+              </span>
+            )}
+            {isDirty && autosaveStatus === "idle" && (
+              <span className="text-warning-600">{t("unsavedChanges")}</span>
+            )}
+            {errors.submit && (
+              <span className="truncate text-danger-600">
+                {errors.submit}
+                {errors.submit.toLowerCase().includes("payout") && (
+                  <>
+                    {" "}
+                    <Link
+                      href={`/${locale}/host/profile`}
+                      className="font-semibold underline hover:no-underline"
+                    >
+                      {t("setPayoutCta")}
+                    </Link>
+                  </>
+                )}
+              </span>
+            )}
+          </div>
+          {step < STEP_TITLES.length - 1 && (
+            <button
+              type="button"
+              onClick={goNext}
+              className="shrink-0 rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 active:scale-[0.98]"
+            >
+              {tc("next")}
             </button>
           )}
         </div>

@@ -373,7 +373,19 @@
     "monthlyDiscountHint": "Applied to stays of 28+ nights",
     "photosTitle": "Photos",
     "photosHint": "Add photos of the property — listings with photos get more bookings.",
-    "photosSaveAndAdd": "Save draft & add photos"
+    "photosSaveAndAdd": "Save draft & add photos",
+    "steps": {
+      "stepOf": "Step {current} of {total}",
+      "locationCapacity": "Location & capacity",
+      "details": "Amenities & details",
+      "pricingRules": "Pricing & rules",
+      "finish": "Photos & finish",
+      "questions": "Questions?",
+      "saveAndExit": "Save & exit",
+      "review": "Review your listing",
+      "capacitySummary": "{guests} guests · {bedrooms} bedrooms · {beds} beds · {bathrooms} baths",
+      "amenitiesCount": "{count, plural, =0 {None selected} one {# amenity} other {# amenities}}"
+    }
   },
   "adminListings": {
     "pendingTitle": "Pending Listings Review",

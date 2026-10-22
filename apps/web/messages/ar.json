@@ -373,7 +373,19 @@
     "monthlyDiscountHint": "يُطبَّق على الإقامات من ٢٨ ليلة فأكثر",
     "photosTitle": "الصور",
     "photosHint": "أضف صور العقار — الإعلانات التي تحتوي على صور تحصل على حجوزات أكثر.",
-    "photosSaveAndAdd": "احفظ المسودة وأضف الصور"
+    "photosSaveAndAdd": "احفظ المسودة وأضف الصور",
+    "steps": {
+      "stepOf": "الخطوة {current} من {total}",
+      "locationCapacity": "الموقع والسعة",
+      "details": "المرافق والتفاصيل",
+      "pricingRules": "التسعير والقواعد",
+      "finish": "الصور والإنهاء",
+      "questions": "أسئلة؟",
+      "saveAndExit": "حفظ والخروج",
+      "review": "مراجعة إعلانك",
+      "capacitySummary": "{guests} ضيوف · {bedrooms} غرف نوم · {beds} أسرة · {bathrooms} حمامات",
+      "amenitiesCount": "{count, plural, =0 {لا شيء محدد} one {مرفق واحد} two {مرفقان} few {# مرافق} many {# مرفقًا} other {# مرفق}}"
+    }
   },
   "adminListings": {
     "pendingTitle": "مراجعة العقارات المعلقة",

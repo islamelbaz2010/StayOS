@@ -43,7 +43,20 @@ export function RangeCalendar({
   }, []);
   const todayStr = toInputDate(today);
 
-  const [offset, setOffset] = useState(0);
+  // Reopen scrolled to the month containing the current check-in so a
+  // previously selected range stays visible.
+  const [offset, setOffset] = useState(() => {
+    if (!checkIn) return 0;
+    const ci = new Date(`${checkIn}T00:00:00`);
+    return Math.max(
+      0,
+      Math.min(
+        MAX_NAV_MONTHS,
+        (ci.getFullYear() - today.getFullYear()) * 12 +
+          (ci.getMonth() - today.getMonth())
+      )
+    );
+  });
   const months = useMemo(() => {
     const base = addMonths(monthStart(today), offset);
     return [base, addMonths(base, 1)];

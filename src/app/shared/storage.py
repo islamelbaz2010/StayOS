@@ -34,11 +34,29 @@ def _credentials_for(bucket: str | None) -> tuple[str, str]:
     )
 
 
+def _s3_signing_region() -> str:
+    """Region embedded in the SigV4 credential scope for object storage.
+
+    Railway/Tigris bucket credentials are issued for scope region
+    ``auto`` — signing a presigned URL with AWS_REGION (e.g. ``ams``)
+    produces ``SignatureDoesNotMatch`` on every direct PUT even though
+    the endpoint, bucket and credentials are all correct. S3_REGION is
+    an explicit override; otherwise custom endpoints default to
+    ``auto`` and real AWS keeps AWS_REGION. AWS_REGION still governs
+    the Textract/Rekognition clients, which are true AWS services.
+    """
+    if settings.S3_REGION:
+        return settings.S3_REGION
+    if settings.S3_ENDPOINT_URL:
+        return "auto"
+    return settings.AWS_REGION or "auto"
+
+
 def s3_client(bucket: str | None = None) -> Any:
     access_key, secret_key = _credentials_for(bucket)
     return boto3.client(
         "s3",
-        region_name=settings.AWS_REGION or "auto",
+        region_name=_s3_signing_region(),
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         endpoint_url=settings.S3_ENDPOINT_URL or None,

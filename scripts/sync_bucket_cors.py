@@ -78,9 +78,15 @@ def _buckets() -> dict[str, tuple[str, str]]:
 
 
 def _client(access_key: str, secret_key: str):
+    # Railway/Tigris bucket credentials sign with scope region "auto";
+    # AWS_REGION (ams) produces SignatureDoesNotMatch. S3_REGION is an
+    # explicit override for other S3-compatible providers.
+    region = os.environ.get("S3_REGION") or (
+        "auto" if os.environ.get("S3_ENDPOINT_URL") else (os.environ.get("AWS_REGION") or "auto")
+    )
     return boto3.client(
         "s3",
-        region_name=os.environ.get("AWS_REGION") or "auto",
+        region_name=region,
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         endpoint_url=os.environ.get("S3_ENDPOINT_URL") or None,

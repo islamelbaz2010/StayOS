@@ -497,9 +497,9 @@ export function Header() {
             tab carries a 2px near-black underline. */}
         <nav className="absolute start-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex rtl:translate-x-1/2">
           {(() => {
-            // Stays → the homepage browsing experience; Explore → the
-            // search/discovery route. Intentionally distinct targets.
-            const isStays = pathname === `/${locale}` || pathname === `/${locale}/`;
+            // Explore → the search/discovery route. The global "Stays"
+            // item was removed per founder direction; the homepage stays
+            // reachable via the logo.
             const isExplore = pathname?.startsWith(`/${locale}/search`);
             const linkClass = (active: boolean) =>
               `relative py-2 text-sm font-medium transition-colors after:absolute after:bottom-0 after:start-0 after:h-0.5 after:w-full after:rounded-full after:transition-colors ${
@@ -508,22 +508,13 @@ export function Header() {
                   : "text-neutral-500 after:bg-transparent hover:text-brand-900"
               }`;
             return (
-              <>
-                <Link
-                  href={`/${locale}`}
-                  aria-current={isStays ? "page" : undefined}
-                  className={linkClass(Boolean(isStays))}
-                >
-                  {t("stays")}
-                </Link>
-                <Link
-                  href={`/${locale}/search`}
-                  aria-current={isExplore ? "page" : undefined}
-                  className={linkClass(Boolean(isExplore))}
-                >
-                  {t("explore")}
-                </Link>
-              </>
+              <Link
+                href={`/${locale}/search`}
+                aria-current={isExplore ? "page" : undefined}
+                className={linkClass(Boolean(isExplore))}
+              >
+                {t("explore")}
+              </Link>
             );
           })()}
         </nav>
@@ -663,18 +654,6 @@ export function Header() {
       {mobileOpen && (
         <nav className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-neutral-150 bg-white px-4 pb-4 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
-            <Link
-              href={`/${locale}`}
-              aria-current={
-                pathname === `/${locale}` || pathname === `/${locale}/`
-                  ? "page"
-                  : undefined
-              }
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
-              onClick={() => setMobileOpen(false)}
-            >
-              {t("stays")}
-            </Link>
             <Link
               href={`/${locale}/search`}
               aria-current={

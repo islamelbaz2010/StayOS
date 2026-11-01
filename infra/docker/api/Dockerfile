@@ -25,6 +25,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src/ ./src/
 COPY alembic.ini .
 COPY alembic/ ./alembic/
+COPY scripts/backup.py ./scripts/backup.py
+COPY scripts/backup_scheduler.py ./scripts/backup_scheduler.py
+COPY scripts/seed_qa.py ./scripts/seed_qa.py
 
 ENV PYTHONPATH=/app/src
 ENV PYTHONDONTWRITEBYTECODE=1

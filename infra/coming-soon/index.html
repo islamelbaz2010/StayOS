@@ -277,7 +277,7 @@ ft_about:'سوق ضيافة لمصر — يُطلق قريباً.',ft_links:'ا�
 ok_host:'شكراً — تم تسجيلك. سيتواصل معك فريقنا قبل الإطلاق.',ok_guest:'أنت الآن في قائمة الانتظار — سنعلمك عند فتح الإقامات.',err:'حدث خطأ — تحقق من بياناتك وحاول مجدداً.',err_consent:'يرجى تأكيد الموافقة للمتابعة.'}};
 
 let lang=new URLSearchParams(location.search).get('lang')||'en';
-const SID=(()=>{let s=sessionStorage.getItem('mz_sid');if(!s){s=Math.random().toString(36).slice(2);sessionStorage.setItem('mz_sid',s)}return s})();
+const SID=(()=>{let s=sessionStorage.getItem('mz_sid');if(!s){s=crypto.randomUUID();sessionStorage.setItem('mz_sid',s)}return s})();
 const utm={};['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k=>{const v=new URLSearchParams(location.search).get(k);if(v)utm[k]=v});
 function applyLang(l){lang=l;document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';
 document.querySelectorAll('[data-t]').forEach(el=>{const k=el.getAttribute('data-t');if(T[l][k]!==undefined)el.textContent=T[l][k]});

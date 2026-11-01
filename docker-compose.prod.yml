@@ -81,6 +81,8 @@ services:
     command: ["alembic", "upgrade", "head"]
     networks: [data]
     restart: "no"
+    depends_on:
+      postgres: {condition: service_healthy}
 
   # ── Celery worker ────────────────────────────────────────────────────
   worker:

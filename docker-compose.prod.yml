@@ -39,7 +39,7 @@ services:
       HOSTNAME: "0.0.0.0"
     networks: [app]
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/en"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -62,7 +62,7 @@ services:
       migrate: {condition: service_completed_successfully}
     networks: [app, data]
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/healthz').status==200 else 1)\""]
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/listings').status==200 else 1)\""]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -114,6 +114,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      DB_PROD_PASSWORD: ${DB_PROD_PASSWORD}
+      DB_QA_PASSWORD: ${DB_QA_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - pg_data:/var/lib/postgresql/data

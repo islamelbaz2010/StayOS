@@ -1,0 +1,189 @@
+name: Infrastructure QA
+
+# Validates the production Docker stack on a Linux runner — the
+# founder's Mac cannot run Docker (Ventura Tier-3 brew). This is the
+# official production-equivalent validation path.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "docker-compose.prod.yml"
+      - "infra/**"
+      - ".github/workflows/infrastructure-qa.yml"
+
+jobs:
+  infra-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      COMPOSE: docker compose -f docker-compose.prod.yml
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runner environment
+        run: |
+          docker version --format 'engine={{.Server.Version}}'
+          docker compose version
+          df -h / | tail -1
+          free -h | head -2
+
+      - name: Build API image
+        run: docker build -f infra/docker/api/Dockerfile -t makazoh-api:ci .
+
+      - name: Build Web image (standalone, fixed Firebase ARG)
+        run: |
+          docker build -f infra/docker/web/Dockerfile -t makazoh-web:ci \
+            --build-arg NEXT_PUBLIC_API_URL=http://localhost/api/v1 \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=ci-placeholder-key \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=ci.firebaseapp.com \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=ci-project \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=ci.appspot.com \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=0 \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=1:0:web:ci \
+            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-CI \
+            --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=ci-maps \
+            --build-arg NEXT_PUBLIC_IMAGE_HOSTS=localhost,minio \
+            .
+
+      - name: Write CI env files
+        run: |
+          openssl genrsa -out /tmp/ci_jwt_priv.pem 2048
+          openssl rsa -in /tmp/ci_jwt_priv.pem -pubout -out /tmp/ci_jwt_pub.pem
+          cat > .env.ci <<EOF
+          ENVIRONMENT=development
+          DEV_TOKEN_ENABLED=true
+          CORS_ORIGINS=http://localhost
+          WEB_BASE_URL=http://localhost
+          JWT_PRIVATE_KEY="$(awk 'NF {printf "%s\\n", $0}' /tmp/ci_jwt_priv.pem)"
+          JWT_PUBLIC_KEY="$(awk 'NF {printf "%s\\n", $0}' /tmp/ci_jwt_pub.pem)"
+          JWT_ALGORITHM=RS256
+          FIREBASE_PROJECT_ID=ci-project
+          S3_LISTINGS_BUCKET=stayos-ci-listings
+          S3_KYC_BUCKET=stayos-ci-kyc
+          S3_PAYMENT_PROOF_BUCKET=stayos-ci-payment-proofs
+          AWS_ACCESS_KEY_ID=makazoh_ci
+          AWS_SECRET_ACCESS_KEY=ci_secret_0123456789abcdef
+          EOF
+          cat > .env <<EOF
+          ENV_SLOT=ci
+          WEB_IMAGE=makazoh-web:ci
+          API_IMAGE=makazoh-api:ci
+          POSTGRES_SUPERUSER_PASSWORD=ci_super_pw
+          DB_USER=app_qa
+          DB_PASSWORD=ci_qa_pw
+          DB_NAME=makazoh_qa
+          DB_PROD_PASSWORD=ci_prod_pw
+          DB_QA_PASSWORD=ci_qa_pw
+          REDIS_PASSWORD=ci_redis_pw
+          MINIO_ROOT_USER=makazoh_ci
+          MINIO_ROOT_PASSWORD=ci_secret_0123456789abcdef
+          DOMAIN_ROOT=localhost
+          EOF
+
+      - name: Validate Compose
+        run: $COMPOSE config --quiet && $COMPOSE config --services
+
+      - name: Start stack
+        run: $COMPOSE up -d
+
+      - name: Wait for health
+        timeout-minutes: 10
+        run: |
+          for i in $(seq 1 60); do
+            STATUS=$($COMPOSE ps --format json | python3 -c "
+          import sys, json
+          rows = [json.loads(l) for l in sys.stdin if l.strip()]
+          bad = [r['Name'] for r in rows if r.get('Health') not in (None, '', 'healthy')]
+          dead = [r['Name'] for r in rows if r.get('State') not in ('running', 'exited')]
+          print(' '.join(bad + dead))
+          ")
+            if [ -z "$STATUS" ]; then echo "ALL_HEALTHY"; $COMPOSE ps; exit 0; fi
+            echo "waiting: $STATUS"; sleep 10
+          done
+          $COMPOSE ps; $COMPOSE logs --tail 60; exit 1
+
+      - name: Database isolation
+        run: |
+          $COMPOSE exec -T postgres psql -U postgres -tAc "SELECT datname FROM pg_database WHERE datname LIKE 'makazoh%'" | sort
+          echo "--- app_qa on qa DB (expect OK) ---"
+          $COMPOSE exec -T postgres psql "postgresql://app_qa:ci_qa_pw@localhost:5432/makazoh_qa" -c "SELECT 1"
+          echo "--- app_qa reads prod tables (expect DENIED) ---"
+          $COMPOSE exec -T postgres psql "postgresql://app_qa:ci_qa_pw@localhost:5432/makazoh_prod" -c "SELECT count(*) FROM auth.users" && echo "ISOLATION_FAIL" && exit 1 || echo "ISOLATION_OK"
+          echo "--- seed guard vs prod (expect REFUSING) ---"
+          $COMPOSE run --rm -e DATABASE_URL="postgresql+asyncpg://app_prod:ci_prod_pw@postgres:5432/makazoh_prod" --entrypoint python migrate scripts/seed_qa.py && echo "GUARD_FAIL" && exit 1 || echo "GUARD_OK"
+
+      - name: Seed QA + MinIO buckets
+        run: |
+          $COMPOSE run --rm -e DATABASE_URL="postgresql+asyncpg://app_qa:ci_qa_pw@postgres:5432/makazoh_qa" --entrypoint python migrate scripts/seed_qa.py
+          $COMPOSE exec -T api python -c "
+          import boto3
+          from botocore.config import Config
+          s3 = boto3.client('s3', endpoint_url='http://minio:9000', region_name='auto',
+                            aws_access_key_id='makazoh_ci', aws_secret_access_key='ci_secret_0123456789abcdef',
+                            config=Config(s3={'addressing_style': 'path'}))
+          for b in ['stayos-ci-listings', 'stayos-ci-kyc', 'stayos-ci-payment-proofs']:
+              s3.create_bucket(Bucket=b)
+          print('BUCKETS:', [b['Name'] for b in s3.list_buckets()['Buckets']])
+          "
+
+      - name: Storage E2E (presign→PUT→confirm→GET)
+        run: |
+          TOKEN=$($COMPOSE exec -T api python -c "
+          import urllib.request, json
+          r = urllib.request.Request('http://localhost:8000/api/v1/auth/dev-token',
+              data=json.dumps({'user_id': 'qa-host-0000-0000-0000000000002'}).encode(),
+              headers={'Content-Type': 'application/json'})
+          print(json.loads(urllib.request.urlopen(r).read())['access_token'])
+          ")
+          $COMPOSE exec -T api python -c "
+          import urllib.request, json, boto3
+          from botocore.config import Config
+          TOKEN = '''$TOKEN'''
+          req = urllib.request.Request(
+              'http://localhost:8000/api/v1/listings/qa-unit-0001-0000-000000000001/photos/presign',
+              data=json.dumps({'filename': 'ci.png', 'content_type': 'image/png', 'size_bytes': 69}).encode(),
+              headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {TOKEN}'})
+          d = json.loads(urllib.request.urlopen(req).read())
+          url = d['upload_url'].replace('localhost:9000', 'minio:9000')
+          png = bytes.fromhex('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c626001000000ffff03000006000557bfabd40000000049454e44ae426082')
+          r = urllib.request.urlopen(urllib.request.Request(url, data=png, method='PUT', headers={'Content-Type': 'image/png'}))
+          print('PUT', r.status)
+          s3 = boto3.client('s3', endpoint_url='http://minio:9000', region_name='auto',
+                            aws_access_key_id='makazoh_ci', aws_secret_access_key='ci_secret_0123456789abcdef',
+                            config=Config(s3={'addressing_style': 'path'}))
+          h = s3.head_object(Bucket='stayos-ci-listings', Key=d['photo_key'])
+          print('PERSISTED', h['ContentLength'], h['ContentType'])
+          import urllib.error
+          try:
+              urllib.request.urlopen('http://minio:9000/stayos-ci-listings/' + d['photo_key'])
+              print('UNSIGNED_GET_LEAKED'); exit(1)
+          except urllib.error.HTTPError as e:
+              print('UNSIGNED_GET=%d (private OK)' % e.code)
+          "
+
+      - name: Worker/Beat evidence
+        run: |
+          sleep 40
+          $COMPOSE logs worker --tail 30 | grep -E "ready|succeeded|received" | tail -6
+          $COMPOSE logs beat --tail 20 | grep -E "Sending due task" | tail -4
+          BEAT_COUNT=$($COMPOSE ps --format json | python3 -c "import sys,json;print(sum(1 for l in sys.stdin if 'beat' in l))")
+          [ "$BEAT_COUNT" = "1" ] && echo "SINGLE_BEAT_OK"
+
+      - name: Caddy routing
+        run: |
+          curl -ks -o /dev/null -w "root=%{http_code}\n" https://localhost/
+          curl -ks -o /dev/null -w "www=%{http_code}\n" --resolve www.localhost:443:127.0.0.1 https://www.localhost/
+          curl -ks -o /dev/null -w "app=%{http_code}\n" --resolve app.localhost:443:127.0.0.1 https://app.localhost/
+          curl -ks -o /dev/null -w "api=%{http_code}\n" --resolve api.localhost:443:127.0.0.1 https://api.localhost/api/v1/listings
+
+      - name: Backup one-shot
+        run: |
+          $COMPOSE run --rm -e BACKUP_RUN_ONCE=1 -e BACKUP_DIR=/backups backup
+          $COMPOSE exec -T backup ls -la /backups | tail -4
+
+      - name: Teardown + logs on failure
+        if: always()
+        run: |
+          $COMPOSE logs --tail 40 api worker beat postgres minio || true
+          $COMPOSE down -v --timeout 30 || true

@@ -12,7 +12,7 @@
 <meta property="og:image" content="https://makazoh.com/assets/hero.webp">
 <link rel="canonical" href="https://makazoh.com/">
 <meta name="robots" content="index,follow">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill-rule='evenodd' fill='%2384CC16' d='M256 32C167.67 32 96 96.51 96 176c0 128 160 304 160 304s160-176 160-304c0-79.49-71.67-144-160-144zm0 224a80 80 0 1 0 80-80 80.09 80.09 0 0 0-80 80z'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2384CC16' d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800;9..40,900&family=Cairo:wght@400;600;700;800&display=swap">
@@ -36,10 +36,11 @@ section{padding:72px 0}
 header{position:absolute;top:0;left:0;right:0;z-index:50}
 .hd{display:flex;align-items:center;justify-content:space-between;height:72px}
 .logo{display:flex;align-items:center}
-/* wordmark — mirrors MakazohMark: one text run, pin glyph inline as the O */
-.wm{font-weight:900;font-size:26px;letter-spacing:.5px;color:#fff;direction:ltr;unicode-bidi:isolate;display:inline-flex;align-items:baseline;line-height:1}
-.wm .pin{display:inline-block;height:1.05em;width:auto;vertical-align:baseline;transform:translateY(.12em)}
-.wm .pin path{fill:var(--lime);fill-rule:evenodd}
+/* wordmark — mirrors apps/web Header.tsx + MakazohMark.tsx: one text run,
+   Material place-pin glyph inline as the O */
+.wm{font-weight:800;font-size:26px;letter-spacing:-.02em;color:#fff;direction:ltr;unicode-bidi:isolate;line-height:1}
+.wm .pin{display:inline-block;height:1.15em;width:.85em;transform:translateY(-.05em);vertical-align:baseline}
+.wm .pin path{fill:var(--lime)}
 .langsw{display:flex;gap:4px;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:3px;background:rgba(20,19,15,.35);backdrop-filter:blur(8px)}
 .langsw button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;color:#d8d6c8}
 .langsw button.on{background:#fff;color:var(--ink)}
@@ -108,7 +109,7 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
 
 <header><div class="wrap hd">
   <a class="logo" href="#" aria-label="MAKAZOH">
-    <span class="wm" role="img" aria-label="MAKAZOH logo">MAKAZ<svg class="pin" viewBox="0 0 512 512" aria-hidden="true"><path d="M256 32C167.67 32 96 96.51 96 176c0 128 160 304 160 304s160-176 160-304c0-79.49-71.67-144-160-144zm0 224a80 80 0 1 0 80-80 80.09 80.09 0 0 0-80 80z"/></svg>H</span>
+    <span class="wm" role="img" aria-label="MAKAZOH logo">MAKAZ<svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>H</span>
   </a>
   <div class="langsw"><button id="l-en" class="on">EN</button><button id="l-ar">عربي</button></div>
 </div></header>
@@ -235,7 +236,7 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
 <footer><div class="wrap">
   <div class="fgrid">
     <div>
-      <span class="wm" style="font-size:22px" role="img" aria-label="MAKAZOH">MAKAZ<svg class="pin" viewBox="0 0 512 512" aria-hidden="true"><path d="M256 32C167.67 32 96 96.51 96 176c0 128 160 304 160 304s160-176 160-304c0-79.49-71.67-144-160-144zm0 224a80 80 0 1 0 80-80 80.09 80.09 0 0 0-80 80z"/></svg>H</span>
+      <span class="wm" style="font-size:22px" role="img" aria-label="MAKAZOH">MAKAZ<svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>H</span>
       <p style="max-width:260px;margin-top:12px" data-t="ft_about">A hospitality marketplace for Egypt — launching soon.</p>
     </div>
     <div>

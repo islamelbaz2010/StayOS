@@ -185,5 +185,5 @@ jobs:
       - name: Teardown + logs on failure
         if: always()
         run: |
-          $COMPOSE logs --tail 40 api worker beat postgres minio || true
+          $COMPOSE logs --tail 60 migrate api worker beat postgres minio web proxy || true
           $COMPOSE down -v --timeout 30 || true

@@ -13,7 +13,7 @@ safe placeholders only.
 | `REDIS_URL` | required | — | Redis URL |
 | `ENVIRONMENT` | optional | `"development"` |  |
 | `LOG_LEVEL` | optional | `"INFO"` |  |
-| `CORS_ORIGINS` | optional | `"http://localhost:3000"` | Comma-separated CORS origins |
+| `CORS_ORIGINS` | optional | `"http://localhost:3000"` | Comma-separated CORS origins — prod must add `https://makazoh.com,https://www.makazoh.com` for the public pre-launch site forms |
 | `CORS_ORIGIN_REGEX` | optional | `""` | Regex pattern for allowed CORS origins (e.g. Vercel preview URLs) |
 | `WEB_BASE_URL` | optional | `Field(` |  |
 | `PAYMENT_RETURN_TOKEN_TTL_HOURS` | optional | `Field(` |  **⚠ secret** |

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -203,6 +203,13 @@ class Settings(BaseSettings):
     JWT_PRIVATE_KEY: str = Field(..., description="RSA private key PEM for JWT signing")
     JWT_PUBLIC_KEY: str = Field(..., description="RSA public key PEM for JWT verification")
     JWT_ALGORITHM: str = "RS256"
+
+    @field_validator("JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY", "FIREBASE_PRIVATE_KEY", mode="before")
+    @classmethod
+    def _unescape_pem_newlines(cls, v: object) -> object:
+        # env_file and .env transports deliver PEMs with literal \n
+        # escapes — normalize to real newlines so PyJWT can parse them.
+        return v.replace("\\n", "\n") if isinstance(v, str) else v
     JWT_ACCESS_TOKEN_TTL_MINUTES: int = 15
     JWT_REFRESH_TOKEN_TTL_DAYS: int = 7
 

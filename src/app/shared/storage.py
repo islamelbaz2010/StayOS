@@ -60,7 +60,7 @@ def s3_client(bucket: str | None = None) -> Any:
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         endpoint_url=settings.S3_ENDPOINT_URL or None,
-        config=Config(s3={"addressing_style": "virtual"}),
+        config=Config(s3={"addressing_style": settings.S3_ADDRESSING_STYLE or "virtual"}),
     )
 
 

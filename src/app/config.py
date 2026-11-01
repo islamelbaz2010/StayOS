@@ -140,6 +140,10 @@ class Settings(BaseSettings):
     # bucket credentials require "auto" — AWS_REGION (ams) belongs to the
     # real-AWS services only. Empty → "auto" when S3_ENDPOINT_URL is set.
     S3_REGION: str = Field(default="", description="S3-compatible signing region (empty = auto)")
+    S3_ADDRESSING_STYLE: str = Field(
+        default="virtual",
+        description="S3 URL addressing style: 'virtual' (AWS/Tigris default) or 'path' (required for MinIO and single-host endpoints without wildcard DNS)",
+    )
     S3_ENDPOINT_URL: str = Field(
         default="",
         description="Optional S3-compatible API endpoint; empty uses AWS S3",

@@ -49,7 +49,7 @@ services:
   api:
     image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
     restart: unless-stopped
-    env_file: [.env.${ENV_SLOT:-prod}]
+    env_file: [".env.${ENV_SLOT:-prod}"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -72,7 +72,7 @@ services:
   # ── One-shot migrations — runs BEFORE api/worker/beat come up ────────
   migrate:
     image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
-    env_file: [.env.${ENV_SLOT:-prod}]
+    env_file: [".env.${ENV_SLOT:-prod}"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
     command: ["alembic", "upgrade", "head"]
@@ -83,7 +83,7 @@ services:
   worker:
     image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
     restart: unless-stopped
-    env_file: [.env.${ENV_SLOT:-prod}]
+    env_file: [".env.${ENV_SLOT:-prod}"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -98,7 +98,7 @@ services:
   beat:
     image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
     restart: unless-stopped
-    env_file: [.env.${ENV_SLOT:-prod}]
+    env_file: [".env.${ENV_SLOT:-prod}"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -166,7 +166,7 @@ services:
   backup:
     image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
     restart: unless-stopped
-    env_file: [.env.${ENV_SLOT:-prod}]
+    env_file: [".env.${ENV_SLOT:-prod}"]
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0

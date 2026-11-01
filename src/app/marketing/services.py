@@ -1,11 +1,15 @@
 import csv
 import hashlib
+import hmac
 import io
 import re
 import uuid
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.config import settings
 
 from .constants import LeadKind, LeadStatus
 from .models import GuestLead, HostLead, LeadEvent, LeadNote
@@ -13,7 +17,16 @@ from .schemas import EventCreate, GuestLeadCreate, HostLeadCreate
 
 
 def hash_ip(ip: str | None) -> str | None:
-    return hashlib.sha256(ip.encode()).hexdigest()[:32] if ip else None
+    """Keyed HMAC-SHA256 pseudonym — never a reversible/lookup-able hash.
+
+    Returns None when LEADS_IP_HMAC_KEY is unset (safe-degrades rather
+    than storing a predictable plain-SHA256 of the IP).
+    """
+    if not ip or not settings.LEADS_IP_HMAC_KEY:
+        return None
+    return hmac.new(
+        settings.LEADS_IP_HMAC_KEY.encode(), ip.encode(), hashlib.sha256
+    ).hexdigest()[:32]
 
 
 def normalize_phone(raw: str) -> str:
@@ -21,6 +34,10 @@ def normalize_phone(raw: str) -> str:
     if raw.strip().startswith("+"):
         return "+" + digits
     return digits
+
+
+def normalize_email(raw: str) -> str:
+    return raw.strip().lower()
 
 
 def _utm(obj) -> dict:
@@ -46,7 +63,7 @@ async def create_host_lead(
         full_name=payload.full_name.strip(),
         phone=payload.phone.strip(),
         phone_normalized=phone_n,
-        email=str(payload.email) if payload.email else None,
+        email=normalize_email(payload.email) if payload.email else None,
         city=payload.city.strip(),
         property_type=payload.property_type,
         units_count=payload.units_count,
@@ -60,14 +77,23 @@ async def create_host_lead(
         **_utm(payload),
     )
     session.add(lead)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        # concurrent duplicate — the unique constraint is the authority
+        await session.rollback()
+        lead = await session.scalar(
+            select(HostLead).where(HostLead.phone_normalized == phone_n)
+        )
+        return lead, False
     return lead, True
 
 
 async def create_guest_lead(
     session: AsyncSession, payload: GuestLeadCreate, ip: str | None
 ) -> tuple[GuestLead, bool]:
-    key = payload.contact_key()
+    # normalized dedup key: trimmed, lowercased email or normalized phone
+    key = normalize_email(payload.email) if payload.email else normalize_phone(payload.phone or "")
     existing = await session.scalar(
         select(GuestLead).where(GuestLead.contact_key == key)
     )
@@ -76,8 +102,8 @@ async def create_guest_lead(
     lead = GuestLead(
         id=str(uuid.uuid4()),
         name=payload.name.strip(),
-        email=str(payload.email) if payload.email else None,
-        phone=payload.phone,
+        email=normalize_email(payload.email) if payload.email else None,
+        phone=payload.phone.strip() if payload.phone else None,
         contact_key=key,
         preferred_city=payload.preferred_city,
         accommodation_type=payload.accommodation_type,
@@ -87,7 +113,14 @@ async def create_guest_lead(
         **_utm(payload),
     )
     session.add(lead)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        lead = await session.scalar(
+            select(GuestLead).where(GuestLead.contact_key == key)
+        )
+        return lead, False
     return lead, True
 
 
@@ -211,6 +244,8 @@ async def marketing_summary(session: AsyncSession) -> dict:
 
     views = await _count(LeadEvent, LeadEvent.event, "page_view")
     starts = await _count(LeadEvent, LeadEvent.event, "host_form_start")
+    gstarts = await _count(LeadEvent, LeadEvent.event, "guest_form_start")
+    gsubmits = await _count(LeadEvent, LeadEvent.event, "guest_waitlist_submit")
     hosts = await _count(HostLead)
     guests = await _count(GuestLead)
 
@@ -238,8 +273,10 @@ async def marketing_summary(session: AsyncSession) -> dict:
 
     return {
         "page_views": views, "host_form_starts": starts,
+        "guest_form_starts": gstarts, "guest_waitlist_submits": gsubmits,
         "host_submissions": hosts, "guest_submissions": guests,
-        "host_conversion_rate": round(hosts / views * 100, 2) if views else 0.0,
+        "host_conversion_rate": round(hosts / starts * 100, 2) if starts else 0.0,
+        "guest_conversion_rate": round(gsubmits / gstarts * 100, 2) if gstarts else 0.0,
         "top_source": top_src, "top_campaign": top_camp,
         "top_cities": [{"city": c, "leads": n} for c, n in city_rows],
         "leads_by_status": status_rows,

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
 from app.auth.models import User
+from app.config import settings
 from app.database import get_session
 from app.security.rate_limit import rate_limit
 from app.shared.exceptions import NotFoundError, to_http_exception
@@ -26,7 +27,19 @@ async def leads_rate_limit(request: Request) -> None:
     await rate_limit(request, key_prefix="leads", limit=10, window_seconds=300)
 
 
+async def events_rate_limit(request: Request) -> None:
+    # analytics events get their own, looser bucket — browsing activity
+    # must never exhaust the lead-submission quota
+    await rate_limit(request, key_prefix="events", limit=60, window_seconds=300)
+
+
 def _ip(request: Request) -> str | None:
+    # honor X-Forwarded-For ONLY when explicitly enabled — Caddy sets it;
+    # take the leftmost (original client) entry, never the appended proxies
+    if settings.TRUST_PROXY_HEADERS:
+        xff = request.headers.get("x-forwarded-for")
+        if xff:
+            return xff.split(",")[0].strip()
     return request.client.host if request.client else None
 
 
@@ -60,7 +73,7 @@ async def submit_guest_lead(
     return {"id": lead.id, "status": lead.status, "created": created}
 
 
-@public_router.post("/events", status_code=202, dependencies=[Depends(leads_rate_limit)])
+@public_router.post("/events", status_code=202, dependencies=[Depends(events_rate_limit)])
 async def track_event(
     payload: EventCreate,
     request: Request,

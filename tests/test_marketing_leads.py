@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from app.marketing.constants import ALLOWED_EVENTS, LeadStatus
 from app.marketing.schemas import EventCreate, GuestLeadCreate, HostLeadCreate
-from app.marketing.services import hash_ip, normalize_phone
+from app.marketing.services import hash_ip, normalize_email, normalize_phone
 
 
 # ── Host lead validation ──────────────────────────────────────────
@@ -122,10 +122,28 @@ def test_honeypot_field_accepted_then_ignored():
 
 # ── Privacy / security helpers ────────────────────────────────────
 
-def test_ip_hash_not_raw():
-    h = hash_ip("203.0.113.7")
-    assert h and h != "203.0.113.7" and len(h) == 32
-    assert hash_ip(None) is None
+def test_ip_hash_hmac_keyed_and_safe_without_key():
+    # without a configured key → no predictable hash is stored at all
+    h_nokey = hash_ip("203.0.113.7")
+    assert h_nokey is None
+    from app.config import settings
+    settings.LEADS_IP_HMAC_KEY = "test-hmac-key"
+    try:
+        h1 = hash_ip("203.0.113.7")
+        h2 = hash_ip("203.0.113.7")
+        assert h1 == h2 and h1 != "203.0.113.7" and len(h1) == 32
+        assert hash_ip("203.0.113.8") != h1  # keyed per-IP
+        settings.LEADS_IP_HMAC_KEY = "different-key"
+        assert hash_ip("203.0.113.7") != h1  # rotation changes output
+    finally:
+        settings.LEADS_IP_HMAC_KEY = ""
+
+
+def test_contact_normalization():
+    assert normalize_email("  User@Example.COM ") == "user@example.com"
+    # same guest contact in different forms → same dedup key
+    assert normalize_email("G@X.com") == normalize_email("g@x.com")
+    assert normalize_phone("+20 100 123-4567") == "+201001234567"
 
 
 def test_lead_status_lifecycle():

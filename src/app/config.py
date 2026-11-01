@@ -200,6 +200,11 @@ class Settings(BaseSettings):
         description="Comma-separated allowed image URL host suffixes (e.g. .amazonaws.com,cdn.example.com)",
     )
 
+    # Pre-launch leads: HMAC key for visitor-IP pseudonymization and
+    # explicit opt-in for honoring X-Forwarded-For (Caddy sets it).
+    LEADS_IP_HMAC_KEY: str = Field(default="", description="HMAC key for lead IP hashing")
+    TRUST_PROXY_HEADERS: bool = Field(default=False, description="Trust X-Forwarded-For from the edge proxy")
+
     JWT_PRIVATE_KEY: str = Field(..., description="RSA private key PEM for JWT signing")
     JWT_PUBLIC_KEY: str = Field(..., description="RSA public key PEM for JWT verification")
     JWT_ALGORITHM: str = "RS256"

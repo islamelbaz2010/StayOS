@@ -51,20 +51,22 @@ def backup_postgres(output_dir: Path, parsed: urlparse) -> Path:
 
 
 def backup_redis(output_dir: Path) -> Path | None:
+    """Snapshot Redis via `redis-cli --rdb`, which streams a point-in-time
+    RDB over the wire — works from a separate backup container without
+    shared filesystem access to the Redis server's dir."""
     redis_url = os.environ.get("REDIS_URL", "")
     if not redis_url:
         return None
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     file_path = output_dir / f"stayos_redis_{timestamp}.rdb"
-    # Redis BACKUP/BGSAVE output is environment-specific; this script documents the contract.
     result = subprocess.run(
-        ["redis-cli", "-u", redis_url, "--raw", "BGSAVE"],
+        ["redis-cli", "-u", redis_url, "--rdb", str(file_path)],
         capture_output=True,
         text=True,
         check=False,
     )
-    if result.returncode != 0:
-        raise SystemExit(f"Redis backup failed: {result.stderr}")
+    if result.returncode != 0 or not file_path.exists() or file_path.stat().st_size == 0:
+        raise SystemExit(f"Redis backup failed: {result.stderr.strip() or 'empty/missing rdb'}")
     return file_path
 
 

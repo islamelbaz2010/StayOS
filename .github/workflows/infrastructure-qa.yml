@@ -63,6 +63,7 @@ jobs:
           S3_KYC_BUCKET=stayos-ci-kyc
           S3_PAYMENT_PROOF_BUCKET=stayos-ci-payment-proofs
           AWS_REGION=auto
+          S3_ADDRESSING_STYLE=path
           AWS_ACCESS_KEY_ID=makazoh_ci
           AWS_SECRET_ACCESS_KEY=ci_secret_0123456789abcdef
           EOF

@@ -66,7 +66,11 @@ publicly reachable → dev-token must stay off).
 `infra/postgres/init-dbs.sh` creates `makazoh_prod` + `makazoh_qa` with
 separate roles (`app_prod` / `app_qa`) and enables PostGIS on first boot.
 
-## 5. MinIO
+## 5. Object storage (RustFS — S3-compatible)
+
+> NOTE: `minio/minio` was removed from public registries (Oct-2025); the compose
+> `minio` service now runs `rustfs/rustfs` (S3 API on :9000, console private on
+> :9001). `mc`-style bucket ops below also work via any S3 client (boto3/aws-cli).
 
 Console bound to `127.0.0.1:9001` inside the container — **never publish
 9001**. Presigned uploads use `path` addressing through the API's signed
@@ -75,7 +79,8 @@ you choose to expose on the proxy). Create the three private buckets
 once via `mc` inside the network:
 
 ```bash
-docker compose -f docker-compose.prod.yml exec minio \
+# create private buckets via compose-network S3 client, e.g.:
+docker compose -f docker-compose.prod.yml exec api python -c "import boto3,os; boto3.client('s3', endpoint_url='http://minio:9000', region_name='auto', aws_access_key_id=os.environ['MINIO_ROOT_USER'], aws_secret_access_key=os.environ['MINIO_ROOT_PASSWORD']).create_bucket(Bucket='<bucket>')"
   mc alias set local http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
 for b in stayos-listings stayos-kyc stayos-payment-proofs; do
   docker compose -f docker-compose.prod.yml exec minio mc mb local/$b
@@ -152,3 +157,21 @@ Do NOT touch MX/SPF/DKIM/DMARC until mailbox status is confirmed.
 - [ ] listing photo presign→PUT→GET works (path-style on MinIO)
 - [ ] `docker compose ps` — one `beat`, private ports only on 80/443
 - [ ] nightly backup ran (`/backups` non-empty next morning)
+
+
+## 12. Docker validation path (founder's Mac has no Docker)
+
+Docker Desktop/Colima are NOT required locally. `.github/workflows/
+infrastructure-qa.yml` (ubuntu-latest) is the official validation path:
+builds API+Web images, starts the full `docker-compose.prod.yml` stack,
+asserts DB isolation, QA seed, RustFS presign E2E, worker/beat, Caddy
+routing (DOMAIN_ROOT=localhost → *.localhost hosts), and a one-shot backup.
+Green run: https://github.com/islamelbaz2010/StayOS/actions/runs/41279412382
+Re-run: `gh workflow run infrastructure-qa.yml --ref redesign/web-a2z`
+
+## 13. GHCR
+
+Compose defaults reference `ghcr.io/islamelbaz2010/stayos-{api,web}:latest`
+(override via `WEB_IMAGE`/`API_IMAGE` env). Publishing is intentionally not
+automated yet — add a `packages: write` job on release tags when ready;
+GITHUB_TOKEN needs `packages: write` permission on the repo.

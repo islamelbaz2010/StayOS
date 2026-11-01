@@ -18,7 +18,7 @@ services:
       api: {condition: service_healthy}
     networks: [edge, app]
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:2019/config/"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:2019/config/"]
       interval: 30s
 
   # ── Public Coming Soon (makazoh.com / www) ───────────────────────────
@@ -107,7 +107,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-    command: ["celery", "-A", "app.celery_app", "beat", "--loglevel=info"]
+    command: ["celery", "-A", "app.celery_app", "beat", "--loglevel=info", "--schedule", "/tmp/celerybeat-schedule"]
     depends_on:
       migrate: {condition: service_completed_successfully}
     networks: [data]

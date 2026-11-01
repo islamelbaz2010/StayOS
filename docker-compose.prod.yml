@@ -8,6 +8,8 @@ services:
   proxy:
     image: caddy:2-alpine
     restart: unless-stopped
+    environment:
+      DOMAIN_ROOT: ${DOMAIN_ROOT:-makazoh.com}
     ports: ["80:80", "443:443"]
     volumes:
       - ./infra/proxy/Caddyfile:/etc/caddy/Caddyfile:ro

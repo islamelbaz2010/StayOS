@@ -55,6 +55,8 @@ safe placeholders only.
 | `AWS_ACCESS_KEY_ID` | optional | `""` | AWS access key ID **⚠ secret** |
 | `AWS_SECRET_ACCESS_KEY` | optional | `""` | AWS secret access key **⚠ secret** |
 | `S3_ENDPOINT_URL` | optional | `Field(` |  |
+| `S3_REGION` | optional | `""` (→`auto` when endpoint set) | SigV4 scope region for S3-compatible storage (Tigris/MinIO) |
+| `S3_ADDRESSING_STYLE` | optional | `"virtual"` | `virtual` (AWS/Tigris) or `path` (MinIO/single-host) |
 | `S3_PRESIGNED_GET_TTL_SECONDS` | optional | `86400` |  |
 | `KYC_VERIFICATION_MODE` | optional | `Field(` |  |
 | `SUMSUB_BASE_URL` | optional | `"https://api.sumsub.com"` |  |

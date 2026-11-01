@@ -1,12 +1,12 @@
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
-    CheckConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column

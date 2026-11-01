@@ -1,11 +1,12 @@
 """Pre-launch marketing lead capture — validation, dedup, privacy rules."""
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from pydantic import ValidationError
 
 from app.marketing.constants import ALLOWED_EVENTS, LeadStatus
 from app.marketing.schemas import EventCreate, GuestLeadCreate, HostLeadCreate
 from app.marketing.services import hash_ip, normalize_email, normalize_phone
-
 
 # ── Host lead validation ──────────────────────────────────────────
 
@@ -148,3 +149,66 @@ def test_contact_normalization():
 
 def test_lead_status_lifecycle():
     assert LeadStatus.ALL == ("NEW", "CONTACTED", "QUALIFIED", "INVITED", "ONBOARDED", "NOT_A_FIT")
+
+
+# ── Trusted-proxy client-IP resolution ────────────────────────────
+# The Caddy edge APPENDS the real peer IP to X-Forwarded-For — the
+# rightmost entry is trusted, leftmost is requester-controlled.
+
+
+def _req(client_host: str = "10.0.0.1", xff: str | None = None):
+    req = MagicMock()
+    req.client = MagicMock(host=client_host)
+    req.headers = {"x-forwarded-for": xff} if xff else {}
+    return req
+
+
+def test_client_ip_ignores_xff_when_trust_disabled(monkeypatch):
+    from app.config import settings
+    from app.security.client_ip import client_ip
+
+    monkeypatch.setattr(settings, "TRUST_PROXY_HEADERS", False)
+    # a forged header must never reach attribution when trust is off
+    assert client_ip(_req("10.0.0.1", "198.51.100.9")) == "10.0.0.1"
+
+
+def test_client_ip_uses_rightmost_edge_entry_when_trusted(monkeypatch):
+    from app.config import settings
+    from app.security.client_ip import client_ip
+
+    monkeypatch.setattr(settings, "TRUST_PROXY_HEADERS", True)
+    # Caddy appends the real client IP — client-supplied leftmost values
+    # are attacker-controlled and must be discarded
+    assert client_ip(_req("10.0.0.1", "1.2.3.4, 203.0.113.7")) == "203.0.113.7"
+    assert client_ip(_req("10.0.0.1", "203.0.113.7")) == "203.0.113.7"
+    assert client_ip(_req("10.0.0.1", " 9.9.9.9 , 8.8.8.8 ")) == "8.8.8.8"
+    # no header → socket peer fallback
+    assert client_ip(_req("10.0.0.1", None)) == "10.0.0.1"
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_keys_on_trusted_client_ip(monkeypatch):
+    """Spoofed XFF must not change the rate-limit bucket; distinct
+    visitors must get distinct buckets."""
+    from app.config import settings
+    from app.security.rate_limit import rate_limit
+    from app.shared import redis as redis_state
+
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "TRUST_PROXY_HEADERS", True)
+    redis = AsyncMock()
+    redis.eval = AsyncMock(return_value=0)
+    monkeypatch.setattr(redis_state, "redis_client", redis)
+
+    req = _req("172.18.0.2", "6.6.6.6, 203.0.113.7")
+    req.url.path = "/api/v1/public/leads/host"
+    await rate_limit(req, key_prefix="leads", limit=10, window_seconds=300)
+    key = redis.eval.call_args.args[2]
+    assert "203.0.113.7" in key and "6.6.6.6" not in key and "172.18.0.2" not in key
+
+    # different real visitor → different bucket
+    redis.eval.reset_mock()
+    req2 = _req("172.18.0.2", "1.1.1.1, 198.51.100.4")
+    req2.url.path = "/api/v1/public/leads/host"
+    await rate_limit(req2, key_prefix="leads", limit=10, window_seconds=300)
+    assert redis.eval.call_args.args[2] != key

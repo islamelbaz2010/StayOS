@@ -4,6 +4,7 @@ import hmac
 import io
 import re
 import uuid
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -13,7 +14,7 @@ from app.config import settings
 
 from .constants import LeadKind, LeadStatus
 from .models import GuestLead, HostLead, LeadEvent, LeadNote
-from .schemas import EventCreate, GuestLeadCreate, HostLeadCreate
+from .schemas import EventCreate, GuestLeadCreate, HostLeadCreate, UtmMixin
 
 
 def hash_ip(ip: str | None) -> str | None:
@@ -40,7 +41,7 @@ def normalize_email(raw: str) -> str:
     return raw.strip().lower()
 
 
-def _utm(obj) -> dict:
+def _utm(obj: UtmMixin) -> dict[str, str | None]:
     return {
         "utm_source": obj.utm_source, "utm_medium": obj.utm_medium,
         "utm_campaign": obj.utm_campaign, "utm_content": obj.utm_content,
@@ -82,10 +83,12 @@ async def create_host_lead(
     except IntegrityError:
         # concurrent duplicate — the unique constraint is the authority
         await session.rollback()
-        lead = await session.scalar(
+        row = await session.scalar(
             select(HostLead).where(HostLead.phone_normalized == phone_n)
         )
-        return lead, False
+        if row is None:
+            raise
+        return row, False
     return lead, True
 
 
@@ -117,10 +120,12 @@ async def create_guest_lead(
         await session.commit()
     except IntegrityError:
         await session.rollback()
-        lead = await session.scalar(
+        row = await session.scalar(
             select(GuestLead).where(GuestLead.contact_key == key)
         )
-        return lead, False
+        if row is None:
+            raise
+        return row, False
     return lead, True
 
 
@@ -139,7 +144,7 @@ async def record_event(
     return ev
 
 
-def _model(kind: str):
+def _model(kind: str) -> type[HostLead] | type[GuestLead]:
     return HostLead if kind == LeadKind.HOST else GuestLead
 
 
@@ -151,12 +156,12 @@ async def list_leads(
     q: str | None = None,
     limit: int = 200,
     offset: int = 0,
-) -> list[dict]:
-    rows: list[dict] = []
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
     kinds = [kind] if kind else [LeadKind.HOST, LeadKind.GUEST]
     for k in kinds:
         model = _model(k)
-        stmt = select(model).order_by(model.created_at.desc()).limit(limit).offset(offset)
+        stmt: Any = select(model).order_by(model.created_at.desc()).limit(limit).offset(offset)
         if status:
             stmt = stmt.where(model.status == status)
         if k == LeadKind.HOST:
@@ -199,7 +204,7 @@ async def update_lead_status(
     session: AsyncSession, kind: str, lead_id: str, status: str
 ) -> bool:
     model = _model(kind)
-    lead = await session.get(model, lead_id)
+    lead: Any = await session.get(model, lead_id)
     if not lead:
         return False
     lead.status = status
@@ -235,8 +240,12 @@ async def export_csv(session: AsyncSession, kind: str | None = None) -> str:
     return buf.getvalue()
 
 
-async def marketing_summary(session: AsyncSession) -> dict:
-    async def _count(table, col=None, val=None):
+async def marketing_summary(session: AsyncSession) -> dict[str, object]:
+    async def _count(
+        table: type[HostLead] | type[GuestLead] | type[LeadEvent],
+        col: Any = None,
+        val: Any = None,
+    ) -> int:
         stmt = select(func.count()).select_from(table)
         if col is not None:
             stmt = stmt.where(col == val)

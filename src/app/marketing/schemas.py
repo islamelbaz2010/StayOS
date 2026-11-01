@@ -1,8 +1,9 @@
+import re
 from datetime import datetime
 
-import re
-
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+from .constants import ALLOWED_EVENTS, PROPERTY_READINESS, PROPERTY_TYPES, LeadStatus
 
 _EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,255}\.[a-zA-Z]{2,}$")
 
@@ -11,8 +12,6 @@ def _check_email(v: str | None) -> str | None:
     if v is not None and not _EMAIL_RE.match(v):
         raise ValueError("invalid email")
     return v
-
-from .constants import ALLOWED_EVENTS, PROPERTY_READINESS, PROPERTY_TYPES, LeadStatus
 
 
 class UtmMixin(BaseModel):
@@ -100,7 +99,7 @@ class GuestLeadCreate(UtmMixin):
         return _check_email(v)
 
     @model_validator(mode="after")
-    def _contact_required(self):
+    def _contact_required(self) -> "GuestLeadCreate":
         if not self.contact_key():
             raise ValueError("email or phone is required")
         return self
@@ -159,10 +158,13 @@ class LeadNoteCreate(BaseModel):
 class MarketingSummary(BaseModel):
     page_views: int
     host_form_starts: int
+    guest_form_starts: int
+    guest_waitlist_submits: int
     host_submissions: int
     guest_submissions: int
     host_conversion_rate: float
+    guest_conversion_rate: float
     top_source: str | None
     top_campaign: str | None
-    top_cities: list[dict]
-    leads_by_status: dict
+    top_cities: list[dict[str, object]]
+    leads_by_status: dict[str, int]

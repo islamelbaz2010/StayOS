@@ -166,7 +166,7 @@ infrastructure-qa.yml` (ubuntu-latest) is the official validation path:
 builds API+Web images, starts the full `docker-compose.prod.yml` stack,
 asserts DB isolation, QA seed, RustFS presign E2E, worker/beat, Caddy
 routing (DOMAIN_ROOT=localhost → *.localhost hosts), and a one-shot backup.
-Green run: https://github.com/islamelbaz2010/StayOS/actions/runs/41279412382
+Green run: <https://github.com/islamelbaz2010/StayOS/actions/runs/41279412382>
 Re-run: `gh workflow run infrastructure-qa.yml --ref redesign/web-a2z`
 
 ## 13. GHCR

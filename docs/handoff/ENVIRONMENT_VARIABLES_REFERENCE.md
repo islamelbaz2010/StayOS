@@ -15,7 +15,7 @@ safe placeholders only.
 | `LOG_LEVEL` | optional | `"INFO"` |  |
 | `CORS_ORIGINS` | optional | `"http://localhost:3000"` | Comma-separated CORS origins — prod must add `https://makazoh.com,https://www.makazoh.com` for the public pre-launch site forms |
 | `LEADS_IP_HMAC_KEY` | optional | `""` | HMAC key pseudonymizing visitor IPs on marketing leads; unset → IP column stays NULL. Generate with `openssl rand -hex 32`; rotating it breaks correlation with older rows (treat as a re-key event, store in secrets manager) |
-| `TRUST_PROXY_HEADERS` | optional | `false` | Honor `X-Forwarded-For` for lead-IP attribution — set `true` only behind the Caddy edge |
+| `TRUST_PROXY_HEADERS` | optional | `false` | Honor `X-Forwarded-For` for client-IP attribution and rate limiting — set `true` only behind the Caddy edge, which appends the real peer IP so the **rightmost** entry is the trusted client (leftmost is requester-controlled) |
 | `CORS_ORIGIN_REGEX` | optional | `""` | Regex pattern for allowed CORS origins (e.g. Vercel preview URLs) |
 | `WEB_BASE_URL` | optional | `Field(` |  |
 | `PAYMENT_RETURN_TOKEN_TTL_HOURS` | optional | `Field(` |  **⚠ secret** |

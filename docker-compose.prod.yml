@@ -1,0 +1,191 @@
+# MAKAZOH — production/QA Compose (Hostinger VPS target)
+# Public surface: only the proxy (80/443). Everything else is private-net.
+# Secrets live in .env.prod / .env.qa on the host — never committed.
+name: makazoh
+
+services:
+  # ── Edge ─────────────────────────────────────────────────────────────
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./infra/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web: {condition: service_healthy}
+      api: {condition: service_healthy}
+    networks: [edge, app]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2019/config/"]
+      interval: 30s
+
+  # ── Public Coming Soon (makazoh.com / www) ───────────────────────────
+  coming-soon:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    command: ["caddy", "file-server", "--root", "/srv", "--listen", ":8080"]
+    volumes: ["./infra/coming-soon:/srv:ro"]
+    networks: [app]
+
+  # ── Web (Next.js standalone) ──────────────────────────────────────────
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/islamelbaz2010/stayos-web:latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    networks: [app]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    deploy: {resources: {limits: {memory: 768M}}}
+
+  # ── API (FastAPI) ────────────────────────────────────────────────────
+  api:
+    image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
+    restart: unless-stopped
+    env_file: [.env.${ENV_SLOT:-prod}]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_REGION: auto
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      minio: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    networks: [app, data]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/healthz').status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy: {resources: {limits: {memory: 1500M}}}
+
+  # ── One-shot migrations — runs BEFORE api/worker/beat come up ────────
+  migrate:
+    image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
+    env_file: [.env.${ENV_SLOT:-prod}]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+    command: ["alembic", "upgrade", "head"]
+    networks: [data]
+    restart: "no"
+
+  # ── Celery worker ────────────────────────────────────────────────────
+  worker:
+    image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
+    restart: unless-stopped
+    env_file: [.env.${ENV_SLOT:-prod}]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_REGION: auto
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    networks: [data]
+
+  # ── Celery Beat — EXACTLY ONE per environment ────────────────────────
+  beat:
+    image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
+    restart: unless-stopped
+    env_file: [.env.${ENV_SLOT:-prod}]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+    command: ["celery", "-A", "app.worker.celery_app", "beat", "--loglevel=info"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    networks: [data]
+    deploy: {replicas: 1}
+
+  # ── PostgreSQL + PostGIS (private) ───────────────────────────────────
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./infra/postgres/init-dbs.sh:/docker-entrypoint-initdb.d/10-init-dbs.sh:ro
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy: {resources: {limits: {memory: 1G}}}
+
+  # ── Redis (private, broker+backend) ──────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      ["redis-server", "--requirepass", "${REDIS_PASSWORD}",
+       "--appendonly", "yes", "--appendfsync", "everysec",
+       "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    volumes: [redis_data:/data]
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy: {resources: {limits: {memory: 640M}}}
+
+  # ── MinIO (private S3 — console NOT exposed) ─────────────────────────
+  minio:
+    image: minio/minio:RELEASE.2025-09-06T17-38-46Z
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes: [minio_data:/data]
+    networks: [app, data]
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || curl -sf http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    deploy: {resources: {limits: {memory: 512M}}}
+
+  # ── Nightly backup (cron inside container) ───────────────────────────
+  backup:
+    image: ${API_IMAGE:-ghcr.io/islamelbaz2010/stayos-api:latest}
+    restart: unless-stopped
+    env_file: [.env.${ENV_SLOT:-prod}]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_REGION: auto
+      BACKUP_RETENTION_DAYS: "30"
+    command: ["python", "scripts/backup_scheduler.py"]
+    volumes: [backup_data:/backups]
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [data]
+
+networks:
+  edge:   # only the proxy
+  app:    # proxy <-> web/api/minio presign path
+  data:   # api/worker/beat <-> postgres/redis/minio/backup
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pg_data:
+  redis_data:
+  minio_data:
+  backup_data:

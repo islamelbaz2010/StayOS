@@ -12,10 +12,10 @@
 <meta property="og:image" content="https://makazoh.com/assets/hero.webp">
 <link rel="canonical" href="https://makazoh.com/">
 <meta name="robots" content="index,follow">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2C9.9 2 5 6.9 5 13c0 8 11 17 11 17s11-9 11-17c0-6.1-4.9-11-11-11z' fill='%2384CC16'/%3E%3Ccircle cx='16' cy='13' r='5' fill='%2314130f'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill-rule='evenodd' fill='%2384CC16' d='M256 32C167.67 32 96 96.51 96 176c0 128 160 304 160 304s160-176 160-304c0-79.49-71.67-144-160-144zm0 224a80 80 0 1 0 80-80 80.09 80.09 0 0 0-80 80z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&family=Cairo:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800;9..40,900&family=Cairo:wght@400;600;700;800&display=swap">
 <style>
 :root{--bg:#faf9f6;--ink:#14130f;--mut:#6b6963;--faint:#9a978e;--lime:#84CC16;--lime-d:#65A30D;--on-lime:#365314;--line:#e8e5dd}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -36,6 +36,10 @@ section{padding:72px 0}
 header{position:absolute;top:0;left:0;right:0;z-index:50}
 .hd{display:flex;align-items:center;justify-content:space-between;height:72px}
 .logo{display:flex;align-items:center}
+/* wordmark — mirrors MakazohMark: one text run, pin glyph inline as the O */
+.wm{font-weight:900;font-size:26px;letter-spacing:.5px;color:#fff;direction:ltr;unicode-bidi:isolate;display:inline-flex;align-items:baseline;line-height:1}
+.wm .pin{display:inline-block;height:1.05em;width:auto;vertical-align:baseline;transform:translateY(.12em)}
+.wm .pin path{fill:var(--lime);fill-rule:evenodd}
 .langsw{display:flex;gap:4px;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:3px;background:rgba(20,19,15,.35);backdrop-filter:blur(8px)}
 .langsw button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;color:#d8d6c8}
 .langsw button.on{background:#fff;color:var(--ink)}
@@ -104,12 +108,7 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
 
 <header><div class="wrap hd">
   <a class="logo" href="#" aria-label="MAKAZOH">
-    <svg width="150" height="30" viewBox="0 0 300 60" direction="ltr" role="img" aria-label="MAKAZOH logo">
-      <text x="0" y="44" font-family="'DM Sans',system-ui,sans-serif" font-weight="800" font-size="42" letter-spacing="-1" fill="#fff">MAKAZ</text>
-      <path d="M217 8c-8.5 0-15.5 7-15.5 15.5 0 11.5 15.5 24.5 15.5 24.5s15.5-13 15.5-24.5C232.5 15 225.5 8 217 8z" fill="#84CC16"/>
-      <circle cx="217" cy="23.5" r="6.5" fill="#14130f"/>
-      <text x="238" y="44" font-family="'DM Sans',system-ui,sans-serif" font-weight="800" font-size="42" letter-spacing="-1" fill="#fff">H</text>
-    </svg>
+    <span class="wm" role="img" aria-label="MAKAZOH logo">MAKAZ<svg class="pin" viewBox="0 0 512 512" aria-hidden="true"><path d="M256 32C167.67 32 96 96.51 96 176c0 128 160 304 160 304s160-176 160-304c0-79.49-71.67-144-160-144zm0 224a80 80 0 1 0 80-80 80.09 80.09 0 0 0-80 80z"/></svg>H</span>
   </a>
   <div class="langsw"><button id="l-en" class="on">EN</button><button id="l-ar">عربي</button></div>
 </div></header>
@@ -236,7 +235,7 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
 <footer><div class="wrap">
   <div class="fgrid">
     <div>
-      <svg width="120" height="24" viewBox="0 0 300 60" direction="ltr" aria-label="MAKAZOH"><text x="0" y="44" font-family="'DM Sans',sans-serif" font-weight="800" font-size="42" letter-spacing="-1" fill="#fff">MAKAZ</text><path d="M217 8c-8.5 0-15.5 7-15.5 15.5 0 11.5 15.5 24.5 15.5 24.5s15.5-13 15.5-24.5C232.5 15 225.5 8 217 8z" fill="#84CC16"/><circle cx="217" cy="23.5" r="6.5" fill="#14130f"/><text x="238" y="44" font-family="'DM Sans',sans-serif" font-weight="800" font-size="42" letter-spacing="-1" fill="#fff">H</text></svg>
+      <span class="wm" style="font-size:22px" role="img" aria-label="MAKAZOH">MAKAZ<svg class="pin" viewBox="0 0 512 512" aria-hidden="true"><path d="M256 32C167.67 32 96 96.51 96 176c0 128 160 304 160 304s160-176 160-304c0-79.49-71.67-144-160-144zm0 224a80 80 0 1 0 80-80 80.09 80.09 0 0 0-80 80z"/></svg>H</span>
       <p style="max-width:260px;margin-top:12px" data-t="ft_about">A hospitality marketplace for Egypt — launching soon.</p>
     </div>
     <div>
@@ -265,7 +264,7 @@ consent:'I agree to be contacted by the MAKAZOH team about hosting. My details a
 e_tag:'For travellers',e_h2:'Be first in line.',e_sub:'We\'ll tell you the moment stays open for booking.',gf_name:'Name *',gf_email:'Email',gf_phone:'or Phone',gf_city:'Preferred destination',gf_cityph:'Cairo, North Coast, Hurghada…',gconsent:'I agree to be contacted about launch updates.',gf_btn:'Join the waitlist',
 h_tag:'FAQ',h_h2:'Good to know.',q1:'What is MAKAZOH?',a1:'A hospitality marketplace for Egypt — where travellers discover and book stays, and owners list and manage them.',q2:'When does it launch?',a2:'Final preparation is underway — a confirmed date is announced here and to registered hosts and guests first.',q3:'Who can register as a host?',a3:'Owners and operators — apartments, villas, chalets, serviced apartments, hotels. Individuals and management companies welcome.',q4:'Are bookings open?',a4:'No — this page is for pre-launch registration only.',q5:'What do founding hosts get?',a5:'Priority application review, early onboarding invitation, and a product intro session — commercial terms are agreed during onboarding.',
 ft_about:'A hospitality marketplace for Egypt — launching soon.',ft_links:'Platform',ft_host:'Become a Host',ft_guest:'Guest waitlist',ft_legal:'Privacy',ft_priv:'Privacy requests, corrections, deletion:',ft_copy:'© 2026 MAKAZOH — pre-launch; bookings not yet open.',ft_legalnote:'Terms & Privacy pages are being finalized for launch.',
-ok_host:'Thank you — you\'re registered. Our team will contact you before launch.',ok_guest:'You\'re on the waitlist — we\'ll let you know when stays open.',err:'Something went wrong — please check your details and try again.',err_consent:'Please confirm consent to continue.'},
+ok_host:'Thank you — you\'re registered. Our team will contact you before launch.',ok_guest:'You\'re on the waitlist — we\'ll let you know when stays open.',err:'Something went wrong — please check your details and try again.',err_down:'Registration is temporarily unavailable — please check back soon. Your details were not submitted.',err_consent:'Please confirm consent to continue.'},
 ar:{hero_tag:'قريباً في مصر',hero_h1:'الإقامات، بشكلٍ جديد.',hero_sub:'سوقٌ جديد للشقق والفلل والشاليهات والإقامات الفندقية في مصر.',cta_host:'سجّل كمضيف مؤسس',cta_guest:'انضم لقائمة الضيوف',hero_note:'التسجيل المُسبق مفتوح — الحجوزات ليست متاحة بعد.',
 c_tag:'التجربة',c_h2:'إقامات تستحق السفر من أجلها.',p1_t:'شقق',p2_t:'فلل',p3_t:'شاليهات ساحلية',p4_t:'إقامات مخدومة',c_illus:'الصور توضيحية — التوفر والأسعار تُعرض فقط للعقارات الحقيقية الموثّقة عند الإطلاق.',
 d_tag:'للملّاك والمشغّلين',d_h2:'عقارك. إمكانيات أكثر.',d_sub:'سجّل اهتمامك — فريقنا يراجع كل طلب ويتواصل معك قبل الإطلاق.',st1_b:'قدّم طلبك',st1_d:'نموذج دقيقتان، لا مستندات مطلوبة في هذه المرحلة.',st2_b:'المراجعة',st2_d:'المضيفون المؤسسون يحصلون على مراجعة ذات أولوية.',st3_b:'دعوة الانضمام',st3_d:'نتواصل معك بالخطوات التالية عند افتتاح المنصة.',d_note:'التسجيل إبداء اهتمام — وليس إعلاناً مؤكداً أو حجزاً.',
@@ -274,7 +273,7 @@ consent:'أوافق على تواصل فريق مكازه معي بخصوص ال
 e_tag:'للمسافرين',e_h2:'كن أول الواصلين.',e_sub:'سنعلمك فور فتح الإقامات للحجز.',gf_name:'الاسم *',gf_email:'البريد الإلكتروني',gf_phone:'أو رقم الهاتف',gf_city:'الوجهة المفضلة',gf_cityph:'القاهرة، الساحل الشمالي، الغردقة…',gconsent:'أوافق على التواصل بخصوص تحديثات الإطلاق.',gf_btn:'انضم لقائمة الانتظار',
 h_tag:'أسئلة شائعة',h_h2:'معلومات مفيدة.',q1:'ما هو مكازه؟',a1:'سوق ضيافة لمصر — يكتشف فيه المسافرون الإقامات ويحجزونها، ويعرضها الملّاك ويديرونها.',q2:'متى يُطلق؟',a2:'الإعداد النهائي جارٍ — يُعلن الموعد المؤكد هنا وللمسجلين أولاً.',q3:'من يمكنه التسجيل كمضيف؟',a3:'الملّاك والمشغّلون — شقق وفلل وشاليهات وشقق فندقية وفنادق. الأفراد وشركات الإدارة مرحّب بهم.',q4:'هل الحجوزات مفتوحة؟',a4:'لا — هذه الصفحة للتسجيل المُسبق فقط.',q5:'ماذا يحصل المضيفون المؤسسون؟',a5:'مراجعة ذات أولوية، دعوة انضمام مبكرة، وجلسة تعريفية بالمنتج — الشروط التجارية تُتفق أثناء الانضمام.',
 ft_about:'سوق ضيافة لمصر — يُطلق قريباً.',ft_links:'المنصة',ft_host:'سجّل كمضيف',ft_guest:'قائمة الضيوف',ft_legal:'الخصوصية',ft_priv:'طلبات الخصوصية أو التصحيح أو الحذف:',ft_copy:'© 2026 مكازه — قبل الإطلاق؛ الحجوزات غير مفتوحة.',ft_legalnote:'صفحات الشروط والخصوصية قيد الإعداد للإطلاق.',
-ok_host:'شكراً — تم تسجيلك. سيتواصل معك فريقنا قبل الإطلاق.',ok_guest:'أنت الآن في قائمة الانتظار — سنعلمك عند فتح الإقامات.',err:'حدث خطأ — تحقق من بياناتك وحاول مجدداً.',err_consent:'يرجى تأكيد الموافقة للمتابعة.'}};
+ok_host:'شكراً — تم تسجيلك. سيتواصل معك فريقنا قبل الإطلاق.',ok_guest:'أنت الآن في قائمة الانتظار — سنعلمك عند فتح الإقامات.',err:'حدث خطأ — تحقق من بياناتك وحاول مجدداً.',err_down:'التسجيل غير متاح مؤقتاً — يرجى العودة قريباً. لم يتم إرسال بياناتك.',err_consent:'يرجى تأكيد الموافقة للمتابعة.'}};
 
 let lang=new URLSearchParams(location.search).get('lang')||'en';
 const SID=(()=>{let s=sessionStorage.getItem('mz_sid');if(!s){s=crypto.randomUUID();sessionStorage.setItem('mz_sid',s)}return s})();
@@ -297,11 +296,11 @@ document.getElementById('hostform').addEventListener('submit',async e=>{e.preven
 if(!document.getElementById('hf-consent').checked){show('hf-msg',false,T[lang].err_consent);return}
 const d=data(e.target);d.consent=true;d.units_count=+d.units_count||1;track('host_form_submit');
 try{const r=await fetch(API_BASE+'/api/v1/public/leads/host',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-if(r.ok){show('hf-msg',true,T[lang].ok_host);e.target.reset();track('host_form_success')}else show('hf-msg',false,T[lang].err)}catch(_){show('hf-msg',false,T[lang].err)}});
+if(r.ok){show('hf-msg',true,T[lang].ok_host);e.target.reset();track('host_form_success')}else show('hf-msg',false,T[lang].err)}catch(_){show('hf-msg',false,T[lang].err_down)}});
 document.getElementById('guestform').addEventListener('submit',async e=>{e.preventDefault();
 if(!document.getElementById('gf-consent').checked){show('gf-msg',false,T[lang].err_consent);return}
 const d=data(e.target);d.consent=true;track('guest_waitlist_submit');
 try{const r=await fetch(API_BASE+'/api/v1/public/leads/guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-if(r.ok){show('gf-msg',true,T[lang].ok_guest);e.target.reset();track('guest_waitlist_success')}else show('gf-msg',false,T[lang].err)}catch(_){show('gf-msg',false,T[lang].err)}});
+if(r.ok){show('gf-msg',true,T[lang].ok_guest);e.target.reset();track('guest_waitlist_success')}else show('gf-msg',false,T[lang].err)}catch(_){show('gf-msg',false,T[lang].err_down)}});
 </script>
 </body></html>

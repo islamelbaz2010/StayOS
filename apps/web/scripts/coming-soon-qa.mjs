@@ -17,8 +17,8 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { mkdirSync, existsSync } from 'node:fs';
-import { extname, join } from 'node:path';
+import { mkdirSync } from 'node:fs';
+import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..', '..');
@@ -32,8 +32,12 @@ const MIME = { '.html': 'text/html', '.webp': 'image/webp', '.png': 'image/png',
 const server = createServer(async (req, res) => {
   const pathname = req.url.split('?')[0];
   const path = pathname === '/' ? '/index.html' : pathname;
+  const file = resolve(SITE_DIR, `.${path}`);
+  if (!file.startsWith(resolve(SITE_DIR) + sep)) {
+    res.writeHead(403); res.end(); return;
+  }
   try {
-    const body = await readFile(join(SITE_DIR, path));
+    const body = await readFile(file);
     res.writeHead(200, { 'content-type': MIME[extname(path)] || 'application/octet-stream' });
     res.end(body);
   } catch {

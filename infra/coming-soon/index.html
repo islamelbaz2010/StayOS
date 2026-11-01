@@ -161,17 +161,17 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
     <form id="hostform" novalidate>
       <h3 data-t="hf_t" style="margin-bottom:16px">Become a Founding Host</h3>
       <div class="fmsg" id="hf-msg"></div>
-      <div class="f"><label data-t="hf_name">Full name *</label><input name="full_name" required></div>
+      <div class="f"><label for="hf-fname" data-t="hf_name">Full name *</label><input id="hf-fname" name="full_name" required></div>
       <div class="frow">
-        <div class="f"><label data-t="hf_phone">Phone (with country code) *</label><input name="phone" placeholder="+20…" required></div>
-        <div class="f"><label data-t="hf_email">Email</label><input name="email" type="email"></div>
+        <div class="f"><label for="hf-phone" data-t="hf_phone">Phone (with country code) *</label><input id="hf-phone" name="phone" placeholder="+20…" required></div>
+        <div class="f"><label for="hf-email" data-t="hf_email">Email</label><input id="hf-email" name="email" type="email"></div>
       </div>
       <div class="frow">
-        <div class="f"><label data-t="hf_city">City / location *</label><input name="city" required></div>
-        <div class="f"><label data-t="hf_units">Units *</label><input name="units_count" type="number" min="1" value="1" required></div>
+        <div class="f"><label for="hf-city" data-t="hf_city">City / location *</label><input id="hf-city" name="city" required></div>
+        <div class="f"><label for="hf-units" data-t="hf_units">Units *</label><input id="hf-units" name="units_count" type="number" min="1" value="1" required></div>
       </div>
       <div class="frow">
-        <div class="f"><label data-t="hf_ptype">Property type *</label><select name="property_type" required>
+        <div class="f"><label for="hf-ptype" data-t="hf_ptype">Property type *</label><select id="hf-ptype" name="property_type" required>
           <option value="apartment" data-t="pt_ap">Apartment</option>
           <option value="villa" data-t="pt_vi">Villa</option>
           <option value="chalet" data-t="pt_ch">Chalet</option>
@@ -179,7 +179,7 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
           <option value="hotel_resort" data-t="pt_hr">Hotel / resort</option>
           <option value="other" data-t="pt_ot">Other</option>
         </select></div>
-        <div class="f"><label data-t="hf_ready">Readiness</label><select name="property_readiness">
+        <div class="f"><label for="hf-ready" data-t="hf_ready">Readiness</label><select id="hf-ready" name="property_readiness">
           <option value="" data-t="pr_x">—</option>
           <option value="ready_now" data-t="pr_rn">Ready now</option>
           <option value="needs_furnishing" data-t="pr_nf">Needs furnishing</option>
@@ -187,7 +187,7 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
           <option value="exploring" data-t="pr_ex">Exploring</option>
         </select></div>
       </div>
-      <div class="f"><label data-t="hf_pc">Preferred contact</label><select name="preferred_contact">
+      <div class="f"><label for="hf-pc" data-t="hf_pc">Preferred contact</label><select id="hf-pc" name="preferred_contact">
         <option value="" data-t="pc_x">—</option>
         <option value="phone" data-t="pc_p">Phone</option>
         <option value="whatsapp" data-t="pc_w">WhatsApp</option>
@@ -209,12 +209,12 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
   </div>
   <form id="guestform" class="wl" novalidate>
     <div class="fmsg" id="gf-msg"></div>
-    <div class="f"><label data-t="gf_name">Name *</label><input name="name" required></div>
+    <div class="f"><label for="gf-name" data-t="gf_name">Name *</label><input id="gf-name" name="name" required></div>
     <div class="frow">
-      <div class="f"><label data-t="gf_email">Email</label><input name="email" type="email"></div>
-      <div class="f"><label data-t="gf_phone">or Phone</label><input name="phone" placeholder="+20…"></div>
+      <div class="f"><label for="gf-email" data-t="gf_email">Email</label><input id="gf-email" name="email" type="email"></div>
+      <div class="f"><label for="gf-phone" data-t="gf_phone">or Phone</label><input id="gf-phone" name="phone" placeholder="+20…"></div>
     </div>
-    <div class="f"><label data-t="gf_city">Preferred destination</label><input name="preferred_city" data-tph="gf_cityph" placeholder="Cairo, North Coast, Hurghada…"></div>
+    <div class="f"><label for="gf-city" data-t="gf_city">Preferred destination</label><input id="gf-city" name="preferred_city" data-tph="gf_cityph" placeholder="Cairo, North Coast, Hurghada…"></div>
     <input class="hp" name="website" tabindex="-1" autocomplete="off">
     <div class="consent"><input type="checkbox" id="gf-consent" required><label for="gf-consent" data-t="gconsent">I agree to be contacted about launch updates.</label></div>
     <button class="btn btn-lime" type="submit" style="width:100%;justify-content:center" data-t="gf_btn">Join the waitlist</button>

@@ -2091,9 +2091,11 @@
       "insights": "Insights & Reports",
       "operations": "Operations",
       "content": "Content",
-      "admin": "Admin"
+      "admin": "Admin",
+      "growth": "Growth & Leads"
     },
-    "support": "Support Inbox"
+    "support": "Support Inbox",
+    "hostLeads": "Host Leads"
   },
   "adminDisputes": {
     "title": "Disputes",
@@ -3328,5 +3330,81 @@
     "sendError": "The reply could not be sent. Please try again.",
     "loadError": "Could not load the support queue.",
     "noMessages": "No messages yet."
+  },
+  "adminHostLeads": {
+    "title": "Host Leads",
+    "subtitle": "Pre-launch host registrations from the coming-soon page.",
+    "exportCsv": "Export CSV",
+    "exporting": "Exporting…",
+    "exportError": "Export failed — please try again.",
+    "mTotal": "Total host leads",
+    "mUnits": "Potential units",
+    "mConversion": "Form → lead",
+    "searchPlaceholder": "Search name, phone, email",
+    "cityPlaceholder": "City",
+    "allPropertyTypes": "All property types",
+    "allReadiness": "All readiness",
+    "allStatuses": "All statuses",
+    "dateFrom": "From date",
+    "dateTo": "To date",
+    "colName": "Name",
+    "colPhone": "Phone",
+    "colEmail": "Email",
+    "colCity": "City",
+    "colProperty": "Property",
+    "colSource": "Source",
+    "colDate": "Submitted",
+    "colStatus": "Status",
+    "empty": "No host leads match these filters.",
+    "loading": "Loading…",
+    "loadError": "Couldn't load host leads — check your access and retry.",
+    "prev": "Previous",
+    "next": "Next",
+    "page": "Page {page}",
+    "close": "Close",
+    "readiness": {
+      "ready_now": "Ready now",
+      "needs_furnishing": "Needs furnishing",
+      "under_renovation": "Under renovation",
+      "exploring": "Exploring"
+    },
+    "preferredContact": "Preferred contact",
+    "managementCompany": "Management company",
+    "lang": "Language",
+    "message": "Message",
+    "submission": "Submission",
+    "submittedAt": "Submitted at",
+    "consentAt": "Consent at",
+    "utmSource": "UTM source",
+    "utmMedium": "UTM medium",
+    "utmCampaign": "UTM campaign",
+    "utmContent": "UTM content",
+    "notes": "Internal notes",
+    "noNotes": "No notes yet.",
+    "notePlaceholder": "Add an internal note…",
+    "addNote": "Add note",
+    "saveStatus": "Save",
+    "status": {
+      "NEW": "New",
+      "CONTACTED": "Contacted",
+      "QUALIFIED": "Qualified",
+      "INVITED": "Invitation sent",
+      "ONBOARDED": "Onboarded",
+      "NOT_A_FIT": "Not qualified"
+    },
+    "propertyType": {
+      "apartment": "Apartment",
+      "villa": "Villa",
+      "chalet": "Chalet",
+      "serviced_apartment": "Serviced apartment",
+      "hotel_resort": "Hotel / resort",
+      "other": "Other"
+    },
+    "contact": {
+      "phone": "Phone call",
+      "whatsapp": "WhatsApp",
+      "email": "Email"
+    },
+    "readinessLabel": "Readiness"
   }
 }

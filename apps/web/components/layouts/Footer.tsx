@@ -63,7 +63,21 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div>
-            <p className="text-sm font-semibold text-brand-900">MAKAZOH</p>
+            <p
+              dir="ltr"
+              className="text-sm font-extrabold tracking-title-tight text-brand-900"
+            >
+              MAKAZ
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="inline-block h-[1.15em] w-[0.85em] -translate-y-[0.05em] text-accent-500"
+                fill="currentColor"
+              >
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
+              </svg>
+              H
+            </p>
             <ul className="mt-4 space-y-2">
               <li>
                 <Link

@@ -1,7 +1,7 @@
+from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies as auth_dependencies
@@ -86,12 +86,34 @@ async def list_leads(
     status: str | None = None,
     city: str | None = None,
     q: str | None = None,
+    property_type: str | None = None,
+    readiness: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     limit: int = Query(200, le=1000),
     offset: int = 0,
     _admin: User = _admin,
     session: AsyncSession = Depends(get_session),
 ) -> list[dict[str, Any]]:
-    return await services.list_leads(session, kind, status, city, q, limit, offset)
+    return await services.list_leads(
+        session, kind, status, city, q, property_type,
+        readiness, date_from, date_to, limit, offset,
+    )
+
+
+@admin_router.get("/{kind}/{lead_id}")
+async def get_lead_detail(
+    kind: str,
+    lead_id: str,
+    _admin: User = _admin,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    if kind not in (LeadKind.HOST, LeadKind.GUEST):
+        raise to_http_exception(NotFoundError("lead not found"))
+    detail = await services.lead_detail(session, kind, lead_id)
+    if not detail:
+        raise to_http_exception(NotFoundError("lead not found"))
+    return detail
 
 
 @admin_router.patch("/{kind}/{lead_id}/status")
@@ -124,13 +146,31 @@ async def add_lead_note(
     return {"id": n.id}
 
 
-@admin_router.get("/export.csv", response_class=PlainTextResponse)
+@admin_router.get("/export.csv")
 async def export_leads_csv(
     kind: str | None = Query(None, pattern="^(HOST|GUEST)$"),
+    status: str | None = None,
+    city: str | None = None,
+    q: str | None = None,
+    property_type: str | None = None,
+    readiness: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     _admin: User = _admin,
     session: AsyncSession = Depends(get_session),
-) -> str:
-    return await services.export_csv(session, kind)
+) -> Response:
+    body = await services.export_csv(
+        session, kind, status, city, q, property_type,
+        readiness, date_from, date_to,
+    )
+    # UTF-8 BOM so Excel renders Arabic cells correctly on open.
+    return Response(
+        content="\ufeff" + body,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="makazoh-leads.csv"'
+        },
+    )
 
 
 @admin_router.get("/summary")

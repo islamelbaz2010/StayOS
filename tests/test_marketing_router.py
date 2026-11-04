@@ -314,3 +314,118 @@ def test_admin_note_requires_existing_lead(mkt_client, monkeypatch):
         ).status_code
         == 404
     )
+
+
+# ── Lead detail endpoint ──────────────────────────────────────────
+
+
+def test_admin_detail_requires_auth(mkt_client):
+    client, _ = mkt_client
+    assert client.get("/api/v1/admin/leads/HOST/abc").status_code == 401
+
+
+def test_admin_detail_rejects_non_admin(mkt_client, monkeypatch):
+    client, _ = mkt_client
+    host = _make_user(role="host")
+    _patch_auth_user(monkeypatch, host)
+    h = {"Authorization": f"Bearer {_token_for(host)}"}
+    assert client.get("/api/v1/admin/leads/HOST/abc", headers=h).status_code == 403
+
+
+def test_admin_detail_unknown_kind_and_missing_lead(mkt_client, monkeypatch):
+    client, session = mkt_client
+    admin = _make_user()
+    _patch_auth_user(monkeypatch, admin)
+    h = {"Authorization": f"Bearer {_token_for(admin)}"}
+    assert (
+        client.get("/api/v1/admin/leads/BOGUS/x", headers=h).status_code == 404
+    )
+    session.get = AsyncMock(return_value=None)
+    assert (
+        client.get("/api/v1/admin/leads/HOST/nope", headers=h).status_code == 404
+    )
+
+
+def test_admin_detail_returns_full_record_and_notes(mkt_client, monkeypatch):
+    client, session = mkt_client
+    admin = _make_user()
+    _patch_auth_user(monkeypatch, admin)
+    lead = HostLead(
+        id="lead-1", full_name="QA Host", phone="+20100", city="Cairo",
+        property_type="villa", units_count=3, status=LeadStatus.NEW,
+        consent=True,
+    )
+    session.get = AsyncMock(return_value=lead)
+    note = MagicMock(id="n1", author_id="qa-admin-1", note="called him",
+                     created_at=None)
+    session.scalars = AsyncMock(
+        return_value=MagicMock(all=MagicMock(return_value=[note]))
+    )
+    h = {"Authorization": f"Bearer {_token_for(admin)}"}
+    r = client.get("/api/v1/admin/leads/HOST/lead-1", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["full_name"] == "QA Host"
+    assert body["units_count"] == 3
+    assert body["notes"][0]["note"] == "called him"
+    # internal security fields must never leave the backend
+    assert "ip_hash" not in body
+
+
+# ── CSV export hardening ──────────────────────────────────────────
+
+
+def test_admin_export_csv_requires_auth(mkt_client):
+    client, _ = mkt_client
+    assert client.get("/api/v1/admin/leads/export.csv").status_code == 401
+
+
+def test_admin_export_csv_headers_and_bom(mkt_client, monkeypatch):
+    client, session = mkt_client
+    admin = _make_user()
+    _patch_auth_user(monkeypatch, admin)
+    session.scalars = AsyncMock(
+        return_value=MagicMock(all=MagicMock(return_value=[]))
+    )
+    h = {"Authorization": f"Bearer {_token_for(admin)}"}
+    r = client.get("/api/v1/admin/leads/export.csv?kind=HOST", headers=h)
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
+    assert "attachment" in r.headers["content-disposition"]
+    # UTF-8 BOM keeps Arabic cells readable in Excel
+    assert r.content.startswith(b"\xef\xbb\xbf")
+
+
+def test_csv_escapes_spreadsheet_formula_injection(mkt_client, monkeypatch):
+    client, session = mkt_client
+    admin = _make_user()
+    _patch_auth_user(monkeypatch, admin)
+    evil = HostLead(
+        id="lead-evil", full_name="=cmd|'/C calc'!A1", phone="+20100",
+        city="Cairo", property_type="villa", units_count=1,
+        status=LeadStatus.NEW, consent=True,
+    )
+    session.scalars = AsyncMock(
+        return_value=MagicMock(all=MagicMock(return_value=[evil]))
+    )
+    h = {"Authorization": f"Bearer {_token_for(admin)}"}
+    r = client.get("/api/v1/admin/leads/export.csv?kind=HOST", headers=h)
+    assert "'=cmd" in r.text
+    assert ",=cmd" not in r.text
+
+
+def test_export_includes_canonical_host_fields(mkt_client, monkeypatch):
+    client, session = mkt_client
+    admin = _make_user()
+    _patch_auth_user(monkeypatch, admin)
+    session.scalars = AsyncMock(
+        return_value=MagicMock(all=MagicMock(return_value=[]))
+    )
+    h = {"Authorization": f"Bearer {_token_for(admin)}"}
+    r = client.get("/api/v1/admin/leads/export.csv?kind=HOST", headers=h)
+    header = r.text.splitlines()[0]
+    for col in (
+        "full_name", "property_type", "units_count", "property_readiness",
+        "preferred_contact", "management_company", "message", "utm_medium",
+    ):
+        assert col in header

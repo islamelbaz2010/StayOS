@@ -2091,9 +2091,11 @@
       "insights": "الرؤى والتقارير",
       "operations": "العمليات",
       "content": "المحتوى",
-      "admin": "الإدارة"
+      "admin": "الإدارة",
+      "growth": "النمو والعملاء المحتملون"
     },
-    "support": "بريد الدعم"
+    "support": "بريد الدعم",
+    "hostLeads": "طلبات المضيفين"
   },
   "adminDisputes": {
     "title": "النزاعات",
@@ -3330,5 +3332,81 @@
     "sendError": "تعذّر إرسال الرد. حاول مرة أخرى.",
     "loadError": "تعذّر تحميل بريد الدعم.",
     "noMessages": "لا توجد رسائل بعد."
+  },
+  "adminHostLeads": {
+    "title": "طلبات المضيفين",
+    "subtitle": "تسجيلات أصحاب العقارات من صفحة «قريب» قبل الإطلاق.",
+    "exportCsv": "تصدير CSV",
+    "exporting": "جارٍ التصدير…",
+    "exportError": "التصدير فشل — جرب تاني.",
+    "mTotal": "إجمالي طلبات المضيفين",
+    "mUnits": "وحدات محتملة",
+    "mConversion": "الفورم ← تسجيل",
+    "searchPlaceholder": "دوّر بالاسم أو الموبايل أو الإيميل",
+    "cityPlaceholder": "المدينة",
+    "allPropertyTypes": "كل أنواع العقارات",
+    "allReadiness": "كل درجات الجاهزية",
+    "allStatuses": "كل الحالات",
+    "dateFrom": "من تاريخ",
+    "dateTo": "لتاريخ",
+    "colName": "الاسم",
+    "colPhone": "الموبايل",
+    "colEmail": "الإيميل",
+    "colCity": "المدينة",
+    "colProperty": "العقار",
+    "colSource": "المصدر",
+    "colDate": "تاريخ التسجيل",
+    "colStatus": "الحالة",
+    "empty": "مفيش طلبات مضيفين مطابقة للفلاتر دي.",
+    "loading": "بنحمّل…",
+    "loadError": "منقدرش نحمّل الطلبات — اتأكد من صلاحياتك وجرب تاني.",
+    "prev": "السابق",
+    "next": "التالي",
+    "page": "صفحة {page}",
+    "close": "إقفال",
+    "readiness": {
+      "ready_now": "جاهز الآن",
+      "needs_furnishing": "محتاج فرش",
+      "under_renovation": "تحت التجديد",
+      "exploring": "بيستكشف"
+    },
+    "preferredContact": "طريقة التواصل المفضلة",
+    "managementCompany": "شركة الإدارة",
+    "lang": "اللغة",
+    "message": "الرسالة",
+    "submission": "بيانات التسجيل",
+    "submittedAt": "سجّل في",
+    "consentAt": "الموافقة في",
+    "utmSource": "مصدر UTM",
+    "utmMedium": "وسيط UTM",
+    "utmCampaign": "حملة UTM",
+    "utmContent": "محتوى UTM",
+    "notes": "ملاحظات داخلية",
+    "noNotes": "مفيش ملاحظات لسه.",
+    "notePlaceholder": "ضيف ملاحظة داخلية…",
+    "addNote": "ضيف الملاحظة",
+    "saveStatus": "حفظ",
+    "status": {
+      "NEW": "جديد",
+      "CONTACTED": "تم التواصل",
+      "QUALIFIED": "مؤهل",
+      "INVITED": "تم إرسال الدعوة",
+      "ONBOARDED": "انضم",
+      "NOT_A_FIT": "مش مناسب"
+    },
+    "propertyType": {
+      "apartment": "شقة",
+      "villa": "فيلا",
+      "chalet": "شاليه",
+      "serviced_apartment": "شقة فندقية",
+      "hotel_resort": "فندق / منتجع",
+      "other": "أخرى"
+    },
+    "contact": {
+      "phone": "مكالمة تليفون",
+      "whatsapp": "واتساب",
+      "email": "إيميل"
+    },
+    "readinessLabel": "جاهزية العقار"
   }
 }

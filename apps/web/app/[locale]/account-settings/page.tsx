@@ -27,7 +27,7 @@ function Card({
   id?: string;
 }) {
   return (
-    <section id={id} className="rounded-xl bg-white p-5 shadow-card">
+    <section id={id} className="card p-5">
       <h2 className="font-semibold text-brand-900">{title}</h2>
       <p className="mt-2 text-sm text-neutral-600">{body}</p>
       {children}
@@ -82,7 +82,7 @@ export default function AccountSettingsPage() {
           <h1 className="text-3xl font-bold text-brand-900">{t("title")}</h1>
           <p className="mt-2 text-neutral-600">{t("subtitle")}</p>
           {user && (
-            <div className="mt-6 flex items-center gap-4 rounded-xl bg-white p-5 shadow-card">
+            <div className="mt-6 flex items-center gap-4 card p-5">
               {user.avatar_url ? (
                 <Image
                   src={user.avatar_url}

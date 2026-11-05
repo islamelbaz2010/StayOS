@@ -122,7 +122,7 @@ export function ProofUpload({ paymentId, disabled }: ProofUploadProps) {
         onDragOver={(e) => e.preventDefault()}
         className={`relative rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
           isDisabled || isUploading
-            ? "border-neutral-200 bg-neutral-50"
+            ? "border-neutral-150 bg-neutral-50"
             : "border-neutral-300 bg-neutral-50 hover:border-accent-400 hover:bg-accent-100"
         }`}
       >

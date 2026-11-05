@@ -78,7 +78,7 @@ export default function MyTripsPage() {
             {t("title")}
           </h1>
 
-          <div className="mb-6 flex gap-2 overflow-x-auto border-b border-neutral-200 pb-px">
+          <div className="mb-6 flex gap-2 overflow-x-auto border-b border-neutral-150 pb-px">
             {FILTER_TABS.map((tab) => (
               <button
                 key={tab.key}

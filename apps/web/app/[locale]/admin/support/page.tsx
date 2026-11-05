@@ -86,7 +86,7 @@ function StaffThread({
   };
 
   return (
-    <div className="flex min-h-[55vh] flex-col rounded-xl bg-white shadow-card">
+    <div className="flex min-h-[55vh] flex-col rounded-xl bg-white border border-neutral-150">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3">
         <div>
           <p className="font-semibold text-brand-900">
@@ -161,13 +161,13 @@ function StaffThread({
 
       {sendError && (
         <p
-          className="border-t border-neutral-200 px-4 pt-3 text-sm text-danger-600"
+          className="border-t border-neutral-150 px-4 pt-3 text-sm text-danger-600"
           role="alert"
         >
           {t("sendError")}
         </p>
       )}
-      <div className="flex items-end gap-2 border-t border-neutral-200 p-4">
+      <div className="flex items-end gap-2 border-t border-neutral-150 p-4">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -223,7 +223,7 @@ export default function AdminSupportPage() {
                 className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition ${
                   tab === s.key
                     ? "bg-brand-900 text-white"
-                    : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                    : "bg-surface-card text-neutral-700 hover:bg-surface-soft"
                 }`}
               >
                 {s.key === "all"
@@ -250,7 +250,7 @@ export default function AdminSupportPage() {
                       key={c.id}
                       type="button"
                       onClick={() => setSelectedId(c.id)}
-                      className={`block w-full rounded-xl p-4 text-start shadow-card transition hover:shadow-md ${
+                      className={`block w-full rounded-xl p-4 text-start border border-neutral-150 transition hover:bg-surface-hover ${
                         selectedId === c.id
                           ? "bg-accent-50 ring-1 ring-accent-400"
                           : "bg-white"

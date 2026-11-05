@@ -103,7 +103,7 @@ function ChangeHistory({ unitId }: { unitId: string }) {
       ) : !events || events.length === 0 ? (
         <p className="mt-1 text-xs text-neutral-500">{t("noHistory")}</p>
       ) : (
-        <ol className="mt-2 space-y-2 border-s-2 border-neutral-200 ps-3">
+        <ol className="mt-2 space-y-2 border-s-2 border-neutral-150 ps-3">
           {events.map((event) => (
             <li key={event.id} className="text-xs">
               <span className="font-semibold text-neutral-800">
@@ -645,7 +645,7 @@ export default function AdminPendingListingsPage() {
                         setRejectTarget(null);
                         setRejectReason("");
                       }}
-                      className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                      className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
                     >
                       {tc("cancel")}
                     </button>

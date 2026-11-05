@@ -53,7 +53,7 @@ export default function NotificationsPage() {
           )}
 
           {error && (
-            <div className="rounded-xl bg-white p-8 text-center shadow-card">
+            <div className="rounded-xl bg-white p-8 text-center border border-neutral-150">
               <p className="text-danger-600">{t("loadError")}</p>
               <button
                 type="button"
@@ -66,7 +66,7 @@ export default function NotificationsPage() {
           )}
 
           {!isLoading && !error && items.length === 0 && (
-            <div className="rounded-xl bg-white p-8 text-center shadow-card">
+            <div className="rounded-xl bg-white p-8 text-center border border-neutral-150">
               <p className="text-neutral-600">{t("empty")}</p>
             </div>
           )}
@@ -77,7 +77,7 @@ export default function NotificationsPage() {
               return (
                 <li
                   key={item.id}
-                  className={`rounded-xl p-5 shadow-card ${
+                  className={`rounded-xl p-5 border border-neutral-150 ${
                     isUnread ? "bg-white ring-1 ring-accent-200" : "bg-neutral-50"
                   }`}
                 >

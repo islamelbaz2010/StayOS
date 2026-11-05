@@ -3,6 +3,7 @@ import time
 from fastapi import Request
 
 from app.config import settings
+from app.security.client_ip import client_ip
 from app.shared import redis as redis_state
 from app.shared.exceptions import RateLimitError
 
@@ -35,8 +36,7 @@ async def rate_limit(
     if settings.ENVIRONMENT == "test":
         return
 
-    client_ip = request.client.host if request.client else "unknown"
-    key = f"{key_prefix}:{client_ip}:{request.url.path}"
+    key = f"{key_prefix}:{client_ip(request) or 'unknown'}:{request.url.path}"
 
     if not redis_state.redis_client:
         raise RateLimitError("Rate limiter unavailable")

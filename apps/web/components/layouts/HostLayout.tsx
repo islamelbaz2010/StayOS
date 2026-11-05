@@ -34,7 +34,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col bg-surface-page">
       <Header />
       <div className="flex flex-1">
-        <aside className="hidden w-64 shrink-0 border-e border-neutral-200 bg-surface-card md:block">
+        <aside className="hidden w-64 shrink-0 border-e border-neutral-150 bg-surface-card md:block">
           <nav className="p-4">
             <ul className="space-y-1">
               {navItems.map((item) => {
@@ -49,7 +49,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
                       className={`flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition ${
                         isActive
                           ? "bg-accent-100 text-accent-700"
-                          : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
+                          : "text-neutral-700 hover:bg-surface-soft hover:text-neutral-900"
                       }`}
                     >
                       <span>{item.label}</span>
@@ -76,7 +76,7 @@ export function HostLayout({ children }: { children: ReactNode }) {
                   className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition ${
                     isActive
                       ? "bg-brand-900 text-white"
-                      : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                      : "bg-surface-card text-neutral-700 hover:bg-surface-soft"
                   }`}
                 >
                   <span>{item.label}</span>

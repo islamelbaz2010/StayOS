@@ -80,7 +80,7 @@ export default function AdminReportsPage() {
                           <Link
                             key={r.key}
                             href={`/${locale}/admin/reports/${r.key}`}
-                            className="card block p-4 transition hover:border-accent-400 hover:shadow-sm"
+                            className="card block p-4 transition hover:border-accent-400"
                           >
                             <p className="text-sm font-semibold text-brand-900">
                               {t(`reports.${r.key}`)}

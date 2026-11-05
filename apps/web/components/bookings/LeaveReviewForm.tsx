@@ -67,7 +67,7 @@ export function LeaveReviewForm({
   }
 
   return (
-    <div className="mt-3 w-full rounded-card border border-neutral-200 bg-surface-page p-4 sm:w-96">
+    <div className="mt-3 w-full rounded-card border border-neutral-150 bg-surface-page p-4 sm:w-96">
       <p className="text-sm font-medium text-brand-900">{t("reviewTitle")}</p>
 
       <div

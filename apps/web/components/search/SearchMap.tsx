@@ -218,7 +218,7 @@ export function SearchMap({ listings, onSelect, onBoundsChange, className, searc
           </button>
         </div>
       )}
-      <div ref={containerRef} className={className ?? "h-[60vh] w-full rounded-xl"} />
+      <div ref={containerRef} className={className ?? "h-[60vh] w-full rounded-2xl"} />
     </div>
   );
 }

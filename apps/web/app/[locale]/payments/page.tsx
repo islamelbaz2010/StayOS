@@ -116,7 +116,7 @@ export default function PaymentsPage() {
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   tab === key
                     ? "bg-brand-600 text-white"
-                    : "bg-white text-neutral-700 shadow-card hover:bg-neutral-50"
+                    : "bg-white text-neutral-700 border border-neutral-150 hover:bg-surface-hover"
                 }`}
               >
                 {t(`tabs.${key}`)}
@@ -139,7 +139,7 @@ export default function PaymentsPage() {
           )}
 
           {error && (
-            <div className="rounded-xl bg-white p-8 text-center shadow-card">
+            <div className="rounded-xl bg-white p-8 text-center border border-neutral-150">
               <p className="text-danger-600">{t("loadError")}</p>
               <button
                 type="button"
@@ -152,7 +152,7 @@ export default function PaymentsPage() {
           )}
 
           {!isLoading && !error && filtered.length === 0 && (
-            <div className="rounded-xl bg-white p-12 text-center shadow-card">
+            <div className="rounded-xl bg-white p-12 text-center border border-neutral-150">
               <p className="text-neutral-500">
                 {payments?.length === 0 ? t("empty") : t("emptyFiltered")}
               </p>
@@ -167,7 +167,7 @@ export default function PaymentsPage() {
               return (
                 <div
                   key={payment.id}
-                  className="rounded-xl bg-white p-4 shadow-card"
+                  className="card p-4"
                 >
                   <div className="flex items-start gap-4">
                     <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100">

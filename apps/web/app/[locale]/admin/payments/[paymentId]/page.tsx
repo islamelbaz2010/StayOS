@@ -169,7 +169,7 @@ export default function AdminPaymentDetailPage() {
                   </div>
                 </div>
 
-                <hr className="my-4 border-neutral-200" />
+                <hr className="my-4 border-neutral-150" />
 
                 <dl className="space-y-3">
                   <Field label={t("amount")}>

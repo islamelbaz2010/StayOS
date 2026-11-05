@@ -28,7 +28,7 @@ function BarRow({
   return (
     <div className="flex items-center gap-3 py-1">
       <span className="w-24 shrink-0 text-xs text-neutral-500">{label}</span>
-      <div className="h-4 flex-1 rounded bg-neutral-100 print:border print:border-neutral-200">
+      <div className="h-4 flex-1 rounded bg-neutral-100 print:border print:border-neutral-150">
         <div
           className="h-4 rounded bg-accent-500 print:bg-neutral-800"
           style={{ width: `${width}%` }}
@@ -43,7 +43,7 @@ function BarRow({
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-4 print:break-inside-avoid">
+    <div className="rounded-xl border border-neutral-150 bg-white p-4 print:break-inside-avoid">
       <p className="text-xl font-bold text-brand-900 sm:text-2xl">{value}</p>
       <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-neutral-500">
         {label}
@@ -63,7 +63,7 @@ function Section({
 }) {
   return (
     <section className="mt-8 print:break-inside-avoid">
-      <div className="mb-3 border-b border-neutral-200 pb-2">
+      <div className="mb-3 border-b border-neutral-150 pb-2">
         <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-700">
           {title}
         </h2>
@@ -151,7 +151,7 @@ export default function ManagementReportPage() {
           {/* Controls — screen only */}
           <form
             onSubmit={applyFilters}
-            className="no-print mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-neutral-200 bg-white p-4"
+            className="no-print mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-neutral-150 bg-white p-4"
           >
             <Link
               href={`/${locale}/admin/reports`}
@@ -209,7 +209,7 @@ export default function ManagementReportPage() {
               {tc("loading")}
             </div>
           ) : (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-10">
+            <div className="rounded-2xl border border-neutral-150 bg-white p-6 shadow-sm sm:p-10">
               {/* ---- Masthead ---- */}
               <header className="border-b-2 border-brand-900 pb-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-accent-600">
@@ -282,7 +282,7 @@ export default function ManagementReportPage() {
                   ).map(([label, value]) => (
                     <div
                       key={label}
-                      className="rounded-lg bg-neutral-50 p-3 text-center print:border print:border-neutral-200"
+                      className="rounded-lg bg-neutral-50 p-3 text-center print:border print:border-neutral-150"
                     >
                       <p className="text-base font-bold text-brand-900">
                         {egp(value)}
@@ -395,7 +395,7 @@ export default function ManagementReportPage() {
                 {data.bookings.by_governorate.length > 0 && (
                   <table className="mt-5 w-full text-sm">
                     <thead>
-                      <tr className="border-b border-neutral-200 text-start text-xs uppercase tracking-wider text-neutral-400">
+                      <tr className="border-b border-neutral-150 text-start text-xs uppercase tracking-wider text-neutral-400">
                         <th className="py-1.5 text-start font-medium">
                           {t("bookings.governorate")}
                         </th>
@@ -445,7 +445,7 @@ export default function ManagementReportPage() {
                 </div>
                 <table className="mt-4 w-full text-sm">
                   <thead>
-                    <tr className="border-b border-neutral-200 text-xs uppercase tracking-wider text-neutral-400">
+                    <tr className="border-b border-neutral-150 text-xs uppercase tracking-wider text-neutral-400">
                       <th className="py-1.5 text-start font-medium">
                         {t("settlement.fundsStatus")}
                       </th>
@@ -495,7 +495,7 @@ export default function ManagementReportPage() {
                 {data.refunds.adjustments.length > 0 && (
                   <table className="mt-4 w-full text-sm">
                     <thead>
-                      <tr className="border-b border-neutral-200 text-xs uppercase tracking-wider text-neutral-400">
+                      <tr className="border-b border-neutral-150 text-xs uppercase tracking-wider text-neutral-400">
                         <th className="py-1.5 text-start font-medium">
                           {t("refunds.date")}
                         </th>
@@ -543,7 +543,7 @@ export default function ManagementReportPage() {
               >
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-neutral-200 text-xs uppercase tracking-wider text-neutral-400">
+                    <tr className="border-b border-neutral-150 text-xs uppercase tracking-wider text-neutral-400">
                       <th className="py-1.5 text-start font-medium">
                         {t("top.property")}
                       </th>
@@ -596,7 +596,7 @@ export default function ManagementReportPage() {
               <Section title={t("sections.appendix")}>
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-neutral-200 uppercase tracking-wider text-neutral-400">
+                    <tr className="border-b border-neutral-150 uppercase tracking-wider text-neutral-400">
                       <th className="py-1.5 text-start font-medium">
                         {t("appendix.booking")}
                       </th>
@@ -645,7 +645,7 @@ export default function ManagementReportPage() {
                 </table>
               </Section>
 
-              <footer className="print-footer mt-10 border-t border-neutral-200 pt-3 text-[10px] text-neutral-400">
+              <footer className="print-footer mt-10 border-t border-neutral-150 pt-3 text-[10px] text-neutral-400">
                 MAKAZOH · {t("title")} · {t("generatedAt")}{" "}
                 {new Date(data.generated_at).toLocaleString(intlLocale)}
               </footer>

@@ -36,7 +36,7 @@ function ConversationCard({
   return (
     <Link
       href={`/${locale}/messages/${item.id}`}
-      className="block rounded-xl bg-white p-4 shadow-card transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+      className="block card p-4 transition hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
     >
       <div className="flex items-center justify-between">
         <p className="font-semibold text-neutral-900">{title}</p>
@@ -88,13 +88,13 @@ export default function MessagesPage() {
           </h1>
 
           {isLoading && (
-            <div className="rounded-xl bg-white p-8 text-center text-neutral-500 shadow-card">
+            <div className="rounded-xl bg-white p-8 text-center text-neutral-500 border border-neutral-150">
               {tc("loading")}
             </div>
           )}
 
           {error && (
-            <div className="rounded-xl bg-white p-8 text-center shadow-card">
+            <div className="rounded-xl bg-white p-8 text-center border border-neutral-150">
               <p className="text-danger-600">{t("loadError")}</p>
               <button
                 onClick={() => refetch()}
@@ -106,7 +106,7 @@ export default function MessagesPage() {
           )}
 
           {!isLoading && !error && conversations?.length === 0 && (
-            <div className="rounded-xl bg-white p-8 text-center text-neutral-500 shadow-card">
+            <div className="rounded-xl bg-white p-8 text-center text-neutral-500 border border-neutral-150">
               {t("empty")}
             </div>
           )}

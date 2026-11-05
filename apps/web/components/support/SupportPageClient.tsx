@@ -208,7 +208,7 @@ function SupportThread({
   const isResolved = conversation.support_status === "resolved";
 
   return (
-    <div className="flex min-h-[55vh] flex-col rounded-xl bg-white shadow-card">
+    <div className="flex min-h-[55vh] flex-col rounded-xl bg-white border border-neutral-150">
       <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3">
         <div className="flex items-center gap-3">
           <button
@@ -317,13 +317,13 @@ function SupportThread({
       )}
       {sendError && (
         <p
-          className="border-t border-neutral-200 px-4 pt-3 text-sm text-danger-600"
+          className="border-t border-neutral-150 px-4 pt-3 text-sm text-danger-600"
           role="alert"
         >
           {t("sendError")}
         </p>
       )}
-      <div className="flex items-end gap-2 border-t border-neutral-200 p-4">
+      <div className="flex items-end gap-2 border-t border-neutral-150 p-4">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -422,7 +422,7 @@ export function SupportPageClient() {
             />
           ) : (
             <div className="space-y-4">
-              <div className="rounded-xl bg-white p-5 shadow-card sm:p-6">
+              <div className="card p-5 sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-brand-900">
                     {isAuthenticated
@@ -466,7 +466,7 @@ export function SupportPageClient() {
               </div>
 
               {isAuthenticated && (
-                <div className="rounded-xl bg-white p-5 shadow-card sm:p-6">
+                <div className="card p-5 sm:p-6">
                   <h2 className="mb-3 text-lg font-semibold text-brand-900">
                     {t("yourConversations")}
                   </h2>
@@ -497,7 +497,7 @@ export function SupportPageClient() {
                           key={c.id}
                           type="button"
                           onClick={() => setSelectedId(c.id)}
-                          className="block w-full py-3 text-start transition hover:bg-neutral-50"
+                          className="block w-full py-3 text-start transition hover:bg-surface-hover"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <p className="truncate font-medium text-brand-900">
@@ -535,7 +535,7 @@ export function SupportPageClient() {
 
         {/* Right rail: topics + FAQ + safety */}
         <div className="space-y-4 lg:col-span-2">
-          <div className="rounded-xl bg-white p-5 shadow-card sm:p-6">
+          <div className="card p-5 sm:p-6">
             <h2 className="mb-3 text-lg font-semibold text-brand-900">
               {t("popularTopics")}
             </h2>
@@ -564,7 +564,7 @@ export function SupportPageClient() {
             </Link>
           </div>
 
-          <div className="rounded-xl bg-white p-5 shadow-card sm:p-6">
+          <div className="card p-5 sm:p-6">
             <h2 className="text-lg font-semibold text-brand-900">
               {t("faqTitle")}
             </h2>

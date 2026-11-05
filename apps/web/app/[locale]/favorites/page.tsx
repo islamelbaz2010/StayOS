@@ -25,7 +25,7 @@ export default function FavoritesPage() {
         <p className="mt-1 text-sm text-neutral-500">{t("subtitle")}</p>
 
         {!isAuthLoading && !isAuthenticated ? (
-          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center border border-neutral-150">
             <p className="text-lg font-medium text-neutral-700">{t("signInTitle")}</p>
             <Link
               href={`/${locale}/auth/login?redirect=${encodeURIComponent(`/${locale}/favorites`)}`}
@@ -35,7 +35,7 @@ export default function FavoritesPage() {
             </Link>
           </div>
         ) : isError ? (
-          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center border border-neutral-150">
             <p className="text-lg font-medium text-neutral-700">{tc("error")}</p>
             <button
               type="button"
@@ -52,7 +52,7 @@ export default function FavoritesPage() {
             ))}
           </div>
         ) : !data || data.listings.length === 0 ? (
-          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center shadow-card">
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl bg-white p-12 text-center border border-neutral-150">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
               <svg className="h-8 w-8 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path

@@ -151,7 +151,7 @@ export function LocationPicker({
           {geocoding ? "..." : "Locate on map"}
         </button>
       </div>
-      <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-xl" />
+      <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-2xl" />
       {geocodeError && (
         <p className="mt-1 text-xs text-warning-600">{geocodeError}</p>
       )}

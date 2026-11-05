@@ -277,7 +277,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
     nightsValid;
 
   return (
-    <section className="card p-5 sm:p-6" aria-label={t("title")}>
+    <section className="card p-5 shadow-menu sm:p-6" aria-label={t("title")}>
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-semibold text-brand-900">{t("title")}</h2>
         <p className="text-sm text-neutral-500">
@@ -572,7 +572,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
                 <span className="font-medium text-brand-900">{totalGuests}</span>
               </div>
 
-              <div className="border-t border-neutral-200 pt-2">
+              <div className="border-t border-neutral-150 pt-2">
                 <div className="flex justify-between font-semibold text-brand-900">
                   <span>{t("total")}</span>
                   <span>{formatMoney(grandTotal, listing.currency, moneyLocale)}</span>
@@ -609,7 +609,7 @@ export function BookingPanel({ listing, initialCheckIn, initialCheckOut, initial
             (!canSubmit && !isUnauthenticated) || createBooking.isPending
           }
           className={cn(
-            "w-full rounded-md px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2",
+            "w-full rounded-full px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2",
             !canSubmit && !isUnauthenticated
               ? "cursor-not-allowed bg-neutral-300 text-neutral-600"
               : "btn-primary"

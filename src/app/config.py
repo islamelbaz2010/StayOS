@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -136,6 +136,14 @@ class Settings(BaseSettings):
     AWS_REGION: str = Field(default="", description="AWS region")
     AWS_ACCESS_KEY_ID: str = Field(default="", description="AWS access key ID")
     AWS_SECRET_ACCESS_KEY: str = Field(default="", description="AWS secret access key")
+    # SigV4 scope region for S3-compatible endpoints. Railway/Tigris
+    # bucket credentials require "auto" — AWS_REGION (ams) belongs to the
+    # real-AWS services only. Empty → "auto" when S3_ENDPOINT_URL is set.
+    S3_REGION: str = Field(default="", description="S3-compatible signing region (empty = auto)")
+    S3_ADDRESSING_STYLE: str = Field(
+        default="virtual",
+        description="S3 URL addressing style: 'virtual' (AWS/Tigris default) or 'path' (required for MinIO and single-host endpoints without wildcard DNS)",
+    )
     S3_ENDPOINT_URL: str = Field(
         default="",
         description="Optional S3-compatible API endpoint; empty uses AWS S3",
@@ -192,9 +200,21 @@ class Settings(BaseSettings):
         description="Comma-separated allowed image URL host suffixes (e.g. .amazonaws.com,cdn.example.com)",
     )
 
+    # Pre-launch leads: HMAC key for visitor-IP pseudonymization and
+    # explicit opt-in for honoring X-Forwarded-For (Caddy sets it).
+    LEADS_IP_HMAC_KEY: str = Field(default="", description="HMAC key for lead IP hashing")
+    TRUST_PROXY_HEADERS: bool = Field(default=False, description="Trust X-Forwarded-For from the edge proxy")
+
     JWT_PRIVATE_KEY: str = Field(..., description="RSA private key PEM for JWT signing")
     JWT_PUBLIC_KEY: str = Field(..., description="RSA public key PEM for JWT verification")
     JWT_ALGORITHM: str = "RS256"
+
+    @field_validator("JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY", "FIREBASE_PRIVATE_KEY", mode="before")
+    @classmethod
+    def _unescape_pem_newlines(cls, v: object) -> object:
+        # env_file and .env transports deliver PEMs with literal \n
+        # escapes — normalize to real newlines so PyJWT can parse them.
+        return v.replace("\\n", "\n") if isinstance(v, str) else v
     JWT_ACCESS_TOKEN_TTL_MINUTES: int = 15
     JWT_REFRESH_TOKEN_TTL_DAYS: int = 7
 

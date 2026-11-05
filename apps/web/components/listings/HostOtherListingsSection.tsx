@@ -21,7 +21,7 @@ export function HostOtherListingsSection({
   if (isError) return null;
   if (isPending) {
     return (
-      <section className="mt-8 rounded-xl bg-white p-4 shadow-card sm:p-6">
+      <section className="mt-8 card p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold text-neutral-900 sm:text-xl">
           {t("otherListingsByHost")}
         </h2>
@@ -40,7 +40,7 @@ export function HostOtherListingsSection({
   if (otherListings.length === 0) return null;
 
   return (
-    <section className="mt-8 rounded-xl bg-white p-4 shadow-card sm:p-6">
+    <section className="mt-8 card p-4 sm:p-6">
       <h2 className="mb-4 text-lg font-semibold text-neutral-900 sm:text-xl">
         {t("otherListingsByHost")}
       </h2>

@@ -17,7 +17,7 @@ export function SimilarListingsSection({ unitId }: SimilarListingsSectionProps) 
   if (isError) return null;
   if (isPending) {
     return (
-      <section className="mt-8 rounded-xl bg-white p-4 shadow-card sm:p-6">
+      <section className="mt-8 card p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold text-neutral-900 sm:text-xl">
           {t("similarListings")}
         </h2>
@@ -32,7 +32,7 @@ export function SimilarListingsSection({ unitId }: SimilarListingsSectionProps) 
   if (!listings || listings.length === 0) return null;
 
   return (
-    <section className="mt-8 rounded-xl bg-white p-4 shadow-card sm:p-6">
+    <section className="mt-8 card p-4 sm:p-6">
       <h2 className="mb-4 text-lg font-semibold text-neutral-900 sm:text-xl">
         {t("similarListings")}
       </h2>

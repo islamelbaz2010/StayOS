@@ -20,19 +20,21 @@ export function FavoriteButton({ unitId, className, size = "sm" }: FavoriteButto
   const { data } = useFavorites();
   const toggleFavorite = useToggleFavorite();
 
-  const dimension = size === "md" ? "h-10 w-10" : "h-8 w-8";
-  const iconSize = size === "md" ? "h-5 w-5" : "h-4 w-4";
+  const dimension = size === "md" ? "h-10 w-10" : "h-9 w-9";
+  const iconSize = size === "md" ? "h-5 w-5" : "h-5 w-5";
+  // Reference wishlist pattern: transparent circular hit-area, white heart
+  // (drop-shadowed for photo legibility) that fills lime when saved.
   const buttonClass = cn(
-    "flex items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm transition hover:bg-white",
+    "flex items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-95",
     dimension,
     className
   );
   const heartIcon = (
     <svg
-      className={cn(iconSize, "fill-none text-neutral-700")}
+      className={cn(iconSize, "fill-white/95 text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]")}
       viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.8}
+      stroke="rgba(0,0,0,0.55)"
+      strokeWidth={1.2}
     >
       <path
         strokeLinecap="round"
@@ -74,10 +76,10 @@ export function FavoriteButton({ unitId, className, size = "sm" }: FavoriteButto
       className={buttonClass}
     >
       <svg
-        className={cn(iconSize, isFavorite ? "fill-brand-600 text-brand-600" : "fill-none text-neutral-700")}
+        className={cn(iconSize, isFavorite ? "fill-accent-500 text-accent-500" : "fill-white/95 text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]")}
         viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.8}
+        stroke={isFavorite ? "#84CC16" : "rgba(0,0,0,0.55)"}
+        strokeWidth={1.2}
       >
         <path
           strokeLinecap="round"

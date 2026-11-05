@@ -138,7 +138,7 @@ export default function ListingDetailPage() {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     }}
-                    className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                    className="flex items-center gap-1.5 rounded-lg border border-neutral-150 px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-surface-hover"
                     aria-label={t("share")}
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -151,7 +151,7 @@ export default function ListingDetailPage() {
                   <FavoriteButton
                     unitId={listing.id}
                     size="md"
-                    className="flex-shrink-0 border border-neutral-200"
+                    className="flex-shrink-0 border border-neutral-150"
                   />
                 </div>
               </div>
@@ -547,7 +547,7 @@ export default function ListingDetailPage() {
               />
             )}
 
-            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 bg-surface-card px-4 py-3 shadow-lg lg:hidden">
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-150 bg-surface-card px-4 py-3 shadow-lg lg:hidden">
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="truncate text-lg font-bold text-brand-900">

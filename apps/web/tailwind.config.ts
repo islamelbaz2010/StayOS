@@ -10,7 +10,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        // Airbnb Cereal VF is proprietary; the reference recommends DM Sans
+        // as the open substitute (geometric, round terminals, 400/500/700
+        // variable weights), with the platform stack as fallback.
+        sans: ["DM Sans", "Circular", "-apple-system", "system-ui", "Roboto", "Helvetica Neue", "sans-serif"],
         arabic: ["Cairo", "Tajawal", "Noto Sans Arabic", "sans-serif"],
         mono: ["JetBrains Mono", "Fira Code", "Courier New", "monospace"],
       },
@@ -34,6 +37,15 @@ const config: Config = {
           150: "#EBEBEB",
           200: "#E5E5E5",
           300: "#D4D4D4",
+          // Reference hairline #DDDDDD — search-pill outline, segment
+          // dividers, photo placeholder fill.
+          hairline: "#DDDDDD",
+          // Reference ladder #6C6C6C / #8C8C8C / #C1C1C1 for meta,
+          // tertiary and disabled text (MAKAZOH keeps #6B7280 primary
+          // secondary text; these map the reference's lighter steps).
+          muted: "#6C6C6C",
+          mutedSoft: "#8C8C8C",
+          disabled: "#C1C1C1",
           400: "#A3A3A3",
           500: "#737373",
           600: "#525252",
@@ -81,13 +93,17 @@ const config: Config = {
         },
       },
       backgroundColor: {
-        "surface-page": "#F9FAFB",
+        // Reference surface ladder: white canvas, #F2F2F2 chip/soft
+        // fills, #F7F7F7 footer band + hover fills.
+        "surface-page": "#FFFFFF",
         "surface-card": "#FFFFFF",
         "surface-sidebar": "#FFFFFF",
         "surface-nav": "#FFFFFF",
         "surface-input": "#FFFFFF",
         "surface-input-disabled": "#F9FAFB",
-        "surface-hover": "#F3F4F6",
+        "surface-hover": "#F7F7F7",
+        "surface-soft": "#F2F2F2",
+        "surface-footer": "#F7F7F7",
         "surface-selected": "#EEF2FF",
       },
       spacing: {
@@ -104,14 +120,32 @@ const config: Config = {
         "4xl": "128px",
       },
       boxShadow: {
-        xs: "0 1px 2px rgba(0,0,0,0.05)",
-        sm: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
-        md: "0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)",
-        lg: "0 10px 15px rgba(0,0,0,0.10), 0 4px 6px rgba(0,0,0,0.05)",
-        xl: "0 20px 25px rgba(0,0,0,0.10), 0 10px 10px rgba(0,0,0,0.04)",
-        card: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
-        "card-hover": "0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)",
-        "focus-ring": "0 0 0 3px rgba(44,95,255,0.3)",
+        // Measured Airbnb-reference elevation. Shadows belong to things
+        // that float, never to content. Nothing darker than 0.12 alpha;
+        // every stack starts with an almost-invisible 0.02-alpha 1px edge.
+        xs: "0 1px 2px rgba(0,0,0,0.04)",
+        // Condensed search bar on inner pages (+ 1px #DDDDDD border).
+        sm: "0 1px 2px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05)",
+        // Floating category tiles (+ 1px #F2F2F2 border).
+        md: "0 4px 20px rgba(0,0,0,0.12)",
+        lg: "0 6px 16px rgba(0,0,0,0.12)",
+        xl: "0 8px 28px rgba(0,0,0,0.16)",
+        card: "0 0 0 1px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.04)",
+        "card-hover": "0 0 0 1px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.08)",
+        // Page-level layered stack — menus, popovers, booking panel.
+        menu: "0 0 0 1px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.10)",
+        overlay: "0 6px 16px rgba(0,0,0,0.12)",
+        // Hero search pill (+ 1px #DDDDDD border).
+        capsule:
+          "0 0 0 1px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.10)",
+        // Reference focus ring: 2px white inner + 4px ink outer.
+        "focus-ring": "0 0 0 2px #FFFFFF, 0 0 0 4px #111827",
+      },
+      letterSpacing: {
+        // title-lg 22px/-0.44px and title-md 20px/-0.18px — the only
+        // tightened steps in the reference ladder.
+        "title-tight": "-0.02em",
+        "title-md": "-0.009em",
       },
       borderRadius: {
         xs: "4px",
@@ -120,7 +154,9 @@ const config: Config = {
         lg: "12px",
         xl: "16px",
         "2xl": "20px",
-        card: "12px",
+        // Content panels use the reference's 14px secondary-container
+        // step; photo/listing cards use 20px (rounded-2xl) directly.
+        card: "14px",
         pill: "9999px",
       },
     },

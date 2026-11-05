@@ -771,26 +771,18 @@ def test_dev_token_acceptance_guest_is_guest_role(
 # ---------------------------------------------------------------------------
 
 
-def test_dev_token_works_in_staging(auth_client: TestClient, monkeypatch) -> None:
-    """Dev-token must be available in staging environment (used by Vercel
-    Preview which talks to the Railway staging backend)."""
+def test_dev_token_rejected_in_staging(auth_client: TestClient, monkeypatch) -> None:
+    """Dev-token must be rejected in staging and public QA — Vercel
+    Preview Dev Login moved to real password-based QA accounts; arbitrary
+    user-ID token issuance is development-only."""
     monkeypatch.setattr(auth_services.settings, "ENVIRONMENT", "staging")
     monkeypatch.setattr(auth_services.settings, "DEV_TOKEN_ENABLED", True)
-    user = _make_user(user_id="seed-accept-gues-0000-000000000001", role=UserRole.GUEST)
-    token_pair = TokenPair(access_token="access", refresh_token="refresh", expires_in=900)
-    monkeypatch.setattr(
-        auth_repository, "get_user_by_id", AsyncMock(return_value=user)
-    )
-    monkeypatch.setattr(
-        auth_services, "create_token_pair", AsyncMock(return_value=token_pair)
-    )
 
     response = auth_client.post(
         "/api/v1/auth/dev-token",
         json={"user_id": "seed-accept-gues-0000-000000000001"},
     )
-    assert response.status_code == 200
-    assert response.json()["access_token"] == "access"
+    assert response.status_code == 404
 
 
 def test_dev_token_rejected_in_production_env(auth_client: TestClient, monkeypatch) -> None:

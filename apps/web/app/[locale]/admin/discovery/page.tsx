@@ -444,7 +444,7 @@ export default function AdminDiscoveryPage() {
             )}
 
             {!isLoading && !isError && candidates.length > 0 && (
-              <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-200 bg-surface-card">
+              <div className="overflow-x-auto overflow-y-hidden rounded-card border border-neutral-150 bg-surface-card">
                 <table className="min-w-full divide-y divide-neutral-200">
                   <thead className="bg-neutral-50">
                     <tr>
@@ -482,7 +482,7 @@ export default function AdminDiscoveryPage() {
                   </thead>
                   <tbody className="divide-y divide-neutral-100 bg-surface-card">
                     {candidates.map((c) => (
-                      <tr key={c.id} className="hover:bg-neutral-50">
+                      <tr key={c.id} className="hover:bg-surface-hover">
                         <td className="max-w-xs truncate px-4 py-3 text-sm font-medium text-brand-900">
                           {c.title || c.raw_title || td("untitled")}
                         </td>
@@ -547,7 +547,7 @@ export default function AdminDiscoveryPage() {
                           <button
                             type="button"
                             onClick={() => setSelected(c)}
-                            className="rounded-md border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                            className="rounded-md border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 hover:bg-surface-hover"
                           >
                             {td("review")}
                           </button>
@@ -585,7 +585,7 @@ export default function AdminDiscoveryPage() {
                         ),
                       }))
                     }
-                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-surface-hover disabled:opacity-50"
                   >
                     {td("previous")}
                   </button>
@@ -598,7 +598,7 @@ export default function AdminDiscoveryPage() {
                         offset: (prev.offset ?? 0) + (prev.limit ?? 20),
                       }))
                     }
-                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-surface-hover disabled:opacity-50"
                   >
                     {td("next")}
                   </button>

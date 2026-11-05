@@ -116,7 +116,7 @@ export function AmenitiesSection({ amenities }: AmenitiesSectionProps) {
               <button
                 type="button"
                 onClick={() => setShowAll(false)}
-                className="rounded-full p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
+                className="rounded-full p-1.5 text-neutral-500 hover:bg-surface-soft hover:text-neutral-900"
                 aria-label={t("showLess")}
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

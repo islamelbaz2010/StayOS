@@ -69,7 +69,7 @@ export default function AdminContentPage() {
           </div>
 
           {showCreate && (
-            <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-4">
+            <div className="mb-6 rounded-lg border border-neutral-150 bg-white p-4">
               <div className="grid gap-3 sm:grid-cols-3">
                 <input
                   value={slug}
@@ -112,7 +112,7 @@ export default function AdminContentPage() {
           {isPending ? (
             <p className="text-sm text-neutral-500">Loading…</p>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+            <div className="overflow-hidden rounded-lg border border-neutral-150 bg-white">
               <table className="min-w-full divide-y divide-neutral-200 text-sm">
                 <thead className="bg-neutral-50">
                   <tr>
@@ -132,7 +132,7 @@ export default function AdminContentPage() {
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {(pages ?? []).map((page) => (
-                    <tr key={page.id} className="hover:bg-neutral-50">
+                    <tr key={page.id} className="hover:bg-surface-hover">
                       <td className="px-4 py-3">
                         <Link
                           href={`/${locale}/admin/content/${page.id}`}

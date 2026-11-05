@@ -65,7 +65,7 @@ export function ReportProblem({ bookingId }: { bookingId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+        className="w-full rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-surface-hover"
       >
         {t("reportProblem")}
       </button>
@@ -119,7 +119,7 @@ export function ReportProblem({ bookingId }: { bookingId: string }) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-surface-soft"
               >
                 {tc("cancel")}
               </button>

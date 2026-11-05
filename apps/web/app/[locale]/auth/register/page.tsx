@@ -311,7 +311,7 @@ export default function RegisterPage() {
               setConfirmation(null);
               setError(null);
             }}
-            className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-center font-medium text-neutral-700 transition hover:bg-neutral-50"
+            className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-center font-medium text-neutral-700 transition hover:bg-surface-hover"
           >
             {t("resend")}
           </button>

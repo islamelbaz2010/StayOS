@@ -149,7 +149,7 @@ export function AvailabilityCalendar({
           onClick={() => setOffset((value) => Math.max(0, value - 1))}
           disabled={disabled || offset === 0}
           aria-label={t("prevMonth")}
-          className="rounded-md p-1.5 text-neutral-600 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300"
+          className="rounded-md p-1.5 text-neutral-600 transition hover:bg-surface-soft disabled:cursor-not-allowed disabled:text-neutral-300"
         >
           <svg className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -160,7 +160,7 @@ export function AvailabilityCalendar({
           onClick={() => setOffset((value) => Math.min(maxOffset, value + 1))}
           disabled={disabled || offset >= maxOffset}
           aria-label={t("nextMonth")}
-          className="rounded-md p-1.5 text-neutral-600 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300"
+          className="rounded-md p-1.5 text-neutral-600 transition hover:bg-surface-soft disabled:cursor-not-allowed disabled:text-neutral-300"
         >
           <svg className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -224,16 +224,16 @@ export function AvailabilityCalendar({
                       aria-pressed={isEndpoint || inRange}
                       className={cn(
                         "flex h-9 w-full flex-col items-center justify-center rounded-md text-[11px]",
-                        isEndpoint && "bg-brand-600 text-white",
-                        inRange && "bg-brand-50 text-brand-900",
+                        isEndpoint && "rounded-full bg-brand-600 text-white",
+                        inRange && "bg-surface-hover text-brand-900",
                         !selectable &&
                           !isEndpoint &&
                           (knownUnavailable
-                            ? "text-neutral-300 line-through"
+                            ? "text-neutral-mutedSoft line-through"
                             : "text-neutral-300"),
                         selectable &&
                           !isEndpoint &&
-                          "text-neutral-800 hover:bg-neutral-100"
+                          "text-neutral-800 hover:bg-surface-hover"
                       )}
                     >
                       <span>{i + 1}</span>

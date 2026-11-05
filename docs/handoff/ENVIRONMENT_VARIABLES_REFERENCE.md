@@ -13,7 +13,9 @@ safe placeholders only.
 | `REDIS_URL` | required | — | Redis URL |
 | `ENVIRONMENT` | optional | `"development"` |  |
 | `LOG_LEVEL` | optional | `"INFO"` |  |
-| `CORS_ORIGINS` | optional | `"http://localhost:3000"` | Comma-separated CORS origins |
+| `CORS_ORIGINS` | optional | `"http://localhost:3000"` | Comma-separated CORS origins — prod must add `https://makazoh.com,https://www.makazoh.com` for the public pre-launch site forms |
+| `LEADS_IP_HMAC_KEY` | optional | `""` | HMAC key pseudonymizing visitor IPs on marketing leads; unset → IP column stays NULL. Generate with `openssl rand -hex 32`; rotating it breaks correlation with older rows (treat as a re-key event, store in secrets manager) |
+| `TRUST_PROXY_HEADERS` | optional | `false` | Honor `X-Forwarded-For` for client-IP attribution and rate limiting — set `true` only behind the Caddy edge, which appends the real peer IP so the **rightmost** entry is the trusted client (leftmost is requester-controlled) |
 | `CORS_ORIGIN_REGEX` | optional | `""` | Regex pattern for allowed CORS origins (e.g. Vercel preview URLs) |
 | `WEB_BASE_URL` | optional | `Field(` |  |
 | `PAYMENT_RETURN_TOKEN_TTL_HOURS` | optional | `Field(` |  **⚠ secret** |
@@ -55,6 +57,8 @@ safe placeholders only.
 | `AWS_ACCESS_KEY_ID` | optional | `""` | AWS access key ID **⚠ secret** |
 | `AWS_SECRET_ACCESS_KEY` | optional | `""` | AWS secret access key **⚠ secret** |
 | `S3_ENDPOINT_URL` | optional | `Field(` |  |
+| `S3_REGION` | optional | `""` (→`auto` when endpoint set) | SigV4 scope region for S3-compatible storage (Tigris/MinIO) |
+| `S3_ADDRESSING_STYLE` | optional | `"virtual"` | `virtual` (AWS/Tigris) or `path` (MinIO/single-host) |
 | `S3_PRESIGNED_GET_TTL_SECONDS` | optional | `86400` |  |
 | `KYC_VERIFICATION_MODE` | optional | `Field(` |  |
 | `SUMSUB_BASE_URL` | optional | `"https://api.sumsub.com"` |  |

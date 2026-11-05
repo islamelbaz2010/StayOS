@@ -30,7 +30,7 @@ export function useLocationAutocomplete(query: string, enabled = true) {
   });
 }
 
-export function usePopularLocations() {
+export function usePopularLocations(enabled = true) {
   return useQuery({
     queryKey: ["popular-locations"],
     queryFn: async () => {
@@ -40,6 +40,7 @@ export function usePopularLocations() {
       );
       return data.suggestions;
     },
+    enabled,
     staleTime: 5 * 60_000,
   });
 }

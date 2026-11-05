@@ -116,7 +116,7 @@ function FinancialBody({
             {data.adjustments.map((a) => (
               <div
                 key={a.id}
-                className="flex items-start justify-between gap-3 rounded-lg border border-neutral-200 px-3 py-2"
+                className="flex items-start justify-between gap-3 rounded-lg border border-neutral-150 px-3 py-2"
               >
                 <div>
                   <p className="text-xs font-medium text-neutral-800">

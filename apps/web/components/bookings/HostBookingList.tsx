@@ -60,10 +60,10 @@ export function HostBookingList({
             type="button"
             onClick={() => onSelect(booking.id)}
             className={cn(
-              "w-full rounded-card border p-4 text-start shadow-card transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2",
+              "w-full card p-4 text-start transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2",
               selectedId === booking.id
                 ? "border-accent-500 ring-1 ring-accent-500 bg-surface-card"
-                : "border-transparent bg-surface-card hover:bg-neutral-50"
+                : "border-neutral-150 bg-surface-card hover:bg-surface-hover"
             )}
             aria-current={selectedId === booking.id ? "true" : undefined}
           >

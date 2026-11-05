@@ -214,7 +214,7 @@ export function HostBookingDetail({
       </div>
 
       {(booking.guest_name || booking.guest_kyc_status) && (
-        <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+        <div className="mt-4 rounded-lg border border-neutral-150 bg-neutral-50 p-4">
           <h3 className="text-sm font-semibold text-brand-900">
             {t("guest")}
           </h3>
@@ -343,7 +343,7 @@ export function HostBookingDetail({
                     {guestReviews.data?.data.map((review) => (
                       <div
                         key={review.id}
-                        className="rounded-md border border-neutral-200 bg-white p-3"
+                        className="rounded-md border border-neutral-150 bg-white p-3"
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-semibold text-neutral-700">
@@ -492,7 +492,7 @@ export function HostBookingDetail({
       )}
 
       {canReviewGuest && (
-        <div className="mt-6 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+        <div className="mt-6 rounded-lg border border-neutral-150 bg-neutral-50 p-4">
           <h3 className="text-sm font-semibold text-brand-900">
             {t("reviewGuest")}
           </h3>

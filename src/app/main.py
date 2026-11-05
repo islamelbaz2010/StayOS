@@ -28,6 +28,7 @@ from app.host import router as host_router
 from app.importer import router as import_router
 from app.kyc import router as kyc_router
 from app.listings import router as listings_router
+from app.marketing import router as marketing_router
 from app.messages import router as messages_router
 from app.notifications import router as notifications_router
 from app.operations import metrics as ops_metrics
@@ -239,6 +240,8 @@ app.include_router(admin_router.router, prefix="/api/v1")
 app.include_router(reports_router.router, prefix="/api/v1")
 app.include_router(cms_router.admin_router, prefix="/api/v1")
 app.include_router(cms_router.public_router, prefix="/api/v1")
+app.include_router(marketing_router.public_router, prefix="/api/v1")
+app.include_router(marketing_router.admin_router, prefix="/api/v1")
 
 
 async def _db_status(session: AsyncSession) -> str:

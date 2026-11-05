@@ -473,14 +473,15 @@ async def dev_token(
 
     This endpoint bypasses Firebase/Twilio so the founder can validate UI
     and user journeys locally without external credentials. It requires
-    both an allowed ENVIRONMENT and the explicit DEV_TOKEN_ENABLED opt-in,
-    and will 404 in production regardless of configuration.
+    ENVIRONMENT=development AND the explicit DEV_TOKEN_ENABLED opt-in —
+    staging and public QA do not qualify, and it 404s anywhere else
+    regardless of configuration.
     """
     from app.config import settings
     from app.shared.exceptions import AuthenticationError, NotFoundError
 
     if (
-        settings.ENVIRONMENT not in ("development", "staging")
+        settings.ENVIRONMENT != "development"
         or not settings.DEV_TOKEN_ENABLED
     ):
         raise NotFoundError("Not available in this environment")

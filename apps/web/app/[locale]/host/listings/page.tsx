@@ -185,7 +185,7 @@ function ListingCard({ listing }: { listing: HostListing }) {
   }
 
   return (
-    <div className="card group overflow-hidden hover:shadow-card-hover">
+    <div className="card group overflow-hidden hover:bg-surface-hover">
       <Link
         href={`/${locale}/host/listings/${listing.id}/edit`}
         className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2"

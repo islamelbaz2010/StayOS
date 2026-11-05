@@ -26,7 +26,7 @@ export function TrustSection({ listing }: TrustSectionProps) {
 
   return (
     <section
-      className="rounded-xl bg-white p-6 shadow-card"
+      className="card p-6"
       aria-label={t("title")}
     >
       <h2 className="text-lg font-semibold text-neutral-900">{t("title")}</h2>

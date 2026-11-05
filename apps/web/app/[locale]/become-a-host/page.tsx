@@ -98,7 +98,7 @@ export default function BecomeAHostPage() {
             {STEP_IDS.map((id, idx) => (
               <li
                 key={id}
-                className="flex items-start gap-4 rounded-xl bg-white p-5 shadow-card"
+                className="flex items-start gap-4 card p-5"
               >
                 <span
                   aria-hidden="true"
@@ -123,7 +123,7 @@ export default function BecomeAHostPage() {
         </section>
 
         <section
-          className="mt-12 rounded-xl bg-white p-6 shadow-card"
+          className="mt-12 card p-6"
           aria-labelledby="become-host-earnings"
         >
           <h2
@@ -143,7 +143,7 @@ export default function BecomeAHostPage() {
         </section>
 
         <section
-          className="mt-6 rounded-xl bg-white p-6 shadow-card"
+          className="mt-6 card p-6"
           aria-labelledby="become-host-standards"
         >
           <h2

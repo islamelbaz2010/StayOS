@@ -182,7 +182,7 @@ function PaymentCard({
       </div>
 
       {payment.status === "proof_uploaded" && (
-        <div className="border-t border-neutral-200 p-4">
+        <div className="border-t border-neutral-150 p-4">
           {verifyError && (
             <p className="mb-3 rounded-md bg-danger-50 p-3 text-sm text-danger-700" role="alert">
               {verifyError}
@@ -258,7 +258,7 @@ function PaymentCard({
       )}
 
       {payment.status === "refund_pending" && (
-        <div className="border-t border-neutral-200 p-4">
+        <div className="border-t border-neutral-150 p-4">
           {refundError && (
             <p
               className="mb-3 rounded-md bg-danger-50 p-3 text-sm text-danger-700"

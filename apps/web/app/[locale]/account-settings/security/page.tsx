@@ -61,7 +61,7 @@ export default function SecurityPage() {
               onSaved={refreshUser}
             />
 
-            <div className="rounded-xl bg-white p-6 shadow-card">
+            <div className="card p-6">
               <h2 className="text-lg font-bold text-neutral-900">
                 {t("sessions")}
               </h2>
@@ -75,7 +75,7 @@ export default function SecurityPage() {
                   {(sessionData?.sessions ?? []).map((session) => (
                     <li
                       key={session.id}
-                      className="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3"
+                      className="flex items-center justify-between rounded-lg border border-neutral-150 px-4 py-3"
                     >
                       <div>
                         <p className="text-sm font-medium text-neutral-900">

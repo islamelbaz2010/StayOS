@@ -208,7 +208,7 @@ function StatCard({
     </>
   );
   const cls = `card p-5 text-start transition ${
-    onClick || href ? "cursor-pointer hover:border-accent-400 hover:shadow-md" : ""
+    onClick || href ? "cursor-pointer hover:border-accent-400" : ""
   }`;
   if (href) {
     return (
@@ -308,7 +308,7 @@ function PaymentActivity({ locale }: { locale: string }) {
             className={`rounded-full px-3 py-1 text-sm font-medium transition ${
               active === f.key
                 ? "bg-brand-900 text-white"
-                : "bg-surface-card text-neutral-700 hover:bg-neutral-100"
+                : "bg-surface-card text-neutral-700 hover:bg-surface-soft"
             }`}
           >
             {t(`filter.${f.key}`)}

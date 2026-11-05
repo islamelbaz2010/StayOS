@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MAKAZOH — Stays, reimagined. Coming soon.</title>
-<meta name="description" content="MAKAZOH is a new hospitality marketplace for Egypt — connecting travellers with apartments, villas, chalets and serviced stays. Launching soon. Register as a Founding Host or join the guest waitlist.">
+<meta name="description" content="MAKAZOH is a new hospitality marketplace for Egypt — connecting travellers with apartments, villas, chalets and serviced stays. Launching soon. Register as a Founding Host.">
 <meta property="og:title" content="MAKAZOH — Stays, reimagined. Coming soon.">
-<meta property="og:description" content="A new hospitality marketplace for Egypt. Register as a Founding Host or join the guest waitlist.">
+<meta property="og:description" content="A new hospitality marketplace for Egypt. Register as a Founding Host.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://makazoh.com/">
 <meta property="og:image" content="https://makazoh.com/assets/hero.webp">
@@ -26,7 +26,6 @@ a{color:inherit;text-decoration:none}img{max-width:100%;display:block}
 .wrap{max-width:1140px;margin:0 auto;padding:0 20px}
 .btn{display:inline-flex;align-items:center;padding:15px 30px;border-radius:999px;font-weight:700;font-size:15px;border:0;cursor:pointer;transition:.2s}
 .btn-lime{background:var(--lime);color:var(--ink)}.btn-lime:hover{background:var(--lime-d);transform:translateY(-1px)}
-.btn-ghost{border:2px solid rgba(255,255,255,.7);color:#fff;background:transparent}.btn-ghost:hover{background:rgba(255,255,255,.15)}
 .btn-ink{background:var(--ink);color:#fff}
 .tag{display:inline-block;padding:6px 14px;border-radius:999px;background:rgba(132,204,22,.18);color:var(--on-lime);font-size:12.5px;font-weight:700}
 h1{font-size:clamp(34px,5.5vw,60px);line-height:1.05;letter-spacing:-1.2px;font-weight:800}
@@ -82,8 +81,8 @@ form{background:#fff;border-radius:20px;padding:28px;color:var(--ink)}
 .fmsg{border-radius:12px;padding:12px 16px;font-size:14px;font-weight:600;display:none;margin-bottom:14px}
 .fmsg.ok{display:block;background:rgba(132,204,22,.22);color:var(--on-lime)}
 .fmsg.err{display:block;background:#fdecea;color:#a33}
-/* waitlist — secondary */
-.wl{max-width:540px;margin:0 auto}
+.ferr{display:none;color:#a3382e;font-size:12.5px;margin-top:4px}
+.f input.bad,.f select.bad{border-color:#c0392b}
 /* faq */
 .faq{max-width:720px}
 .faq details{border-bottom:1px solid var(--line);padding:16px 0}
@@ -124,7 +123,6 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
     <p class="lede" data-t="hero_sub">A new marketplace for apartments, villas, chalets and serviced stays across Egypt.</p>
     <div class="hero-ctas">
       <a class="btn btn-lime" href="#host" data-ev="host_cta_click" data-t="cta_host">Register as a Founding Host</a>
-      <a class="btn btn-ghost" href="#waitlist" data-ev="guest_cta_click" data-t="cta_guest">Join Guest Waitlist</a>
     </div>
     <p class="hero-note" data-t="hero_note">Pre-launch registration open — bookings are not yet live.</p>
   </div>
@@ -161,24 +159,24 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
     <form id="hostform" novalidate>
       <h3 data-t="hf_t" style="margin-bottom:16px">Become a Founding Host</h3>
       <div class="fmsg" id="hf-msg"></div>
-      <div class="f"><label for="hf-fname" data-t="hf_name">Full name *</label><input id="hf-fname" name="full_name" required></div>
+      <div class="f"><label for="hf-fname" data-t="hf_name">Full name *</label><input id="hf-fname" name="full_name"><p class="ferr" id="ferr-full_name"></p></div>
       <div class="frow">
-        <div class="f"><label for="hf-phone" data-t="hf_phone">Phone (with country code) *</label><input id="hf-phone" name="phone" placeholder="+20…" required></div>
-        <div class="f"><label for="hf-email" data-t="hf_email">Email</label><input id="hf-email" name="email" type="email"></div>
+        <div class="f"><label for="hf-phone" data-t="hf_phone">Phone (with country code) *</label><input id="hf-phone" name="phone" placeholder="+20…"><p class="ferr" id="ferr-phone"></p></div>
+        <div class="f"><label for="hf-email" data-t="hf_email">Email</label><input id="hf-email" name="email" type="email"><p class="ferr" id="ferr-email"></p></div>
       </div>
       <div class="frow">
-        <div class="f"><label for="hf-city" data-t="hf_city">City / location *</label><input id="hf-city" name="city" required></div>
-        <div class="f"><label for="hf-units" data-t="hf_units">Units *</label><input id="hf-units" name="units_count" type="number" min="1" value="1" required></div>
+        <div class="f"><label for="hf-city" data-t="hf_city">City / location *</label><input id="hf-city" name="city"><p class="ferr" id="ferr-city"></p></div>
+        <div class="f"><label for="hf-units" data-t="hf_units">Units *</label><input id="hf-units" name="units_count" type="number" min="1" value="1"><p class="ferr" id="ferr-units_count"></p></div>
       </div>
       <div class="frow">
-        <div class="f"><label for="hf-ptype" data-t="hf_ptype">Property type *</label><select id="hf-ptype" name="property_type" required>
+        <div class="f"><label for="hf-ptype" data-t="hf_ptype">Property type *</label><select id="hf-ptype" name="property_type">
           <option value="apartment" data-t="pt_ap">Apartment</option>
           <option value="villa" data-t="pt_vi">Villa</option>
           <option value="chalet" data-t="pt_ch">Chalet</option>
           <option value="serviced_apartment" data-t="pt_sa">Serviced apartment</option>
           <option value="hotel_resort" data-t="pt_hr">Hotel / resort</option>
           <option value="other" data-t="pt_ot">Other</option>
-        </select></div>
+        </select><p class="ferr" id="ferr-property_type"></p></div>
         <div class="f"><label for="hf-ready" data-t="hf_ready">Readiness</label><select id="hf-ready" name="property_readiness">
           <option value="" data-t="pr_x">—</option>
           <option value="ready_now" data-t="pr_rn">Ready now</option>
@@ -201,26 +199,6 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
   </div>
 </div></section>
 
-<!-- E · GUEST WAITLIST (secondary) -->
-<section id="waitlist"><div class="wrap">
-  <div class="sec-head" style="text-align:center"><span class="tag" data-t="e_tag">For travellers</span>
-    <h2 data-t="e_h2">Be first in line.</h2>
-    <p class="sub" style="margin:0 auto" data-t="e_sub">We'll tell you the moment stays open for booking.</p>
-  </div>
-  <form id="guestform" class="wl" novalidate>
-    <div class="fmsg" id="gf-msg"></div>
-    <div class="f"><label for="gf-name" data-t="gf_name">Name *</label><input id="gf-name" name="name" required></div>
-    <div class="frow">
-      <div class="f"><label for="gf-email" data-t="gf_email">Email</label><input id="gf-email" name="email" type="email"></div>
-      <div class="f"><label for="gf-phone" data-t="gf_phone">or Phone</label><input id="gf-phone" name="phone" placeholder="+20…"></div>
-    </div>
-    <div class="f"><label for="gf-city" data-t="gf_city">Preferred destination</label><input id="gf-city" name="preferred_city" data-tph="gf_cityph" placeholder="Cairo, North Coast, Hurghada…"></div>
-    <input class="hp" name="website" tabindex="-1" autocomplete="off">
-    <div class="consent"><input type="checkbox" id="gf-consent" required><label for="gf-consent" data-t="gconsent">I agree to be contacted about launch updates.</label></div>
-    <button class="btn btn-lime" type="submit" style="width:100%;justify-content:center" data-t="gf_btn">Join the waitlist</button>
-  </form>
-</div></section>
-
 <!-- G+H · FOUNDING + FAQ combined -->
 <section style="background:#f3f1ea"><div class="wrap">
   <div class="faq">
@@ -241,7 +219,7 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
     </div>
     <div>
       <h3 style="color:#fff;font-size:14px;margin-bottom:10px" data-t="ft_links">Platform</h3>
-      <p><a href="#host" data-t="ft_host">Become a Host</a><br><a href="#waitlist" data-t="ft_guest">Guest waitlist</a></p>
+      <p><a href="#host" data-t="ft_host">Become a Host</a></p>
     </div>
     <div>
       <h3 style="color:#fff;font-size:14px;margin-bottom:10px" data-t="ft_legal">Privacy</h3>
@@ -255,26 +233,28 @@ footer{background:var(--ink);color:#8f8d80;padding:40px 0 28px;font-size:13.5px}
 </div></footer>
 
 <script>
-const API_BASE=(location.hostname==='makazoh.com'||location.hostname==='www.makazoh.com')?'https://api.makazoh.com':'http://localhost:8000';
+// Explicit host allowlist: production domain → production API; localhost →
+// local dev API. Any other host (preview deployments, file://, mirrors)
+// gets NO api base — forms show the honest "unavailable" state instead of
+// silently POSTing personal data to a wrong or absent backend.
+const API_BASE={'makazoh.com':'https://api.makazoh.com','www.makazoh.com':'https://api.makazoh.com','localhost':'http://localhost:8000','127.0.0.1':'http://localhost:8000'}[location.hostname]||'';
 const T={
-en:{doc_title:'MAKAZOH — Stays, reimagined. Coming soon.',hero_tag:'Launching soon in Egypt',hero_h1:'Stays, reimagined.',hero_sub:'A new marketplace for apartments, villas, chalets and serviced stays across Egypt.',cta_host:'Register as a Founding Host',cta_guest:'Join Guest Waitlist',hero_note:'Pre-launch registration open — bookings are not yet live.',
+en:{doc_title:'MAKAZOH — Stays, reimagined. Coming soon.',hero_tag:'Launching soon in Egypt',hero_h1:'Stays, reimagined.',hero_sub:'A new marketplace for apartments, villas, chalets and serviced stays across Egypt.',cta_host:'Register as a Founding Host',hero_note:'Pre-launch registration open — bookings are not yet live.',
 c_tag:'The experience',c_h2:'Stays worth travelling for.',p1_t:'Apartments',p2_t:'Villas',p3_t:'Coastal chalets',p4_t:'Serviced stays',c_illus:'Imagery is illustrative — availability and prices are shown only for real, verified properties at launch.',
 d_tag:'For owners & operators',d_h2:'Your property. More possibilities.',d_sub:'Register your interest — our team reviews every application and contacts you before launch.',st1_b:'Apply',st1_d:'two-minute form, no documents needed at this stage.',st2_b:'Review',st2_d:'founding hosts get priority application review.',st3_b:'Onboarding invite',st3_d:'we contact you with next steps when the platform opens.',d_note:'Registration is an expression of interest — not a confirmed listing or booking.',
 hf_t:'Become a Founding Host',hf_name:'Full name *',hf_phone:'Phone (with country code) *',hf_email:'Email',hf_city:'City / location *',hf_units:'Units *',hf_ptype:'Property type *',hf_ready:'Readiness',hf_pc:'Preferred contact',pt_ap:'Apartment',pt_vi:'Villa',pt_ch:'Chalet',pt_sa:'Serviced apartment',pt_hr:'Hotel / resort',pt_ot:'Other',pr_x:'—',pr_rn:'Ready now',pr_nf:'Needs furnishing',pr_ur:'Under renovation',pr_ex:'Exploring',pc_x:'—',pc_p:'Phone',pc_w:'WhatsApp',pc_e:'Email',
 consent:'I agree to be contacted by the MAKAZOH team about hosting. My details are used only for this purpose.',hf_btn:'Register my interest',hf_priv:'You can request correction or deletion of your data anytime via hello@makazoh.com.',
-e_tag:'For travellers',e_h2:'Be first in line.',e_sub:'We\'ll tell you the moment stays open for booking.',gf_name:'Name *',gf_email:'Email',gf_phone:'or Phone',gf_city:'Preferred destination',gf_cityph:'Cairo, North Coast, Hurghada…',gconsent:'I agree to be contacted about launch updates.',gf_btn:'Join the waitlist',
 h_tag:'FAQ',h_h2:'Good to know.',q1:'What is MAKAZOH?',a1:'A hospitality marketplace for Egypt — where travellers discover and book stays, and owners list and manage them.',q2:'When does it launch?',a2:'Final preparation is underway — a confirmed date is announced here and to registered hosts and guests first.',q3:'Who can register as a host?',a3:'Owners and operators — apartments, villas, chalets, serviced apartments, hotels. Individuals and management companies welcome.',q4:'Are bookings open?',a4:'No — this page is for pre-launch registration only.',q5:'What do founding hosts get?',a5:'Priority application review, early onboarding invitation, and a product intro session — commercial terms are agreed during onboarding.',
-ft_about:'A hospitality marketplace for Egypt — launching soon.',ft_links:'Platform',ft_host:'Become a Host',ft_guest:'Guest waitlist',ft_legal:'Privacy',ft_priv:'Privacy requests, corrections, deletion:',ft_copy:'© 2026 MAKAZOH — pre-launch; bookings not yet open.',ft_legalnote:'Terms & Privacy pages are being finalized for launch.',
-ok_host:'Thank you — you\'re registered. Our team will contact you before launch.',ok_guest:'You\'re on the waitlist — we\'ll let you know when stays open.',err:'Something went wrong — please check your details and try again.',err_down:'Registration is temporarily unavailable — please check back soon. Your details were not submitted.',err_consent:'Please confirm consent to continue.'},
-ar:{doc_title:'مكازه — إقامات مختلفة في كل مكان. قريب.',hero_tag:'جايين مصر قريب',hero_h1:'إقامات مختلفة، في كل مكان.',hero_sub:'منصة جديدة بتجمع شقق وفلل وشاليهات وإقامات مخدومة في كل أنحاء مصر.',cta_host:'انضم للمضيفين المؤسسين',cta_guest:'انضم لقائمة المهتمين',hero_note:'التسجيل قبل الإطلاق مفتوح — والحجز لسه مش متاح.',
+ft_about:'A hospitality marketplace for Egypt — launching soon.',ft_links:'Platform',ft_host:'Become a Host',ft_legal:'Privacy',ft_priv:'Privacy requests, corrections, deletion:',ft_copy:'© 2026 MAKAZOH — pre-launch; bookings not yet open.',ft_legalnote:'Terms & Privacy pages are being finalized for launch.',
+ok_host:'Thank you — you\'re registered. Our team will contact you before launch.',ok_host_dup:'You\'re already registered — our team will contact you before launch.',err:'Something went wrong — please check your details and try again.',err_rate:'Too many attempts — please wait a few minutes and try again.',err_down:'Registration is temporarily unavailable — please check back soon. Your details were not submitted.',err_consent:'Please confirm consent to continue.',err_name:'Please enter your full name.',err_phone:'Enter a valid phone number (7–15 digits; country code optional).',err_city:'Enter your city or location.',err_units:'Units must be a whole number, 1 or more.',err_ptype:'Choose a property type.',err_email:'Enter a valid email address.'},
+ar:{doc_title:'مكازه — إقامات مختلفة في كل مكان. قريب.',hero_tag:'بنجهز للإطلاق في مصر',hero_h1:'إقامات مختلفة، في كل مكان.',hero_sub:'منصة جديدة بتجمع شقق وفلل وشاليهات وإقامات مخدومة في كل أنحاء مصر.',cta_host:'انضم للمضيفين المؤسسين',hero_note:'التسجيل قبل الإطلاق مفتوح — والحجز لسه مش متاح.',
 c_tag:'تجربة الإقامة',c_h2:'إقامات تستاهل تسافر عشانها.',p1_t:'شقق',p2_t:'فلل',p3_t:'شاليهات على البحر',p4_t:'إقامات بخدمات فندقية',c_illus:'الصور دي للتوضيح بس — التوفر والأسعار بيظهروا للعقارات الحقيقية الموثقة وقت الإطلاق.',
-d_tag:'لأصحاب العقارات وشركات الإدارة',d_h2:'عقارك يستاهل فرصة أكبر.',d_sub:'سجّل بياناتك، وفريقنا هيتواصل معاك لمراجعة تفاصيل عقارك والخطوات الجاية.',st1_b:'سجّل بياناتك',st1_d:'فورم دقيقتين، ومفيش مستندات مطلوبة في المرحلة دي.',st2_b:'المراجعة',st2_d:'طلبات المضيفين المؤسسين بتتراجع بأولوية.',st3_b:'دعوة الانضمام',st3_d:'هنتواصل معاك بالخطوات الجاية أول ما المنصة تفتح.',d_note:'التسجيل ده إبداء اهتمام بس — مش إعلان مؤكد ولا حجز.',
+d_tag:'لأصحاب العقارات وشركات الإدارة',d_h2:'عقارك يستاهل فرصة أكبر.',d_sub:'سجّل بياناتك، وفريق مكازه هيتواصل معاك لمراجعة تفاصيل عقارك والخطوات الجاية.',st1_b:'سجّل بياناتك',st1_d:'نموذج التسجيل بياخد دقيقتين، ومفيش مستندات مطلوبة في المرحلة دي.',st2_b:'المراجعة',st2_d:'طلبات المضيفين المؤسسين بنراجعها بأولوية.',st3_b:'دعوة الانضمام',st3_d:'فريق مكازه هيتواصل معاك بالخطوات الجاية أول ما المنصة تفتح.',d_note:'التسجيل ده إبداء اهتمام بس — مش إعلان مؤكد ولا حجز.',
 hf_t:'انضم للمضيفين المؤسسين',hf_name:'الاسم بالكامل *',hf_phone:'رقم الموبايل (بكود الدولة) *',hf_email:'الإيميل',hf_city:'المدينة أو المنطقة *',hf_units:'عدد الوحدات *',hf_ptype:'نوع العقار *',hf_ready:'جاهزية العقار',hf_pc:'تفضل نكلمك إزاي؟',pt_ap:'شقة',pt_vi:'فيلا',pt_ch:'شاليه',pt_sa:'شقة فندقية',pt_hr:'فندق / منتجع',pt_ot:'حاجة تانية',pr_x:'—',pr_rn:'جاهز دلوقتي',pr_nf:'محتاج فرش',pr_ur:'في التجديدات',pr_ex:'لسه بفكر في الموضوع',pc_x:'—',pc_p:'مكالمة تليفون',pc_w:'واتساب',pc_e:'إيميل',
-consent:'موافق فريق مكازه يتواصل معايا بخصوص استضافة عقاري. بياناتي بتتستخدم للغرض ده بس.',hf_btn:'سجّل اهتمامي',hf_priv:'تقدر تطلب تعديل أو مسح بياناتك في أي وقت على hello@makazoh.com.',
-e_tag:'للمسافرين',e_h2:'خليك من أول الناس اللي تعرف لما الحجز يفتح.',e_sub:'هنقولك أول ما الإقامات تتاح للحجز.',gf_name:'الاسم *',gf_email:'الإيميل',gf_phone:'أو رقم الموبايل',gf_city:'وجهتك المفضلة',gf_cityph:'القاهرة، الساحل، الغردقة…',gconsent:'موافق يتواصلوا معايا بأخبار الإطلاق.',gf_btn:'انضم لقائمة المهتمين',
+consent:'موافق فريق مكازه يتواصل معايا بخصوص تسجيل عقاري والاستضافة على المنصة. بياناتي بتتستخدم للغرض ده بس.',hf_btn:'سجّل اهتمامي',hf_priv:'تقدر تطلب تعديل أو مسح بياناتك في أي وقت على hello@makazoh.com.',
 h_tag:'أسئلة شائعة',h_h2:'حاجات تهمك تعرفها.',q1:'إيه هو مكازه؟',a1:'منصة ضيافة مصرية — المسافر بيلاقي فيها إقامات وبيحجزها، وصاحب العقار بيعرض عقاره ويديره.',q2:'إمتى هيتم الإطلاق؟',a2:'إحنا في التجهيزات الأخيرة — والتاريخ المؤكد هيتعلن هنا وللناس المسجلين الأول.',q3:'مين يقدر يسجّل كمضيف؟',a3:'أصحاب العقارات والمشغلين — شقق وفلل وشاليهات وشقق فندقية وفنادق. الأفراد وشركات الإدارة كلهم أهلاً.',q4:'الحجز مفتوح؟',a4:'لسه — الصفحة دي للتسجيل قبل الإطلاق بس.',q5:'إيه اللي بيستفيده المضيفين المؤسسين؟',a5:'مراجعة طلبهم بأولوية، دعوة انضمام بدري، وجلسة تعريف بالمنتج — والشروط التجارية بتتفق وقت الانضمام.',
-ft_about:'منصة ضيافة مصرية — جاية قريب.',ft_links:'المنصة',ft_host:'انضم كمضيف',ft_guest:'قائمة المهتمين',ft_legal:'الخصوصية',ft_priv:'طلبات الخصوصية والتعديل والمسح:',ft_copy:'© 2026 مكازه — مرحلة ما قبل الإطلاق، والحجز لسه مش مفتوح.',ft_legalnote:'صفحات الشروط والخصوصية لسه بتتجهز للإطلاق.',
-ok_host:'شكراً ليك — تسجيلك وصلنا، وفريقنا هيتواصل معاك قبل الإطلاق.',ok_guest:'انت دلوقتي في قائمة المهتمين — هنبلغك أول ما الحجز يفتح.',err:'في حاجة مش مظبوطة — راجع بياناتك وجرب تاني.',err_down:'التسجيل مش متاح دلوقتي — جرب تاني بعد شوية. بياناتك ماتبعتتش.',err_consent:'لو سمحت أكّد موافقتك عشان نكمل.'}};
+ft_about:'منصة ضيافة مصرية — جاية قريب.',ft_links:'المنصة',ft_host:'انضم كمضيف',ft_legal:'الخصوصية',ft_priv:'طلبات الخصوصية والتعديل والمسح:',ft_copy:'© 2026 مكازه — مرحلة ما قبل الإطلاق، والحجز لسه مش مفتوح.',ft_legalnote:'صفحات الشروط والخصوصية لسه بتتجهز للإطلاق.',
+ok_host:'شكراً ليك — تسجيلك وصلنا، وفريق مكازه هيتواصل معاك قبل الإطلاق.',ok_host_dup:'انت مسجل عندنا قبل كده — وفريق مكازه هيتواصل معاك قبل الإطلاق.',err:'في حاجة مش مظبوطة — راجع بياناتك وجرب تاني.',err_rate:'محاولات كتير — استنى شوية وجرب تاني.',err_down:'التسجيل مش متاح دلوقتي — جرب تاني بعد شوية. بياناتك ماتبعتتش.',err_consent:'لو سمحت أكّد موافقتك عشان نكمل.',err_name:'اكتب اسمك بالكامل.',err_phone:'اكتب رقم موبايل صحيح (من 7 لـ 15 رقم).',err_city:'اكتب المدينة أو المنطقة.',err_units:'عدد الوحدات لازم يكون رقم صحيح 1 أو أكتر.',err_ptype:'اختار نوع العقار.',err_email:'اكتب إيميل صحيح.'}};
 
 let lang=new URLSearchParams(location.search).get('lang')||'en';
 const SID=(()=>{let s=sessionStorage.getItem('mz_sid');if(!s){s=crypto.randomUUID();sessionStorage.setItem('mz_sid',s)}return s})();
@@ -287,22 +267,48 @@ document.getElementById('l-en').classList.toggle('on',l==='en');document.getElem
 document.getElementById('l-en').onclick=()=>{applyLang('en');track('lang_switch')};
 document.getElementById('l-ar').onclick=()=>{applyLang('ar');track('lang_switch')};
 applyLang(lang);
-async function track(event){try{await fetch(API_BASE+'/api/v1/public/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event,session_id:SID,lang,...utm})})}catch(e){}}
+async function track(event){if(!API_BASE)return;try{await fetch(API_BASE+'/api/v1/public/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event,session_id:SID,lang,...utm})})}catch(e){}}
 track('page_view');
 document.querySelectorAll('[data-ev]').forEach(a=>a.addEventListener('click',()=>track(a.dataset.ev)));
 document.getElementById('hostform').addEventListener('focusin',function f(){track('host_form_start');this.removeEventListener('focusin',f)},{once:true});
-document.getElementById('guestform').addEventListener('focusin',function f(){track('guest_form_start');this.removeEventListener('focusin',f)},{once:true});
 function data(form){const o={};new FormData(form).forEach((v,k)=>{if(v!=='')o[k]=v});return{...o,lang,...utm}}
 function show(id,ok,txt){const m=document.getElementById(id);m.className='fmsg '+(ok?'ok':'err');m.textContent=txt}
+// Explicit client validation — mirrors the backend HostLeadCreate rules so
+// nothing invalid is sent; novalidate stays so HTML required can't mask gaps.
+const HF_RULES={
+full_name:v=>v.trim().length>=2||'err_name',
+phone:v=>{const d=v.replace(/\D/g,'');return /^[+\d][\d\s\-()+]*$/.test(v.trim())&&d.length>=7&&d.length<=15||'err_phone'},
+city:v=>v.trim().length>=2||'err_city',
+units_count:v=>Number.isInteger(+v)&&+v>=1&&+v<=10000||'err_units',
+property_type:v=>['apartment','villa','chalet','serviced_apartment','hotel_resort','other'].includes(v)||'err_ptype',
+email:v=>!v.trim()||/^[^@\s]{1,64}@[^@\s]{1,255}\.[a-zA-Z]{2,}$/.test(v.trim())||'err_email'};
+function markField(inp,errKey){const err=document.getElementById('ferr-'+inp.name);
+if(errKey){inp.classList.add('bad');if(err){err.textContent=T[lang][errKey]||T[lang].err;err.style.display='block'}}
+else{inp.classList.remove('bad');if(err){err.textContent='';err.style.display='none'}}}
+function validateHostForm(form){let first=null;
+for(const[name,rule]of Object.entries(HF_RULES)){const inp=form.elements[name];if(!inp)continue;
+const res=rule(inp.value);markField(inp,res===true?null:res);if(res!==true&&!first)first=inp}return first}
+function clearErrors(form){for(const inp of form.elements){if(inp.name)markField(inp,null)}}
+let hostBusy=false;
 document.getElementById('hostform').addEventListener('submit',async e=>{e.preventDefault();
-if(!document.getElementById('hf-consent').checked){show('hf-msg',false,T[lang].err_consent);return}
+if(hostBusy)return;
+const bad=validateHostForm(e.target);
+if(bad){show('hf-msg',false,T[lang].err);bad.focus({preventScroll:true});bad.scrollIntoView({block:'center',behavior:'smooth'});return}
+const consentEl=document.getElementById('hf-consent');
+if(!consentEl.checked){show('hf-msg',false,T[lang].err_consent);consentEl.focus();return}
+if(!API_BASE){show('hf-msg',false,T[lang].err_down);return}
+hostBusy=true;const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
 const d=data(e.target);d.consent=true;d.units_count=+d.units_count||1;track('host_form_submit');
 try{const r=await fetch(API_BASE+'/api/v1/public/leads/host',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-if(r.ok){show('hf-msg',true,T[lang].ok_host);e.target.reset();track('host_form_success')}else show('hf-msg',false,T[lang].err)}catch(_){show('hf-msg',false,T[lang].err_down)}});
-document.getElementById('guestform').addEventListener('submit',async e=>{e.preventDefault();
-if(!document.getElementById('gf-consent').checked){show('gf-msg',false,T[lang].err_consent);return}
-const d=data(e.target);d.consent=true;track('guest_waitlist_submit');
-try{const r=await fetch(API_BASE+'/api/v1/public/leads/guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-if(r.ok){show('gf-msg',true,T[lang].ok_guest);e.target.reset();track('guest_waitlist_success')}else show('gf-msg',false,T[lang].err)}catch(_){show('gf-msg',false,T[lang].err_down)}});
+if(r.ok){const j=await r.json().catch(()=>({created:true}));
+if(j.created===false){show('hf-msg',true,T[lang].ok_host_dup)}else{show('hf-msg',true,T[lang].ok_host)}
+e.target.reset();clearErrors(e.target);track('host_form_success')}
+else if(r.status===422){const j=await r.json().catch(()=>({}));const errs=j?.error?.details?.errors||[];let first=null;
+for(const er of errs){const fname=er?.loc?.[1];const inp=e.target.elements[fname];if(inp){markField(inp,Object.keys(HF_RULES).includes(fname)?HF_RULES[fname](inp.value)!==true?HF_RULES[fname](inp.value):'err':'err');if(!first)first=inp}}
+if(first)first.focus();show('hf-msg',false,T[lang].err)}
+else if(r.status===429){show('hf-msg',false,T[lang].err_rate)}
+else{show('hf-msg',false,T[lang].err)}}
+catch(_){show('hf-msg',false,T[lang].err_down)}
+finally{hostBusy=false;btn.disabled=false}});
 </script>
 </body></html>

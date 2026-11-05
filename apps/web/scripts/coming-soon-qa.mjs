@@ -129,20 +129,32 @@ for (const [name, vp] of viewports) {
   await stubApi(page, captured);
   await load(page);
   await page.screenshot({ path: `${OUT}/01-desktop-en-hero.png` });
+  record('guest waitlist section removed',
+    (await page.locator('#waitlist').count()) === 0 &&
+    (await page.locator('#guestform').count()) === 0 &&
+    (await page.locator('a[href="#waitlist"]').count()) === 0);
   await page.click('a[data-ev="host_cta_click"]');
   await page.waitForTimeout(700);
   record('host CTA scrolls to form',
     await page.evaluate(() => document.querySelector('#host').getBoundingClientRect().top < window.innerHeight));
   await page.screenshot({ path: `${OUT}/02-desktop-en-host-form.png` });
-  await page.fill('#hostform input[name=full_name]', 'QA Host');
-  await page.fill('#hostform input[name=phone]', '+20 100 111 2223');
-  await page.fill('#hostform input[name=city]', 'Cairo');
+  // empty submit → field-level errors, zero API calls
   await page.click('#hostform button[type=submit]');
   await page.waitForTimeout(300);
-  record('consent required before submit',
-    (await page.locator('#hf-msg').textContent()).length > 0 &&
-    !captured.some((c) => c.url.includes('/leads/')));
+  record('empty submit blocked client-side',
+    !captured.some((c) => c.url.includes('/leads/')) &&
+    (await page.locator('.ferr:visible').count()) >= 3);
+  // invalid phone → field error, no request
+  await page.fill('#hostform input[name=full_name]', 'QA Host');
+  await page.fill('#hostform input[name=phone]', 'abc');
+  await page.fill('#hostform input[name=city]', 'Cairo');
   await page.check('#hf-consent');
+  await page.click('#hostform button[type=submit]');
+  await page.waitForTimeout(300);
+  record('invalid phone blocked client-side',
+    !captured.some((c) => c.url.includes('/leads/')) &&
+    (await page.locator('#ferr-phone:visible').count()) === 1);
+  await page.fill('#hostform input[name=phone]', '+20 100 111 2223');
   await page.click('#hostform button[type=submit]');
   await page.waitForTimeout(500);
   const leadBody = captured.find((c) => c.url.includes('/leads/host'))?.body;
@@ -150,22 +162,31 @@ for (const [name, vp] of viewports) {
   record('host payload complete',
     leadBody?.full_name === 'QA Host' && leadBody?.consent === true &&
     leadBody?.property_type === 'apartment' && leadBody?.units_count === 1 && leadBody?.lang === 'en');
-  await page.click('a[data-ev="guest_cta_click"]');
-  await page.waitForTimeout(700);
-  await page.fill('#guestform input[name=name]', 'QA Guest');
-  await page.fill('#guestform input[name=email]', 'qa.guest@example.com');
-  await page.check('#gf-consent');
-  await page.click('#guestform button[type=submit]');
-  await page.waitForTimeout(500);
-  record('guest waitlist succeeds', (await page.locator('#gf-msg').textContent()).includes('waitlist'));
   record('funnel events tracked',
     captured.some((c) => c.body?.event === 'host_form_start') &&
+    captured.some((c) => c.body?.event === 'host_form_submit') &&
     captured.some((c) => c.body?.event === 'host_form_success') &&
-    captured.some((c) => c.body?.event === 'guest_waitlist_success'));
+    !captured.some((c) => String(c.body?.event || '').startsWith('guest_')));
   await page.close();
 }
 
-// Server-error state
+// Duplicate registration (created:false) → honest "already registered" success
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await stubApi(page, [], { leadBody: { id: 'dup-1', status: 'NEW', created: false } });
+  await load(page);
+  await page.fill('#hostform input[name=full_name]', 'QA Host');
+  await page.fill('#hostform input[name=phone]', '+201001112223');
+  await page.fill('#hostform input[name=city]', 'Cairo');
+  await page.check('#hf-consent');
+  await page.click('#hostform button[type=submit]');
+  await page.waitForTimeout(500);
+  record('duplicate treated as already-registered',
+    (await page.locator('#hf-msg').textContent()).includes('already registered'));
+  await page.close();
+}
+
+// Validation error (422) state
 {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   await stubApi(page, [], { leadStatus: 422 });
@@ -176,8 +197,24 @@ for (const [name, vp] of viewports) {
   await page.check('#hf-consent');
   await page.click('#hostform button[type=submit]');
   await page.waitForTimeout(500);
-  record('server error shows error state',
+  record('422 shows error state',
     (await page.locator('#hf-msg').textContent()).length > 3);
+  await page.close();
+}
+
+// Rate-limit (429) state
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await stubApi(page, [], { leadStatus: 429 });
+  await load(page);
+  await page.fill('#hostform input[name=full_name]', 'QA Host');
+  await page.fill('#hostform input[name=phone]', '+201001112223');
+  await page.fill('#hostform input[name=city]', 'Cairo');
+  await page.check('#hf-consent');
+  await page.click('#hostform button[type=submit]');
+  await page.waitForTimeout(500);
+  record('429 shows rate-limit message',
+    (await page.locator('#hf-msg').textContent()).includes('Too many attempts'));
   await page.close();
 }
 
@@ -205,6 +242,8 @@ for (const [name, vp] of viewports) {
   const arLead = captured.find((c) => c.url.includes('/leads/host'))?.body;
   record('AR host submit works', (await page.locator('#hf-msg').textContent()).length > 5);
   record('AR payload carries lang=ar', arLead?.lang === 'ar');
+  record('AR doc title switched',
+    (await page.title()).includes('مكازه'));
   await page.screenshot({ path: `${OUT}/04-desktop-ar-host-form.png` });
   await page.click('#l-en');
   await page.waitForTimeout(400);

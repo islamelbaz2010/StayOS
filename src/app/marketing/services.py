@@ -364,7 +364,7 @@ async def export_csv(
                     | GuestLead.phone.contains(q)
                 )
         for lead in (await session.scalars(stmt)).all():
-            row = {"kind": k}
+            row: dict[str, Any] = {"kind": k}
             for c in cols:
                 if c != "kind":
                     row[c] = getattr(lead, c, None)
